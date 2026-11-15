@@ -71,6 +71,8 @@ Trees, rocks, ore and ground tiles need one image only.
 
 ### Mandatory entrance/orientation convention
 
+> The view order is the same for every building: `_1` lower-left, `_2` upper-left, `_3` upper-right, `_4` lower-right. See `BUILDING_TILE_GUIDE.md`.
+
 - **View 1 is the canonical source artwork:** the single main entrance is on the visible lower-left-facing wall. Always draw this view first and rotate the same object for views 2, 3 and 4, at successive clockwise quarter-turns.
 - **View 2:** main entrance is on the far upper-left-facing side, hidden from the fixed camera.
 - **View 3:** main entrance is on the far upper-right-facing side, hidden from the fixed camera.

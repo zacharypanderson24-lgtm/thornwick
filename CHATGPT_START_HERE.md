@@ -20,6 +20,8 @@ Isometric pixel art for a medieval city-builder game in the spirit of TheoTown. 
 
 ## The four views (for buildings)
 
+The order is fixed for EVERY building in this project, so the same number always puts the main door on the same wall: view 1 lower-left, view 2 upper-left, view 3 upper-right, view 4 lower-right. Never reorder them. Buildings with no door still have a main face (entrance, cart or open pit) that goes where the door would.
+
 Each building needs four images, one per camera rotation. Only the rotation changes. Keep footprint, size, colours and proportions identical in every view; only the rotation changes.
 
 - VIEW 1 (default): the main door and the most detail face the lower-left wall.

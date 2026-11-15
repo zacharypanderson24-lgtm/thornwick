@@ -17,6 +17,24 @@ The guide images are 1024 x 1536 with a magenta background. The black diamond is
 
 The bottom corner of the diamond is at the bottom centre of the picture. Everything is measured from there.
 
+## The four views: same order for every building (mandatory)
+
+Every building, every size, always uses the same four views in the same order. The game picks a view by number to point the main door at the road, so one building in the wrong order faces the wrong way.
+
+| File | Main door / front faces | What the camera sees |
+|---|---|---|
+| `name_1.png` | lower-left wall | the door (view 1, canonical source art) |
+| `name_2.png` | upper-left wall | the back; the door is hidden |
+| `name_3.png` | upper-right wall | the back; the door is hidden |
+| `name_4.png` | lower-right wall | the door (view 4) |
+
+- The order is a clockwise quarter-turn each time, seen from above: 1, then 2, then 3, then 4.
+- The same number always means the same door side. `_1` is never "whichever view looks best", and `_4` always has the door on the lower-right wall.
+- Draw view 1 first, then rotate the same building for the rest. Same footprint, same size, same colours, same props. Only the turn changes.
+- This applies to all four-view buildings: huts, cottages, farms, markets, Town Hall, barracks, wells, mines, quarries and the large 2x2 buildings.
+- Buildings without a door (well, quarry, farm) still have a main face: the side with the entrance, the cart, the barn door or the open pit. Put that main face where the door would go in each view.
+- Test a new set by placing the building next to a road and turning the camera with Q and E. The main face should always point at the road.
+
 ## 2. The fit rules
 
 1. **Walls sit inside the diamond.** The foot of every wall follows the diamond's lower-left and lower-right edges. The lowest point of the building touches the diamond's bottom corner.
@@ -24,7 +42,7 @@ The bottom corner of the diamond is at the bottom centre of the picture. Everyth
 3. **Eaves may overhang a little, never past the green box.** If a roof touches the left or right edge of the guide, make the whole building a bit smaller.
 4. **Leave headroom.** The highest point (ridge, chimney or flag) stays at least 5 percent of the picture height below the top of the green box. Chimneys and flags count.
 5. **Nothing floats or hangs outside.** Banners, flags and signs are attached to the building or stand on the diamond. Poles stay inside the footprint.
-6. **One door, same footprint in every view.** View 1 shows the door on the lower-left wall, view 4 on the lower-right wall, views 2 and 3 show the back. Do not invent extra doors, and do not let the building grow or shrink between views. Props rotate with the building.
+6. **One door, same footprint in every view.** The view order is fixed for every building (see "The four views" above): 1 lower-left, 2 upper-left, 3 upper-right, 4 lower-right. Do not invent extra doors, and do not let the building grow or shrink between views. Props rotate with the building.
 7. **Same height in every view.** Wall height, roof height, stone base height and chimney position (on the same roof slope) match across all four views.
 8. **Match the neighbours.** A one-tile building should be about as wide as the diamond (32 px game width). A larger building (Town Hall, barracks) is taller and grander, not just wider. A 2x2 building fills its 64 px diamond.
 
@@ -62,7 +80,8 @@ The bottom corner of the diamond is at the bottom centre of the picture. Everyth
 - [ ] Roof eaves do not touch the green box; there is headroom above the highest point.
 - [ ] No pink, magenta or purple pixels on the building.
 - [ ] Hard edges, no soft pixels.
-- [ ] One door only; shown in views 1 and 4, hidden in 2 and 3.
+- [ ] One door only; on the lower-left wall in `_1`, upper-left in `_2`, upper-right in `_3`, lower-right in `_4` (visible in 1 and 4, hidden in 2 and 3).
+- [ ] Files are numbered in this exact order, so the same number means the same door side as every other building.
 - [ ] All four views have the same footprint, wall height and roof height.
 - [ ] Colours match the other buildings.
 - [ ] Light comes from the top-left.
