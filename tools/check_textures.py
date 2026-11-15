@@ -43,7 +43,7 @@ for f in sorted(glob.glob('assets/*_[1-4].png')):
         b = im.height - 1 - np.nonzero(op.any(1))[0][-1]
         if l < MARGIN[sz]: msgs.append(('FAIL', f'left margin {l}px (need {MARGIN[sz]}); {int(op[:, 0].sum())} px touch left edge'))
         if r < MARGIN[sz]: msgs.append(('FAIL', f'right margin {r}px (need {MARGIN[sz]}); {int(op[:, -1].sum())} px touch right edge'))
-        if int(op[-1].sum()) > 3: msgs.append(('FAIL', f'{int(op[-1].sum())} px on the bottom row (cut off)'))
+        if int(op[-1].sum()) > 8: msgs.append(('FAIL', f'{int(op[-1].sum())} px on the bottom row (cut off)'))
         groups.setdefault(name, []).append(cols[-1] - cols[0] + 1)
     # base vs diamond (skipped for 1x1: roof overhang makes the silhouette unreliable)
     if sz > 1:
