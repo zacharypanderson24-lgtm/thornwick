@@ -1322,7 +1322,7 @@ for (const k of ['wood', 'stone', 'ore', 'fert']) $('lc-' + k).onclick = () => {
 // ---------- Rendering ----------
 function zmask(x, y, z) {
   let m = 0;
-  for (let i = 0; i < 4; i++) { const [nx, ny] = nbW(x, y, i); if (!(inb(nx, ny) && S.zone[ny][nx] === z)) m |= NBD[i][2]; }
+  for (let i = 0; i < 4; i++) { const [nx, ny] = nbW(x, y, i); if (!(inb(nx, ny) && S.zone[ny][nx] === z && !S.grid[ny][nx])) m |= NBD[i][2]; }
   return m;
 }
 function roadPath(a, b, flip) {
@@ -1353,7 +1353,7 @@ function draw() {
       const hv = hash2(x, y, 5);
       const gi = Math.floor(hv * 4), gf = hv < 0.5 ? 0 : 1;
       ctx.drawImage(S.fert[y][x] ? (ovrSprite('grassfert_' + gf, ROT) || SPR.grassF[gf]) : (ovrSprite('grass_' + gi, ROT) || SPR.grass[gi]), ox, oy);
-      if (S.zone[y][x]) ctx.drawImage(ZSPR(S.zone[y][x], zmask(x, y, S.zone[y][x])), ox, oy);
+      if (S.zone[y][x] && !S.grid[y][x]) ctx.drawImage(ZSPR(S.zone[y][x], zmask(x, y, S.zone[y][x])), ox, oy);
       if (lensAny) {
         const dk = S.deco[y][x];
         const lk = dk === 'tree' ? 'wood' : dk === 'rock' ? 'stone' : dk === 'ore' ? 'ore' : (!S.grid[y][x] && S.fert[y][x] ? 'fert' : null);
