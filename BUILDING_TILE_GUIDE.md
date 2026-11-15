@@ -47,6 +47,64 @@ Every building, every size, always uses the same four views in the same order. T
 7. **Same height in every view.** Wall height, roof height, stone base height and chimney position (on the same roof slope) match across all four views.
 8. **Match the neighbours.** A one-tile building should be about as wide as the diamond (32 px game width). A larger building (Town Hall, barracks) is taller and grander, not just wider. A 2x2 building fills its 64 px diamond.
 
+## Building height and overlap (so buildings do not swallow each other)
+
+The map is drawn back to front. Every building is one picture, drawn once at its front tile, and anything taller than its footprint rises up the screen and covers whatever is behind it. That is correct and expected. The rules below keep it from hiding things that matter.
+
+### How the grid works on screen
+
+- One step along the x or y axis moves a tile 16 px sideways and 8 px up or down.
+- One step back along both axes (straight "behind" in the view) moves a tile 16 px straight up.
+- So a building that rises 32 px above its diamond hides about two tiles of ground directly behind it. One that rises 80 px hides about five.
+- The ground footprint never grows. Only height goes up. Walls, props and steps stay inside the diamond (see the fit rules).
+
+### Height budget
+
+Height is measured from the lowest point of the sprite (the diamond's bottom corner) to the highest pixel, in game pixels.
+
+| Size | Sprite | Absolute maximum | Reference heights today |
+|---|---|---|---|
+| 1 tile | 32 x 48 | 48 | huts 32 to 36 |
+| 2 x 2 | 64 x 88 | 88 | barracks about 54 |
+| 3 x 3 | 96 x 128 | 128 | Town Hall about 84 to 91 |
+
+Stay at or below the reference height for the same kind of building. Never touch the maximum: leave at least 5 percent of the picture height of empty space above the highest point.
+
+### Order of importance
+
+Taller means more important. Keep this order so the village reads at a glance:
+
+1. Town Hall (tallest, with a belfry and pennant)
+2. Barracks and the large 2x2 houses and farms
+3. Houses, markets, workshops
+4. Farm fields, wells, mines (low)
+
+A smaller building must never be taller than a bigger one. A level 2 cottage may be a little taller than a level 1 hut, not by much.
+
+### Where to put the tall parts
+
+- Keep the tallest parts (chimney, belfry, ridge, flagpole) toward the back half of the footprint and near the centre line. They then hide the tiles behind, not the ones in front.
+- Keep the front 35 to 40 percent of the footprint low: porch roof, steps, props. This keeps the entrance and the road in front visible. A tall front hides the door of the next building and the road itself.
+- Keep poles, flags and chimneys thin. A wide tall shape covers a lot of the screen.
+- Eaves may overhang the diamond by about 3 percent of the picture width at most. More than that covers the tiles beside it.
+
+### Things that go wrong
+
+| Problem | Why | Fix |
+|---|---|---|
+| A hut hides the Hall's porch | The hut stands in front of the Hall and is taller than the gap between them | Leave a gap of 2 tiles or more in front of a big building's door, or keep the front of the smaller building low |
+| A tall building hides the road behind it | Height is at the front of the footprint | Move the tall parts to the back half |
+| A tall building hides its neighbour's door | Both face the same street and the near one is high | Keep to the height budget; check the pair together |
+| One building looks bigger than the Hall | Height creep when making a new picture | Compare against the reference heights |
+| A roof or flag is cut off at the top | Used the full height of the sprite | Leave 5 percent headroom |
+
+### Test before you commit
+
+1. Put the building next to a copy of itself on a street: side by side, diagonal, and one directly behind the other.
+2. Put it next to a hut and the Town Hall.
+3. Turn the camera with Q and E and check all four views.
+4. Check that doors facing the road are still visible, and that no building hides another building's door.
+
 ## 3. Pixel clean-up rules
 
 - **No pink, magenta or purple pixels on the building.** They are leftover background colour on the edge. Recolour them to the nearest wall, thatch or stone colour.
@@ -78,6 +136,7 @@ Every building, every size, always uses the same four views in the same order. T
 - [ ] The lowest point touches the diamond's bottom corner at the bottom centre.
 - [ ] Every wall foot follows the diamond edges; nothing stands outside the diamond.
 - [ ] Props and steps are inside the diamond.
+- [ ] Height is within the budget for its size and below the buildings above it in the order of importance; tall parts are at the back, the front is low.
 - [ ] Roof eaves do not touch the green box; there is headroom above the highest point.
 - [ ] No pink, magenta or purple pixels on the building.
 - [ ] Hard edges, no soft pixels.
