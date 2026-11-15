@@ -178,3 +178,7 @@ Run `python3 tools/check_textures.py` on your finished PNGs (copy them into `ass
 - **Base off the diamond:** the stone base must sit on the footprint diamond edges within 1 px. Steps, racks and barrels must not go below the bottom point or outside the side corners.
 - **Stone base look:** one uniform band, same thickness in all 4 views, max 3 flat grey tones, no white or cream pixels, no dithering, 1 px dark bottom outline.
 - **Fringe:** no pink or purple pixels left from the magenta background.
+
+## Huts (1x1) are smaller than the tile on purpose
+
+Neighbouring huts must have visible grass between them. A 1x1 hut (32 px wide canvas) must be at most about 26 px wide including eaves, centred, with at least 3 empty px on the left and right. Its walls stand on a footprint about 24 px wide (the inner part of the diamond), not the full 32. Barracks and Town Hall keep the full tile width (2 px margin).

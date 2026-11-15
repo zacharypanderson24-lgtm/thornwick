@@ -13,7 +13,7 @@ import numpy as np
 
 SIZES = {1: (32, 48), 2: (64, 88), 3: (96, 128)}
 BUILDING = {'hall': 3, 'barracks': 2}          # everything else named house_* is 1x1
-MARGIN = {1: 1, 2: 2, 3: 2}                    # min empty px at left/right/bottom
+MARGIN = {1: 3, 2: 2, 3: 2}                    # min empty px at left/right/bottom
 TOL = {1: 2, 2: 2, 3: 2}                       # max px the base may be off the diamond edge
 fails = warns = 0
 
