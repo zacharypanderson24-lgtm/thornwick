@@ -277,7 +277,16 @@ function buildSprites() {
 buildSprites();
 function spriteFor(t, b, mask, rot) {
   if (t === 'road') return SPR.road[mask || 0];
-  const n = slotName(t, b), o = ovrSprite(n, rot === undefined ? ROT : rot);
+  const n = slotName(t, b), r = rot === undefined ? ROT : rot;
+  // Choose one of eight stable full-tile huts by world coordinates.
+  if (n === 'house_1' && b && Number.isFinite(b.x) && Number.isFinite(b.y)) {
+    const variant = Math.min(8, 1 + Math.floor(hash2(b.x, b.y, 173) * 8));
+    if (variant > 1) {
+      const alternate = ovrSprite('house_1_v' + variant, r);
+      if (alternate) return alternate;
+    }
+  }
+  const o = ovrSprite(n, r);
   if (o) return o;
   return defaultSprite(n);
 }
