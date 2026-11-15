@@ -38,6 +38,8 @@ html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); 
 .rectinfo { position: absolute; background: #1b2030; border: 2px solid var(--accent); padding: 2px 8px; font-size: 18px; pointer-events: none; z-index: 3; }
 [hidden] { display: none !important; }
 #lens { left: 12px; bottom: 12px; width: auto; }
+#banner { right: 12px; top: 12px; width: auto; z-index: 15; }
+.swatch { width: 28px; height: 28px; border: 2px solid var(--line); cursor: pointer; padding: 0; } .swatch:hover, .swatch.on { border-color: var(--accent); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--body); font-size: 19px; color: var(--ink); background: var(--panel2); border: 2px solid var(--line); padding: 3px 8px; cursor: pointer; }
 .chip i { width: 11px; height: 11px; display: inline-block; border: 2px solid #0008; } .chip.off { opacity: .4; }
@@ -110,6 +112,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     <div class="spacer"></div>
     <div class="grp">
       <button class="btn" id="lensbtn" type="button">Resources (V)</button>
+      <button class="btn" id="bannerbtn" type="button">Banner</button>
       <button class="btn" id="texbtn" type="button">Textures</button>
       <button class="btn" id="savebtn" type="button">Save</button>
       <button class="btn" id="newbtn" type="button">New</button>
@@ -131,6 +134,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     <div id="zoom"><button class="btn" id="rotl" type="button" title="Rotate view (Q)">&#8634;</button><button class="btn" id="rotr" type="button" title="Rotate view (E)">&#8635;</button><button class="btn" id="zout" type="button">-</button><button class="btn" id="zin" type="button">+</button></div>
     <div id="hint" class="hint" hidden></div>
     <div id="lab" class="lab" hidden></div>
+    <div class="panel" id="banner" hidden><h2>Your banner</h2><div class="chips" id="banner-sw"></div><label class="chk" style="margin-top:8px">Custom <input type="color" id="bannerpick" value="#b3202a"></label><div class="chips" style="margin-top:6px"><button class="chip" id="banner-reset" type="button">Original</button></div></div>
     <div id="rectinfo" class="rectinfo" hidden></div>
     <div id="toast"></div>
   </main>

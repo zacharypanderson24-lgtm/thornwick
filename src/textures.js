@@ -43,7 +43,53 @@ function promptFor(s, v) {
 
 // ---- overrides ----
 const OVR = {}, CELL = {}, ASSET_OK = {};
-function ovrSprite(name, rot) { const o = OVR[name]; if (!o) return null; return o[rot + 1] || o.all || null; }
+// ---- banner colour: recolours the red banners on flagged buildings (hall, barracks) to the player's colour ----
+let BANNER = null;
+for (const n of ['hall', 'barracks']) if (SLOT[n]) SLOT[n].banner = true;
+const BMASK = new WeakMap(), BTINT = new WeakMap();
+function rgb2hsv(r, g, b) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0; if (d) { if (mx === r) h = ((g - b) / d + 6) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; } return [h * 60, mx ? d / mx : 0, mx]; }
+function bannerMask(c) {
+  if (BMASK.has(c)) return BMASK.get(c);
+  const w = c.width, h = c.height; let m = new Uint8Array(w * h);
+  try {
+    const d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+    for (let i = 0; i < w * h; i++) { if (d[i * 4 + 3] < 200) continue; const [H, s, v] = rgb2hsv(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]); if ((H <= 14 || H >= 345) && s >= 0.55 && v >= 0.3) m[i] = 1; }
+    // keep only blobs of 6+ pixels, so stray reddish edge pixels are left alone
+    const seen = new Uint8Array(w * h), keep = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      if (!m[i] || seen[i]) continue;
+      const st = [i], comp = []; seen[i] = 1;
+      while (st.length) { const k = st.pop(); comp.push(k); const x = k % w, y = (k / w) | 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const n = ny * w + nx; if (m[n] && !seen[n]) { seen[n] = 1; st.push(n); } } }
+      if (comp.length >= 6) for (const k of comp) keep[k] = 1;
+    }
+    m = keep;
+  } catch (e) { m = new Uint8Array(w * h); }
+  BMASK.set(c, m); return m;
+}
+function tintBanner(c, hex) {
+  let cache = BTINT.get(c); if (!cache) { cache = new Map(); BTINT.set(c, cache); }
+  if (cache.has(hex)) return cache.get(hex);
+  const out = document.createElement('canvas'); out.width = c.width; out.height = c.height;
+  const g = out.getContext('2d', { willReadFrequently: true }); g.drawImage(c, 0, 0);
+  try {
+    const m = bannerMask(c), id = g.getImageData(0, 0, c.width, c.height), d = id.data;
+    const T = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    for (let i = 0; i < m.length; i++) {
+      if (!m[i]) continue;
+      const v = rgb2hsv(d[i * 4], d[i * 4 + 1], d[i * 4 + 2])[2], f = v / 0.85;
+      for (let k = 0; k < 3; k++) d[i * 4 + k] = Math.max(0, Math.min(255, Math.round(f <= 1 ? T[k] * f : T[k] + (255 - T[k]) * (f - 1) * 0.8)));
+    }
+    g.putImageData(id, 0, 0);
+  } catch (e) { }
+  cache.set(hex, out); return out;
+}
+function setBanner(hex) { BANNER = hex || null; texChanged(); }
+function ovrSprite(name, rot) {
+  const o = OVR[name]; if (!o) return null;
+  const r = o[rot + 1] || o.all || null;
+  if (r && BANNER && SLOT[name] && SLOT[name].banner) return tintBanner(r, BANNER);
+  return r;
+}
 function keyOut(id) {
   const w = id.width, h = id.height, d = id.data;
   const px = (x, y) => (y * w + x) * 4;

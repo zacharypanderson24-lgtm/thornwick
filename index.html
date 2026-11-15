@@ -38,6 +38,8 @@ html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); 
 .rectinfo { position: absolute; background: #1b2030; border: 2px solid var(--accent); padding: 2px 8px; font-size: 18px; pointer-events: none; z-index: 3; }
 [hidden] { display: none !important; }
 #lens { left: 12px; bottom: 12px; width: auto; }
+#banner { right: 12px; top: 12px; width: auto; z-index: 15; }
+.swatch { width: 28px; height: 28px; border: 2px solid var(--line); cursor: pointer; padding: 0; } .swatch:hover, .swatch.on { border-color: var(--accent); }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--body); font-size: 19px; color: var(--ink); background: var(--panel2); border: 2px solid var(--line); padding: 3px 8px; cursor: pointer; }
 .chip i { width: 11px; height: 11px; display: inline-block; border: 2px solid #0008; } .chip.off { opacity: .4; }
@@ -110,6 +112,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     <div class="spacer"></div>
     <div class="grp">
       <button class="btn" id="lensbtn" type="button">Resources (V)</button>
+      <button class="btn" id="bannerbtn" type="button">Banner</button>
       <button class="btn" id="texbtn" type="button">Textures</button>
       <button class="btn" id="savebtn" type="button">Save</button>
       <button class="btn" id="newbtn" type="button">New</button>
@@ -131,6 +134,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     <div id="zoom"><button class="btn" id="rotl" type="button" title="Rotate view (Q)">&#8634;</button><button class="btn" id="rotr" type="button" title="Rotate view (E)">&#8635;</button><button class="btn" id="zout" type="button">-</button><button class="btn" id="zin" type="button">+</button></div>
     <div id="hint" class="hint" hidden></div>
     <div id="lab" class="lab" hidden></div>
+    <div class="panel" id="banner" hidden><h2>Your banner</h2><div class="chips" id="banner-sw"></div><label class="chk" style="margin-top:8px">Custom <input type="color" id="bannerpick" value="#b3202a"></label><div class="chips" style="margin-top:6px"><button class="chip" id="banner-reset" type="button">Original</button></div></div>
     <div id="rectinfo" class="rectinfo" hidden></div>
     <div id="toast"></div>
   </main>
@@ -593,7 +597,53 @@ function promptFor(s, v) {
 
 // ---- overrides ----
 const OVR = {}, CELL = {}, ASSET_OK = {};
-function ovrSprite(name, rot) { const o = OVR[name]; if (!o) return null; return o[rot + 1] || o.all || null; }
+// ---- banner colour: recolours the red banners on flagged buildings (hall, barracks) to the player's colour ----
+let BANNER = null;
+for (const n of ['hall', 'barracks']) if (SLOT[n]) SLOT[n].banner = true;
+const BMASK = new WeakMap(), BTINT = new WeakMap();
+function rgb2hsv(r, g, b) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = 0; if (d) { if (mx === r) h = ((g - b) / d + 6) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; } return [h * 60, mx ? d / mx : 0, mx]; }
+function bannerMask(c) {
+  if (BMASK.has(c)) return BMASK.get(c);
+  const w = c.width, h = c.height; let m = new Uint8Array(w * h);
+  try {
+    const d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+    for (let i = 0; i < w * h; i++) { if (d[i * 4 + 3] < 200) continue; const [H, s, v] = rgb2hsv(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]); if ((H <= 14 || H >= 345) && s >= 0.55 && v >= 0.3) m[i] = 1; }
+    // keep only blobs of 6+ pixels, so stray reddish edge pixels are left alone
+    const seen = new Uint8Array(w * h), keep = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      if (!m[i] || seen[i]) continue;
+      const st = [i], comp = []; seen[i] = 1;
+      while (st.length) { const k = st.pop(); comp.push(k); const x = k % w, y = (k / w) | 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const n = ny * w + nx; if (m[n] && !seen[n]) { seen[n] = 1; st.push(n); } } }
+      if (comp.length >= 6) for (const k of comp) keep[k] = 1;
+    }
+    m = keep;
+  } catch (e) { m = new Uint8Array(w * h); }
+  BMASK.set(c, m); return m;
+}
+function tintBanner(c, hex) {
+  let cache = BTINT.get(c); if (!cache) { cache = new Map(); BTINT.set(c, cache); }
+  if (cache.has(hex)) return cache.get(hex);
+  const out = document.createElement('canvas'); out.width = c.width; out.height = c.height;
+  const g = out.getContext('2d', { willReadFrequently: true }); g.drawImage(c, 0, 0);
+  try {
+    const m = bannerMask(c), id = g.getImageData(0, 0, c.width, c.height), d = id.data;
+    const T = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    for (let i = 0; i < m.length; i++) {
+      if (!m[i]) continue;
+      const v = rgb2hsv(d[i * 4], d[i * 4 + 1], d[i * 4 + 2])[2], f = v / 0.85;
+      for (let k = 0; k < 3; k++) d[i * 4 + k] = Math.max(0, Math.min(255, Math.round(f <= 1 ? T[k] * f : T[k] + (255 - T[k]) * (f - 1) * 0.8)));
+    }
+    g.putImageData(id, 0, 0);
+  } catch (e) { }
+  cache.set(hex, out); return out;
+}
+function setBanner(hex) { BANNER = hex || null; texChanged(); }
+function ovrSprite(name, rot) {
+  const o = OVR[name]; if (!o) return null;
+  const r = o[rot + 1] || o.all || null;
+  if (r && BANNER && SLOT[name] && SLOT[name].banner) return tintBanner(r, BANNER);
+  return r;
+}
 function keyOut(id) {
   const w = id.width, h = id.height, d = id.data;
   const px = (x, y) => (y * w + x) * 4;
@@ -1464,12 +1514,23 @@ $('rotr').onclick = () => setRot(ROT + 1);
 $('zin').onclick = () => setScale(scale + 1, stage.clientWidth / 2, stage.clientHeight / 2);
 $('zout').onclick = () => setScale(scale - 1, stage.clientWidth / 2, stage.clientHeight / 2);
 setSpeed(1);
+// ---------- Banner colour ----------
+const BANNER_COLORS = [['Crimson', '#b3202a'], ['Royal blue', '#2a56c4'], ['Forest green', '#2f8f46'], ['Purple', '#7a3fa8'], ['Gold', '#d9a31a'], ['Black', '#2b2b33'], ['White', '#e8e4d6'], ['Teal', '#1f9a9a']];
+function chooseBanner(hex) {
+  S.banner = hex || undefined; setBanner(hex || null); if (hex) $('bannerpick').value = hex;
+  for (const b of $('banner-sw').children) b.classList.toggle('on', b.dataset.hex === hex);
+  doSave(true);
+}
+for (const [n, hex] of BANNER_COLORS) { const b = document.createElement('button'); b.type = 'button'; b.className = 'swatch'; b.title = n; b.style.background = hex; b.dataset.hex = hex; b.onclick = () => chooseBanner(hex); $('banner-sw').appendChild(b); }
+$('bannerpick').oninput = e => chooseBanner(e.target.value);
+$('banner-reset').onclick = () => chooseBanner(null);
+$('bannerbtn').onclick = () => { const p = $('banner'); p.hidden = !p.hidden; $('bannerbtn').classList.toggle('on', !p.hidden); };
 // ---------- Save / load ----------
 const SAVE_KEY = 'thornwick-save-1';
 function doSave(quiet) { try { localStorage.setItem(SAVE_KEY, saveWorld(S)); if (!quiet) toast('Game saved'); } catch (e) { if (!quiet) toast('Saving is blocked in this browser'); } }
 function loadSaved() { try { const t = localStorage.getItem(SAVE_KEY); if (t) { const w = loadWorld(t); if (w) { S = w; return true; } } } catch (e) { } return false; }
 $('savebtn').onclick = () => doSave(false);
-$('newbtn').onclick = () => { if (!confirm('Start a new village? Your saved game will be replaced.')) return; S = createWorld(Math.floor(Math.random() * 9000) + 1); pinned = null; roadAnchor = null; try { localStorage.removeItem(SAVE_KEY); } catch (e) { } centerOn(20, 24); updateHUD(); updateInfo(); toast('A new village'); };
+$('newbtn').onclick = () => { if (!confirm('Start a new village? Your saved game will be replaced.')) return; S = createWorld(Math.floor(Math.random() * 9000) + 1); setBanner(null); pinned = null; roadAnchor = null; try { localStorage.removeItem(SAVE_KEY); } catch (e) { } centerOn(20, 24); updateHUD(); updateInfo(); toast('A new village'); };
 setInterval(() => doSave(true), 30000);
 window.addEventListener('beforeunload', () => doSave(true));
 
@@ -1483,7 +1544,7 @@ function frame(now) {
   if (speed > 0) { acc += dt * speed; while (acc >= 1) { acc -= 1; tick(S); updateHUD(); } }
   updateHint(); draw(); requestAnimationFrame(frame);
 }
-loadSaved(); resize(); centerOn(20, 24); updateHUD(); updateInfo();
+loadSaved(); setBanner(S.banner || null); resize(); centerOn(20, 24); updateHUD(); updateInfo();
 requestAnimationFrame(frame);
 window.__game = { zone: (k, x, y) => setZone(S, k, x, y), get S() { return S; }, setTool, place: (t, x, y) => place(S, t, x, y), tick: () => { tick(S); updateHUD(); } };
 

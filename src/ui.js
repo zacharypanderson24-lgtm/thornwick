@@ -698,12 +698,23 @@ $('rotr').onclick = () => setRot(ROT + 1);
 $('zin').onclick = () => setScale(scale + 1, stage.clientWidth / 2, stage.clientHeight / 2);
 $('zout').onclick = () => setScale(scale - 1, stage.clientWidth / 2, stage.clientHeight / 2);
 setSpeed(1);
+// ---------- Banner colour ----------
+const BANNER_COLORS = [['Crimson', '#b3202a'], ['Royal blue', '#2a56c4'], ['Forest green', '#2f8f46'], ['Purple', '#7a3fa8'], ['Gold', '#d9a31a'], ['Black', '#2b2b33'], ['White', '#e8e4d6'], ['Teal', '#1f9a9a']];
+function chooseBanner(hex) {
+  S.banner = hex || undefined; setBanner(hex || null); if (hex) $('bannerpick').value = hex;
+  for (const b of $('banner-sw').children) b.classList.toggle('on', b.dataset.hex === hex);
+  doSave(true);
+}
+for (const [n, hex] of BANNER_COLORS) { const b = document.createElement('button'); b.type = 'button'; b.className = 'swatch'; b.title = n; b.style.background = hex; b.dataset.hex = hex; b.onclick = () => chooseBanner(hex); $('banner-sw').appendChild(b); }
+$('bannerpick').oninput = e => chooseBanner(e.target.value);
+$('banner-reset').onclick = () => chooseBanner(null);
+$('bannerbtn').onclick = () => { const p = $('banner'); p.hidden = !p.hidden; $('bannerbtn').classList.toggle('on', !p.hidden); };
 // ---------- Save / load ----------
 const SAVE_KEY = 'thornwick-save-1';
 function doSave(quiet) { try { localStorage.setItem(SAVE_KEY, saveWorld(S)); if (!quiet) toast('Game saved'); } catch (e) { if (!quiet) toast('Saving is blocked in this browser'); } }
 function loadSaved() { try { const t = localStorage.getItem(SAVE_KEY); if (t) { const w = loadWorld(t); if (w) { S = w; return true; } } } catch (e) { } return false; }
 $('savebtn').onclick = () => doSave(false);
-$('newbtn').onclick = () => { if (!confirm('Start a new village? Your saved game will be replaced.')) return; S = createWorld(Math.floor(Math.random() * 9000) + 1); pinned = null; roadAnchor = null; try { localStorage.removeItem(SAVE_KEY); } catch (e) { } centerOn(20, 24); updateHUD(); updateInfo(); toast('A new village'); };
+$('newbtn').onclick = () => { if (!confirm('Start a new village? Your saved game will be replaced.')) return; S = createWorld(Math.floor(Math.random() * 9000) + 1); setBanner(null); pinned = null; roadAnchor = null; try { localStorage.removeItem(SAVE_KEY); } catch (e) { } centerOn(20, 24); updateHUD(); updateInfo(); toast('A new village'); };
 setInterval(() => doSave(true), 30000);
 window.addEventListener('beforeunload', () => doSave(true));
 
@@ -717,6 +728,6 @@ function frame(now) {
   if (speed > 0) { acc += dt * speed; while (acc >= 1) { acc -= 1; tick(S); updateHUD(); } }
   updateHint(); draw(); requestAnimationFrame(frame);
 }
-loadSaved(); resize(); centerOn(20, 24); updateHUD(); updateInfo();
+loadSaved(); setBanner(S.banner || null); resize(); centerOn(20, 24); updateHUD(); updateInfo();
 requestAnimationFrame(frame);
 window.__game = { zone: (k, x, y) => setZone(S, k, x, y), get S() { return S; }, setTool, place: (t, x, y) => place(S, t, x, y), tick: () => { tick(S); updateHUD(); } };
