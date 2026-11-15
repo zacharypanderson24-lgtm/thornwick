@@ -1,5 +1,7 @@
 # Thornwick art brief (early game)
 
+To start a ChatGPT chat, upload `CHATGPT_START_HERE.md` instead; it contains everything below in a form ChatGPT can follow.
+
 Everything below is what each thing should look like in the first era: a poor, early-medieval farming village. Timber, thatch, packed earth and fieldstone. Nothing gleams yet.
 
 ## How to use this
