@@ -12,6 +12,7 @@ A building texture is a picture of the object standing on a flat ground diamond.
 |---|---|---|---|
 | 1 tile (hut, well, farm, mine, market stall, Town Hall) | 32 x 48 px | 32 x 16 px | `templates/footprint_1x1_guide.png` |
 | 2 x 2 tiles (barracks, large house, bazaar, large farm) | 64 x 88 px | 64 x 32 px | `templates/footprint_2x2_guide.png` |
+| 3 x 3 tiles (Town Hall, planned) | 96 x 128 px | 96 x 48 px | `templates/footprint_3x3_guide.png` |
 
 The guide images are 1024 x 1536 with a magenta background. The black diamond is the ground the building covers. The green box is the sprite limit: nothing may touch or cross it. Ask ChatGPT to remove all guide lines from the final image.
 
