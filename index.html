@@ -200,10 +200,12 @@ function createWorld(seed) {
     else if (f > 0.56 && hash2(x, y, seed + 5) > 0.22) S.deco[y][x] = 'tree';
     else if (r > 0.7 && hash2(x, y, seed + 6) > 0.35) S.deco[y][x] = 'rock';
   }
-  addBld(S, 'hall', 20, 20);
-  for (let y = 21; y <= 25; y++) addBld(S, 'road', 20, y);
-  addBld(S, 'house', 19, 22).zoned = true; addBld(S, 'house', 21, 22).zoned = true; addBld(S, 'farm', 19, 24).zoned = true;
-  S.zone[22][19] = 'res'; S.zone[22][21] = 'res'; S.zone[24][19] = 'farm';
+  // The 3x3 Town Hall is anchored at (19,19), centered on the original (20,20).
+  // All nine cells are reserved before roads and zones are placed.
+  addBld(S, 'hall', 19, 19, 3);
+  for (let y = 22; y <= 26; y++) addBld(S, 'road', 20, y);
+  addBld(S, 'house', 19, 23).zoned = true; addBld(S, 'house', 21, 23).zoned = true; addBld(S, 'farm', 19, 25).zoned = true;
+  S.zone[23][19] = 'res'; S.zone[23][21] = 'res'; S.zone[25][19] = 'farm';
   recalc(S); computeDemand(S);
   return S;
 }
@@ -226,7 +228,7 @@ function loadWorld(str) {
   recalc(S); computeDemand(S); return S;
 }
 function addBld(S, t, x, y, sz) {
-  const b = { t, x, y, sz: sz || (t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
+  const b = { t, x, y, sz: sz || (t === 'hall' ? 3 : t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
   S.blds.push(b);
   for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
@@ -348,7 +350,13 @@ function servedAt(S, b, conn) {
 function recalc(S) {
   const conn = new Uint8Array(N * N), q = [], h = S.hall;
   const isRoad = (x, y) => inb(x, y) && S.grid[y][x] && S.grid[y][x].t === 'road';
-  for (const [dx, dy] of NB) { const x = h.x + dx, y = h.y + dy; if (isRoad(x, y) && !conn[y * N + x]) { conn[y * N + x] = 1; q.push([x, y]); } }
+  // A road can connect to any external edge of the multi-tile Town Hall.
+  for (const [hx, hy] of tilesOf(h)) for (const [dx, dy] of NB) {
+    const x = hx + dx, y = hy + dy;
+    if (inb(x, y) && S.grid[y][x] !== h && isRoad(x, y) && !conn[y * N + x]) {
+      conn[y * N + x] = 1; q.push([x, y]);
+    }
+  }
   while (q.length) {
     const [cx, cy] = q.pop();
     for (const [dx, dy] of NB) { const x = cx + dx, y = cy + dy; if (isRoad(x, y) && !conn[y * N + x]) { conn[y * N + x] = 1; q.push([x, y]); } }
@@ -551,7 +559,7 @@ const VIEW_TXT = [
 const SAME_TXT = 'Keep footprint, size, colours and proportions identical in every view; only the rotation changes.';
 const SLOTS = [], SLOT = {};
 function addSlot(name, label, group, size, views, type, desc) { const s = { name, label, group, size, views, type, desc }; SLOTS.push(s); SLOT[name] = s; }
-addSlot('hall', 'Town Hall', 'Buildings (1 tile)', 1, 4, 'object', 'The first building of the settlement: a long timber-framed hall on a low fieldstone foundation, steep dark-brown shingle roof, a stone chimney, a plank double door with iron straps, two small shuttered windows, and a small gold pennant on a pole at the roof peak. About two storeys tall. Sturdy and a little grander than any house.');
+addSlot('hall', 'Town Hall', 'Buildings (3x3 tiles)', 3, 4, 'object', 'The village centerpiece covering 3x3 tiles: a long great hall with a grey fieldstone ground floor, cream plaster and exposed brown timber walls, steep golden thatch, dark shingle ridge, a small open timber belfry holding a bell and gold pennant, rear stone chimney, and one broad porch-covered double plank entrance with two iron straps, shuttered windows and a few small ground props strictly inside the 3x3 diamond. Views 1 and 4 show the entrance; views 2 and 3 show the rear. No detail crosses the ground boundary.');
 addSlot('house_1', 'Peasant hut (level 1)', 'Buildings (1 tile)', 1, 4, 'object', 'A small one-room cottage of cream wattle-and-daub with dark exposed timber beams, a deep straw-thatch roof in warm gold-brown with a ragged eave, a low plank door, one small shuttered window and a squat stone chimney. Modest and a bit crooked.');
 for (let i = 2; i <= 8; i++) addSlot('house_1_v' + i, 'Peasant hut variation ' + i, 'Buildings (1 tile)', 1, 4, 'object', 'A full-footprint early-medieval Level 1 peasant hut with varied thatch and timber details.');
 addSlot('house_2', 'Cottage (level 2)', 'Buildings (1 tile)', 1, 4, 'object', 'The same footprint as the hut but taller and tidier: fieldstone lower walls, cream plaster and timber framing above, a red clay-tile roof, a stone chimney, a glazed window and a small flower box. A well-kept home.');
@@ -573,7 +581,7 @@ addSlot('tree_2', 'Pine tree', 'Nature', 1, 1, 'object', 'A conifer: layered tri
 for (let i = 0; i < 2; i++) addSlot('rock_' + i, 'Boulders ' + (i + 1), 'Nature', 1, 1, 'object', 'A cluster of two or three rounded grey fieldstones, lit from the top-left, with a few moss specks. Less than one tile wide.');
 for (let i = 0; i < 2; i++) addSlot('ore_' + i, 'Iron ore ' + (i + 1), 'Nature', 1, 1, 'object', 'An outcrop of dark slate-grey rock with rusty orange and pale blue-silver mineral veins. Less than one tile wide.');
 
-const slotDims = s => s.size === 2 ? [64, 88] : [32, 48];
+const slotDims = s => s.size === 3 ? [96, 128] : s.size === 2 ? [64, 88] : [32, 48];
 const viewKeys = s => s.views === 4 ? [1, 2, 3, 4] : ['all'];
 function finalSize(s) { const d = slotDims(s); return d[0] + ' x ' + d[1] + ' px'; }
 function footprintText(s) { return s.type === 'ground' ? 'The image is exactly one ground tile: a flat diamond twice as wide as tall, filling the whole image.' : (s.size === 2 ? 'The footprint is a 2x2 block of ground tiles, so the base of the object is a diamond four times the area of a single tile (twice as wide as tall). The object sits with the bottom corner of that diamond at the bottom of the image.' : 'The footprint is a single ground tile (a diamond twice as wide as tall). The object sits with the bottom corner of that diamond at the bottom of the image.'); }
@@ -713,7 +721,7 @@ function labRefresh() {
   const cells = el('div', 'lab-cells');
   for (const vk of viewKeys(s)) {
     const cell = el('div', 'lab-cell'); cell.appendChild(el('div', 'lab-cl', s.views === 4 ? VIEW_LABEL[vk - 1] : 'Texture'));
-    const [W, H] = slotDims(s), sc = s.size === 2 ? 3 : 5, cvs = el('canvas', 'lab-prev'); cvs.width = W * sc; cvs.height = H * sc;
+    const [W, H] = slotDims(s), sc = s.size === 3 ? 2 : s.size === 2 ? 3 : 5, cvs = el('canvas', 'lab-prev'); cvs.width = W * sc; cvs.height = H * sc;
     const g = cvs.getContext('2d'); g.imageSmoothingEnabled = false;
     const o = OVR[s.name] && OVR[s.name][vk];
     if (o) g.drawImage(o, 0, 0, W * sc, H * sc);
@@ -1030,6 +1038,8 @@ function spriteFor(t, b, mask, rot) {
   if (t === 'road') return SPR.road[mask || 0];
   // Crowded legacy 1-tile barracks retain their old-size placeholder until rebuilt.
   if (t === 'barracks' && b && (b.sz || 1) === 1) return SPR.barracks;
+  // Existing saves may retain the original one-tile hall; never render 3x3 art on it.
+  if (t === 'hall' && b && (b.sz || 1) === 1) return SPR.hall;
   const n = slotName(t, b), r = ((rot === undefined ? ROT : rot) + ((b && b.face) || 0)) % 4;
   // Choose one of eight stable full-tile huts by world coordinates.
   if (n === 'house_1' && b && Number.isFinite(b.x) && Number.isFinite(b.y)) {
@@ -1296,11 +1306,14 @@ function draw() {
       if (b) {
         let mask = 0;
         if (b.t === 'road') for (let i = 0; i < 4; i++) { const [nx, ny] = nbW(x, y, i); if (inb(nx, ny) && S.grid[ny][nx]) mask |= NBD[i][2]; }
-        if (b.sz === 2) {
-          let front = true;
-          for (const [fx, fy] of [[b.x, b.y], [b.x + 1, b.y], [b.x, b.y + 1], [b.x + 1, b.y + 1]]) { const [a, c] = toView(fx, fy); if (a + c > vx + vy) front = false; }
-          if (front) {
-            ctx.drawImage(spriteFor(b.t, b, 0), sx - 32, sy + 16 - 88);
+        if ((b.sz || 1) > 1) {
+          // One sprite per structure, drawn once at the foremost occupied tile.
+          // For a 3x3 Town Hall that is 96x128, for 2x2 buildings 64x88.
+          const footprint = tilesOf(b).map(([tx, ty]) => toView(tx, ty));
+          const depth = vx + vy;
+          if (footprint.every(([a, c]) => a + c <= depth)) {
+            const dim = b.sz === 3 ? [96, 128] : [64, 88];
+            ctx.drawImage(spriteFor(b.t, b, 0), sx - dim[0] / 2, sy + 16 - dim[1]);
             if (!b.served) ctx.drawImage(SPR.warn, sx - 16, sy - 40);
           }
         } else {
@@ -1341,11 +1354,12 @@ function draw() {
     else {
       const c = canPlace(S, tool, hover.x, hover.y);
       ctx.globalAlpha = 0.7;
-      if (tool === 'barracks') {
-        const footprint = { x: hover.x, y: hover.y, sz: 2, t: tool, lvl: 1 };
+      if (tool === 'barracks' || tool === 'hall') {
+        const footprint = { x: hover.x, y: hover.y, sz: tool === 'hall' ? 3 : 2, t: tool, lvl: 1 };
         const views = tilesOf(footprint).map(([x, y]) => tpos(x, y));
         const corner = views.reduce((best, pt) => (!best || pt[1] > best[1]) ? pt : best, null);
-        ctx.drawImage(spriteFor(tool, footprint, 0), corner[0] - 32, corner[1] + 16 - 88);
+        const dims = footprint.sz === 3 ? [96, 128] : [64, 88];
+        ctx.drawImage(spriteFor(tool, footprint, 0), corner[0] - dims[0] / 2, corner[1] + 16 - dims[1]);
         ctx.globalAlpha = 1;
         for (const [x, y] of tilesOf(footprint)) if (inb(x, y)) mark({ x, y }, c.ok ? SPR.hlGood : SPR.hlBad);
       } else {

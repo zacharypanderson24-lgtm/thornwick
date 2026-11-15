@@ -9,7 +9,7 @@ const VIEW_TXT = [
 const SAME_TXT = 'Keep footprint, size, colours and proportions identical in every view; only the rotation changes.';
 const SLOTS = [], SLOT = {};
 function addSlot(name, label, group, size, views, type, desc) { const s = { name, label, group, size, views, type, desc }; SLOTS.push(s); SLOT[name] = s; }
-addSlot('hall', 'Town Hall', 'Buildings (1 tile)', 1, 4, 'object', 'The first building of the settlement: a long timber-framed hall on a low fieldstone foundation, steep dark-brown shingle roof, a stone chimney, a plank double door with iron straps, two small shuttered windows, and a small gold pennant on a pole at the roof peak. About two storeys tall. Sturdy and a little grander than any house.');
+addSlot('hall', 'Town Hall', 'Buildings (3x3 tiles)', 3, 4, 'object', 'The village centerpiece covering 3x3 tiles: a long great hall with a grey fieldstone ground floor, cream plaster and exposed brown timber walls, steep golden thatch, dark shingle ridge, a small open timber belfry holding a bell and gold pennant, rear stone chimney, and one broad porch-covered double plank entrance with two iron straps, shuttered windows and a few small ground props strictly inside the 3x3 diamond. Views 1 and 4 show the entrance; views 2 and 3 show the rear. No detail crosses the ground boundary.');
 addSlot('house_1', 'Peasant hut (level 1)', 'Buildings (1 tile)', 1, 4, 'object', 'A small one-room cottage of cream wattle-and-daub with dark exposed timber beams, a deep straw-thatch roof in warm gold-brown with a ragged eave, a low plank door, one small shuttered window and a squat stone chimney. Modest and a bit crooked.');
 for (let i = 2; i <= 8; i++) addSlot('house_1_v' + i, 'Peasant hut variation ' + i, 'Buildings (1 tile)', 1, 4, 'object', 'A full-footprint early-medieval Level 1 peasant hut with varied thatch and timber details.');
 addSlot('house_2', 'Cottage (level 2)', 'Buildings (1 tile)', 1, 4, 'object', 'The same footprint as the hut but taller and tidier: fieldstone lower walls, cream plaster and timber framing above, a red clay-tile roof, a stone chimney, a glazed window and a small flower box. A well-kept home.');
@@ -31,7 +31,7 @@ addSlot('tree_2', 'Pine tree', 'Nature', 1, 1, 'object', 'A conifer: layered tri
 for (let i = 0; i < 2; i++) addSlot('rock_' + i, 'Boulders ' + (i + 1), 'Nature', 1, 1, 'object', 'A cluster of two or three rounded grey fieldstones, lit from the top-left, with a few moss specks. Less than one tile wide.');
 for (let i = 0; i < 2; i++) addSlot('ore_' + i, 'Iron ore ' + (i + 1), 'Nature', 1, 1, 'object', 'An outcrop of dark slate-grey rock with rusty orange and pale blue-silver mineral veins. Less than one tile wide.');
 
-const slotDims = s => s.size === 2 ? [64, 88] : [32, 48];
+const slotDims = s => s.size === 3 ? [96, 128] : s.size === 2 ? [64, 88] : [32, 48];
 const viewKeys = s => s.views === 4 ? [1, 2, 3, 4] : ['all'];
 function finalSize(s) { const d = slotDims(s); return d[0] + ' x ' + d[1] + ' px'; }
 function footprintText(s) { return s.type === 'ground' ? 'The image is exactly one ground tile: a flat diamond twice as wide as tall, filling the whole image.' : (s.size === 2 ? 'The footprint is a 2x2 block of ground tiles, so the base of the object is a diamond four times the area of a single tile (twice as wide as tall). The object sits with the bottom corner of that diamond at the bottom of the image.' : 'The footprint is a single ground tile (a diamond twice as wide as tall). The object sits with the bottom corner of that diamond at the bottom of the image.'); }
@@ -171,7 +171,7 @@ function labRefresh() {
   const cells = el('div', 'lab-cells');
   for (const vk of viewKeys(s)) {
     const cell = el('div', 'lab-cell'); cell.appendChild(el('div', 'lab-cl', s.views === 4 ? VIEW_LABEL[vk - 1] : 'Texture'));
-    const [W, H] = slotDims(s), sc = s.size === 2 ? 3 : 5, cvs = el('canvas', 'lab-prev'); cvs.width = W * sc; cvs.height = H * sc;
+    const [W, H] = slotDims(s), sc = s.size === 3 ? 2 : s.size === 2 ? 3 : 5, cvs = el('canvas', 'lab-prev'); cvs.width = W * sc; cvs.height = H * sc;
     const g = cvs.getContext('2d'); g.imageSmoothingEnabled = false;
     const o = OVR[s.name] && OVR[s.name][vk];
     if (o) g.drawImage(o, 0, 0, W * sc, H * sc);

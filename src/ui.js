@@ -279,6 +279,8 @@ function spriteFor(t, b, mask, rot) {
   if (t === 'road') return SPR.road[mask || 0];
   // Crowded legacy 1-tile barracks retain their old-size placeholder until rebuilt.
   if (t === 'barracks' && b && (b.sz || 1) === 1) return SPR.barracks;
+  // Existing saves may retain the original one-tile hall; never render 3x3 art on it.
+  if (t === 'hall' && b && (b.sz || 1) === 1) return SPR.hall;
   const n = slotName(t, b), r = ((rot === undefined ? ROT : rot) + ((b && b.face) || 0)) % 4;
   // Choose one of eight stable full-tile huts by world coordinates.
   if (n === 'house_1' && b && Number.isFinite(b.x) && Number.isFinite(b.y)) {
@@ -545,11 +547,14 @@ function draw() {
       if (b) {
         let mask = 0;
         if (b.t === 'road') for (let i = 0; i < 4; i++) { const [nx, ny] = nbW(x, y, i); if (inb(nx, ny) && S.grid[ny][nx]) mask |= NBD[i][2]; }
-        if (b.sz === 2) {
-          let front = true;
-          for (const [fx, fy] of [[b.x, b.y], [b.x + 1, b.y], [b.x, b.y + 1], [b.x + 1, b.y + 1]]) { const [a, c] = toView(fx, fy); if (a + c > vx + vy) front = false; }
-          if (front) {
-            ctx.drawImage(spriteFor(b.t, b, 0), sx - 32, sy + 16 - 88);
+        if ((b.sz || 1) > 1) {
+          // One sprite per structure, drawn once at the foremost occupied tile.
+          // For a 3x3 Town Hall that is 96x128, for 2x2 buildings 64x88.
+          const footprint = tilesOf(b).map(([tx, ty]) => toView(tx, ty));
+          const depth = vx + vy;
+          if (footprint.every(([a, c]) => a + c <= depth)) {
+            const dim = b.sz === 3 ? [96, 128] : [64, 88];
+            ctx.drawImage(spriteFor(b.t, b, 0), sx - dim[0] / 2, sy + 16 - dim[1]);
             if (!b.served) ctx.drawImage(SPR.warn, sx - 16, sy - 40);
           }
         } else {
@@ -590,11 +595,12 @@ function draw() {
     else {
       const c = canPlace(S, tool, hover.x, hover.y);
       ctx.globalAlpha = 0.7;
-      if (tool === 'barracks') {
-        const footprint = { x: hover.x, y: hover.y, sz: 2, t: tool, lvl: 1 };
+      if (tool === 'barracks' || tool === 'hall') {
+        const footprint = { x: hover.x, y: hover.y, sz: tool === 'hall' ? 3 : 2, t: tool, lvl: 1 };
         const views = tilesOf(footprint).map(([x, y]) => tpos(x, y));
         const corner = views.reduce((best, pt) => (!best || pt[1] > best[1]) ? pt : best, null);
-        ctx.drawImage(spriteFor(tool, footprint, 0), corner[0] - 32, corner[1] + 16 - 88);
+        const dims = footprint.sz === 3 ? [96, 128] : [64, 88];
+        ctx.drawImage(spriteFor(tool, footprint, 0), corner[0] - dims[0] / 2, corner[1] + 16 - dims[1]);
         ctx.globalAlpha = 1;
         for (const [x, y] of tilesOf(footprint)) if (inb(x, y)) mark({ x, y }, c.ok ? SPR.hlGood : SPR.hlBad);
       } else {

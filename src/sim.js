@@ -62,10 +62,12 @@ function createWorld(seed) {
     else if (f > 0.56 && hash2(x, y, seed + 5) > 0.22) S.deco[y][x] = 'tree';
     else if (r > 0.7 && hash2(x, y, seed + 6) > 0.35) S.deco[y][x] = 'rock';
   }
-  addBld(S, 'hall', 20, 20);
-  for (let y = 21; y <= 25; y++) addBld(S, 'road', 20, y);
-  addBld(S, 'house', 19, 22).zoned = true; addBld(S, 'house', 21, 22).zoned = true; addBld(S, 'farm', 19, 24).zoned = true;
-  S.zone[22][19] = 'res'; S.zone[22][21] = 'res'; S.zone[24][19] = 'farm';
+  // The 3x3 Town Hall is anchored at (19,19), centered on the original (20,20).
+  // All nine cells are reserved before roads and zones are placed.
+  addBld(S, 'hall', 19, 19, 3);
+  for (let y = 22; y <= 26; y++) addBld(S, 'road', 20, y);
+  addBld(S, 'house', 19, 23).zoned = true; addBld(S, 'house', 21, 23).zoned = true; addBld(S, 'farm', 19, 25).zoned = true;
+  S.zone[23][19] = 'res'; S.zone[23][21] = 'res'; S.zone[25][19] = 'farm';
   recalc(S); computeDemand(S);
   return S;
 }
@@ -88,7 +90,7 @@ function loadWorld(str) {
   recalc(S); computeDemand(S); return S;
 }
 function addBld(S, t, x, y, sz) {
-  const b = { t, x, y, sz: sz || (t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
+  const b = { t, x, y, sz: sz || (t === 'hall' ? 3 : t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
   S.blds.push(b);
   for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
@@ -210,7 +212,13 @@ function servedAt(S, b, conn) {
 function recalc(S) {
   const conn = new Uint8Array(N * N), q = [], h = S.hall;
   const isRoad = (x, y) => inb(x, y) && S.grid[y][x] && S.grid[y][x].t === 'road';
-  for (const [dx, dy] of NB) { const x = h.x + dx, y = h.y + dy; if (isRoad(x, y) && !conn[y * N + x]) { conn[y * N + x] = 1; q.push([x, y]); } }
+  // A road can connect to any external edge of the multi-tile Town Hall.
+  for (const [hx, hy] of tilesOf(h)) for (const [dx, dy] of NB) {
+    const x = hx + dx, y = hy + dy;
+    if (inb(x, y) && S.grid[y][x] !== h && isRoad(x, y) && !conn[y * N + x]) {
+      conn[y * N + x] = 1; q.push([x, y]);
+    }
+  }
   while (q.length) {
     const [cx, cy] = q.pop();
     for (const [dx, dy] of NB) { const x = cx + dx, y = cy + dy; if (isRoad(x, y) && !conn[y * N + x]) { conn[y * N + x] = 1; q.push([x, y]); } }
