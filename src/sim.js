@@ -87,10 +87,27 @@ function loadWorld(str) {
   }
   for (const b of S.blds) { for (const [i, j] of tilesOf(b)) S.grid[j][i] = b; if (b.t === 'hall') S.hall = b; }
   if (!S.hall) return null;
+  for (const b of S.blds) if (b.t === 'house' && !b.var) b.var = pickHutVar(S, b.x, b.y);
   recalc(S); computeDemand(S); return S;
+}
+// Hut look: 1..8. Sticky per building. Never the same as any of the 8 surrounding houses.
+const HUT_VARIANTS = 8;
+function pickHutVar(S, x, y) {
+  const used = new Set();
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    if (!dx && !dy) continue;
+    const nx = x + dx, ny = y + dy;
+    if (!inb(nx, ny)) continue;
+    const o = S.grid[ny][nx];
+    if (o && o.t === 'house' && o.var) used.add(o.var);
+  }
+  const start = Math.floor(hash2(x, y, 173) * HUT_VARIANTS);
+  for (let i = 0; i < HUT_VARIANTS; i++) { const v = 1 + (start + i) % HUT_VARIANTS; if (!used.has(v)) return v; }
+  return 1 + start;
 }
 function addBld(S, t, x, y, sz) {
   const b = { t, x, y, sz: sz || (t === 'hall' ? 3 : t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
+  if (t === 'house') b.var = pickHutVar(S, x, y);
   S.blds.push(b);
   for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;

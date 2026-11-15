@@ -284,7 +284,7 @@ function spriteFor(t, b, mask, rot) {
   const n = slotName(t, b), r = ((rot === undefined ? ROT : rot) + ((b && b.face) || 0)) % 4;
   // Choose one of eight stable full-tile huts by world coordinates.
   if (n === 'house_1' && b && Number.isFinite(b.x) && Number.isFinite(b.y)) {
-    const variant = Math.min(8, 1 + Math.floor(hash2(b.x, b.y, 173) * 8));
+    const variant = b.var || Math.min(8, 1 + Math.floor(hash2(b.x, b.y, 173) * 8));
     if (variant > 1) {
       const alternate = ovrSprite('house_1_v' + variant, r);
       if (alternate) return alternate;
