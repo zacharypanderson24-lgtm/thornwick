@@ -61,3 +61,15 @@ A panel (button next to Resources / Banner) showing how many citizens work in ea
 - **Click a row** to highlight the buildings that employ that trade on the map and list which are understaffed.
 - **Controls (later):** priority sliders (more hands to timber than quarry), and governors can set quotas for their province.
 - **Sim:** each job-giving building has a `trade` tag and a worker count. The panel is just a sum over buildings, so it is cheap and testable in node.
+
+## 8. Workers set the pace
+Output speed of every industry comes from how many workers it has, not from the building existing.
+- Each building has a `workers` count (0..capacity). Output per day = workers x base rate x tool/tech multipliers. Half staffed = half speed; unstaffed = zero.
+- **Felling:** each logger fells one tree-tile's worth every N days; more loggers = faster clearing and faster land gain.
+- **Quarrying:** workers strip stone from a mountain tile; more workers = faster, and the mountain drops stage sooner.
+- **Mining:** workers dig down; more workers = faster digging and ore output, but cave-in risk rises with depth and crowding unless supports (timber) are provided.
+- **Processing:** sawmill and masonry output is capped by workers AND by input supply (logs, stone); idle workers show as grey in the Workforce panel.
+- **Construction:** builders set the pace of placing buildings, so a big project needs a labour pool.
+- **Soldiers:** more soldiers means a larger army but less labour, which is the central guns-vs-butter choice.
+- **Allocation:** citizens fill jobs by priority (default: food first). The player can move priority sliders in the Workforce panel; unfilled jobs show red. Growth in population (housing + food) is the long-term way to raise total output.
+- **Upgrades:** tech and better buildings raise per-worker output or building capacity, so a small skilled town can out-produce a big unskilled one.
