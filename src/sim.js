@@ -74,12 +74,21 @@ function loadWorld(str) {
   const o = JSON.parse(str); if (!o || !o.blds || !o.deco) return null;
   const S = Object.assign({}, o); S.grid = []; S.hall = null; S.d = null;
   for (let y = 0; y < N; y++) S.grid.push(Array(N).fill(null));
+  // Upgrade legacy one-tile barracks only when their 2x2 footprint is clear.
+  // Crowded old saves keep the original 1x1 building instead of overwriting neighbours.
+  for (const b of S.blds) if (b.t === 'barracks' && (b.sz || 1) === 1) {
+    const cells = [[b.x, b.y], [b.x + 1, b.y], [b.x, b.y + 1], [b.x + 1, b.y + 1]];
+    const clear = cells.every(([x, y]) => inb(x, y) &&
+      !S.blds.some(other => other !== b && tilesOf(other).some(([i, j]) => i === x && j === y)) &&
+      S.deco[y][x] !== 'rock' && S.deco[y][x] !== 'ore');
+    if (clear) { b.sz = 2; for (const [x, y] of cells) S.deco[y][x] = null; }
+  }
   for (const b of S.blds) { for (const [i, j] of tilesOf(b)) S.grid[j][i] = b; if (b.t === 'hall') S.hall = b; }
   if (!S.hall) return null;
   recalc(S); computeDemand(S); return S;
 }
 function addBld(S, t, x, y, sz) {
-  const b = { t, x, y, sz: sz || 1, prog: 0, served: false, lvl: 1 };
+  const b = { t, x, y, sz: sz || (t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
   S.blds.push(b);
   for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
@@ -113,10 +122,14 @@ function canAfford(S, type) {
   return { ok: true };
 }
 function canPlace(S, type, x, y) {
-  if (!inb(x, y)) return { ok: false, reason: 'Outside the map' };
-  if (S.grid[y][x]) return { ok: false, reason: 'That tile is already built on' };
-  if (S.deco[y][x] === 'rock' || S.deco[y][x] === 'ore') return { ok: false, reason: 'Rock and ore block this tile. Zone it for mining to clear it' };
-  if (type === 'barracks' && !nextToRoad(S, { x, y, sz: 1, t: type })) return { ok: false, reason: 'Barracks must touch a road' };
+  const footprint = { x, y, sz: type === 'barracks' ? 2 : 1, t: type };
+  for (const [tx, ty] of tilesOf(footprint)) {
+    if (!inb(tx, ty)) return { ok: false, reason: 'Outside the map' };
+    if (S.grid[ty][tx]) return { ok: false, reason: 'That tile is already built on' };
+    if (S.deco[ty][tx] === 'rock' || S.deco[ty][tx] === 'ore')
+      return { ok: false, reason: 'Rock and ore block this tile. Zone it for mining to clear it' };
+  }
+  if (type === 'barracks' && !nextToRoad(S, footprint)) return { ok: false, reason: 'Barracks must touch a road' };
   return canAfford(S, type);
 }
 const FACE_DIRS = [[0, 1], [-1, 0], [0, -1], [1, 0]];

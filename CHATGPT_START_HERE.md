@@ -76,8 +76,8 @@ Needs four views.
 A round fieldstone well with blue water showing, two wooden posts holding a small gabled shingle roof, a wooden bucket on a rope and a crank handle.
 Needs four views.
 
-**Barracks** (file name: `barracks_1 to _4.png`)
-A squat fortified building of grey fieldstone with a flat crenellated top, four small corner turrets, a heavy arched wooden door, red banners on the walls, a central wooden watch post with a red flag, and a weapon rack beside the door.
+**Barracks (2x2 tiles)** (file name: `barracks_1 to _4.png`)
+A sturdy early-medieval village barracks with full 2x2 footprint, timber-plank walls and braces, a straw thatched gable roof, barred windows, one double wooden entrance and a modest crimson crossed-swords banner. View 1: entrance on lower-left-facing wall; views 2 and 3: entrance hidden; view 4: entrance on lower-right-facing wall. A single continuous structure; no oversized castle towers or objects extending beyond the footprint.
 Needs four views.
 
 **Market stall** (file name: `market_1 to _4.png`)

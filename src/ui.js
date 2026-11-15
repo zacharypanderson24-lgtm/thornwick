@@ -277,6 +277,8 @@ function buildSprites() {
 buildSprites();
 function spriteFor(t, b, mask, rot) {
   if (t === 'road') return SPR.road[mask || 0];
+  // Crowded legacy 1-tile barracks retain their old-size placeholder until rebuilt.
+  if (t === 'barracks' && b && (b.sz || 1) === 1) return SPR.barracks;
   const n = slotName(t, b), r = ((rot === undefined ? ROT : rot) + ((b && b.face) || 0)) % 4;
   // Choose one of eight stable full-tile huts by world coordinates.
   if (n === 'house_1' && b && Number.isFinite(b.x) && Number.isFinite(b.y)) {
@@ -344,6 +346,9 @@ function iconFor(id) {
     const k = ZONE[id];
     g.drawImage(SPR.grass[0], 0, -8); g.drawImage(ZSPR(k), 0, -8);
     g.drawImage({ res: SPR.house1, farm: SPR.farm, comm: SPR.market, wood: SPR.wood, mine: SPR.mine }[k], 0, -8);
+  } else if (id === 'barracks') {
+    const sprite = spriteFor(id, null, 0);
+    g.drawImage(sprite, 0, 0, sprite.width, sprite.height, 0, -3, 32, 44);
   } else {
     g.drawImage(spriteFor(id, null, 0), 0, -8);
   }
@@ -585,8 +590,17 @@ function draw() {
     else {
       const c = canPlace(S, tool, hover.x, hover.y);
       ctx.globalAlpha = 0.7;
-      if (!S.grid[hover.y][hover.x]) { const [px, py] = tpos(hover.x, hover.y); ctx.drawImage(spriteFor(tool, { lvl: 1 }, tool === 'road' ? 15 : 0), px - 16, py - 32); }
-      ctx.globalAlpha = 1; mark(hover, c.ok ? SPR.hlGood : SPR.hlBad);
+      if (tool === 'barracks') {
+        const footprint = { x: hover.x, y: hover.y, sz: 2, t: tool, lvl: 1 };
+        const views = tilesOf(footprint).map(([x, y]) => tpos(x, y));
+        const corner = views.reduce((best, pt) => (!best || pt[1] > best[1]) ? pt : best, null);
+        ctx.drawImage(spriteFor(tool, footprint, 0), corner[0] - 32, corner[1] + 16 - 88);
+        ctx.globalAlpha = 1;
+        for (const [x, y] of tilesOf(footprint)) if (inb(x, y)) mark({ x, y }, c.ok ? SPR.hlGood : SPR.hlBad);
+      } else {
+        if (!S.grid[hover.y][hover.x]) { const [px, py] = tpos(hover.x, hover.y); ctx.drawImage(spriteFor(tool, { lvl: 1 }, tool === 'road' ? 15 : 0), px - 16, py - 32); }
+        ctx.globalAlpha = 1; mark(hover, c.ok ? SPR.hlGood : SPR.hlBad);
+      }
     }
   }
 }

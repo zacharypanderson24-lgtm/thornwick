@@ -212,12 +212,21 @@ function loadWorld(str) {
   const o = JSON.parse(str); if (!o || !o.blds || !o.deco) return null;
   const S = Object.assign({}, o); S.grid = []; S.hall = null; S.d = null;
   for (let y = 0; y < N; y++) S.grid.push(Array(N).fill(null));
+  // Upgrade legacy one-tile barracks only when their 2x2 footprint is clear.
+  // Crowded old saves keep the original 1x1 building instead of overwriting neighbours.
+  for (const b of S.blds) if (b.t === 'barracks' && (b.sz || 1) === 1) {
+    const cells = [[b.x, b.y], [b.x + 1, b.y], [b.x, b.y + 1], [b.x + 1, b.y + 1]];
+    const clear = cells.every(([x, y]) => inb(x, y) &&
+      !S.blds.some(other => other !== b && tilesOf(other).some(([i, j]) => i === x && j === y)) &&
+      S.deco[y][x] !== 'rock' && S.deco[y][x] !== 'ore');
+    if (clear) { b.sz = 2; for (const [x, y] of cells) S.deco[y][x] = null; }
+  }
   for (const b of S.blds) { for (const [i, j] of tilesOf(b)) S.grid[j][i] = b; if (b.t === 'hall') S.hall = b; }
   if (!S.hall) return null;
   recalc(S); computeDemand(S); return S;
 }
 function addBld(S, t, x, y, sz) {
-  const b = { t, x, y, sz: sz || 1, prog: 0, served: false, lvl: 1 };
+  const b = { t, x, y, sz: sz || (t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
   S.blds.push(b);
   for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
@@ -251,10 +260,14 @@ function canAfford(S, type) {
   return { ok: true };
 }
 function canPlace(S, type, x, y) {
-  if (!inb(x, y)) return { ok: false, reason: 'Outside the map' };
-  if (S.grid[y][x]) return { ok: false, reason: 'That tile is already built on' };
-  if (S.deco[y][x] === 'rock' || S.deco[y][x] === 'ore') return { ok: false, reason: 'Rock and ore block this tile. Zone it for mining to clear it' };
-  if (type === 'barracks' && !nextToRoad(S, { x, y, sz: 1, t: type })) return { ok: false, reason: 'Barracks must touch a road' };
+  const footprint = { x, y, sz: type === 'barracks' ? 2 : 1, t: type };
+  for (const [tx, ty] of tilesOf(footprint)) {
+    if (!inb(tx, ty)) return { ok: false, reason: 'Outside the map' };
+    if (S.grid[ty][tx]) return { ok: false, reason: 'That tile is already built on' };
+    if (S.deco[ty][tx] === 'rock' || S.deco[ty][tx] === 'ore')
+      return { ok: false, reason: 'Rock and ore block this tile. Zone it for mining to clear it' };
+  }
+  if (type === 'barracks' && !nextToRoad(S, footprint)) return { ok: false, reason: 'Barracks must touch a road' };
   return canAfford(S, type);
 }
 const FACE_DIRS = [[0, 1], [-1, 0], [0, -1], [1, 0]];
@@ -547,7 +560,7 @@ addSlot('wood', 'Woodcutter lodge', 'Buildings (1 tile)', 1, 4, 'object', 'A sma
 addSlot('quarry', 'Quarry', 'Buildings (1 tile)', 1, 4, 'object', 'A shallow pit cut into pale grey rock, cut stone blocks stacked at the edge, a wooden hoist with rope, and a small hand cart. Light grey dust.');
 addSlot('mine', 'Iron mine', 'Buildings (1 tile)', 1, 4, 'object', 'A mound of dark grey rock with a timber-framed tunnel entrance (two posts and a lintel) with a black opening, a small wooden ore cart, and a pile of reddish-brown iron ore lumps with orange flecks.');
 addSlot('well', 'Well', 'Buildings (1 tile)', 1, 4, 'object', 'A round fieldstone well with blue water showing, two wooden posts holding a small gabled shingle roof, a wooden bucket on a rope and a crank handle.');
-addSlot('barracks', 'Barracks', 'Buildings (1 tile)', 1, 4, 'object', 'A squat fortified building of grey fieldstone with a flat crenellated top, four small corner turrets, a heavy arched wooden door, red banners on the walls, a central wooden watch post with a red flag, and a weapon rack beside the door.');
+addSlot('barracks', 'Barracks', 'Buildings (2x2 tiles)', 2, 4, 'object', 'An early-medieval village barracks covering a full 2x2 tile footprint: long heavy timber plank walls with cross-braces, a deep golden thatched gable roof, narrow barred windows, one double plank door and a modest crimson crossed-swords pennant above the entrance. View 1 puts the single door on the left-facing visible wall; views 2 and 3 hide it; view 4 shows it on the right-facing visible wall. No props or walls extend outside the 2x2 footprint.');
 addSlot('market', 'Market stall', 'Buildings (1 tile)', 1, 4, 'object', 'A wooden stall on four posts with a striped red-and-cream cloth awning, a counter holding crates of apples, cabbages and bread, and a hanging scale.');
 addSlot('manor_1', 'Large house (level 1)', 'Buildings (2x2 tiles)', 2, 4, 'object', 'A big family house filling a 2x2 tile footprint: a long cream-plaster hall with dark timbers, a deep straw-thatch roof, a lower side wing, a small porch with the main door, one stone chimney and four shuttered windows.');
 addSlot('manor_2', 'Large house (level 2)', 'Buildings (2x2 tiles)', 2, 4, 'object', 'The same footprint, grander: stone ground floor, timber-framed upper floor, red clay-tile roof, two stone chimneys, an arched door with a small porch, glazed windows.');
@@ -1015,6 +1028,8 @@ function buildSprites() {
 buildSprites();
 function spriteFor(t, b, mask, rot) {
   if (t === 'road') return SPR.road[mask || 0];
+  // Crowded legacy 1-tile barracks retain their old-size placeholder until rebuilt.
+  if (t === 'barracks' && b && (b.sz || 1) === 1) return SPR.barracks;
   const n = slotName(t, b), r = ((rot === undefined ? ROT : rot) + ((b && b.face) || 0)) % 4;
   // Choose one of eight stable full-tile huts by world coordinates.
   if (n === 'house_1' && b && Number.isFinite(b.x) && Number.isFinite(b.y)) {
@@ -1082,6 +1097,9 @@ function iconFor(id) {
     const k = ZONE[id];
     g.drawImage(SPR.grass[0], 0, -8); g.drawImage(ZSPR(k), 0, -8);
     g.drawImage({ res: SPR.house1, farm: SPR.farm, comm: SPR.market, wood: SPR.wood, mine: SPR.mine }[k], 0, -8);
+  } else if (id === 'barracks') {
+    const sprite = spriteFor(id, null, 0);
+    g.drawImage(sprite, 0, 0, sprite.width, sprite.height, 0, -3, 32, 44);
   } else {
     g.drawImage(spriteFor(id, null, 0), 0, -8);
   }
@@ -1323,8 +1341,17 @@ function draw() {
     else {
       const c = canPlace(S, tool, hover.x, hover.y);
       ctx.globalAlpha = 0.7;
-      if (!S.grid[hover.y][hover.x]) { const [px, py] = tpos(hover.x, hover.y); ctx.drawImage(spriteFor(tool, { lvl: 1 }, tool === 'road' ? 15 : 0), px - 16, py - 32); }
-      ctx.globalAlpha = 1; mark(hover, c.ok ? SPR.hlGood : SPR.hlBad);
+      if (tool === 'barracks') {
+        const footprint = { x: hover.x, y: hover.y, sz: 2, t: tool, lvl: 1 };
+        const views = tilesOf(footprint).map(([x, y]) => tpos(x, y));
+        const corner = views.reduce((best, pt) => (!best || pt[1] > best[1]) ? pt : best, null);
+        ctx.drawImage(spriteFor(tool, footprint, 0), corner[0] - 32, corner[1] + 16 - 88);
+        ctx.globalAlpha = 1;
+        for (const [x, y] of tilesOf(footprint)) if (inb(x, y)) mark({ x, y }, c.ok ? SPR.hlGood : SPR.hlBad);
+      } else {
+        if (!S.grid[hover.y][hover.x]) { const [px, py] = tpos(hover.x, hover.y); ctx.drawImage(spriteFor(tool, { lvl: 1 }, tool === 'road' ? 15 : 0), px - 16, py - 32); }
+        ctx.globalAlpha = 1; mark(hover, c.ok ? SPR.hlGood : SPR.hlBad);
+      }
     }
   }
 }
