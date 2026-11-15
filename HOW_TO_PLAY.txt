@@ -1,0 +1,6 @@
+Thornwick prototype
+Open index.html in Chrome, Edge or Firefox. No install, no internet needed.
+Controls: drag to pan, scroll to zoom, Q/E rotate, V resource view, 1-0 tools, P pause.
+Saving: the game autosaves in your browser. Textures you load in the lab stay in your browser too.
+To share it: upload this folder to itch.io (zip it, choose "HTML"), GitHub Pages, or Netlify Drop.
+Note: when opened from a file, some browsers do not load the assets folder; the lab works either way. Use a host or "python3 -m http.server" if assets do not appear.
