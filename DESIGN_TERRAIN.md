@@ -52,3 +52,12 @@ Mountains shrink, quarry pits appear, spoil heaps pile up, forests thin and beco
 4. Underground grid + prospecting + mines + underground view.
 5. Province generation from seeds.
 Terrain tile art (grass variants, forest density, stumps, hill, mountain stages, rubble, pit, spoil heap, river) is ordered right after step 1 so ChatGPT can start on it; tiles are 32x16 ground diamonds or taller for mountains, same palette as buildings.
+
+## 7. Workforce panel (population by trade)
+A panel (button next to Resources / Banner) showing how many citizens work in each industry.
+- **Rows:** farming, fishing, timber (felling), woodworking (sawmill, carpenter), quarrying, masonry, mining, smithing, trade/market, soldiers, builders/labour, unemployed, children/elderly (not working).
+- **Each row:** workers now / jobs available, plus a bar. Red when jobs are empty (understaffed), grey when workers are idle.
+- **Totals:** employed, unemployed, soldiers, housing capacity, total population.
+- **Click a row** to highlight the buildings that employ that trade on the map and list which are understaffed.
+- **Controls (later):** priority sliders (more hands to timber than quarry), and governors can set quotas for their province.
+- **Sim:** each job-giving building has a `trade` tag and a worker count. The panel is just a sum over buildings, so it is cheap and testable in node.
