@@ -116,7 +116,19 @@ function canPlace(S, type, x, y) {
   if (!inb(x, y)) return { ok: false, reason: 'Outside the map' };
   if (S.grid[y][x]) return { ok: false, reason: 'That tile is already built on' };
   if (S.deco[y][x] === 'rock' || S.deco[y][x] === 'ore') return { ok: false, reason: 'Rock and ore block this tile. Zone it for mining to clear it' };
+  if (type === 'barracks' && !nextToRoad(S, { x, y, sz: 1, t: type })) return { ok: false, reason: 'Barracks must touch a road' };
   return canAfford(S, type);
+}
+const FACE_DIRS = [[0, 1], [-1, 0], [0, -1], [1, 0]];
+function roadOrHall(S, x, y, self) { if (!inb(x, y)) return false; const g = S.grid[y][x]; return !!g && g !== self && (g.t === 'road' || g === S.hall); }
+function nextToRoad(S, b) { return tilesOf(b).some(([x, y]) => NB.some(([dx, dy]) => roadOrHall(S, x + dx, y + dy, b))); }
+// Which way the door faces: 0 = +y, 1 = -x, 2 = -y, 3 = +x. Keeps its side while a road is still there.
+function faceOf(S, b) {
+  const T = tilesOf(b);
+  const has = f => T.some(([x, y]) => roadOrHall(S, x + FACE_DIRS[f][0], y + FACE_DIRS[f][1], b));
+  if (b.face !== undefined && has(b.face)) return b.face;
+  for (let f = 0; f < 4; f++) if (has(f)) return f;
+  return b.face || 0;
 }
 function place(S, type, x, y) {
   const c = canPlace(S, type, x, y);
@@ -193,8 +205,9 @@ function recalc(S) {
   const wells = S.blds.filter(b => b.t === 'well');
   let civ = HALL_CAP, bunks = 0, jobs = 0, markets = 0;
   for (const b of S.blds) {
-    if (b.t === 'hall') { b.served = true; continue; }
+    if (b.t === 'hall') { b.served = true; b.face = faceOf(S, b); continue; }
     if (b.t === 'road') { b.served = !!conn[b.y * N + b.x]; continue; }
+    b.face = faceOf(S, b);
     b.served = servedAt(S, b, conn);
     if (b.t === 'house') {
       b.lvl = (b.served && wells.some(w => cheb(w, b) <= WELL_R)) ? 2 : 1;
@@ -301,8 +314,8 @@ function develop(S) {
     mine: 'No demand yet. Mines and quarries grow when stone or ore run low.'
   };
   const nosite = {
-    res: 'Needs empty zone tiles within 2 tiles of a road that leads to the Town Hall.',
-    farm: 'Needs empty fertile zone tiles within 2 tiles of a road that leads to the Town Hall.',
+    res: 'Needs empty zone tiles right beside a road that leads to the Town Hall.',
+    farm: 'Needs empty fertile zone tiles right beside a road that leads to the Town Hall.',
     comm: 'Needs a road-linked commerce lot near homes that lack a market.',
     wood: 'Needs a road-linked lumber tile with 3+ trees in range, and space from other woodcutters.',
     mine: 'Needs a road-linked mining tile with 2+ rock or ore tiles in range.'

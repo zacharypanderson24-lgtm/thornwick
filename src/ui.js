@@ -277,7 +277,7 @@ function buildSprites() {
 buildSprites();
 function spriteFor(t, b, mask, rot) {
   if (t === 'road') return SPR.road[mask || 0];
-  const n = slotName(t, b), r = rot === undefined ? ROT : rot;
+  const n = slotName(t, b), r = ((rot === undefined ? ROT : rot) + ((b && b.face) || 0)) % 4;
   // Choose one of eight stable full-tile huts by world coordinates.
   if (n === 'house_1' && b && Number.isFinite(b.x) && Number.isFinite(b.y)) {
     const variant = Math.min(8, 1 + Math.floor(hash2(b.x, b.y, 173) * 8));
@@ -599,7 +599,7 @@ const DEM_LABELS = { res: 'Homes', farm: 'Farms', comm: 'Trade', wood: 'Lumber',
 function updateHint() {
   let t = '';
   if (tool === 'road') t = roadAnchor ? 'Click where the road ends. Shift bends it the other way. Esc cancels.' : 'Click where the road starts, then click where it ends. You can start or end on an existing road.';
-  else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings grow within two tiles of a road.';
+  else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings only grow on zone tiles that touch a road, and their doors face it.';
   const el = $('hint'); if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
 }
 function updateHUD() {
