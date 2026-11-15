@@ -133,3 +133,8 @@ For reference only: huts 32 to 36 px, barracks about 54, Town Hall about 84 to 9
 ## 7. Check it before you commit
 
 Ask Claude to run the overlay check on new files. It draws the diamond over each view and measures the width, height and bottom corner, so problems show up before they are in the game.
+
+
+## Automatic check
+
+Before pushing new textures, run `python3 tools/check_textures.py` from the repo root. It fails on: wrong width, anything touching the left/right/bottom edge (cut off), a base more than 2 px off the footprint diamond, pink fringe; and warns on white speckle in the stone base and views of different width. Fix every FAIL before the art goes in.
