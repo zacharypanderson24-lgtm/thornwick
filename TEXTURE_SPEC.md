@@ -2,6 +2,8 @@
 
 The exact numbers for making textures with ChatGPT (or anything else). Game sizes are tiny; ChatGPT draws big and the game shrinks the picture for you, so the numbers below tell you what to ask for and what the game will turn it into.
 
+> Before making a building, read `BUILDING_TILE_GUIDE.md` and attach a guide from `templates/`.
+
 ## 1. The grid
 
 - The map is isometric 2:1. One ground tile is a **diamond 32 pixels wide and 16 pixels tall** (game pixels).
