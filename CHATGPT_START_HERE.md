@@ -10,7 +10,7 @@ When I name an asset and a view (for example "hut, view 1" or "Town Hall, all fo
 
 Isometric pixel art for a medieval city-builder game in the spirit of TheoTown. True 2:1 isometric: a ground tile is a diamond exactly twice as wide as it is tall. Hard pixel edges, no anti-aliasing, no gradients, no blur, no outline thicker than 1 pixel, about 24 colours at most. Warm, earthy early-medieval palette: weathered timber, straw thatch, packed dirt, grey fieldstone, muted greens. Light comes from the top-left: left-facing walls are mid-tone, right-facing walls are darker, roofs are lightest on their left slope. No cast shadow on the ground and nothing drawn on the ground except the object itself. One object per image, centred, completely visible, viewed from a fixed camera about 30 degrees above the horizon. Background: one flat solid pure magenta (#FF00FF) so it can be removed.
 
-- Square image, as large as you can make it. Chunky, clearly visible pixels (about 4 to 8 real pixels per game pixel).
+- Image size: 1024 x 1536 portrait for one-tile and two-by-two buildings, trees, rocks and ore; 1536 x 1024 landscape for ground tiles, with the diamond filling the whole image. (Full numbers are in TEXTURE_SPEC.md.) Chunky, clearly visible pixels (about 4 to 8 real pixels per game pixel).
 - Keep style, palette, proportions and lighting identical across every image in this chat. If I upload a reference image, match it exactly.
 - If I say "redo", change only what I name and keep everything else the same.
 
