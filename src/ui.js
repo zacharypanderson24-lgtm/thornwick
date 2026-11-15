@@ -98,6 +98,24 @@ function buildSprites() {
     blob(g, 14 + k * 2, 37, 4, '#8a8d98'); blob(g, 19 - k * 2, 38, 3, '#767985'); blob(g, 13 + k * 2, 35, 2, '#b4b8c4'); blob(g, 20, 36, 2, '#9ea2ae');
     SPR.rock.push(c);
   }
+  // Felled-tree stumps, plus the stages a quarried rock wears down through (mountain -> hill -> rubble).
+  SPR.stump = [];
+  for (let k = 0; k < 2; k++) {
+    const [c, g] = mkc();
+    shadow(g, 16, 40, 6, 2);
+    g.fillStyle = '#6b4a2b'; g.fillRect(13 + k, 35, 6, 5); g.fillStyle = '#8a6339'; g.fillRect(13 + k, 35, 6, 2);
+    g.fillStyle = '#c9a56a'; g.fillRect(14 + k, 35, 4, 1); g.fillStyle = '#4a3220'; g.fillRect(13 + k, 39, 6, 1);
+    SPR.stump.push(c);
+  }
+  { const [c, g] = mkc();
+    shadow(g, 16, 41, 11, 3);
+    blob(g, 12, 36, 7, '#767985'); blob(g, 20, 37, 6, '#6b6e7a'); blob(g, 15, 32, 6, '#8a8d98'); blob(g, 14, 31, 3, '#b4b8c4'); blob(g, 21, 34, 3, '#9ea2ae');
+    SPR.hill = c; }
+  { const [c, g] = mkc();
+    shadow(g, 16, 41, 14, 4);
+    blob(g, 10, 36, 8, '#6b6e7a'); blob(g, 22, 37, 7, '#5f626d'); blob(g, 16, 30, 9, '#767985'); blob(g, 15, 22, 7, '#8a8d98');
+    blob(g, 15, 14, 4, '#9ea2ae'); blob(g, 14, 13, 2, '#e8ebf2'); blob(g, 13, 22, 3, '#b4b8c4'); blob(g, 20, 29, 3, '#9ea2ae'); blob(g, 9, 34, 2, '#8a8d98');
+    SPR.mountain = c; }
   function house(lvl) {
     const [c, g] = mkc();
     const [wt, wl, wr] = tones(lvl === 1 ? '#cdb88a' : '#d4cfc2');
@@ -129,6 +147,14 @@ function buildSprites() {
     for (let i = 0; i < 3; i++) { const [lt, ll, lr] = tones('#b07a44'); box(g, .66, .2 + i * .22, .92, .36 + i * .22, 0, 4, lt, ll, lr); }
     box(g, .7, .3, .88, .56, 4, 7, '#c08a52', '#9a6b3a', '#7e552e');
     SPR.wood = c; }
+  { const [c, g] = mkc();
+    const [wt, wl, wr] = tones('#6b4a2d');
+    box(g, .1, .2, .66, .8, 0, 8, wt, wl, wr);
+    winL(g, .22, .5, 0, 5, .8, '#2a1d10');
+    const [rt, rl, rr] = tones('#6f7f90'); pyramid(g, .06, .16, .7, .84, 8, 15, rl, rr, rt);
+    for (let i = 0; i < 3; i++) { const [lt, ll, lr] = tones('#b07a44'); box(g, .72, .18 + i * .22, .94, .34 + i * .22, 0, 3, lt, ll, lr); }
+    box(g, .74, .24, .92, .5, 3, 5, '#e0c08a', '#c0a06a', '#a58652');
+    SPR.sawmill = c; }
   { const [c, g] = mkc();
     groundFill(g, (u, v, X, Y) => {
       if (u < .08 || u > .92 || v < .08 || v > .92) return null;
@@ -330,7 +356,7 @@ let dprI = 1, viewW = 0, viewH = 0;
 const TOOLS = [
   { id: 'inspect', label: 'Look', key: '1' }, { id: 'road', label: 'Road', key: '2' }, { id: 'zoneRes', label: 'Housing', key: '3' },
   { id: 'zoneFarm', label: 'Farmland', key: '4' }, { id: 'zoneComm', label: 'Commerce', key: '5' }, { id: 'zoneWood', label: 'Lumber', key: '6' },
-  { id: 'zoneMine', label: 'Mining', key: '7' }, { id: 'well', label: 'Well', key: '8' }, { id: 'barracks', label: 'Barracks', key: '9' },
+  { id: 'zoneMine', label: 'Mining', key: '7' }, { id: 'well', label: 'Well', key: '8' }, { id: 'sawmill', label: 'Sawmill', key: 'x' }, { id: 'barracks', label: 'Barracks', key: '9' },
   { id: 'bulldoze', label: 'Clear', key: '0' }
 ];
 const toolBtns = {};
@@ -564,7 +590,8 @@ function draw() {
         }
       } else if (S.deco[y][x]) {
         const kind = S.deco[y][x], v = Math.floor(hash2(x, y, 8) * (kind === 'tree' ? 3 : 2));
-        ctx.drawImage(ovrSprite(kind + '_' + v, ROT) || SPR[kind][v], ox, oy);
+        const amt = kind === 'rock' ? rockAmt(S, x, y) : 1;
+        ctx.drawImage(amt >= 3 ? SPR.mountain : amt === 2 ? SPR.hill : (ovrSprite(kind + '_' + v, ROT) || SPR[kind][v]), ox, oy);
       }
     }
   }
@@ -620,12 +647,15 @@ const DEM_LABELS = { res: 'Homes', farm: 'Farms', comm: 'Trade', wood: 'Lumber',
 function updateHint() {
   let t = '';
   if (tool === 'road') t = roadAnchor ? 'Click where the road ends. Shift bends it the other way. Esc cancels.' : 'Click where the road starts, then click where it ends. You can start or end on an existing road.';
+  else if (tool === 'zoneWood') t = 'Drag over forest to mark trees for felling. Woodcutters near a road cut them into logs and the land is left clear to build on. Logs need a sawmill.';
+  else if (tool === 'zoneMine') t = 'Drag over rock to mark it for quarrying. Quarries wear mountains down to hills, rubble and then flat ground.';
+  else if (tool === 'sawmill') t = 'Place a sawmill beside a road. It turns logs into wood. Without one, the Town Hall saws slowly at half yield.';
   else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings only grow on zone tiles that touch a road, and their doors face it.';
   const el = $('hint'); if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
 }
 function updateHUD() {
   const d = S.d || recalc(S);
-  for (const k of ['food', 'wood', 'stone', 'ore', 'gold']) {
+  for (const k of ['food', 'wood', 'logs', 'stone', 'ore', 'gold']) {
     $('v-' + k).textContent = Math.floor(S.res[k]);
     const r = $('r-' + k); r.textContent = fmtRate(S.rate[k]); r.className = 'rate ' + (S.rate[k] > 0.05 ? 'up' : S.rate[k] < -0.05 ? 'down' : '');
   }
@@ -645,6 +675,7 @@ const GOALS = [
   ['Zone 8 tiles for housing beside a road', S => cntZone('res') >= 8],
   ['Zone farmland on fertile soil', S => cntZone('farm') >= 4],
   ['Zone forest and get a woodcutter', S => S.blds.some(b => b.t === 'wood' && b.zoned)],
+  ['Build a sawmill beside a road to turn logs into wood', S => S.blds.some(b => b.t === 'sawmill')],
   ['Zone commerce and get a market', S => S.blds.some(b => b.t === 'market')],
   ['Zone ore and get an iron mine', S => S.blds.some(b => b.t === 'mine')],
   ['Raise a barracks and train 6 soldiers', S => S.trained >= 6]
@@ -656,8 +687,9 @@ function describe(t) {
   const b = S.grid[t.y][t.x], d = S.d;
   if (!b) {
     const k = S.deco[t.y][t.x];
-    if (k === 'tree') return ['Forest', ['A woodcutter within 3 tiles harvests these trees.', 'Building here clears the tree.']];
-    if (k === 'rock') return ['Rock outcrop', ['Stone. A mining zone here grows quarries.', 'Rocks block other buildings.']];
+    if (k === 'tree') return ['Forest', [S.zone[t.y][t.x] === 'wood' ? 'Marked for felling. A woodcutter within 3 tiles cuts it into logs.' : 'Paint a Lumber zone here to mark it for felling. Cleared forest becomes open building land.', 'Building here clears the tree.']];
+    if (k === 'stump') return ['Tree stump', ['Left behind by felling. It rots away into open grass you can build on.']];
+    if (k === 'rock') { const a = rockAmt(S, t.x, t.y); return [a >= 3 ? 'Mountain' : a === 2 ? 'Hill' : 'Rubble', [S.zone[t.y][t.x] === 'mine' ? 'Marked for quarrying. Quarries wear it down: mountain, hill, rubble, then flat ground.' : 'Paint a Mining zone here so quarries wear it down into flat, buildable ground.', 'Stone blocks other buildings until it is quarried away.']]; }
     if (k === 'ore') return ['Iron ore', ['A mining zone here grows iron mines. Soldiers need ore to arm.', 'Ore blocks other buildings.']];
     const z = S.zone[t.y][t.x];
     if (z) {
@@ -673,8 +705,9 @@ function describe(t) {
   if (b.t === 'hall') L.push('Houses 6 people. Storage limit ' + STORAGE + ' per resource.');
   if (b.t === 'house') L.push('Level ' + b.lvl + ' · holds ' + capOf(b) + ' people', b.lvl === 1 ? 'A well within 4 tiles upgrades it to level 2.' : 'Upgraded by a nearby well.');
   if (b.t === 'farm') L.push('Jobs: ' + jobsOf(b) + ' · makes ' + (b.served ? (foodOf(b) * d.ratio).toFixed(1) : '0') + ' food per second', 'Staffed at ' + Math.round(d.ratio * 100) + '%');
-  if (b.t === 'wood') { const n = countDeco(S, b.x, b.y, 3, 'tree'); L.push('Jobs: 3 · ' + n + ' trees in range', n ? 'Makes ' + (b.served ? (2.5 * d.ratio).toFixed(1) : '0') + ' wood per second' : 'No trees left. Move it closer to a forest.'); }
-  if (b.t === 'quarry') { const n = countDeco(S, b.x, b.y, 3, 'rock'); L.push('Jobs: 3 · ' + n + ' rock tiles in range', n ? 'Makes ' + (b.served ? (2 * d.ratio).toFixed(1) : '0') + ' stone per second' : 'Out of rock. Clear it and zone a new site.'); }
+  if (b.t === 'wood') { const n = countZoned(S, b.x, b.y, 3, 'tree', 'wood'); L.push('Jobs: 3 · ' + n + ' marked trees in range', n ? 'Fells ' + (b.served ? (2.5 * d.ratio).toFixed(1) : '0') + ' logs per second. A sawmill turns logs into wood.' : 'No marked trees left. Paint a Lumber zone on more forest nearby.'); }
+  if (b.t === 'quarry') { const n = countZoned(S, b.x, b.y, 3, 'rock', 'mine'); L.push('Jobs: 3 · ' + n + ' marked rock tiles in range', n ? 'Makes ' + (b.served ? (2 * d.ratio).toFixed(1) : '0') + ' stone per second and wears the rock down.' : 'No marked rock left. Paint a Mining zone on more rock nearby.'); }
+  if (b.t === 'sawmill') L.push('Jobs: 3 · saws ' + (b.served ? (4 * d.ratio).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
   if (b.t === 'mine') { const n = countDeco(S, b.x, b.y, 3, 'ore'); L.push('Jobs: 3 · ' + n + ' ore tiles in range', n ? 'Makes ' + (b.served ? (1.5 * d.ratio).toFixed(1) : '0') + ' ore per second' : 'Out of ore. Clear it and zone a new site.'); }
   if (b.t === 'market') L.push('Jobs: ' + jobsOf(b) + ' · covers homes within ' + (b.sz === 2 ? 7 : 5) + ' tiles', 'Earns gold from covered villagers (' + Math.round(d.cov * 100) + '% of homes covered).');
   if (b.t === 'barracks') L.push('Sleeps 6 soldiers · army ' + S.soldiers + '/' + d.bunks, 'Each recruit costs 2 wood, 1 gold, 1 ore and one villager.', 'Soldiers eat 1.5x and cost 0.1 gold per second.');

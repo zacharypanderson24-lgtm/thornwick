@@ -3,17 +3,19 @@
 const N = 40;
 const COST = {
   road: { wood: 1 }, house: { wood: 10 }, farm: { wood: 8 }, wood: { wood: 6 }, quarry: { wood: 10 }, mine: { wood: 12 },
-  market: { wood: 12 }, well: { wood: 5, stone: 5 }, barracks: { wood: 20, stone: 15, gold: 20 }
+  market: { wood: 12 }, sawmill: { wood: 15 }, well: { wood: 5, stone: 5 }, barracks: { wood: 20, stone: 15, gold: 20 }
 };
 const NAMES = {
-  road: 'Dirt Road', house: 'Timber House', farm: 'Farm', wood: 'Woodcutter', quarry: 'Quarry', mine: 'Iron Mine', market: 'Market',
+  road: 'Dirt Road', house: 'Timber House', farm: 'Farm', wood: 'Woodcutter', quarry: 'Quarry', mine: 'Iron Mine', market: 'Market', sawmill: 'Sawmill',
   well: 'Well', barracks: 'Barracks', hall: 'Town Hall',
   zoneRes: 'Housing Zone', zoneFarm: 'Farm Zone', zoneComm: 'Commerce Zone', zoneWood: 'Lumber Zone', zoneMine: 'Mining Zone'
 };
 const ZONE_NAMES = { res: 'Housing zone', farm: 'Farm zone', comm: 'Commerce zone', wood: 'Lumber zone', mine: 'Mining zone' };
 const ZONE_KINDS = ['res', 'farm', 'comm', 'wood', 'mine'];
-const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2 };
+const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2, sawmill: 3 };
 const HOUSE_CAP = [0, 4, 6];
+// Lumber chain: woodcutters fell designated trees into logs; a sawmill turns 1 log into 1 plank (wood). The Town Hall can pit-saw 1 log/tick at half yield.
+const SAW_RATE = 4, HALL_SAW = 1, HALL_YIELD = 0.5, STUMP_DAYS = 8;
 const BUNKS = 6, HALL_CAP = 6, WELL_R = 4, WORK_R = 3, MARKET_R = 5, STORAGE = 400;
 const NB = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const COST2 = { house: { wood: 30 }, farm: { wood: 24 }, market: { wood: 32 } };
@@ -46,7 +48,7 @@ function createWorld(seed) {
   seed = seed || 7;
   const S = {
     seed, grid: [], deco: [], zone: [], fert: [], blds: [], hall: null,
-    res: { food: 60, wood: 120, stone: 30, ore: 10, gold: 80 }, rate: { food: 0, wood: 0, stone: 0, ore: 0, gold: 0 },
+    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, gold: 0 }, rockAmt: {}, stumpT: {}, v2: true,
     dem: { res: 0, farm: 0, comm: 0, wood: 0, mine: 0 }, note: { res: '', farm: '', comm: '', wood: '', mine: '' }, flags: {},
     peasants: 6, popAcc: 0, soldiers: 0, day: 1, drafting: true, starving: false, trained: 0, d: null
   };
@@ -60,7 +62,7 @@ function createWorld(seed) {
     const o = vnoise(x * 0.3 + 90, y * 0.3 + 90, seed + 13);
     if (o > 0.72 && hash2(x, y, seed + 7) > 0.35) S.deco[y][x] = 'ore';
     else if (f > 0.56 && hash2(x, y, seed + 5) > 0.22) S.deco[y][x] = 'tree';
-    else if (r > 0.7 && hash2(x, y, seed + 6) > 0.35) S.deco[y][x] = 'rock';
+    else if (r > 0.7 && hash2(x, y, seed + 6) > 0.35) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = r > 0.82 ? 3 : r > 0.76 ? 2 : 1; }
   }
   // The 3x3 Town Hall is anchored at (19,19), centered on the original (20,20).
   // All nine cells are reserved before roads and zones are placed.
@@ -87,6 +89,19 @@ function loadWorld(str) {
   }
   for (const b of S.blds) { for (const [i, j] of tilesOf(b)) S.grid[j][i] = b; if (b.t === 'hall') S.hall = b; }
   if (!S.hall) return null;
+  if (!S.v2) {
+    // Old saves: workers now only touch designated tiles, so designate what existing camps were working.
+    S.res.logs = S.res.logs || 0; S.rate.logs = 0; S.rockAmt = S.rockAmt || {}; S.stumpT = S.stumpT || {};
+    for (const b of S.blds) {
+      if (b.t !== 'wood' && b.t !== 'quarry') continue;
+      for (let j = b.y - WORK_R; j <= b.y + WORK_R; j++) for (let i = b.x - WORK_R; i <= b.x + WORK_R; i++) {
+        if (!inb(i, j) || S.zone[j][i]) continue;
+        if (b.t === 'wood' && S.deco[j][i] === 'tree') S.zone[j][i] = 'wood';
+        if (b.t === 'quarry' && S.deco[j][i] === 'rock') S.zone[j][i] = 'mine';
+      }
+    }
+    S.v2 = true;
+  }
   for (const b of S.blds) if (b.t === 'house' && !b.var) b.var = pickHutVar(S, b.x, b.y);
   recalc(S); computeDemand(S); return S;
 }
@@ -109,7 +124,7 @@ function addBld(S, t, x, y, sz) {
   const b = { t, x, y, sz: sz || (t === 'hall' ? 3 : t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
   if (t === 'house') b.var = pickHutVar(S, x, y);
   S.blds.push(b);
-  for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (t === 'road') S.zone[j][i] = null; }
+  for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
   return b;
 }
@@ -185,10 +200,11 @@ function remove(S, x, y) {
   if (S.zone[y][x]) { S.zone[y][x] = null; return { ok: true }; }
   const k = S.deco[y][x];
   if (k) {
-    if (k === 'tree') S.res.wood = Math.min(STORAGE, S.res.wood + 2);
-    else if (k === 'rock') S.res.stone = Math.min(STORAGE, S.res.stone + 1);
+    if (k === 'tree') S.res.logs = Math.min(STORAGE, (S.res.logs || 0) + 2);
+    else if (k === 'stump') { /* nothing to salvage */ }
+    else if (k === 'rock') { S.res.stone = Math.min(STORAGE, S.res.stone + 1); if (S.rockAmt) delete S.rockAmt[tk(x, y)]; }
     else S.res.ore = Math.min(STORAGE, S.res.ore + 1);
-    S.deco[y][x] = null; return { ok: true };
+    S.deco[y][x] = null; if (S.stumpT) delete S.stumpT[tk(x, y)]; return { ok: true };
   }
   return { ok: false, reason: 'Nothing to clear here' };
 }
@@ -211,6 +227,31 @@ function countDeco(S, x, y, r, kind) {
   let n = 0;
   for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++) if (inb(i, j) && S.deco[j][i] === kind) n++;
   return n;
+}
+const tk = (x, y) => y * N + x;
+// Trees/rocks that belong to a designated zone (the only ones workers touch).
+function countZoned(S, x, y, r, kind, zone) {
+  let n = 0;
+  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++) if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone) n++;
+  return n;
+}
+// Rock height: 3 = mountain, 2 = hill, 1 = rubble. Quarrying wears a tile down one stage at a time.
+function rockAmt(S, x, y) { return (S.rockAmt && S.rockAmt[tk(x, y)]) || 1; }
+function nearestZoned(S, x, y, r, kind, zone) {
+  let best = null, bd = 1e9;
+  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
+    if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
+  return best;
+}
+function fellTree(S, x, y, r) {
+  const t = nearestZoned(S, x, y, r, 'tree', 'wood'); if (!t) return;
+  S.deco[t[1]][t[0]] = 'stump'; S.zone[t[1]][t[0]] = null;
+  S.stumpT = S.stumpT || {}; S.stumpT[tk(t[0], t[1])] = STUMP_DAYS;
+}
+function wearRock(S, x, y, r) {
+  const t = nearestZoned(S, x, y, r, 'rock', 'mine'); if (!t) return;
+  S.rockAmt = S.rockAmt || {}; const k = tk(t[0], t[1]), a = rockAmt(S, t[0], t[1]) - 1;
+  if (a <= 0) { S.deco[t[1]][t[0]] = null; S.zone[t[1]][t[0]] = null; delete S.rockAmt[k]; } else S.rockAmt[k] = a;
 }
 function fellNearest(S, x, y, r, kind) {
   let best = null, bd = 1e9;
@@ -279,7 +320,7 @@ function computeDemand(S) {
   dem.farm = clamp1((1.25 - prod / eat) * 3 + (r.food < 40 ? 0.3 : 0) - (r.food > 250 ? 0.5 : 0));
   if (S.starving) dem.farm = 1;
   dem.comm = d.houseCap < 8 ? -0.2 : clamp1((1 - d.cov) * 1.6 - 0.15);
-  dem.wood = clamp1((120 - r.wood) / 120);
+  dem.wood = clamp1((120 - r.wood - (r.logs || 0) * 0.7) / 120);
   dem.mine = clamp1(Math.max((60 - r.stone) / 60, (30 - r.ore) / 30));
   if (!staffed) { dem.farm = Math.min(dem.farm, 0); dem.wood = Math.min(dem.wood, 0); dem.mine = Math.min(dem.mine, 0); }
   S.dem = dem;
@@ -325,11 +366,11 @@ function choose(S, kind) {
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     if (S.zone[y][x] !== kind || S.grid[y][x] || !zoneServed(S, x, y)) continue;
     if (kind === 'wood') {
-      const n = countDeco(S, x, y, WORK_R, 'tree');
+      const n = countZoned(S, x, y, WORK_R, 'tree', 'wood');
       if (n < 3 || S.blds.some(b => b.t === 'wood' && cheb(b, { x, y }) <= 2)) continue;
       cands.push({ x, y, type: 'wood', sz: 1, cost: COST.wood.wood, score: -n * 2 + dist(x, y) * 0.1 });
     } else if (kind === 'mine') {
-      const rk = countDeco(S, x, y, WORK_R, 'rock'), ok = countDeco(S, x, y, WORK_R, 'ore');
+      const rk = countZoned(S, x, y, WORK_R, 'rock', 'mine'), ok = countDeco(S, x, y, WORK_R, 'ore');
       const needOre = (30 - r.ore) / 30, needStone = (60 - r.stone) / 60;
       let type = null, cnt = 0;
       if (ok >= 2 && (rk < 2 || needOre >= needStone)) { type = 'mine'; cnt = ok; } else if (rk >= 2) { type = 'quarry'; cnt = rk; }
@@ -374,19 +415,19 @@ function tick(S) {
   const d = S.d, before = { ...S.res };
   const ratio = d.ratio;
   const employed = Math.min(S.peasants, d.jobs);
-  let food = 0, wood = 0, stone = 0, ore = 0;
+  let food = 0, wood = 0, logs = 0, stone = 0, ore = 0;
   for (const b of S.blds) {
     if (!b.served) continue;
     if (b.t === 'farm') food += foodOf(b) * ratio;
     else if (b.t === 'wood') {
-      if (countDeco(S, b.x, b.y, WORK_R, 'tree') > 0) {
-        wood += 2.5 * ratio; b.prog += ratio;
-        if (b.prog >= 10) { b.prog = 0; fellNearest(S, b.x, b.y, WORK_R, 'tree'); }
+      if (countZoned(S, b.x, b.y, WORK_R, 'tree', 'wood') > 0) {
+        logs += 2.5 * ratio; b.prog += ratio;
+        if (b.prog >= 10) { b.prog = 0; fellTree(S, b.x, b.y, WORK_R); }
       }
     } else if (b.t === 'quarry') {
-      if (countDeco(S, b.x, b.y, WORK_R, 'rock') > 0) {
+      if (countZoned(S, b.x, b.y, WORK_R, 'rock', 'mine') > 0) {
         stone += 2 * ratio; b.prog += ratio;
-        if (b.prog >= 18) { b.prog = 0; fellNearest(S, b.x, b.y, WORK_R, 'rock'); }
+        if (b.prog >= 18) { b.prog = 0; wearRock(S, b.x, b.y, WORK_R); }
       }
     } else if (b.t === 'mine') {
       if (countDeco(S, b.x, b.y, WORK_R, 'ore') > 0) {
@@ -395,6 +436,14 @@ function tick(S) {
       }
     }
   }
+  S.res.logs = (S.res.logs || 0) + logs;
+  // Sawmills first (full yield, limited by workers), then the Town Hall pit-saw for what is left.
+  for (const b of S.blds) if (b.t === 'sawmill' && b.served && S.res.logs > 0) {
+    const c = Math.min(S.res.logs, SAW_RATE * ratio); S.res.logs -= c; wood += c;
+  }
+  if (S.res.logs > 0) { const c = Math.min(S.res.logs, HALL_SAW); S.res.logs -= c; wood += c * HALL_YIELD; }
+  // Stumps rot away into open, buildable grass.
+  if (S.stumpT) for (const k in S.stumpT) if (--S.stumpT[k] <= 0) { delete S.stumpT[k]; const y = Math.floor(k / N), x = k % N; if (S.deco[y][x] === 'stump') S.deco[y][x] = null; }
   const trade = d.markets ? 0.04 * S.peasants * d.cov * ratio : 0;
   const eat = (S.peasants + S.soldiers * 1.5) * 0.2;
   S.res.food += food - eat; S.res.wood += wood; S.res.stone += stone; S.res.ore += ore;
@@ -425,4 +474,4 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (typeof module !== 'undefined') module.exports = { capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (typeof module !== 'undefined') module.exports = { rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };

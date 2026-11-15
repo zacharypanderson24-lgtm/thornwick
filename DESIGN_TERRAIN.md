@@ -1,6 +1,6 @@
 # Thornwick: terrain, stone, ore and lumber (future design)
 
-Status: idea stage, not built. Written so ChatGPT (art) and Claude (code) work from the same plan.
+Status: first pass built (felling zones, logs, sawmill, stumps, quarry mountain stages: mountain -> hill -> rubble -> flat). Not yet built: terrain types beyond rock/forest, underground ore, regrowth/foresters, workforce panel, per-building worker counts. Written so ChatGPT (art) and Claude (code) work from the same plan.
 Core principle: **resources come out of the land, and taking them changes the land.**
 
 ## 1. Terrain grid
