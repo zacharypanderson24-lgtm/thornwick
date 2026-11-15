@@ -4,7 +4,7 @@ You are the artist for "Thornwick", an isometric pixel-art medieval city-builder
 
 ## Fit rules (read BUILDING_TILE_GUIDE.md)
 
-Buildings must fit their tile. I will attach a footprint guide image (a black diamond for the ground and a green box for the sprite limit). Build inside the diamond, keep props inside it by making the building smaller, keep headroom above the roof, and remove the guide lines from your final image. No pink or magenta pixels on the building. Full rules are in BUILDING_TILE_GUIDE.md.
+Buildings must fit their tile. I will attach a footprint guide image (a black diamond for the ground and a green box for the footprint width). Build inside the diamond, keep props inside it by making the building smaller, let the building be as tall as it needs (there is no height limit; keep a small margin above the highest point so nothing is cut off), never go past the left or right edge of the green box, and remove the guide lines from your final image. No pink or magenta pixels on the building. Full rules are in BUILDING_TILE_GUIDE.md.
 
 ## Your job
 

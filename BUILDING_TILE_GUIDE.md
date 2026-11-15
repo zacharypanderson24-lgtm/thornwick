@@ -14,7 +14,7 @@ A building texture is a picture of the object standing on a flat ground diamond.
 | 2 x 2 tiles (barracks, large house, bazaar, large farm) | 64 x 88 px | 64 x 32 px | `templates/footprint_2x2_guide.png` |
 | 3 x 3 tiles (Town Hall, planned) | 96 x 128 px | 96 x 48 px | `templates/footprint_3x3_guide.png` |
 
-The guide images are 1024 x 1536 with a magenta background. The black diamond is the ground the building covers. The green box is the sprite limit: nothing may touch or cross it. Ask ChatGPT to remove all guide lines from the final image.
+The guide images are 1024 x 1536 with a magenta background. The black diamond is the ground the building covers. The green box marks the footprint's width: nothing may cross its left, right or bottom edge. The top of the box is only the usual height; a taller building may rise above it as long as it stays inside the picture. Ask ChatGPT to remove all guide lines from the final image.
 
 The bottom corner of the diamond is at the bottom centre of the picture. Everything is measured from there.
 
@@ -40,70 +40,54 @@ Every building, every size, always uses the same four views in the same order. T
 
 1. **Walls sit inside the diamond.** The foot of every wall follows the diamond's lower-left and lower-right edges. The lowest point of the building touches the diamond's bottom corner.
 2. **Props take room, so shrink the building.** Spears, racks, shields, barrels, crates, steps, stumps, hay, flower boxes and lanterns stand on the ground and must sit inside the diamond too. Put the walls and roof on the back 60 to 65 percent of the diamond (the half nearer the top corner). Keep the front 35 to 40 percent free for props and steps. If something will not fit, remove the least important prop. Never let it hang outside. Never shrink the building so far that it looks smaller than its neighbours (see rule 8).
-3. **Eaves may overhang a little, never past the green box.** If a roof touches the left or right edge of the guide, make the whole building a bit smaller.
-4. **Leave headroom.** The highest point (ridge, chimney or flag) stays at least 5 percent of the picture height below the top of the green box. Chimneys and flags count.
+3. **Eaves may overhang a little, never past the left or right edge of the green box.** If a roof touches the left or right edge of the guide, make the whole building a bit smaller.
+4. **Keep a small margin above the highest point.** Leave a few percent of empty space above the ridge, chimney or flag so nothing is cut off. The picture can be as tall as you need.
 5. **Nothing floats or hangs outside.** Banners, flags and signs are attached to the building or stand on the diamond. Poles stay inside the footprint.
 6. **One door, same footprint in every view.** The view order is fixed for every building (see "The four views" above): 1 lower-left, 2 upper-left, 3 upper-right, 4 lower-right. Do not invent extra doors, and do not let the building grow or shrink between views. Props rotate with the building.
 7. **Same height in every view.** Wall height, roof height, stone base height and chimney position (on the same roof slope) match across all four views.
 8. **Match the neighbours.** A one-tile building should be about as wide as the diamond (32 px game width). A larger building (Town Hall, barracks) is taller and grander, not just wider. A 2x2 building fills its 64 px diamond.
 
-## Building height and overlap (so buildings do not swallow each other)
+## Building height and overlap
 
-The map is drawn back to front. Every building is one picture, drawn once at its front tile, and anything taller than its footprint rises up the screen and covers whatever is behind it. That is correct and expected. The rules below keep it from hiding things that matter.
+**There is no height limit.** Like TheoTown, a tall building rises up the screen and covers whatever is behind it. That is normal and wanted: a tower, a keep or a cathedral should block the buildings behind it. Overlap is not a fit error.
 
-### How the grid works on screen
+### What is fixed and what is free
 
-- One step along the x or y axis moves a tile 16 px sideways and 8 px up or down.
-- One step back along both axes (straight "behind" in the view) moves a tile 16 px straight up.
-- So a building that rises 32 px above its diamond hides about two tiles of ground directly behind it. One that rises 80 px hides about five.
-- The ground footprint never grows. Only height goes up. Walls, props and steps stay inside the diamond (see the fit rules).
-
-### Height budget
-
-Height is measured from the lowest point of the sprite (the diamond's bottom corner) to the highest pixel, in game pixels.
-
-| Size | Sprite | Absolute maximum | Reference heights today |
-|---|---|---|---|
-| 1 tile | 32 x 48 | 48 | huts 32 to 36 |
-| 2 x 2 | 64 x 88 | 88 | barracks about 54 |
-| 3 x 3 | 96 x 128 | 128 | Town Hall about 84 to 91 |
-
-Stay at or below the reference height for the same kind of building. Never touch the maximum: leave at least 5 percent of the picture height of empty space above the highest point.
-
-### Order of importance
-
-Taller means more important. Keep this order so the village reads at a glance:
-
-1. Town Hall (tallest, with a belfry and pennant)
-2. Barracks and the large 2x2 houses and farms
-3. Houses, markets, workshops
-4. Farm fields, wells, mines (low)
-
-A smaller building must never be taller than a bigger one. A level 2 cottage may be a little taller than a level 1 hut, not by much.
-
-### Where to put the tall parts
-
-- Keep the tallest parts (chimney, belfry, ridge, flagpole) toward the back half of the footprint and near the centre line. They then hide the tiles behind, not the ones in front.
-- Keep the front 35 to 40 percent of the footprint low: porch roof, steps, props. This keeps the entrance and the road in front visible. A tall front hides the door of the next building and the road itself.
-- Keep poles, flags and chimneys thin. A wide tall shape covers a lot of the screen.
-- Eaves may overhang the diamond by about 3 percent of the picture width at most. More than that covers the tiles beside it.
-
-### Things that go wrong
-
-| Problem | Why | Fix |
+| | Fixed | Free |
 |---|---|---|
-| A hut hides the Hall's porch | The hut stands in front of the Hall and is taller than the gap between them | Leave a gap of 2 tiles or more in front of a big building's door, or keep the front of the smaller building low |
-| A tall building hides the road behind it | Height is at the front of the footprint | Move the tall parts to the back half |
-| A tall building hides its neighbour's door | Both face the same street and the near one is high | Keep to the height budget; check the pair together |
-| One building looks bigger than the Hall | Height creep when making a new picture | Compare against the reference heights |
-| A roof or flag is cut off at the top | Used the full height of the sprite | Leave 5 percent headroom |
+| **Footprint** | The ground diamond: 32 px wide (1 tile), 64 (2x2), 96 (3x3). The picture's width is set by it, and the base sits inside the diamond. | |
+| **Height** | | Any height. The sprite is anchored at the bottom corner of the diamond and grows upward. Make the picture as tall as the building needs. |
+
+The game draws the picture as tall as it is. A 32 px wide house can be 48 px tall or 120 px tall; a 96 px wide Hall can be 128 or 250. Only the width has to match the footprint, so keep the width at 32, 64 or 96 game pixels (in a larger picture, the building's base should span the diamond's full width).
+
+### How overlap works
+
+- The map is drawn back to front. A building is drawn once, at its front tile, so a building in front always covers one behind it.
+- One step straight behind a building moves a tile 16 px up the screen, so a building 64 px tall hides about four tiles directly behind it.
+- The picture must include everything on the building: roof, tower, flag, chimney, steps, props. Anything outside the footprint's width or above the diamond is part of the picture, not a separate object.
+
+### What to keep right even though height is free
+
+- **Footprint still holds.** Walls, steps and ground props stay inside the diamond. Only height is free; the base is not.
+- **Same height in all four views** of one building. Wall height, roof height and tower position must match when you rotate.
+- **Tall things need the right base.** A tall tower still stands on its own tiles, not on the ones behind it. If a keep is four times taller than its footprint, it should look like a tall building on that footprint, not a poster.
+- **Scale ratios.** Keep walls, doors and windows the same size in game pixels on every building, so a taller building has more storeys, not bigger doors. A door is about 8 to 10 px tall at game size.
+- **Hierarchy is optional advice, not a rule.** The Town Hall and barracks read best when they are taller than huts, but a church spire or a keep may be much taller than both.
+
+### Optional tips (not limits)
+
+- If you want a door or a road to stay visible behind a tall building, keep the front of the building low (porch, steps) and put the tall part at the back. This is a design choice, not a requirement.
+- Check how a tall building looks next to a hut and the Hall in the game before committing.
+
+### Current reference heights
+
+For reference only: huts 32 to 36 px, barracks about 54, Town Hall about 84 to 91.
 
 ### Test before you commit
 
-1. Put the building next to a copy of itself on a street: side by side, diagonal, and one directly behind the other.
+1. Put the building next to a copy of itself on a street: side by side, diagonal, and one behind another.
 2. Put it next to a hut and the Town Hall.
 3. Turn the camera with Q and E and check all four views.
-4. Check that doors facing the road are still visible, and that no building hides another building's door.
 
 ## 3. Pixel clean-up rules
 
@@ -136,8 +120,8 @@ A smaller building must never be taller than a bigger one. A level 2 cottage may
 - [ ] The lowest point touches the diamond's bottom corner at the bottom centre.
 - [ ] Every wall foot follows the diamond edges; nothing stands outside the diamond.
 - [ ] Props and steps are inside the diamond.
-- [ ] Height is within the budget for its size and below the buildings above it in the order of importance; tall parts are at the back, the front is low.
-- [ ] Roof eaves do not touch the green box; there is headroom above the highest point.
+- [ ] Footprint width is right (32, 64 or 96 game px) and the height is whatever the building needs. All four views have the same height.
+- [ ] Roof eaves do not touch the left or right edge of the green box; nothing is cut off at the top of the picture.
 - [ ] No pink, magenta or purple pixels on the building.
 - [ ] Hard edges, no soft pixels.
 - [ ] One door only; on the lower-left wall in `_1`, upper-left in `_2`, upper-right in `_3`, lower-right in `_4` (visible in 1 and 4, hidden in 2 and 3).

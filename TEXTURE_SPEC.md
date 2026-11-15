@@ -14,7 +14,7 @@ The exact numbers for making textures with ChatGPT (or anything else). Game size
 
 | Kind | Final sprite | Footprint diamond | Extra height above diamond |
 |---|---|---|---|
-| One-tile building, tree, rock, ore | **32 x 48 px** | 32 x 16, bottom of image | up to 32 px |
+| One-tile building, tree, rock, ore | **32 px wide, 48 px tall (buildings can be taller)** | 32 x 16, bottom of image | up to 32 px |
 | Two-by-two building | **64 x 88 px** | 64 x 32, bottom of image | up to 56 px |
 | Three-by-three building (Town Hall, planned) | **96 x 128 px** | 96 x 48, bottom of image | up to 80 px |
 | Ground tile (grass, fertile soil) | **32 x 48 px** (diamond fills the bottom 32 x 16) | the whole tile | none |

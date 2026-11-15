@@ -553,12 +553,13 @@ function draw() {
           const footprint = tilesOf(b).map(([tx, ty]) => toView(tx, ty));
           const depth = vx + vy;
           if (footprint.every(([a, c]) => a + c <= depth)) {
-            const dim = b.sz === 3 ? [96, 128] : [64, 88];
-            ctx.drawImage(spriteFor(b.t, b, 0), sx - dim[0] / 2, sy + 16 - dim[1]);
+            const spr = spriteFor(b.t, b, 0);
+            ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height);
             if (!b.served) ctx.drawImage(SPR.warn, sx - 16, sy - 40);
           }
         } else {
-          ctx.drawImage(spriteFor(b.t, b, mask), ox, oy);
+          const spr = spriteFor(b.t, b, mask);
+          ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height);
           if (!b.served && b.t !== 'road') ctx.drawImage(SPR.warn, ox, oy - 8);
         }
       } else if (S.deco[y][x]) {
@@ -599,8 +600,8 @@ function draw() {
         const footprint = { x: hover.x, y: hover.y, sz: tool === 'hall' ? 3 : 2, t: tool, lvl: 1 };
         const views = tilesOf(footprint).map(([x, y]) => tpos(x, y));
         const corner = views.reduce((best, pt) => (!best || pt[1] > best[1]) ? pt : best, null);
-        const dims = footprint.sz === 3 ? [96, 128] : [64, 88];
-        ctx.drawImage(spriteFor(tool, footprint, 0), corner[0] - dims[0] / 2, corner[1] + 16 - dims[1]);
+        const gs = spriteFor(tool, footprint, 0);
+        ctx.drawImage(gs, corner[0] - gs.width / 2, corner[1] + 16 - gs.height);
         ctx.globalAlpha = 1;
         for (const [x, y] of tilesOf(footprint)) if (inb(x, y)) mark({ x, y }, c.ok ? SPR.hlGood : SPR.hlBad);
       } else {

@@ -584,7 +584,7 @@ for (let i = 0; i < 2; i++) addSlot('ore_' + i, 'Iron ore ' + (i + 1), 'Nature',
 const slotDims = s => s.size === 3 ? [96, 128] : s.size === 2 ? [64, 88] : [32, 48];
 const viewKeys = s => s.views === 4 ? [1, 2, 3, 4] : ['all'];
 function finalSize(s) { const d = slotDims(s); return d[0] + ' x ' + d[1] + ' px'; }
-function footprintText(s) { return s.type === 'ground' ? 'The image is exactly one ground tile: a flat diamond twice as wide as tall, filling the whole image.' : (s.size === 2 ? 'The footprint is a 2x2 block of ground tiles, so the base of the object is a diamond four times the area of a single tile (twice as wide as tall). The object sits with the bottom corner of that diamond at the bottom of the image.' : 'The footprint is a single ground tile (a diamond twice as wide as tall). The object sits with the bottom corner of that diamond at the bottom of the image.'); }
+function footprintText(s) { return s.type === 'ground' ? 'The image is exactly one ground tile: a flat diamond twice as wide as tall, filling the whole image.' : (s.size === 3 ? 'The footprint is a 3x3 block of ground tiles. The base follows a 2:1 diamond; the building, porch, steps and all ground props must stay inside that diamond, with the lowest point on its bottom centre corner.' : s.size === 2 ? 'The footprint is a 2x2 block of ground tiles, so the base of the object is a diamond four times the area of a single tile (twice as wide as tall). The object sits with the bottom corner of that diamond at the bottom of the image.' : 'The footprint is a single ground tile (a diamond twice as wide as tall). The object sits with the bottom corner of that diamond at the bottom of the image.'); }
 function promptFor(s, v) {
   const head = STYLE + '\n\nSubject: ' + s.label + '. ' + s.desc + '\n\n' + footprintText(s);
   if (s.views === 4) return head + '\n\n' + (v === 'sheet' ? 'Make ONE image containing four views of the same building in a 2x2 grid on the magenta background, each view in its own equal cell and fully visible. Top-left is view 1, top-right is view 2, bottom-left is view 3, bottom-right is view 4.\n' + VIEW_TXT.join('\n') : VIEW_TXT[(v || 1) - 1]) + '\n' + SAME_TXT;
@@ -624,18 +624,25 @@ function fitToSlot(src, slot, o) {
     wg.putImageData(id, 0, 0);
     box = alphaBox(id) || box;
   } catch (e) { }
-  const scale = (slot.type === 'ground' ? W / box.w : Math.min(W / box.w, H / box.h)) * (o.scale || 1);
+  // Buildings are sized by their footprint width only: height is free, so tall buildings can rise over their neighbours.
+  const tall = slot.views === 4;
+  const scale = (slot.type === 'ground' || tall ? W / box.w : Math.min(W / box.w, H / box.h)) * (o.scale || 1);
   const tw = Math.max(1, Math.round(box.w * scale)), th = Math.max(1, Math.round(box.h * scale));
-  const out = document.createElement('canvas'); out.width = W; out.height = H;
+  const OH = tall ? Math.max(H, th) : H;
+  const out = document.createElement('canvas'); out.width = W; out.height = OH;
   const g = out.getContext('2d', { willReadFrequently: true });
   g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-  g.drawImage(wk, box.x, box.y, box.w, box.h, Math.round((W - tw) / 2) + (o.dx || 0), H - th + (o.dy || 0), tw, th);
-  try { const id = g.getImageData(0, 0, W, H), d = id.data; for (let i = 3; i < d.length; i += 4) d[i] = d[i] < 128 ? 0 : 255; g.putImageData(id, 0, 0); } catch (e) { }
+  g.drawImage(wk, box.x, box.y, box.w, box.h, Math.round((W - tw) / 2) + (o.dx || 0), OH - th + (o.dy || 0), tw, th);
+  try { const id = g.getImageData(0, 0, W, OH), d = id.data; for (let i = 3; i < d.length; i += 4) d[i] = d[i] < 128 ? 0 : 255; g.putImageData(id, 0, 0); } catch (e) { }
   return out;
 }
 function fitAsset(img, slot) {
-  const [W, H] = slotDims(slot); const out = document.createElement('canvas'); out.width = W; out.height = H;
-  const g = out.getContext('2d'); g.imageSmoothingEnabled = img.width !== W; g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, W, H); return out;
+  const [W, H] = slotDims(slot);
+  // Building files keep their own height (any height is fine); only the width is tied to the footprint.
+  const tall = slot.views === 4 && slot.type !== 'ground';
+  const OH = tall ? Math.max(1, Math.round(img.height * W / img.width)) : H;
+  const out = document.createElement('canvas'); out.width = W; out.height = OH;
+  const g = out.getContext('2d'); g.imageSmoothingEnabled = img.width !== W; g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, W, OH); return out;
 }
 function texChanged() { if (typeof refreshIcons === 'function') refreshIcons(); if (typeof labRefresh === 'function') labRefresh(); }
 const IDB = {
@@ -721,12 +728,12 @@ function labRefresh() {
   const cells = el('div', 'lab-cells');
   for (const vk of viewKeys(s)) {
     const cell = el('div', 'lab-cell'); cell.appendChild(el('div', 'lab-cl', s.views === 4 ? VIEW_LABEL[vk - 1] : 'Texture'));
-    const [W, H] = slotDims(s), sc = s.size === 3 ? 2 : s.size === 2 ? 3 : 5, cvs = el('canvas', 'lab-prev'); cvs.width = W * sc; cvs.height = H * sc;
+    const [W, H0] = slotDims(s), sc = s.size === 3 ? 2 : s.size === 2 ? 3 : 5, cvs = el('canvas', 'lab-prev');
+    const o = OVR[s.name] && OVR[s.name][vk]; const H = Math.max(H0, o ? o.height : H0); cvs.width = W * sc; cvs.height = H * sc;
     const g = cvs.getContext('2d'); g.imageSmoothingEnabled = false;
-    const o = OVR[s.name] && OVR[s.name][vk];
-    if (o) g.drawImage(o, 0, 0, W * sc, H * sc);
+    if (o) g.drawImage(o, 0, (H - o.height) * sc, W * sc, o.height * sc);
     else { const d = s.type === 'ground' ? (defaultSprite(s.name)) : defaultSprite(s.name); if (d) { g.globalAlpha = 0.55; g.drawImage(d, 0, 0, W * sc, H * sc); g.globalAlpha = 1; } }
-    g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = 1; g.beginPath(); const k = s.size === 2 ? 2 : 1, bx = W * sc / 2, by = H * sc;
+    g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = 1; g.beginPath(); const k = s.size, bx = W * sc / 2, by = H * sc;
     g.moveTo(bx, by - 16 * k * sc); g.lineTo(bx + 16 * k * sc, by - 8 * k * sc); g.lineTo(bx, by); g.lineTo(bx - 16 * k * sc, by - 8 * k * sc); g.closePath(); g.stroke();
     cell.appendChild(cvs);
     cell.appendChild(el('div', 'lab-st', o ? (CELL[s.name] && CELL[s.name][vk] ? 'Your texture' : 'From assets folder') : 'Code-drawn placeholder'));
@@ -1312,12 +1319,13 @@ function draw() {
           const footprint = tilesOf(b).map(([tx, ty]) => toView(tx, ty));
           const depth = vx + vy;
           if (footprint.every(([a, c]) => a + c <= depth)) {
-            const dim = b.sz === 3 ? [96, 128] : [64, 88];
-            ctx.drawImage(spriteFor(b.t, b, 0), sx - dim[0] / 2, sy + 16 - dim[1]);
+            const spr = spriteFor(b.t, b, 0);
+            ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height);
             if (!b.served) ctx.drawImage(SPR.warn, sx - 16, sy - 40);
           }
         } else {
-          ctx.drawImage(spriteFor(b.t, b, mask), ox, oy);
+          const spr = spriteFor(b.t, b, mask);
+          ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height);
           if (!b.served && b.t !== 'road') ctx.drawImage(SPR.warn, ox, oy - 8);
         }
       } else if (S.deco[y][x]) {
@@ -1358,8 +1366,8 @@ function draw() {
         const footprint = { x: hover.x, y: hover.y, sz: tool === 'hall' ? 3 : 2, t: tool, lvl: 1 };
         const views = tilesOf(footprint).map(([x, y]) => tpos(x, y));
         const corner = views.reduce((best, pt) => (!best || pt[1] > best[1]) ? pt : best, null);
-        const dims = footprint.sz === 3 ? [96, 128] : [64, 88];
-        ctx.drawImage(spriteFor(tool, footprint, 0), corner[0] - dims[0] / 2, corner[1] + 16 - dims[1]);
+        const gs = spriteFor(tool, footprint, 0);
+        ctx.drawImage(gs, corner[0] - gs.width / 2, corner[1] + 16 - gs.height);
         ctx.globalAlpha = 1;
         for (const [x, y] of tilesOf(footprint)) if (inb(x, y)) mark({ x, y }, c.ok ? SPR.hlGood : SPR.hlBad);
       } else {

@@ -74,18 +74,25 @@ function fitToSlot(src, slot, o) {
     wg.putImageData(id, 0, 0);
     box = alphaBox(id) || box;
   } catch (e) { }
-  const scale = (slot.type === 'ground' ? W / box.w : Math.min(W / box.w, H / box.h)) * (o.scale || 1);
+  // Buildings are sized by their footprint width only: height is free, so tall buildings can rise over their neighbours.
+  const tall = slot.views === 4;
+  const scale = (slot.type === 'ground' || tall ? W / box.w : Math.min(W / box.w, H / box.h)) * (o.scale || 1);
   const tw = Math.max(1, Math.round(box.w * scale)), th = Math.max(1, Math.round(box.h * scale));
-  const out = document.createElement('canvas'); out.width = W; out.height = H;
+  const OH = tall ? Math.max(H, th) : H;
+  const out = document.createElement('canvas'); out.width = W; out.height = OH;
   const g = out.getContext('2d', { willReadFrequently: true });
   g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
-  g.drawImage(wk, box.x, box.y, box.w, box.h, Math.round((W - tw) / 2) + (o.dx || 0), H - th + (o.dy || 0), tw, th);
-  try { const id = g.getImageData(0, 0, W, H), d = id.data; for (let i = 3; i < d.length; i += 4) d[i] = d[i] < 128 ? 0 : 255; g.putImageData(id, 0, 0); } catch (e) { }
+  g.drawImage(wk, box.x, box.y, box.w, box.h, Math.round((W - tw) / 2) + (o.dx || 0), OH - th + (o.dy || 0), tw, th);
+  try { const id = g.getImageData(0, 0, W, OH), d = id.data; for (let i = 3; i < d.length; i += 4) d[i] = d[i] < 128 ? 0 : 255; g.putImageData(id, 0, 0); } catch (e) { }
   return out;
 }
 function fitAsset(img, slot) {
-  const [W, H] = slotDims(slot); const out = document.createElement('canvas'); out.width = W; out.height = H;
-  const g = out.getContext('2d'); g.imageSmoothingEnabled = img.width !== W; g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, W, H); return out;
+  const [W, H] = slotDims(slot);
+  // Building files keep their own height (any height is fine); only the width is tied to the footprint.
+  const tall = slot.views === 4 && slot.type !== 'ground';
+  const OH = tall ? Math.max(1, Math.round(img.height * W / img.width)) : H;
+  const out = document.createElement('canvas'); out.width = W; out.height = OH;
+  const g = out.getContext('2d'); g.imageSmoothingEnabled = img.width !== W; g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, W, OH); return out;
 }
 function texChanged() { if (typeof refreshIcons === 'function') refreshIcons(); if (typeof labRefresh === 'function') labRefresh(); }
 const IDB = {
@@ -171,12 +178,12 @@ function labRefresh() {
   const cells = el('div', 'lab-cells');
   for (const vk of viewKeys(s)) {
     const cell = el('div', 'lab-cell'); cell.appendChild(el('div', 'lab-cl', s.views === 4 ? VIEW_LABEL[vk - 1] : 'Texture'));
-    const [W, H] = slotDims(s), sc = s.size === 3 ? 2 : s.size === 2 ? 3 : 5, cvs = el('canvas', 'lab-prev'); cvs.width = W * sc; cvs.height = H * sc;
+    const [W, H0] = slotDims(s), sc = s.size === 3 ? 2 : s.size === 2 ? 3 : 5, cvs = el('canvas', 'lab-prev');
+    const o = OVR[s.name] && OVR[s.name][vk]; const H = Math.max(H0, o ? o.height : H0); cvs.width = W * sc; cvs.height = H * sc;
     const g = cvs.getContext('2d'); g.imageSmoothingEnabled = false;
-    const o = OVR[s.name] && OVR[s.name][vk];
-    if (o) g.drawImage(o, 0, 0, W * sc, H * sc);
+    if (o) g.drawImage(o, 0, (H - o.height) * sc, W * sc, o.height * sc);
     else { const d = s.type === 'ground' ? (defaultSprite(s.name)) : defaultSprite(s.name); if (d) { g.globalAlpha = 0.55; g.drawImage(d, 0, 0, W * sc, H * sc); g.globalAlpha = 1; } }
-    g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = 1; g.beginPath(); const k = s.size === 2 ? 2 : 1, bx = W * sc / 2, by = H * sc;
+    g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = 1; g.beginPath(); const k = s.size, bx = W * sc / 2, by = H * sc;
     g.moveTo(bx, by - 16 * k * sc); g.lineTo(bx + 16 * k * sc, by - 8 * k * sc); g.lineTo(bx, by); g.lineTo(bx - 16 * k * sc, by - 8 * k * sc); g.closePath(); g.stroke();
     cell.appendChild(cvs);
     cell.appendChild(el('div', 'lab-st', o ? (CELL[s.name] && CELL[s.name][vk] ? 'Your texture' : 'From assets folder') : 'Code-drawn placeholder'));
