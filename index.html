@@ -262,7 +262,7 @@ function canAfford(S, type) {
   return { ok: true };
 }
 function canPlace(S, type, x, y) {
-  const footprint = { x, y, sz: type === 'barracks' ? 2 : 1, t: type };
+  const footprint = { x, y, sz: type === 'hall' ? 3 : type === 'barracks' ? 2 : 1, t: type };
   for (const [tx, ty] of tilesOf(footprint)) {
     if (!inb(tx, ty)) return { ok: false, reason: 'Outside the map' };
     if (S.grid[ty][tx]) return { ok: false, reason: 'That tile is already built on' };
