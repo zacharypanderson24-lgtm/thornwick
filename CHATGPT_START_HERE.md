@@ -169,3 +169,12 @@ One view only.
 When I save your images I will name them as shown above, for example `house_1_1.png` for the hut, view 1. After each image, remind me of the file name.
 
 Reply "ready" and wait for my first request.
+
+## Before you hand art back: self-check (mandatory)
+
+Run `python3 tools/check_textures.py` on your finished PNGs (copy them into `assets/` first if you can run code). Fix every FAIL it prints. The usual ones:
+
+- **Cut off at the edge:** scale the whole building (eaves, porch, chimney, ground) down until at least 2 px (at 32 px wide) stay empty on the left and right and 1 px below the lowest point.
+- **Base off the diamond:** the stone base must sit on the footprint diamond edges within 1 px. Steps, racks and barrels must not go below the bottom point or outside the side corners.
+- **Stone base look:** one uniform band, same thickness in all 4 views, max 3 flat grey tones, no white or cream pixels, no dithering, 1 px dark bottom outline.
+- **Fringe:** no pink or purple pixels left from the magenta background.
