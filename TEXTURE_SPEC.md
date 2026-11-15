@@ -66,6 +66,17 @@ Each building needs four images, one per camera rotation. Only the rotation chan
 
 Trees, rocks, ore and ground tiles need one image only.
 
+
+### Mandatory entrance/orientation convention
+
+- **View 1 is the canonical source artwork:** the single main entrance is on the visible lower-left-facing wall. Always draw this view first and rotate the same object for views 2, 3 and 4, at successive clockwise quarter-turns.
+- **View 2:** main entrance is on the far upper-left-facing side, hidden from the fixed camera.
+- **View 3:** main entrance is on the far upper-right-facing side, hidden from the fixed camera.
+- **View 4:** main entrance is on the visible lower-right-facing wall.
+- Thus a building with just one door shows that door in **exactly two** of its four views: 1 and 4. Do not invent additional doors or change the layout between rotations.
+- A building's **world-facing** direction is independent of the camera rotation. On placement, the game should orient the canonical door toward an adjacent road, preserving that world-facing direction across camera rotations, reloads and saves. If multiple roads touch the building, preserve its previous road-facing side when possible; if none touches, use the canonical default.
+- Every rotation must preserve the same footprint and fit inside its tile boundary, including the door, stairs, walls, banners and any attachments.
+
 ## 6. File names
 
 Buildings: `name_1.png` to `name_4.png`, for example `house_1_1.png` (hut, view 1) to `house_1_4.png`. Everything else: `name.png`, for example `grass_0.png`, `tree_2.png`. The full list of 69 names is in `assets/README.txt`. Save as **PNG**. Larger images are fine.
