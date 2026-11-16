@@ -348,8 +348,8 @@ function treeSpecies(S, x, y) {
 }
 function treeVariant(S, x, y) { const sp = TREE_SPECIES[treeSpecies(S, x, y)].v; return sp[Math.floor(hash2(x, y, (S.seed || 7) + 813) * sp.length) % sp.length]; }
 // Groves: oak and pine tiles in thick forest are drawn as a stand of 2-4 trees (tree_oak_N / tree_pine_N art). The denser the surrounding forest, the bigger the stand.
-// Which grove art (tree_<kind>_N) goes with each single-tree variant. Maple (8) and aspen (9) have no grove art yet.
-const TREE_GROVE_ART = { 0: 'oak', 1: 'oak', 2: 'pine', 3: 'spruce', 4: 'birch', 5: 'willow', 6: 'old_oak', 7: 'fir', 8: null, 9: null };
+// Which grove art (tree_<kind>_N) goes with each single-tree variant. Every variant has grove art; a missing file falls back to the single tree.
+const TREE_GROVE_ART = { 0: 'oak', 1: 'oak', 2: 'pine', 3: 'spruce', 4: 'birch', 5: 'willow', 6: 'old_oak', 7: 'fir', 8: 'maple', 9: 'aspen' };
 function treeGrove(S, x, y) {
   const kind = TREE_GROVE_ART[treeVariant(S, x, y)]; if (!kind) return { n: 1 };   // the stand matches this tile's own tree, so oaks group with oaks and firs with firs
   let d = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && inb(x + i, y + j) && S.deco[y + j][x + i] === 'tree') d++;
@@ -925,6 +925,8 @@ addSlot('tree_7', 'Fir tree', 'Nature', 1, 1, 'object', 'A full dark evergreen f
 for (let count = 2; count <= 4; count++) addSlot('tree_fir_' + count, 'Fir grove (' + count + ' trees)', 'Nature', 1, 1, 'object', 'Compact cluster of ' + count + ' dense conical fir trees with layered blue-green downward-pointing needle boughs, short brown trunks and no ground or shadow, fitting 32x48 pixels.');
 addSlot('tree_8', 'Golden maple tree', 'Nature', 1, 1, 'object', 'A deciduous maple with an ochre-gold autumn canopy and a dark timber trunk.');
 addSlot('tree_9', 'Aspen tree', 'Nature', 1, 1, 'object', 'A tall narrow aspen with a slender pale marked trunk and an upright green canopy.');
+for (let count = 2; count <= 4; count++) addSlot('tree_maple_' + count, 'Maple grove (' + count + ' trees)', 'Nature', 1, 1, 'object', 'Compact cluster of ' + count + ' small golden autumn maple trees on one 1x1 tile; ochre-gold canopies, dark outlines, brown trunks and no ground, matching the single maple sprite.');
+for (let count = 2; count <= 4; count++) addSlot('tree_aspen_' + count, 'Aspen grove (' + count + ' trees)', 'Nature', 1, 1, 'object', 'Compact cluster of ' + count + ' tall narrow aspen trees on one 1x1 tile; slender pale marked trunks, light green leaves, dark outlines and no ground, matching the single aspen sprite.');
 for (let count = 2; count <= 4; count++) addSlot('tree_oak_' + count, 'Oak grove (' + count + ' trees)', 'Nature', 1, 1, 'object', 'Compact cluster of ' + count + ' small leafy oak trees on one 1x1 tile; fine dark outlined foliage, warm brown trunks and no ground, matching the original small oak tree sprite.');
 for (let i = 0; i < 2; i++) addSlot('rock_' + i, 'Boulders ' + (i + 1), 'Nature', 1, 1, 'object', 'A cluster of two or three rounded grey fieldstones, lit from the top-left, with a few moss specks. Less than one tile wide.');
 for (let i = 0; i < 2; i++) addSlot('ore_' + i, 'Iron ore ' + (i + 1), 'Nature', 1, 1, 'object', 'An outcrop of dark slate-grey rock with rusty orange and pale blue-silver mineral veins. Less than one tile wide.');

@@ -179,8 +179,8 @@ function treeSpecies(S, x, y) {
 }
 function treeVariant(S, x, y) { const sp = TREE_SPECIES[treeSpecies(S, x, y)].v; return sp[Math.floor(hash2(x, y, (S.seed || 7) + 813) * sp.length) % sp.length]; }
 // Groves: oak and pine tiles in thick forest are drawn as a stand of 2-4 trees (tree_oak_N / tree_pine_N art). The denser the surrounding forest, the bigger the stand.
-// Which grove art (tree_<kind>_N) goes with each single-tree variant. Maple (8) and aspen (9) have no grove art yet.
-const TREE_GROVE_ART = { 0: 'oak', 1: 'oak', 2: 'pine', 3: 'spruce', 4: 'birch', 5: 'willow', 6: 'old_oak', 7: 'fir', 8: null, 9: null };
+// Which grove art (tree_<kind>_N) goes with each single-tree variant. Every variant has grove art; a missing file falls back to the single tree.
+const TREE_GROVE_ART = { 0: 'oak', 1: 'oak', 2: 'pine', 3: 'spruce', 4: 'birch', 5: 'willow', 6: 'old_oak', 7: 'fir', 8: 'maple', 9: 'aspen' };
 function treeGrove(S, x, y) {
   const kind = TREE_GROVE_ART[treeVariant(S, x, y)]; if (!kind) return { n: 1 };   // the stand matches this tile's own tree, so oaks group with oaks and firs with firs
   let d = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && inb(x + i, y + j) && S.deco[y + j][x + i] === 'tree') d++;
