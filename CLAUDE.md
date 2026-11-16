@@ -16,7 +16,7 @@ Medieval TheoTown-style pixel isometric city builder. Owner: Zach. Hosted from t
 - View order for every building: _1 door lower-left, _2 upper-left, _3 upper-right, _4 lower-right. World face f: 0=+y,1=-x,2=-y,3=+x; sprite view = (ROT + b.face) % 4. 4-way camera rotation (Q/E).
 - Buildings grow only on zone tiles touching a Hall-connected road; doors face the road. Town Hall is 3x3, barracks 2x2.
 - Zone overlay is hidden under built tiles. Huts have sticky b.var (1..8) that never matches the 8 neighbouring houses.
-- Lumber chain: Lumber zone marks trees; woodcutters fell marked trees into logs (S.res.logs); sawmill turns logs into wood; Town Hall pit-saws at half yield; felled tile -> stump -> grass. Mining zone marks rock; quarries wear rockAmt 3 mountain -> 2 hill -> 1 rubble -> flat. Ore still works the old way (underground rework planned).
+- Lumber chain: Lumber zone marks trees; woodcutters fell marked trees into logs (S.res.logs); sawmill turns logs into wood; Town Hall pit-saws at half yield; felled tile -> stump -> grass. Mining zone marks rock; quarries wear rockAmt 3 mountain -> 2 hill -> 1 rubble -> flat. Terrain rules: mountain (rockAmt 3) is solid: no buildings, zones or roads, and the bulldozer cannot clear it; hill (2) and rubble (1) are buildable and roads cross them (building levels the tile). Quarries only work a mountain tile that touches non-mountain ground (rockOpen), so they cut inward from the edge. World gen makes smooth ranges (MOUNT_T/HILL_T in sim.js): mountain cores ringed by hills. Mountains are drawn as procedural faceted peaks, taller toward the middle of a range, snow on the high ones (mountainSprite/hillSprite in ui.js). Ore still works the old way (underground rework planned).
 - Saves: localStorage 'thornwick-save-1', loadWorld migrates old saves (S.v2 flag). Never break loading old saves.
 
 ## How to test
@@ -27,7 +27,7 @@ Medieval TheoTown-style pixel isometric city builder. Owner: Zach. Hosted from t
 ## Open work (update as it changes)
 1. Workforce panel (workers per trade) + per-building worker counts so output scales with workers (DESIGN_TERRAIN sections 7-8).
 2. Terrain beyond rock/forest, forest regrowth/foresters, underground ore + prospecting + mine levels.
-3. World art mismatch: grass, trees, rocks, farms, market, well, mine, quarry, sawmill, stump, hill/mountain stages are still flat code-drawn sprites; need ChatGPT textures and slots. Grass: assets/grass_0.png pushed by Zach is a CORRUPT PNG (IDAT stream broken, no IEND), so the game rejects it and keeps the built-in grass (validGround in textures.js); needs a fresh export/upload, then grass_1..3. Ground files now load through fitToSlot (keys magenta, crops diamond to 32x16).
+3. World art mismatch: grass, trees, rocks, farms, market, well, mine, quarry, sawmill, stump, hill/mountain are procedural code-drawn peaks (fine for now, ChatGPT art later); the rest need ChatGPT textures and slots. Grass: assets/grass_0.png pushed by Zach is a CORRUPT PNG (IDAT stream broken, no IEND), so the game rejects it and keeps the built-in grass (validGround in textures.js); needs a fresh export/upload, then grass_1..3. Ground files now load through fitToSlot (keys magenta, crops diamond to 32x16).
 4. Hut textures pass the clipping checks but sit at 2 px margin (checker wants 3): relax or redo.
 5. Starting huts overlap the Hall porch (move start layout down one tile).
 6. Older goals: tech tree, conquest map with governors, villager sprites, threats.

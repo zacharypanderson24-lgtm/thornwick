@@ -16,6 +16,7 @@ const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2, sawmill: 3 };
 const HOUSE_CAP = [0, 4, 6];
 // Lumber chain: woodcutters fell designated trees into logs; a sawmill turns 1 log into 1 plank (wood). The Town Hall can pit-saw 1 log/tick at half yield.
 const SAW_RATE = 4, HALL_SAW = 1, HALL_YIELD = 0.5, STUMP_DAYS = 8;
+const MOUNT_T = 0.70, HILL_T = 0.62;
 const BUNKS = 6, HALL_CAP = 6, WELL_R = 4, WORK_R = 3, MARKET_R = 5, STORAGE = 400;
 const NB = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const COST2 = { house: { wood: 30 }, farm: { wood: 24 }, market: { wood: 32 } };
@@ -58,11 +59,18 @@ function createWorld(seed) {
     S.fert[y][x] = Math.max(Math.abs(x - 20), Math.abs(y - 23)) <= 7 || vnoise(x * 0.11 + 10, y * 0.11 + 10, seed + 20) > 0.55;
     if (dist < 6) continue;
     const f = vnoise(x * 0.16, y * 0.16, seed) * 0.65 + vnoise(x * 0.4, y * 0.4, seed + 3) * 0.35;
-    const r = vnoise(x * 0.22 + 40, y * 0.22 + 40, seed + 9);
+    // Mountain ranges: big smooth noise, so cores (3) are surrounded by foothill rings of hills (2).
+    const m = vnoise(x * 0.075 + 40, y * 0.075 + 40, seed + 9) * 0.72 + vnoise(x * 0.19 + 70, y * 0.19 + 70, seed + 11) * 0.28;
     const o = vnoise(x * 0.3 + 90, y * 0.3 + 90, seed + 13);
-    if (o > 0.72 && hash2(x, y, seed + 7) > 0.35) S.deco[y][x] = 'ore';
+    if (m > MOUNT_T) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 3; }
+    else if (m > HILL_T && hash2(x, y, seed + 6) > 0.12) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 2; }
+    else if (o > 0.72 && hash2(x, y, seed + 7) > 0.35) S.deco[y][x] = 'ore';
     else if (f > 0.56 && hash2(x, y, seed + 5) > 0.22) S.deco[y][x] = 'tree';
-    else if (r > 0.7 && hash2(x, y, seed + 6) > 0.35) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = r > 0.82 ? 3 : r > 0.76 ? 2 : 1; }
+  }
+  // No lonely one-tile mountains: they become hills.
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (isMountain(S, x, y)) {
+    let n = 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (inb(x + dx, y + dy) && isMountain(S, x + dx, y + dy)) n++;
+    if (n < 2) S.rockAmt[y * N + x] = 2;
   }
   // The 3x3 Town Hall is anchored at (19,19), centered on the original (20,20).
   // All nine cells are reserved before roads and zones are placed.
@@ -84,8 +92,8 @@ function loadWorld(str) {
     const cells = [[b.x, b.y], [b.x + 1, b.y], [b.x, b.y + 1], [b.x + 1, b.y + 1]];
     const clear = cells.every(([x, y]) => inb(x, y) &&
       !S.blds.some(other => other !== b && tilesOf(other).some(([i, j]) => i === x && j === y)) &&
-      S.deco[y][x] !== 'rock' && S.deco[y][x] !== 'ore');
-    if (clear) { b.sz = 2; for (const [x, y] of cells) S.deco[y][x] = null; }
+      !isSolid(S, x, y));
+    if (clear) { b.sz = 2; for (const [x, y] of cells) { S.deco[y][x] = null; if (S.rockAmt) delete S.rockAmt[y * N + x]; } }
   }
   for (const b of S.blds) { for (const [i, j] of tilesOf(b)) S.grid[j][i] = b; if (b.t === 'hall') S.hall = b; }
   if (!S.hall) return null;
@@ -135,8 +143,7 @@ function roadPathCheck(S, path) {
     const g = S.grid[y][x];
     if (g && g.t === 'road') continue;
     if (g) return { ok: false, n, reason: 'A building is in the way' };
-    const dc = S.deco[y][x];
-    if (dc === 'rock' || dc === 'ore') return { ok: false, n, reason: 'Rock or ore is in the way. Route around it or mine it first' };
+    if (isSolid(S, x, y)) return { ok: false, n, reason: 'A mountain or ore is in the way. Route around it, over the hills, or quarry a pass' };
     n++;
   }
   if (S.res.wood < n * COST.road.wood) return { ok: false, n, reason: 'Not enough wood: ' + n + ' new road tiles need ' + n + ' wood' };
@@ -160,8 +167,8 @@ function canPlace(S, type, x, y) {
   for (const [tx, ty] of tilesOf(footprint)) {
     if (!inb(tx, ty)) return { ok: false, reason: 'Outside the map' };
     if (S.grid[ty][tx]) return { ok: false, reason: 'That tile is already built on' };
-    if (S.deco[ty][tx] === 'rock' || S.deco[ty][tx] === 'ore')
-      return { ok: false, reason: 'Rock and ore block this tile. Zone it for mining to clear it' };
+    if (isSolid(S, tx, ty))
+      return { ok: false, reason: isMountain(S, tx, ty) ? 'You cannot build on a mountain. Hills are fine, or quarry the mountain down to a hill first' : 'Ore blocks this tile. Zone it for mining to clear it' };
   }
   if (type === 'barracks' && !nextToRoad(S, footprint)) return { ok: false, reason: 'Barracks must touch a road' };
   return canAfford(S, type);
@@ -202,7 +209,7 @@ function remove(S, x, y) {
   if (k) {
     if (k === 'tree') S.res.logs = Math.min(STORAGE, (S.res.logs || 0) + 2);
     else if (k === 'stump') { /* nothing to salvage */ }
-    else if (k === 'rock') { S.res.stone = Math.min(STORAGE, S.res.stone + 1); if (S.rockAmt) delete S.rockAmt[tk(x, y)]; }
+    else if (k === 'rock') { if (rockAmt(S, x, y) >= 3) return { ok: false, reason: 'A mountain cannot be cleared by hand. Mark it for quarrying' }; S.res.stone = Math.min(STORAGE, S.res.stone + 1); if (S.rockAmt) delete S.rockAmt[tk(x, y)]; }
     else S.res.ore = Math.min(STORAGE, S.res.ore + 1);
     S.deco[y][x] = null; if (S.stumpT) delete S.stumpT[tk(x, y)]; return { ok: true };
   }
@@ -214,7 +221,7 @@ function zoneCheck(S, kind, x, y) {
   const dc = S.deco[y][x];
   if (kind === 'wood') return dc === 'tree' ? { ok: true } : { ok: false, reason: 'Lumber zones go on forest. Press V to see where the trees are' };
   if (kind === 'mine') return (dc === 'rock' || dc === 'ore') ? { ok: true } : { ok: false, reason: 'Mining zones go on rock or ore. Press V to see the deposits' };
-  if (dc === 'rock' || dc === 'ore') return { ok: false, reason: 'Rock and ore block this zone. Mine it first' };
+  if (isSolid(S, x, y)) return { ok: false, reason: isMountain(S, x, y) ? 'Mountains cannot be built on. Hills can; quarry the mountain down first' : 'Ore blocks this zone. Mine it first' };
   if (kind === 'farm' && !S.fert[y][x]) return { ok: false, reason: 'Farms need fertile soil. Press V to see farmable land' };
   return { ok: true };
 }
@@ -232,15 +239,25 @@ const tk = (x, y) => y * N + x;
 // Trees/rocks that belong to a designated zone (the only ones workers touch).
 function countZoned(S, x, y, r, kind, zone) {
   let n = 0;
-  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++) if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone) n++;
+  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++) if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone && (kind !== 'rock' || rockOpen(S, i, j))) n++;
   return n;
 }
 // Rock height: 3 = mountain, 2 = hill, 1 = rubble. Quarrying wears a tile down one stage at a time.
 function rockAmt(S, x, y) { return (S.rockAmt && S.rockAmt[tk(x, y)]) || 1; }
+// Terrain: 3 = mountain (solid, nothing can be built on it), 2 = hill and 1 = rubble (buildable, building levels them).
+function isMountain(S, x, y) { return S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3; }
+function isSolid(S, x, y) { return S.deco[y][x] === 'ore' || isMountain(S, x, y); }
+// A mountain can only be quarried where it meets open ground (its working face), so quarries cut inward;
+// hills and rubble can always be worked.
+function rockOpen(S, x, y) {
+  if (rockAmt(S, x, y) < 3) return true;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const i = x + dx, j = y + dy; if (inb(i, j) && !isMountain(S, i, j)) return true; }
+  return false;
+}
 function nearestZoned(S, x, y, r, kind, zone) {
   let best = null, bd = 1e9;
   for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
-    if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
+    if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone && (kind !== 'rock' || rockOpen(S, i, j))) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
   return best;
 }
 function fellTree(S, x, y, r) {
@@ -330,7 +347,7 @@ function lotOk(S, kind, x, y, sz) {
   for (let j = 0; j < sz; j++) for (let i = 0; i < sz; i++) {
     const a = x + i, c = y + j;
     if (!inb(a, c) || S.zone[c][a] !== kind || S.grid[c][a]) return false;
-    const dc = S.deco[c][a]; if (dc === 'rock' || dc === 'ore') return false;
+    if (isSolid(S, a, c)) return false;
     if (kind === 'farm' && !S.fert[c][a]) return false;
   }
   return true;
@@ -474,4 +491,4 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (typeof module !== 'undefined') module.exports = { rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (typeof module !== 'undefined') module.exports = { isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };

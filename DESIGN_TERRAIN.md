@@ -1,6 +1,6 @@
 # Thornwick: terrain, stone, ore and lumber (future design)
 
-Status: first pass built (felling zones, logs, sawmill, stumps, quarry mountain stages: mountain -> hill -> rubble -> flat). Not yet built: terrain types beyond rock/forest, underground ore, regrowth/foresters, workforce panel, per-building worker counts. Written so ChatGPT (art) and Claude (code) work from the same plan.
+Status: first pass built (felling zones, logs, sawmill, stumps, quarry stages: mountain -> hill -> rubble -> flat). Mountains and hills reworked: smooth mountain ranges ringed by hills; mountains are solid, hills are buildable and roads cross them; quarries work only the exposed face of a mountain (section 2). Not yet built: terrain types beyond rock/forest, underground ore, regrowth/foresters, workforce panel, per-building worker counts. Written so ChatGPT (art) and Claude (code) work from the same plan.
 Core principle: **resources come out of the land, and taking them changes the land.**
 
 ## 1. Terrain grid
@@ -17,6 +17,7 @@ Replace the scattered rock/ore/tree decorations with a real terrain layer. Each 
 Provinces are generated from a seed with a different mix (river valley, mining mountain, deep forest), which gives governors and conquest different jobs.
 
 ## 2. Stone: from the surface
+- **As built:** mountain (rockAmt 3) blocks buildings, zones and roads and cannot be bulldozed. Hill (2) and rubble (1) are buildable; roads cross them and building levels the tile. A quarry only works a mountain tile that touches open ground, so it cuts inward from the edge, and each tile it finishes steps down: mountain -> hill -> rubble -> flat. Quarrying a face turns a mountain into hills you can build on.
 - Mountains and hills are the stone source. Quarries work them.
 - Each tile has a stone amount. As it drops the tile steps down: mountain -> hill -> rubble -> quarry pit -> flat, buildable ground.
 - Quarrying trades defence (mountains are walls) for building space and stone.

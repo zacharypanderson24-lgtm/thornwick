@@ -107,15 +107,6 @@ function buildSprites() {
     g.fillStyle = '#c9a56a'; g.fillRect(14 + k, 35, 4, 1); g.fillStyle = '#4a3220'; g.fillRect(13 + k, 39, 6, 1);
     SPR.stump.push(c);
   }
-  { const [c, g] = mkc();
-    shadow(g, 16, 41, 11, 3);
-    blob(g, 12, 36, 7, '#767985'); blob(g, 20, 37, 6, '#6b6e7a'); blob(g, 15, 32, 6, '#8a8d98'); blob(g, 14, 31, 3, '#b4b8c4'); blob(g, 21, 34, 3, '#9ea2ae');
-    SPR.hill = c; }
-  { const [c, g] = mkc();
-    shadow(g, 16, 41, 14, 4);
-    blob(g, 10, 36, 8, '#6b6e7a'); blob(g, 22, 37, 7, '#5f626d'); blob(g, 16, 30, 9, '#767985'); blob(g, 15, 22, 7, '#8a8d98');
-    blob(g, 15, 14, 4, '#9ea2ae'); blob(g, 14, 13, 2, '#e8ebf2'); blob(g, 13, 22, 3, '#b4b8c4'); blob(g, 20, 29, 3, '#9ea2ae'); blob(g, 9, 34, 2, '#8a8d98');
-    SPR.mountain = c; }
   function house(lvl) {
     const [c, g] = mkc();
     const [wt, wl, wr] = tones(lvl === 1 ? '#cdb88a' : '#d4cfc2');
@@ -548,6 +539,52 @@ function commitRoad(a, b) {
   const r = placeRoadPath(S, roadPath(a, b, !!keys['shift']));
   if (!r.ok) toast(r.reason); else { updateHUD(); if (!r.n) toast('That stretch is already road'); }
 }
+// ---------- Mountains and hills ----------
+// A peak is a faceted pyramid standing on its tile diamond: left face lit, right face shadowed, ridge bands running down from the apex,
+// snow on the tall ones. Tiles in the middle of a range are taller than tiles on its edge, so ranges read as real mountains.
+// Hills are the same shape, low and grassy.
+const PEAK_COL = {
+  rock: { L: ['#9a9eae', '#8b8fa0'], R: ['#6b7084', '#5c6175'], lit: '#b6bac8', dark: '#4b5064', vale: '#434859', snowL: ['#f2f5fb', '#dfe5f2'], snowR: ['#c6cee2', '#b3bdd6'] },
+  grass: { L: ['#74b258', '#6fae52'], R: ['#58973f', '#53923c'], lit: '#86c268', dark: '#4b8a37', vale: null, stone: '#9aa0ae' }
+};
+const PEAK_CACHE = {};
+function peakSprite(hgt, jx, ph, seed, kind) {
+  const key = kind + hgt + '_' + jx + '_' + ph + '_' + seed; if (PEAK_CACHE[key]) return PEAK_CACHE[key];
+  const Hc = hgt + 16, c = document.createElement('canvas'); c.width = 32; c.height = Hc; const g = c.getContext('2d');
+  const col = PEAK_COL[kind], ax = 16 + jx, ay = Hc - 8 - hgt;
+  const Lp = [0, Hc - 8], Bp = [16, Hc], Rp = [32, Hc - 8];
+  const side = (p, a, b) => (p[0] - b[0]) * (a[1] - b[1]) - (a[0] - b[0]) * (p[1] - b[1]);
+  const inTri = (p, a, b, d) => { const d1 = side(p, a, b), d2 = side(p, b, d), d3 = side(p, d, a); return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0)); };
+  const A = [ax, ay];
+  for (let y = 0; y < Hc; y++) for (let x = 0; x < 32; x++) {
+    const p = [x + 0.5, y + 0.5];
+    const left = inTri(p, Lp, Bp, A), right = !left && inTri(p, Bp, Rp, A);
+    if (!left && !right) continue;
+    const face = left ? 'L' : 'R', rel = Math.max(1, p[1] - ay + 1), u = (p[0] - ax) / rel;
+    const band = Math.floor(u * 2.6 + ph + (kind === 'rock' ? hash2(x >> 1, y >> 2, seed) * 0.9 : 0.3 * hash2(x, y, seed)));
+    let cc = col[face][band & 1];
+    const h = hash2(x, y, seed + 3);
+    if (h < 0.06) cc = col.lit; else if (h > 0.95) cc = col.dark;
+    if (kind === 'rock') {
+      const sl = ay + hgt * 0.36 + Math.floor(hash2(x >> 1, 4, seed) * 3) - 1;
+      if (hgt >= 34 && y < sl) cc = (face === 'L' ? col.snowL : col.snowR)[band & 1];
+    } else if (h > 0.9 && h < 0.935 && y > ay + 2) cc = col.stone;
+    const vx = ax + (16 - ax) * (p[1] - ay) / (Hc - ay);
+    if (col.vale && Math.abs(p[0] - vx) < 0.55 && p[1] > ay + 1) cc = col.vale;
+    g.fillStyle = cc; g.fillRect(x, y, 1, 1);
+  }
+  return PEAK_CACHE[key] = c;
+}
+function mountainSprite(S, x, y) {
+  let n = 0;
+  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && inb(x + i, y + j) && isMountain(S, x + i, y + j)) n++;
+  // Height: the deeper in the range, the taller; smooth noise makes ridges and a few high summits instead of a field of equal spikes.
+  const hgt = Math.round(6 + n * 2 + Math.pow(vnoise(x * 0.2 + 5, y * 0.2 + 5, 77), 1.5) * 44 + hash2(x, y, 31) * 4);
+  return peakSprite(n >= 6 ? Math.min(hgt, 54) : Math.min(hgt, 28), Math.floor(hash2(x, y, 32) * 5) - 2, Math.floor(hash2(x, y, 33) * 2), Math.floor(hash2(x, y, 34) * 3), 'rock');
+}
+function hillSprite(x, y) {
+  return peakSprite(4 + Math.floor(hash2(x, y, 41) * 3), Math.floor(hash2(x, y, 42) * 5) - 2, Math.floor(hash2(x, y, 43) * 2), Math.floor(hash2(x, y, 44) * 3), 'grass');
+}
 function draw() {
   const k = scale * dprI;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#0e1118'; ctx.fillRect(0, 0, cv.width, cv.height);
@@ -592,7 +629,8 @@ function draw() {
       } else if (S.deco[y][x]) {
         const kind = S.deco[y][x], v = Math.floor(hash2(x, y, 8) * (kind === 'tree' ? 3 : 2));
         const amt = kind === 'rock' ? rockAmt(S, x, y) : 1;
-        ctx.drawImage(amt >= 3 ? SPR.mountain : amt === 2 ? SPR.hill : (ovrSprite(kind + '_' + v, ROT) || SPR[kind][v]), ox, oy);
+        if (kind === 'rock' && amt >= 2) { const ps = amt >= 3 ? mountainSprite(S, x, y) : hillSprite(x, y); ctx.drawImage(ps, ox, oy + 48 - ps.height); }
+        else ctx.drawImage(ovrSprite(kind + '_' + v, ROT) || SPR[kind][v], ox, oy);
       }
     }
   }
@@ -699,7 +737,12 @@ function describe(t) {
     const k = S.deco[t.y][t.x];
     if (k === 'tree') return ['Forest', [S.zone[t.y][t.x] === 'wood' ? 'Marked for felling. A woodcutter within 3 tiles cuts it into logs.' : 'Paint a Lumber zone here to mark it for felling. Cleared forest becomes open building land.', 'Building here clears the tree.']];
     if (k === 'stump') return ['Tree stump', ['Left behind by felling. It rots away into open grass you can build on.']];
-    if (k === 'rock') { const a = rockAmt(S, t.x, t.y); return [a >= 3 ? 'Mountain' : a === 2 ? 'Hill' : 'Rubble', [S.zone[t.y][t.x] === 'mine' ? 'Marked for quarrying. Quarries wear it down: mountain, hill, rubble, then flat ground.' : 'Paint a Mining zone here so quarries wear it down into flat, buildable ground.', 'Stone blocks other buildings until it is quarried away.']]; }
+    if (k === 'rock') {
+      const a = rockAmt(S, t.x, t.y), mk = S.zone[t.y][t.x] === 'mine';
+      if (a >= 3) return ['Mountain', [mk ? (rockOpen(S, t.x, t.y) ? 'Marked for quarrying. Its edge is exposed, so quarries can work it.' : 'Marked for quarrying, but quarries can only cut where the mountain meets open ground. They work inward from the edge.') : 'Solid rock: nothing can be built here and roads cannot cross it. Mark its edge for quarrying; it wears down into hills.']];
+      if (a === 2) return ['Hill', [mk ? 'Marked for quarrying. It will wear down to rubble and then flat ground.' : 'You can build and lay roads here. Building levels the hill. Or mark it for quarrying.']];
+      return ['Rubble', [mk ? 'Marked for quarrying. Quarries clear it to flat ground.' : 'Loose rock. You can build here, or mark it for quarrying.']];
+    }
     if (k === 'ore') return ['Iron ore', ['A mining zone here grows iron mines. Soldiers need ore to arm.', 'Ore blocks other buildings.']];
     const z = S.zone[t.y][t.x];
     if (z) {
