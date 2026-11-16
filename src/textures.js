@@ -35,6 +35,7 @@ for (let count = 2; count <= 4; count++) addSlot('tree_spruce_' + count, 'Spruce
 addSlot('tree_4', 'Birch tree', 'Nature', 1, 1, 'object', 'A compact broadleaf birch with green foliage and a pale white-grey trunk with dark bark marks.');
 for (let count = 2; count <= 4; count++) addSlot('tree_birch_' + count, 'Birch grove (' + count + ' trees)', 'Nature', 1, 1, 'object', 'Compact grove of ' + count + ' small birch trees with airy light green foliage and clearly marked pale ivory trunks, all within a 32x48 sprite with magenta background and no terrain or cast shadow.');
 addSlot('tree_5', 'Willow tree', 'Nature', 1, 1, 'object', 'A small willow with a rounded olive-green canopy and slender drooping leaf fronds.');
+for (let count = 2; count <= 4; count++) addSlot('tree_willow_' + count, 'Willow grove (' + count + ' trees)', 'Nature', 1, 1, 'object', 'A compact cluster of ' + count + ' small olive-green willow trees with distinctly drooping leaf curtains and bent brown trunks. All fit inside a single 32x48 pixel sprite; no terrain or shadows.');
 addSlot('tree_6', 'Old oak tree', 'Nature', 1, 1, 'object', 'An old oak with a broad irregular rounded canopy in deep green, a short brown trunk.');
 addSlot('tree_7', 'Fir tree', 'Nature', 1, 1, 'object', 'A full dark evergreen fir with several tiered triangular needle boughs and a brown trunk.');
 addSlot('tree_8', 'Golden maple tree', 'Nature', 1, 1, 'object', 'A deciduous maple with an ochre-gold autumn canopy and a dark timber trunk.');
