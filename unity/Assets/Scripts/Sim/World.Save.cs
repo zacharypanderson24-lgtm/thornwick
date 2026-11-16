@@ -16,6 +16,8 @@ namespace CrownAndHearth.Sim
 
     public partial class World
     {
+        public string BannerColor;
+
         static string SaveKey<T>(T value) => value.ToString().ToLowerInvariant();
 
         static JArray EncodeGrid<T>(T[,] grid, Func<T, JToken> encode)
@@ -36,7 +38,7 @@ namespace CrownAndHearth.Sim
             {
                 ["v"] = 1, ["v2"] = true, ["unity"] = true, ["seed"] = Seed, ["day"] = Day,
                 ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["trained"] = Trained,
-                ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["starving"] = Starving,
+                ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["starving"] = Starving,
                 ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
                 ["res"] = JObject.FromObject(ResAmt.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["rate"] = JObject.FromObject(Rate.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
@@ -67,6 +69,7 @@ namespace CrownAndHearth.Sim
             int offset = (N - size) / 2;
             var world = new World(save.Value<int?>("seed") ?? 7, false)
             {
+                BannerColor = save.Value<string>("banner"),
                 Day = save.Value<int?>("day") ?? 1,
                 Peasants = save.Value<int?>("peasants") ?? 6,
                 Soldiers = save.Value<int?>("soldiers") ?? 0,

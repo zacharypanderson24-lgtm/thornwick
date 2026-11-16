@@ -14,6 +14,16 @@ Tools: 1 Look, 2 Road (drag), 3 Housing, 4 Farmland, 5 Commerce, 6 Lumber, 7 Min
 F Forester, X Sawmill, 8 Well, 9 Barracks, 0 Clear. Homes, farms, markets, woodcutter lodges, quarries and mines grow
 by themselves on zones beside a road when there is demand (strip above the tool bar). Workers (bottom right) sets trade priorities.
 
+## Banner and textures
+
+Open **Banner** in the settlement HUD to choose a preset, enter a hex color, or
+restore the original banners. Save the settlement to retain the color.
+
+Open **Crown & Hearth > Texture Lab** in the Unity Editor. Choose a slot and
+camera view, preview a PNG, then apply it to the shared art folder and reimport.
+Object sprites use their footprint width at game resolution. Ground sprites
+must contain a solid 2:1 diamond.
+
 ## Layout
 
 | Path | What |

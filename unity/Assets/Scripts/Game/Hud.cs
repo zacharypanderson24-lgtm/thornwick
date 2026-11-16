@@ -18,6 +18,7 @@ namespace CrownAndHearth.Game
         static readonly Color Ink = new Color(0.96f, 0.91f, 0.78f, 1f);
 
         Font _font;
+        InputField _bannerInput;
         Text _resText, _infoText, _toastText, _workText, _demandText;
         GameObject _infoPanel, _workPanel;
         float _toastUntil;
@@ -29,6 +30,7 @@ namespace CrownAndHearth.Game
         public event Action<string> ToolPicked;
         public event Action<int> SpeedPicked;
         public event Action<int> RotatePicked;
+        public event Action<string> BannerPicked;
         public event Action<string, int> PrioMoved;
 
         public void Build(IList<GameController.ToolDef> tools)
@@ -43,6 +45,7 @@ namespace CrownAndHearth.Game
             var scaler = canvasGo.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(1600, 900); scaler.matchWidthOrHeight = 0.5f;
             var root = (RectTransform)canvasGo.transform;
+            BuildBannerPicker(root);
 
             // top bar
             var top = MakePanel(root, "TopBar", new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -40), Vector2.zero);
@@ -99,6 +102,47 @@ namespace CrownAndHearth.Game
             Stretch(_workText.rectTransform, new Vector2(10, 8), new Vector2(-10, -290));
             _workPanel.SetActive(false);
         }
+
+        void BuildBannerPicker(RectTransform root)
+        {
+            var anchor = Vector2.one;
+            var panel = MakePanel(root, "BannerColors", anchor, anchor, new Vector2(-292, -372), new Vector2(-8, -222));
+            MakeButton(root, "Banner", anchor, new Vector2(-82, -203), new Vector2(148, 30),
+                () => panel.gameObject.SetActive(!panel.gameObject.activeSelf));
+
+            var palette = new[]
+            {
+                ("Crimson", "#B3202A"), ("Blue", "#2A56C4"), ("Green", "#2F8F46"), ("Purple", "#7A3FA8"),
+                ("Gold", "#D9A31A"), ("Black", "#2B2B33"), ("White", "#E8E4D6"), ("Teal", "#1F9A9A"),
+            };
+            for (int i = 0; i < palette.Length; i++)
+            {
+                var (name, hex) = palette[i];
+                var button = MakeButton(panel, name, new Vector2(0, 1),
+                    new Vector2(38 + 70 * (i % 4), -23 - 34 * (i / 4)), new Vector2(65, 28),
+                    () => BannerPicked?.Invoke(hex));
+                ColorUtility.TryParseHtmlString(hex, out var color);
+                button.color = Color.Lerp(Btn, color, 0.45f);
+            }
+
+            var inputPanel = MakePanel(panel, "HexColor", Vector2.zero, Vector2.zero, new Vector2(6, 12), new Vector2(90, 46));
+            _bannerInput = inputPanel.gameObject.AddComponent<InputField>();
+            var label = MakeText(inputPanel, "Hex", 15, TextAnchor.MiddleCenter);
+            Stretch(label.rectTransform, Vector2.zero, Vector2.zero);
+            _bannerInput.textComponent = label;
+            _bannerInput.targetGraphic = inputPanel.GetComponent<Image>();
+            _bannerInput.characterLimit = 7;
+            _bannerInput.SetTextWithoutNotify("#B3202A");
+            MakeButton(panel, "Apply", Vector2.zero, new Vector2(126, 29), new Vector2(62, 32),
+                () => BannerPicked?.Invoke(_bannerInput.text));
+            MakeButton(panel, "Original", Vector2.zero, new Vector2(217, 29), new Vector2(90, 32),
+                () => BannerPicked?.Invoke(null));
+            panel.gameObject.SetActive(false);
+        }
+
+        public bool EditingBanner => _bannerInput != null && _bannerInput.isFocused;
+
+        public void ShowBannerColor(string hex) => _bannerInput.SetTextWithoutNotify(hex ?? "#B3202A");
 
         public bool PointerOverUi => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
