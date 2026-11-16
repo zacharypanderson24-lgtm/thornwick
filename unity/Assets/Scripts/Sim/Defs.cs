@@ -29,11 +29,9 @@ namespace CrownAndHearth.Sim
         // Stone and ore are finite
         public const int DigU = 10, MountCap = 120, OreCap = 30;
 
-        // Work crews (approximated in this port, see World.Economy.cs)
+        // Work crews (World.Crews.cs): 4 chops x 6 logs = 24 logs per tree
         public const int ChopsPerTree = 4;
         public static readonly Dictionary<string, int> Load = new Dictionary<string, int> { { "wood", 6 }, { "quarry", 5 }, { "mine", 4 } };
-        /// <summary>Delivered units per worker per day at short range, matched to the prototype's crews (CLAUDE.md).</summary>
-        public static readonly Dictionary<string, double> CrewRate = new Dictionary<string, double> { { "wood", 0.8 }, { "quarry", 0.7 }, { "mine", 0.55 } };
 
         public static readonly int[] HouseCap = { 0, 4, 6 };
         public static readonly int[] HouseCap2 = { 0, 14, 20 };

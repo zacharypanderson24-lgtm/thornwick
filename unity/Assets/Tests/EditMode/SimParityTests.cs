@@ -21,7 +21,9 @@ namespace CrownAndHearth.Tests
         }
         [Serializable] class DevStep { public int day; public double wood; public double[] dem; public BldCase[] added; }
         [Serializable] class DevCase { public int seed, R; public DevStep[] steps; }
-        [Serializable] class Reference { public int N; public HashCase[] hash; public SeedCase[] seeds; public DevCase develop; }
+        [Serializable] class TickDay { public int day, peasants, blds, trees, stumps, ore; public double[] res; public string crews, folk; }
+        [Serializable] class TickCase { public int seed, R; public string lodges; public TickDay[] days; }
+        [Serializable] class Reference { public int N; public HashCase[] hash; public SeedCase[] seeds; public DevCase develop; public TickCase ticks; }
 
         static Reference _ref;
         static Reference Ref
@@ -200,6 +202,63 @@ namespace CrownAndHearth.Tests
                 w.Day++;
             }
             Assert.Greater(total, 20, "the scenario should grow plenty of buildings");
+        }
+
+        /// <summary>make_reference.js tick scenario: two Woodcutter Lodges on the first road-side sites with 3+ marked trees in reach, 5+ tiles apart.</summary>
+        static string PlaceLodges(World w)
+        {
+            int C = Defs.Start; var lodges = new System.Collections.Generic.List<(int x, int y)>();
+            bool RoadAt(int x, int y) => World.Inb(x, y) && w.Grid[y, x] != null && w.Grid[y, x].T == "road";
+            for (int y = C - 13; y <= C + 13 && lodges.Count < 2; y++)
+                for (int x = C - 13; x <= C + 13 && lodges.Count < 2; x++)
+                {
+                    if (!w.CanPlace("wood", x, y).Ok || w.CountZoned(x, y, 3, Deco.Tree, Zone.Wood) < 3) continue;
+                    if (!(RoadAt(x + 1, y) || RoadAt(x - 1, y) || RoadAt(x, y + 1) || RoadAt(x, y - 1))) continue;
+                    if (lodges.Any(l => Math.Max(Math.Abs(l.x - x), Math.Abs(l.y - y)) < 5)) continue;
+                    w.AddBld("wood", x, y); lodges.Add((x, y));
+                }
+            w.Recalc();
+            return string.Join(" ", lodges.Select(l => l.x + "," + l.y));
+        }
+
+        static readonly string[] CrewSt = { "h", "o", "w", "b" }, FolkSt = { "h", "k", "s", "b" };
+        static string CrewDigest(World w) => string.Join("|", w.Blds.Where(b => World.CrewKind(b.T) != Deco.None).Select(b => $"{b.T}@{b.X},{b.Y}:" +
+            string.Join(" ", b.Crew.Select(a => $"{CrewSt[(int)a.St]}{a.X},{a.Y},{Noise.JsRound(a.Carry * 1000)}"))));
+        static string FolkDigest(World w) => string.Join(" ", w.Folk.Select(v => $"{v.Id}{FolkSt[(int)v.St]}{v.X},{v.Y},{v.V}"));
+
+        /// <summary>
+        /// 300 whole days through Tick() against the browser's tick(): walking work crews (paths, standing tiles, loads, felling, digging),
+        /// townsfolk (who is out, where, which tunic), resources, population and development must agree every day.
+        /// </summary>
+        [Test]
+        public void CrewsAndTownsfolkMatchJavaScriptDayByDay()
+        {
+            var tc = Ref.ticks;
+            Assert.IsNotNull(tc, "reference.json has no tick scenario. Run node unity/ParityReference/make_reference.js from the repo root.");
+            var w = new World(tc.seed);
+            Layout(w, tc.R);
+            Assert.AreEqual(tc.lodges, PlaceLodges(w), "woodcutter lodge sites");
+            var keys = new[] { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Gold };
+            bool sawWork = false, sawFolkOut = false;
+            for (int i = 0; i < tc.days.Length; i++)
+            {
+                var e = tc.days[i];
+                w.ResAmt[Res.Food] = Math.Max(w.ResAmt[Res.Food], 300); w.ResAmt[Res.Wood] = Math.Max(w.ResAmt[Res.Wood], 200); w.ResAmt[Res.Gold] = Math.Max(w.ResAmt[Res.Gold], 100);
+                w.Tick();
+                string at = $"day {e.day} (step {i})";
+                Assert.AreEqual(e.day, w.Day, at);
+                Assert.AreEqual(e.crews, CrewDigest(w), at + ": crews");
+                Assert.AreEqual(e.folk, FolkDigest(w), at + ": townsfolk");
+                for (int k = 0; k < keys.Length; k++) Assert.AreEqual(e.res[k], w.ResAmt[keys[k]], 1e-6, $"{at}: {keys[k]}");
+                Assert.AreEqual(e.peasants, w.Peasants, at + ": peasants");
+                Assert.AreEqual(e.blds, w.Blds.Count, at + ": buildings");
+                int trees = 0, stumps = 0, ore = 0;
+                foreach (var d in w.DecoMap) { if (d == Deco.Tree) trees++; else if (d == Deco.Stump) stumps++; else if (d == Deco.Ore) ore++; }
+                Assert.AreEqual(e.trees, trees, at + ": trees"); Assert.AreEqual(e.stumps, stumps, at + ": stumps"); Assert.AreEqual(e.ore, ore, at + ": ore tiles");
+                sawWork |= System.Text.RegularExpressions.Regex.IsMatch(e.crews, @"[: ]w\d");
+                sawFolkOut |= System.Text.RegularExpressions.Regex.IsMatch(e.folk, @"\dk\d");
+            }
+            Assert.IsTrue(sawWork && sawFolkOut, "the scenario should have crews at work and villagers walking");
         }
 
         static int CountTrees(World w) { int n = 0; foreach (var d in w.DecoMap) if (d == Deco.Tree) n++; return n; }
