@@ -187,19 +187,21 @@ const N = 64;                     // map is N x N tiles (old saves were 40 and a
 const OLD_N = 40, START = (N >> 1);   // START: the tile column/row the Town Hall is centred on
 const COST = {
   road: { wood: 1 }, house: { wood: 10 }, farm: { wood: 8 }, wood: { wood: 6 }, quarry: { wood: 10 }, mine: { wood: 12 },
-  market: { wood: 12 }, sawmill: { wood: 15 }, well: { wood: 5, stone: 5 }, barracks: { wood: 20, stone: 15, gold: 20 }
+  market: { wood: 12 }, sawmill: { wood: 15 }, forester: { wood: 8 }, well: { wood: 5, stone: 5 }, barracks: { wood: 20, stone: 15, gold: 20 }
 };
 const NAMES = {
-  road: 'Dirt Road', house: 'Timber House', farm: 'Farm', wood: 'Woodcutter', quarry: 'Quarry', mine: 'Iron Mine', market: 'Market', sawmill: 'Sawmill',
+  road: 'Dirt Road', house: 'Timber House', farm: 'Farm', wood: 'Woodcutter', quarry: 'Quarry', mine: 'Iron Mine', market: 'Market', sawmill: 'Sawmill', forester: 'Forester',
   well: 'Well', barracks: 'Barracks', hall: 'Town Hall',
   zoneRes: 'Housing Zone', zoneFarm: 'Farm Zone', zoneComm: 'Commerce Zone', zoneWood: 'Lumber Zone', zoneMine: 'Mining Zone'
 };
 const ZONE_NAMES = { res: 'Housing zone', farm: 'Farm zone', comm: 'Commerce zone', wood: 'Lumber zone', mine: 'Mining zone' };
 const ZONE_KINDS = ['res', 'farm', 'comm', 'wood', 'mine'];
-const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2, sawmill: 3 };
+const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2, sawmill: 3, forester: 2 };
 const HOUSE_CAP = [0, 4, 6];
 // Lumber chain: woodcutters fell designated trees into logs; a sawmill turns 1 log into 1 plank (wood). The Town Hall can pit-saw 1 log/tick at half yield.
 const SAW_RATE = 4, HALL_SAW = 1, HALL_YIELD = 0.5, STUMP_DAYS = 8;
+// Foresters replant open Lumber-zone tiles: one sapling per PLANT_EVERY days at full staffing, and a sapling grows into a tree after SAPLING_DAYS.
+const PLANT_EVERY = 4, SAPLING_DAYS = 30, FORESTER_R = 4;
 const BUNKS = 6, HALL_CAP = 6, WELL_R = 4, WORK_R = 3, MARKET_R = 5, STORAGE = 400;
 const NB = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const COST2 = { house: { wood: 30 }, farm: { wood: 24 }, market: { wood: 32 } };
@@ -207,9 +209,9 @@ const costOf = (type, sz) => (sz === 2 && COST2[type]) ? COST2[type] : (COST[typ
 const capOf = b => b.sz === 2 ? [0, 14, 20][b.lvl] : HOUSE_CAP[b.lvl];
 // Trades: which job buildings belong to which trade. Villagers fill jobs in priority order (default: food first), so each building ends up with its own
 // worker count (b.workers) and staffing share (b.eff = workers / jobs). Output scales with b.eff, never with one global ratio.
-const TRADE_OF = { farm: 'farming', wood: 'timber', sawmill: 'woodwork', quarry: 'quarrying', mine: 'mining', market: 'trade' };
+const TRADE_OF = { farm: 'farming', wood: 'timber', forester: 'timber', sawmill: 'woodwork', quarry: 'quarrying', mine: 'mining', market: 'trade' };
 const TRADES = ['farming', 'timber', 'woodwork', 'quarrying', 'mining', 'trade'];
-const TRADE_NAMES = { farming: 'Farming', timber: 'Timber (felling)', woodwork: 'Woodworking (sawmill)', quarrying: 'Quarrying', mining: 'Mining', trade: 'Trade (market)' };
+const TRADE_NAMES = { farming: 'Farming', timber: 'Timber (felling, planting)', woodwork: 'Woodworking (sawmill)', quarrying: 'Quarrying', mining: 'Mining', trade: 'Trade (market)' };
 const jobsOf = b => Math.round((JOBS[b.t] || 0) * (b.sz === 2 ? 2.5 : 1));
 const foodOf = b => 3 * (b.sz === 2 ? 2.6 : 1);
 const marketR = b => b.sz === 2 ? 7 : 5;
@@ -425,7 +427,7 @@ function growSave(o) {
   const oldN = o.deco.length; if (oldN >= N) return o;
   const off = (N - oldN) >> 1, seed = o.seed || 7;
   const S = Object.assign({}, o);
-  S.deco = []; S.zone = []; S.fert = []; S.rockAmt = {}; S.elev = {}; S.stumpT = {}; S.dig = {}; S.oreLeft = {};
+  S.deco = []; S.zone = []; S.fert = []; S.rockAmt = {}; S.elev = {}; S.stumpT = {}; S.sapT = {}; S.dig = {}; S.oreLeft = {};
   for (let y = 0; y < N; y++) { S.deco.push(Array(N).fill(null)); S.zone.push(Array(N).fill(null)); S.fert.push(Array(N).fill(false)); }
   S.hv = genHeights(seed);
   const inOld = (x, y) => x >= off && y >= off && x < off + oldN && y < off + oldN;
@@ -433,7 +435,7 @@ function growSave(o) {
     if (inOld(x, y)) { const ox = x - off, oy = y - off; S.deco[y][x] = o.deco[oy][ox]; S.zone[y][x] = o.zone[oy][ox]; S.fert[y][x] = o.fert[oy][ox]; }
     else genTile(S, seed, x, y);
   }
-  for (const key of ['rockAmt', 'elev', 'stumpT', 'dig', 'oreLeft']) for (const k in (o[key] || {})) {
+  for (const key of ['rockAmt', 'elev', 'stumpT', 'sapT', 'dig', 'oreLeft']) for (const k in (o[key] || {})) {
     const ox = k % oldN, oy = Math.floor(k / oldN); S[key][(oy + off) * N + ox + off] = o[key][k];
   }
   S.blds = o.blds.map(b => Object.assign({}, b, { x: b.x + off, y: b.y + off }));
@@ -497,7 +499,7 @@ function addBld(S, t, x, y, sz) {
   const b = { t, x, y, sz: sz || (t === 'hall' ? 3 : t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
   if (t === 'house') b.var = pickHutVar(S, x, y);
   S.blds.push(b);
-  for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (S.dig) delete S.dig[j * N + i]; if (S.elev) delete S.elev[j * N + i]; if (S.oreLeft) delete S.oreLeft[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
+  for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (S.dig) delete S.dig[j * N + i]; if (S.elev) delete S.elev[j * N + i]; if (S.oreLeft) delete S.oreLeft[j * N + i]; if (S.sapT) delete S.sapT[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
   if (t !== 'road') levelFootprint(S, tilesOf(b));
   return b;
@@ -576,10 +578,10 @@ function remove(S, x, y) {
   const k = S.deco[y][x];
   if (k) {
     if (k === 'tree') S.res.logs = Math.min(STORAGE, (S.res.logs || 0) + 2);
-    else if (k === 'stump') { /* nothing to salvage */ }
+    else if (k === 'stump' || k === 'sapling') { /* nothing to salvage */ }
     else if (k === 'rock') { if (rockAmt(S, x, y) >= 3) return { ok: false, reason: 'A mountain cannot be cleared by hand. Mark it for quarrying' }; if (pitDepth(S, x, y) > 0) return { ok: false, reason: 'A quarry pit cannot be filled in' }; S.res.stone = Math.min(STORAGE, S.res.stone + 1); if (S.rockAmt) delete S.rockAmt[tk(x, y)]; }
     else S.res.ore = Math.min(STORAGE, S.res.ore + 1);
-    S.deco[y][x] = null; if (S.stumpT) delete S.stumpT[tk(x, y)]; return { ok: true };
+    S.deco[y][x] = null; if (S.stumpT) delete S.stumpT[tk(x, y)]; if (S.sapT) delete S.sapT[tk(x, y)]; return { ok: true };
   }
   return { ok: false, reason: 'Nothing to clear here' };
 }
@@ -587,7 +589,11 @@ function zoneCheck(S, kind, x, y) {
   if (!inb(x, y)) return { ok: false, reason: 'Outside the map' };
   if (S.grid[y][x]) return S.zone[y][x] === kind ? { ok: true } : { ok: false, reason: 'That tile is already built on' };
   const dc = S.deco[y][x];
-  if (kind === 'wood') return dc === 'tree' ? { ok: true } : { ok: false, reason: 'Lumber zones go on forest. Press V to see where the trees are' };
+  if (kind === 'wood') {
+    if (dc === 'tree' || dc === 'sapling') return { ok: true };
+    if (dc === null || dc === undefined || dc === 'stump') return (isSolid(S, x, y) || (S.hv && tileSpread(S, x, y) >= 2)) ? { ok: false, reason: 'Too steep or rocky to plant. Foresters need gentle open ground' } : { ok: true };
+    return { ok: false, reason: 'Lumber zones go on forest or open ground for a forester to replant' };
+  }
   if (kind === 'mine') {
     if (dc === 'rock') return rockLeft(S, x, y) > 0 ? { ok: true } : { ok: false, reason: 'This rock is worked out. Stone does not grow back' };
     return dc === 'ore' ? { ok: true } : { ok: false, reason: 'Mining zones go on rock or ore. Press V to see the deposits' };
@@ -634,7 +640,7 @@ function oreLeft(S, x, y) { return S.deco[y][x] === 'ore' ? ((S.oreLeft && S.ore
 function isMountain(S, x, y) { return S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3; }
 function pitDepth(S, x, y) { return (inb(x, y) && S.deco[y][x] === 'rock' && rockAmt(S, x, y) < 3) ? Math.max(0, -rockLevel(S, x, y)) : 0; }
 const TREE_MSG = 'Trees are in the way. Paint a Lumber zone over them and let woodcutters clear the land first';
-function hasTree(S, x, y) { return S.deco[y][x] === 'tree'; }
+function hasTree(S, x, y) { return S.deco[y][x] === 'tree' || S.deco[y][x] === 'sapling'; }   // saplings block building like trees
 function isSolid(S, x, y) { return S.deco[y][x] === 'ore' || isMountain(S, x, y) || pitDepth(S, x, y) > 0 || tileSpread(S, x, y) >= 3; }   // 3+ levels across one tile is too steep
 // A mountain can only be quarried where it meets open ground or a hollowed-out (worked out) mountain tile, so quarries cut inward.
 function rockOpen(S, x, y) {
@@ -677,9 +683,21 @@ function nearestZoned(S, x, y, r, kind, zone) {
     if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone && (kind !== 'rock' || rockWorkable(S, i, j))) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
   return best;
 }
+function foresterCovers(S, x, y) { return S.blds.some(b => b.t === 'forester' && Math.max(Math.abs(b.x - x), Math.abs(b.y - y)) <= FORESTER_R); }
+// Plant one sapling on the open Lumber-zone tile nearest the forester (a stump is left to rot first).
+function plantSapling(S, x, y, r) {
+  let best = null, bd = 1e9;
+  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++) {
+    if (!inb(i, j) || S.zone[j][i] !== 'wood' || S.grid[j][i] || S.deco[j][i]) continue;
+    if (isSolid(S, i, j) || tileSpread(S, i, j) >= 2) continue;
+    const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; }
+  }
+  if (!best) return false;
+  S.deco[best[1]][best[0]] = 'sapling'; S.sapT = S.sapT || {}; S.sapT[tk(best[0], best[1])] = SAPLING_DAYS; return true;
+}
 function fellTree(S, x, y, r) {
   const t = nearestZoned(S, x, y, r, 'tree', 'wood'); if (!t) return;
-  S.deco[t[1]][t[0]] = 'stump'; S.zone[t[1]][t[0]] = null;
+  S.deco[t[1]][t[0]] = 'stump'; if (!foresterCovers(S, t[0], t[1])) S.zone[t[1]][t[0]] = null;   // a forester nearby keeps the tile as a managed woodlot
   S.stumpT = S.stumpT || {}; S.stumpT[tk(t[0], t[1])] = STUMP_DAYS;
 }
 function fellNearest(S, x, y, r, kind) {
@@ -863,6 +881,8 @@ function tick(S) {
         logs += 2.5 * e; b.prog += e;
         if (b.prog >= 10) { b.prog = 0; fellTree(S, b.x, b.y, WORK_R); }
       }
+    } else if (b.t === 'forester') {
+      if (e > 0) { b.prog += e; if (b.prog >= PLANT_EVERY) { if (plantSapling(S, b.x, b.y, FORESTER_R)) b.prog = 0; else b.prog = PLANT_EVERY; } }
     } else if (b.t === 'quarry') {
       // Finite stone: the quarry pauses (and keeps its reserve in the ground) while the stockpile is full.
       if (e > 0 && S.res.stone + stone < STORAGE) stone += mineRock(S, b.x, b.y, WORK_R, 2 * e);
@@ -878,6 +898,8 @@ function tick(S) {
   if (S.res.logs > 0) { const c = Math.min(S.res.logs, HALL_SAW); S.res.logs -= c; wood += c * HALL_YIELD; }
   // Stumps rot away into open, buildable grass.
   if (S.stumpT) for (const k in S.stumpT) if (--S.stumpT[k] <= 0) { delete S.stumpT[k]; const y = Math.floor(k / N), x = k % N; if (S.deco[y][x] === 'stump') S.deco[y][x] = null; }
+  // Saplings grow into trees (the forester's tile stays in its Lumber zone, ready for felling again).
+  if (S.sapT) for (const k in S.sapT) if (--S.sapT[k] <= 0) { delete S.sapT[k]; const y = Math.floor(k / N), x = k % N; if (S.deco[y][x] === 'sapling') S.deco[y][x] = 'tree'; }
   const trade = d.markets ? 0.04 * S.peasants * d.cov * d.mkEff : 0;
   const eat = (S.peasants + S.soldiers * 1.5) * 0.2;
   S.res.food += food - eat; S.res.wood += wood; S.res.stone += stone; S.res.ore += ore;
@@ -908,7 +930,7 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (false) module.exports = { TRADES, TRADE_OF, TRADE_NAMES, jobsOf, recalc, treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (false) module.exports = { PLANT_EVERY, SAPLING_DAYS, FORESTER_R, plantSapling, foresterCovers, TRADES, TRADE_OF, TRADE_NAMES, jobsOf, recalc, treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
 
 // ---------- Texture slots, overrides, asset loader, and the texture lab ----------
 const STYLE = 'Isometric pixel art for a medieval city-builder game in the spirit of TheoTown. True 2:1 isometric: a ground tile is a diamond exactly twice as wide as it is tall. Hard pixel edges, no anti-aliasing, no gradients, no blur, no outline thicker than 1 pixel, about 24 colours at most. Warm, earthy early-medieval palette: weathered timber, straw thatch, packed dirt, grey fieldstone, muted greens. Light comes from the top-left: left-facing walls are mid-tone, right-facing walls are darker, roofs are lightest on their left slope. No cast shadow on the ground and nothing drawn on the ground except the object itself. One object per image, centred, completely visible, viewed from a fixed camera about 30 degrees above the horizon. Background: one flat solid pure magenta (#FF00FF) so it can be removed.';
@@ -928,6 +950,7 @@ addSlot('house_2', 'Cottage (level 2)', 'Buildings (1 tile)', 1, 4, 'object', 'T
 addSlot('farm', 'Farm', 'Buildings (1 tile)', 1, 4, 'object', 'A tilled field filling the tile: furrow rows in golden yellow and brown with green sprouts, a low wooden fence border, and a tiny red-brown timber barn with a hay door in one back corner.');
 addSlot('wood', 'Woodcutter lodge', 'Buildings (1 tile)', 1, 4, 'object', 'A small log cabin of dark round logs with a mossy green plank roof, an axe stuck in a chopping stump by the door, and a neat stack of cut logs beside it.');
 addSlot('sawmill', 'Sawmill', 'Buildings (1 tile)', 1, 4, 'object', 'A small open timber sawmill shed with a slate-grey roof, a big round saw blade and a trestle, a pile of logs on one side and neat stacks of cut pale planks on the other.');
+addSlot('forester', 'Forester lodge', 'Buildings (1 tile)', 1, 4, 'object', 'A small log cabin with a moss-green plank roof, a wheelbarrow of young saplings and a spade by the door, and a bundle of tied seedlings leaning on the wall.');
 addSlot('quarry', 'Quarry', 'Buildings (1 tile)', 1, 4, 'object', 'A shallow pit cut into pale grey rock, cut stone blocks stacked at the edge, a wooden hoist with rope, and a small hand cart. Light grey dust.');
 addSlot('mine', 'Iron mine', 'Buildings (1 tile)', 1, 4, 'object', 'A mound of dark grey rock with a timber-framed tunnel entrance (two posts and a lintel) with a black opening, a small wooden ore cart, and a pile of reddish-brown iron ore lumps with orange flecks.');
 addSlot('well', 'Well', 'Buildings (1 tile)', 1, 4, 'object', 'A round fieldstone well with blue water showing, two wooden posts holding a small gabled shingle roof, a wooden bucket on a rope and a crank handle.');
@@ -1366,6 +1389,23 @@ function buildSprites() {
     for (let i = 0; i < 3; i++) { const [lt, ll, lr] = tones('#b07a44'); box(g, .72, .18 + i * .22, .94, .34 + i * .22, 0, 3, lt, ll, lr); }
     box(g, .74, .24, .92, .5, 3, 5, '#e0c08a', '#c0a06a', '#a58652');
     SPR.sawmill = c; }
+  // Forester's hut: a small green-roofed cabin with a bundle of saplings by the door.
+  { const [c, g] = mkc();
+    const [wt, wl, wr] = tones('#7a5a38');
+    box(g, .12, .22, .58, .78, 0, 8, wt, wl, wr);
+    winL(g, .26, .4, 0, 5, .78, '#2a1d10');
+    const [rt, rl, rr] = tones('#5f8a3c'); pyramid(g, .08, .18, .62, .82, 8, 15, rl, rr, rt);
+    for (let i = 0; i < 3; i++) { box(g, .68 + i * .08, .3 + i * .16, .72 + i * .08, .34 + i * .16, 0, 3, '#7a5a38', '#5e4228', '#4a3220'); blob(g, 19 + i * 2, 33 + i, 2, '#6fae45'); }
+    SPR.forester = c; }
+  // Saplings: a thin trunk with a small leafy tuft (two looks).
+  SPR.sapling = [];
+  for (let k = 0; k < 2; k++) {
+    const [c, g] = mkc();
+    shadow(g, 16, 40, 5, 2);
+    g.fillStyle = '#6b4a2b'; g.fillRect(15 + k, 34, 2, 6);
+    blob(g, 16 + k, 32, 3, '#6fae45'); blob(g, 15 + k, 30, 2, '#8bc95c');
+    SPR.sapling.push(c);
+  }
   { const [c, g] = mkc();
     groundFill(g, (u, v, X, Y) => {
       if (u < .08 || u > .92 || v < .08 || v > .92) return null;
@@ -1567,7 +1607,7 @@ let dprI = 1, viewW = 0, viewH = 0;
 const TOOLS = [
   { id: 'inspect', label: 'Look', key: '1' }, { id: 'road', label: 'Road', key: '2' }, { id: 'zoneRes', label: 'Housing', key: '3' },
   { id: 'zoneFarm', label: 'Farmland', key: '4' }, { id: 'zoneComm', label: 'Commerce', key: '5' }, { id: 'zoneWood', label: 'Lumber', key: '6' },
-  { id: 'zoneMine', label: 'Mining', key: '7' }, { id: 'well', label: 'Well', key: '8' }, { id: 'sawmill', label: 'Sawmill', key: 'x' }, { id: 'barracks', label: 'Barracks', key: '9' },
+  { id: 'zoneMine', label: 'Mining', key: '7' }, { id: 'well', label: 'Well', key: '8' }, { id: 'sawmill', label: 'Sawmill', key: 'x' }, { id: 'forester', label: 'Forester', key: 'f' }, { id: 'barracks', label: 'Barracks', key: '9' },
   { id: 'bulldoze', label: 'Clear', key: '0' }
 ];
 let helpOpen = false;   // declared early: setTool() calls updateInfo() during startup
@@ -2102,8 +2142,9 @@ const DEM_LABELS = { res: 'Homes', farm: 'Farms', comm: 'Trade', wood: 'Lumber',
 function updateHint() {
   let t = '';
   if (tool === 'road') t = roadAnchor ? 'Click where the road ends. Shift bends it the other way. Esc cancels.' : 'Click where the road starts, then click where it ends. You can start or end on an existing road.';
-  else if (tool === 'zoneWood') t = 'Drag over forest to mark trees for felling. Woodcutters near a road cut them into logs and the land is left clear to build on. Logs need a sawmill.';
+  else if (tool === 'zoneWood') t = 'Drag over forest to mark trees for felling. Woodcutters near a road cut them into logs and the land is left clear to build on. Logs need a sawmill. Also paint open ground next to a forester so it replants the woodlot.';
   else if (tool === 'zoneMine') t = 'Drag over rock to mark it for quarrying. Stone is limited and never grows back. Mountains hollow out but stay; hills dig down into pits.';
+  else if (tool === 'forester') t = 'Place a forester beside a road, then paint a Lumber zone over open ground within 4 tiles. It plants saplings there; they grow into trees for woodcutters.';
   else if (tool === 'sawmill') t = 'Place a sawmill beside a road. It turns logs into wood. Without one, the Town Hall saws slowly at half yield.';
   else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings only grow on zone tiles that touch a road, and their doors face it.';
   const el = $('hint'); if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
@@ -2153,6 +2194,7 @@ function describe(t) {
   if (!b) {
     const k = S.deco[t.y][t.x];
     if (k === 'tree') return ['Forest', [S.zone[t.y][t.x] === 'wood' ? 'Marked for felling. A woodcutter within 3 tiles cuts it into logs.' : 'Paint a Lumber zone here to mark it for felling. Cleared forest becomes open building land.', 'Building here clears the tree.']];
+    if (k === 'sapling') return ['Sapling', ['Planted by a forester. It grows into a tree in ' + Math.max(1, (S.sapT && S.sapT[t.y * N + t.x]) || 0) + ' days.']];
     if (k === 'stump') return ['Tree stump', ['Left behind by felling. It rots away into open grass you can build on.']];
     if (k === 'rock') {
       const lv = rockLevel(S, t.x, t.y), left = Math.ceil(rockLeft(S, t.x, t.y)), mk = S.zone[t.y][t.x] === 'mine';
@@ -2182,6 +2224,10 @@ function describe(t) {
   if (b.t === 'quarry') {
     let left = 0, n = 0; for (let j = b.y - 3; j <= b.y + 3; j++) for (let i = b.x - 3; i <= b.x + 3; i++) if (inb(i, j) && S.zone[j][i] === 'mine' && rockWorkable(S, i, j)) { n++; left += rockLeft(S, i, j); }
     L.push(workLine(b) + ' · ' + n + ' marked rock tiles in reach · ' + Math.ceil(left) + ' stone left in reach', n ? 'Makes ' + (b.served ? (2 * (b.eff || 0)).toFixed(1) : '0') + ' stone per second. Mountains hollow out, hills dig down into pits. Stone never grows back.' : 'Run dry: nothing marked and workable in reach. Paint a Mining zone on more rock nearby.');
+  }
+  if (b.t === 'forester') {
+    let open = 0, grow = 0; for (let j = b.y - FORESTER_R; j <= b.y + FORESTER_R; j++) for (let i = b.x - FORESTER_R; i <= b.x + FORESTER_R; i++) if (inb(i, j) && S.zone[j][i] === 'wood') { if (S.deco[j][i] === 'sapling') grow++; else if (!S.deco[j][i] && !S.grid[j][i]) open++; }
+    L.push(workLine(b) + ' · ' + open + ' open Lumber tiles in reach · ' + grow + ' saplings growing', open ? 'Plants a sapling every ' + (PLANT_EVERY / Math.max(0.01, b.eff || 0)).toFixed(0) + ' days at current staffing. Saplings take ' + SAPLING_DAYS + ' days to become trees.' : 'Paint a Lumber zone over open ground within ' + FORESTER_R + ' tiles for it to plant.');
   }
   if (b.t === 'sawmill') L.push(workLine(b) + ' · saws ' + (b.served ? (SAW_RATE * (b.eff || 0)).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
   if (b.t === 'mine') {

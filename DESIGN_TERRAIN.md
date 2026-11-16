@@ -1,6 +1,6 @@
 # Thornwick: terrain, stone, ore and lumber (future design)
 
-Status: first pass built (felling zones, logs, sawmill, stumps, quarry stages: hill -> rubble -> flat). Mountains and hills reworked: smooth mountain ranges ringed by hills; mountains are permanent and solid, hills are buildable and roads cross them; quarries take stone from the exposed face of a mountain without wearing it down (section 2). Not yet built: terrain types beyond rock/forest, underground ore, regrowth/foresters, workforce panel, per-building worker counts. Written so ChatGPT (art) and Claude (code) work from the same plan.
+Status: first pass built (felling zones, logs, sawmill, stumps, quarry stages: hill -> rubble -> flat). Mountains and hills reworked: smooth mountain ranges ringed by hills; mountains are permanent and solid, hills are buildable and roads cross them; quarries take stone from the exposed face of a mountain without wearing it down (section 2). Also built: workforce panel, per-building worker counts, foresters (replant Lumber-zone land with saplings). Not yet built: terrain types beyond rock/forest, underground ore. Written so ChatGPT (art) and Claude (code) work from the same plan.
 Core principle: **resources come out of the land, and taking them changes the land.**
 
 ## 1. Terrain grid

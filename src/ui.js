@@ -146,6 +146,23 @@ function buildSprites() {
     for (let i = 0; i < 3; i++) { const [lt, ll, lr] = tones('#b07a44'); box(g, .72, .18 + i * .22, .94, .34 + i * .22, 0, 3, lt, ll, lr); }
     box(g, .74, .24, .92, .5, 3, 5, '#e0c08a', '#c0a06a', '#a58652');
     SPR.sawmill = c; }
+  // Forester's hut: a small green-roofed cabin with a bundle of saplings by the door.
+  { const [c, g] = mkc();
+    const [wt, wl, wr] = tones('#7a5a38');
+    box(g, .12, .22, .58, .78, 0, 8, wt, wl, wr);
+    winL(g, .26, .4, 0, 5, .78, '#2a1d10');
+    const [rt, rl, rr] = tones('#5f8a3c'); pyramid(g, .08, .18, .62, .82, 8, 15, rl, rr, rt);
+    for (let i = 0; i < 3; i++) { box(g, .68 + i * .08, .3 + i * .16, .72 + i * .08, .34 + i * .16, 0, 3, '#7a5a38', '#5e4228', '#4a3220'); blob(g, 19 + i * 2, 33 + i, 2, '#6fae45'); }
+    SPR.forester = c; }
+  // Saplings: a thin trunk with a small leafy tuft (two looks).
+  SPR.sapling = [];
+  for (let k = 0; k < 2; k++) {
+    const [c, g] = mkc();
+    shadow(g, 16, 40, 5, 2);
+    g.fillStyle = '#6b4a2b'; g.fillRect(15 + k, 34, 2, 6);
+    blob(g, 16 + k, 32, 3, '#6fae45'); blob(g, 15 + k, 30, 2, '#8bc95c');
+    SPR.sapling.push(c);
+  }
   { const [c, g] = mkc();
     groundFill(g, (u, v, X, Y) => {
       if (u < .08 || u > .92 || v < .08 || v > .92) return null;
@@ -347,7 +364,7 @@ let dprI = 1, viewW = 0, viewH = 0;
 const TOOLS = [
   { id: 'inspect', label: 'Look', key: '1' }, { id: 'road', label: 'Road', key: '2' }, { id: 'zoneRes', label: 'Housing', key: '3' },
   { id: 'zoneFarm', label: 'Farmland', key: '4' }, { id: 'zoneComm', label: 'Commerce', key: '5' }, { id: 'zoneWood', label: 'Lumber', key: '6' },
-  { id: 'zoneMine', label: 'Mining', key: '7' }, { id: 'well', label: 'Well', key: '8' }, { id: 'sawmill', label: 'Sawmill', key: 'x' }, { id: 'barracks', label: 'Barracks', key: '9' },
+  { id: 'zoneMine', label: 'Mining', key: '7' }, { id: 'well', label: 'Well', key: '8' }, { id: 'sawmill', label: 'Sawmill', key: 'x' }, { id: 'forester', label: 'Forester', key: 'f' }, { id: 'barracks', label: 'Barracks', key: '9' },
   { id: 'bulldoze', label: 'Clear', key: '0' }
 ];
 let helpOpen = false;   // declared early: setTool() calls updateInfo() during startup
@@ -882,8 +899,9 @@ const DEM_LABELS = { res: 'Homes', farm: 'Farms', comm: 'Trade', wood: 'Lumber',
 function updateHint() {
   let t = '';
   if (tool === 'road') t = roadAnchor ? 'Click where the road ends. Shift bends it the other way. Esc cancels.' : 'Click where the road starts, then click where it ends. You can start or end on an existing road.';
-  else if (tool === 'zoneWood') t = 'Drag over forest to mark trees for felling. Woodcutters near a road cut them into logs and the land is left clear to build on. Logs need a sawmill.';
+  else if (tool === 'zoneWood') t = 'Drag over forest to mark trees for felling. Woodcutters near a road cut them into logs and the land is left clear to build on. Logs need a sawmill. Also paint open ground next to a forester so it replants the woodlot.';
   else if (tool === 'zoneMine') t = 'Drag over rock to mark it for quarrying. Stone is limited and never grows back. Mountains hollow out but stay; hills dig down into pits.';
+  else if (tool === 'forester') t = 'Place a forester beside a road, then paint a Lumber zone over open ground within 4 tiles. It plants saplings there; they grow into trees for woodcutters.';
   else if (tool === 'sawmill') t = 'Place a sawmill beside a road. It turns logs into wood. Without one, the Town Hall saws slowly at half yield.';
   else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings only grow on zone tiles that touch a road, and their doors face it.';
   const el = $('hint'); if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
@@ -933,6 +951,7 @@ function describe(t) {
   if (!b) {
     const k = S.deco[t.y][t.x];
     if (k === 'tree') return ['Forest', [S.zone[t.y][t.x] === 'wood' ? 'Marked for felling. A woodcutter within 3 tiles cuts it into logs.' : 'Paint a Lumber zone here to mark it for felling. Cleared forest becomes open building land.', 'Building here clears the tree.']];
+    if (k === 'sapling') return ['Sapling', ['Planted by a forester. It grows into a tree in ' + Math.max(1, (S.sapT && S.sapT[t.y * N + t.x]) || 0) + ' days.']];
     if (k === 'stump') return ['Tree stump', ['Left behind by felling. It rots away into open grass you can build on.']];
     if (k === 'rock') {
       const lv = rockLevel(S, t.x, t.y), left = Math.ceil(rockLeft(S, t.x, t.y)), mk = S.zone[t.y][t.x] === 'mine';
@@ -962,6 +981,10 @@ function describe(t) {
   if (b.t === 'quarry') {
     let left = 0, n = 0; for (let j = b.y - 3; j <= b.y + 3; j++) for (let i = b.x - 3; i <= b.x + 3; i++) if (inb(i, j) && S.zone[j][i] === 'mine' && rockWorkable(S, i, j)) { n++; left += rockLeft(S, i, j); }
     L.push(workLine(b) + ' · ' + n + ' marked rock tiles in reach · ' + Math.ceil(left) + ' stone left in reach', n ? 'Makes ' + (b.served ? (2 * (b.eff || 0)).toFixed(1) : '0') + ' stone per second. Mountains hollow out, hills dig down into pits. Stone never grows back.' : 'Run dry: nothing marked and workable in reach. Paint a Mining zone on more rock nearby.');
+  }
+  if (b.t === 'forester') {
+    let open = 0, grow = 0; for (let j = b.y - FORESTER_R; j <= b.y + FORESTER_R; j++) for (let i = b.x - FORESTER_R; i <= b.x + FORESTER_R; i++) if (inb(i, j) && S.zone[j][i] === 'wood') { if (S.deco[j][i] === 'sapling') grow++; else if (!S.deco[j][i] && !S.grid[j][i]) open++; }
+    L.push(workLine(b) + ' · ' + open + ' open Lumber tiles in reach · ' + grow + ' saplings growing', open ? 'Plants a sapling every ' + (PLANT_EVERY / Math.max(0.01, b.eff || 0)).toFixed(0) + ' days at current staffing. Saplings take ' + SAPLING_DAYS + ' days to become trees.' : 'Paint a Lumber zone over open ground within ' + FORESTER_R + ' tiles for it to plant.');
   }
   if (b.t === 'sawmill') L.push(workLine(b) + ' · saws ' + (b.served ? (SAW_RATE * (b.eff || 0)).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
   if (b.t === 'mine') {
