@@ -165,6 +165,19 @@ function deriveHeights(S) {
   }
   relaxHeights(S, null, null);
 }
+// Forests: each tree belongs to a species, and neighbouring trees are mostly the same species (patches of oak, stands of conifer...), but which variation
+// of that species a tile gets is random. Derived from position and seed, so nothing extra is saved.
+// Variants are the tree_N slots: 0/1 broadleaf, 6 old oak | 2 pine, 3 spruce, 7 fir | 4 birch, 9 aspen | 5 willow | 8 maple.
+const TREE_SPECIES = [{ v: [0, 1, 6], w: 0.30 }, { v: [2, 3, 7], w: 0.30 }, { v: [4, 9], w: 0.18 }, { v: [5], w: 0.08 }, { v: [8], w: 0.14 }];
+function treeSpecies(S, x, y) {
+  const seed = S.seed || 7;
+  // an odd tree out now and then: about one in eight picks its species at random, so patches are mixed at their edges
+  const r = hash2(x, y, seed + 810) < 0.12 ? hash2(x, y, seed + 811) : vnoise(x * 0.16 + 5, y * 0.16 + 5, seed + 812) * 1.25 - 0.125;
+  let a = 0; const t = Math.max(0, Math.min(0.9999, r));
+  for (let i = 0; i < TREE_SPECIES.length; i++) { a += TREE_SPECIES[i].w; if (t < a) return i; }
+  return TREE_SPECIES.length - 1;
+}
+function treeVariant(S, x, y) { const sp = TREE_SPECIES[treeSpecies(S, x, y)].v; return sp[Math.floor(hash2(x, y, (S.seed || 7) + 813) * sp.length) % sp.length]; }
 // One tile of terrain on top of the height map: fertility, then mountain / rock outcrop / ore / tree.
 function genTile(S, seed, x, y) {
   const dist = Math.max(Math.abs(x - START), Math.abs(y - START));
@@ -294,7 +307,8 @@ function roadPathCheck(S, path) {
     const g = S.grid[y][x];
     if (g && g.t === 'road') continue;
     if (g) return { ok: false, n, reason: 'A building is in the way' };
-    if (isSolid(S, x, y)) return { ok: false, n, reason: 'A mountain, a quarry pit or ore is in the way. Route around it, or over the hills' };
+    if (hasTree(S, x, y)) return { ok: false, n, reason: TREE_MSG };
+    if (isSolid(S, x, y)) return { ok: false, n, reason: 'A mountain, a quarry pit, ore or ground too steep to build on is in the way. Route around it' };
     n++;
   }
   if (S.res.wood < n * COST.road.wood) return { ok: false, n, reason: 'Not enough wood: ' + n + ' new road tiles need ' + n + ' wood' };
@@ -318,6 +332,7 @@ function canPlace(S, type, x, y) {
   for (const [tx, ty] of tilesOf(footprint)) {
     if (!inb(tx, ty)) return { ok: false, reason: 'Outside the map' };
     if (S.grid[ty][tx]) return { ok: false, reason: 'That tile is already built on' };
+    if (hasTree(S, tx, ty)) return { ok: false, reason: TREE_MSG };
     if (isSolid(S, tx, ty))
       return { ok: false, reason: isMountain(S, tx, ty) ? 'You cannot build on a mountain. Hills and flat ground are fine' : pitDepth(S, tx, ty) > 0 ? 'A quarry pit is in the way. Pits cannot be filled in' : 'Ore blocks this tile. Zone it for mining to clear it' };
   }
@@ -375,6 +390,7 @@ function zoneCheck(S, kind, x, y) {
     if (dc === 'rock') return rockLeft(S, x, y) > 0 ? { ok: true } : { ok: false, reason: 'This rock is worked out. Stone does not grow back' };
     return dc === 'ore' ? { ok: true } : { ok: false, reason: 'Mining zones go on rock or ore. Press V to see the deposits' };
   }
+  if (hasTree(S, x, y)) return { ok: false, reason: TREE_MSG };
   if (isSolid(S, x, y)) return { ok: false, reason: isMountain(S, x, y) ? 'Mountains cannot be built on. Hills and flat ground can' : pitDepth(S, x, y) > 0 ? 'A quarry pit is in the way. Pits cannot be filled in' : 'Ore blocks this zone. Mine it first' };
   if (kind === 'farm' && !S.fert[y][x]) return { ok: false, reason: 'Farms need fertile soil. Press V to see farmable land' };
   return { ok: true };
@@ -415,6 +431,8 @@ function rockHollow(S, x, y) { return Math.min(1, digDone(S, x, y) / rockCap(S, 
 function oreLeft(S, x, y) { return S.deco[y][x] === 'ore' ? ((S.oreLeft && S.oreLeft[tk(x, y)]) ?? ORE_CAP) : 0; }
 function isMountain(S, x, y) { return S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3; }
 function pitDepth(S, x, y) { return (inb(x, y) && S.deco[y][x] === 'rock' && rockAmt(S, x, y) < 3) ? Math.max(0, -rockLevel(S, x, y)) : 0; }
+const TREE_MSG = 'Trees are in the way. Paint a Lumber zone over them and let woodcutters clear the land first';
+function hasTree(S, x, y) { return S.deco[y][x] === 'tree'; }
 function isSolid(S, x, y) { return S.deco[y][x] === 'ore' || isMountain(S, x, y) || pitDepth(S, x, y) > 0 || tileSpread(S, x, y) >= 3; }   // 3+ levels across one tile is too steep
 // A mountain can only be quarried where it meets open ground or a hollowed-out (worked out) mountain tile, so quarries cut inward.
 function rockOpen(S, x, y) {
@@ -539,7 +557,7 @@ function lotOk(S, kind, x, y, sz) {
   for (let j = 0; j < sz; j++) for (let i = 0; i < sz; i++) {
     const a = x + i, c = y + j;
     if (!inb(a, c) || S.zone[c][a] !== kind || S.grid[c][a]) return false;
-    if (isSolid(S, a, c)) return false;
+    if (isSolid(S, a, c) || hasTree(S, a, c)) return false;
     if (kind === 'farm' && !S.fert[c][a]) return false;
   }
   return true;
@@ -678,4 +696,4 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (typeof module !== 'undefined') module.exports = { saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (typeof module !== 'undefined') module.exports = { treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };

@@ -758,7 +758,7 @@ function draw() {
           if (!b.served && b.t !== 'road') ctx.drawImage(SPR.warn, ox, oy - 8);
         }
       } else if (S.deco[y][x]) {
-        const kind = S.deco[y][x], v = Math.floor(hash2(x, y, 8) * (kind === 'tree' ? 10 : 2));   // ten tree looks; the built-in art only has 3 so it repeats
+        const kind = S.deco[y][x], v = kind === 'tree' ? treeVariant(S, x, y) : Math.floor(hash2(x, y, 8) * 2);   // ten tree looks; the built-in art only has 3 so it repeats
         const amt = kind === 'rock' ? rockAmt(S, x, y) : 1;
         if (kind === 'rock' && rockLevel(S, x, y) !== 1) { const ps = rockSprites(S, x, y, vx, vy); if (mtn) ctx.translate(0, lift); ctx.drawImage(ps, ox, oy + 48 - ps.height); if (mtn) ctx.translate(0, -lift); }
         else ctx.drawImage(ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], ox, oy);
