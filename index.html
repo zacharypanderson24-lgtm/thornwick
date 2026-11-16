@@ -792,7 +792,8 @@ function fitToSlot(src, slot, o) {
   const OH = tall ? Math.max(H, th) : H;
   const out = document.createElement('canvas'); out.width = W; out.height = OH;
   const g = out.getContext('2d', { willReadFrequently: true });
-  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  // Ground tiles are shrunk ~64:1: averaging would melt every tuft into one flat colour, so sample them hard-edged to keep the palette and the speckle.
+  g.imageSmoothingEnabled = slot.type !== 'ground'; g.imageSmoothingQuality = 'high';
   g.drawImage(wk, box.x, box.y, box.w, box.h, Math.round((W - tw) / 2) + (o.dx || 0), OH - th + (o.dy || 0), tw, th);
   try { const id = g.getImageData(0, 0, W, OH), d = id.data; for (let i = 3; i < d.length; i += 4) d[i] = d[i] < 128 ? 0 : 255; g.putImageData(id, 0, 0); } catch (e) { }
   return out;

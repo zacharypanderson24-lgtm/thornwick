@@ -27,7 +27,7 @@ Medieval TheoTown-style pixel isometric city builder. Owner: Zach. Hosted from t
 ## Open work (update as it changes)
 1. Workforce panel (workers per trade) + per-building worker counts so output scales with workers (DESIGN_TERRAIN sections 7-8).
 2. Terrain beyond rock/forest, forest regrowth/foresters, underground ore + prospecting + mine levels.
-3. World art mismatch: grass, trees, rocks, farms, market, well, mine, quarry, sawmill, stump, hill/mountain are procedural code-drawn peaks (fine for now, ChatGPT art later); the rest need ChatGPT textures and slots. Grass: assets/grass_0.png pushed by Zach is a CORRUPT PNG (IDAT stream broken, no IEND), so the game rejects it and keeps the built-in grass (validGround in textures.js); needs a fresh export/upload, then grass_1..3. Ground files now load through fitToSlot (keys magenta, crops diamond to 32x16).
+3. World art mismatch: grass, trees, rocks, farms, market, well, mine, quarry, sawmill, stump, hill/mountain are procedural code-drawn peaks (fine for now, ChatGPT art later); the rest need ChatGPT textures and slots. Grass: grass_1..3 and grassfert_0..1 are in and load (calm, near-flat; fertile soil reads muddy olive). grass_0.png is 1536x1024 (3:2), so validGround rejects it and the built-in grass is used for that variant; needs a 2048x1024 redo. Ground files load through fitToSlot with hard-edged sampling (keys magenta, crops the diamond to 32x16, 64 real px = 1 game px).
 4. Hut textures pass the clipping checks but sit at 2 px margin (checker wants 3): relax or redo.
 5. Starting huts overlap the Hall porch (move start layout down one tile).
 6. Older goals: tech tree, conquest map with governors, villager sprites, threats.

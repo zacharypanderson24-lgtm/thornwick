@@ -39,6 +39,7 @@ Background: **flat pure magenta #FF00FF**, nothing else. No floor, no shadow, no
 ### Ground tiles (grass, fertile soil)
 
 - Canvas exactly **2048 x 1024**. The diamond's four corners touch the midpoints of the four edges; everything outside the diamond is flat magenta #FF00FF.
+- **Pixel size for ground tiles:** the tile is only 32 game pixels wide, so at 2048 px wide one game pixel is **64 real pixels**. Draw every tuft, flower and soil patch as solid square blocks of 64 to 128 real pixels, or they shrink to nothing in the game. The game shrinks ground tiles with hard-edged sampling (no blending) so palette colours stay exact.
 - The game crops to the diamond and scales it to 32 px wide, so a 3:2 diamond would come out 21 px tall instead of 16 and overlap its neighbours.
 - Ground tiles repeat across the whole map: keep contrast low, keep the outer band along the diamond edges (about 2 game pixels) plain base colour, and draw no outline, rim or shading at the edge.
 - `python3 tools/check_textures.py` checks ground tiles too (`grass_N.png`, `grassfert_N.png`).
