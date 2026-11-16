@@ -45,6 +45,7 @@ Every building, every size, always uses the same four views in the same order. T
 5. **Nothing floats.** Banners, flags and signs are attached to the building or stand on the ground (a standing pole may be outside the diamond but inside the green box).
 6. **One door, same footprint in every view.** The view order is fixed for every building (see "The four views" above): 1 lower-left, 2 upper-left, 3 upper-right, 4 lower-right. Do not invent extra doors, and do not let the building grow or shrink between views. Props rotate with the building.
 7. **Same height in every view.** Wall height, roof height, stone base height and chimney position (on the same roof slope) match across all four views.
+9. **Directional coherence.** Every window, door, porch, flower box, banner, chimney and prop belongs to one fixed wall or roof side (W1 = door wall, W2 = right of it in view 1, W3 opposite W1, W4 opposite W2). It appears wherever that wall is visible and nowhere else: view 1 shows W1+W2, view 2 W2+W3, view 3 W3+W4, view 4 W4+W1. A window on W2 shows on the lower-right wall in view 1 and the lower-left wall in view 2, and is absent in views 3 and 4. Never draw a feature on a hidden wall, never drop it from a view where its wall is visible, and never change its size or look between views. See the same section in CHATGPT_START_HERE.md.
 8. **Match the neighbours.** A one-tile building should be about as wide as the diamond (32 px game width). A larger building (Town Hall, barracks) is taller and grander, not just wider. A 2x2 building fills its 64 px diamond.
 
 ## Building height and overlap
@@ -127,6 +128,7 @@ For reference only: huts 32 to 36 px, barracks about 54, Town Hall about 84 to 9
 - [ ] One door only; on the lower-left wall in `_1`, upper-left in `_2`, upper-right in `_3`, lower-right in `_4` (visible in 1 and 4, hidden in 2 and 3).
 - [ ] Files are numbered in this exact order, so the same number means the same door side as every other building.
 - [ ] All four views have the same footprint, wall height and roof height.
+- [ ] Directional coherence: each window/door/prop sits on the same wall in every view, shows only where that wall faces the camera (view 1: W1+W2, view 2: W2+W3, view 3: W3+W4, view 4: W4+W1), and looks identical each time.
 - [ ] Colours match the other buildings.
 - [ ] Light comes from the top-left.
 

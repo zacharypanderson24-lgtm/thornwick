@@ -35,6 +35,15 @@ Each building needs four images, one per camera rotation. Only the rotation chan
 
 Things and trees that look the same from every side only need one image.
 
+## Keep every view directionally coherent
+
+A building is one solid object that you turn, not four separate drawings. Give each of its four walls a fixed identity: W1 is the door wall (lower-left in view 1), W2 is the wall to its right in view 1 (lower-right), W3 is opposite W1 and W4 is opposite W2. Every window, door, porch, flower box, banner, ladder, lean-to, chimney and prop belongs to ONE specific wall or roof side and must stay on that wall in every view.
+
+- Only the two walls facing the camera are visible: view 1 shows W1 (lower-left) and W2 (lower-right); view 2 shows W2 (lower-left) and W3 (lower-right); view 3 shows W3 and W4; view 4 shows W4 (lower-left) and W1 (lower-right).
+- A window on W2 therefore appears on the lower-right wall in view 1 and on the lower-left wall in view 2, and must NOT appear in views 3 and 4, where W2 is hidden behind the building. Never draw a feature on a wall that is turned away from the camera, and never leave it out of a view where its wall is visible.
+- If a wall has a window, it has that same window (same size, shape and height) wherever that wall is visible. Do not add, remove, move or restyle features between views.
+- Roof features (chimney, dormer, vent) keep the same spot on the same roof slope, and ground props (barrels, crates, steps, racks) stay on the same side of the building and rotate with it.
+
 ## Sizes (so you frame things correctly)
 
 - One-tile buildings: the footprint is one diamond. Image content is about 2 wide by 3 tall (a 32 x 48 game sprite).

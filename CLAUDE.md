@@ -12,6 +12,7 @@ Medieval TheoTown-style pixel isometric city builder. Owner: Zach. Hosted from t
 - Design plan for terrain/lumber/ore/workforce: DESIGN_TERRAIN.md (status line at the top says what is built).
 - Commit messages end with the attribution lines the session gives.
 - Props rule (Zach's rule, in CHATGPT_START_HERE.md and BUILDING_TILE_GUIDE.md): walls sit on the footprint diamond, but props (barrels, crates, steps, poles...) may stand outside the building and past the diamond, as long as the whole sprite stays inside the green box / picture width. check_textures.py's base-vs-diamond check may flag such props on 2x2/3x3 buildings; judge those by eye.
+- Directional coherence (Zach's rule, in CHATGPT_START_HERE.md and BUILDING_TILE_GUIDE.md rule 9): features belong to fixed walls (W1 door wall, W2 right of it in view 1, W3 opposite W1, W4 opposite W2) and show only in views where that wall faces the camera (v1 W1+W2, v2 W2+W3, v3 W3+W4, v4 W4+W1). When reviewing art, flag windows/props that appear on the wrong side or vanish when their wall is visible.
 - Art priority (Zach's rule, also in CHATGPT_START_HERE.md): textures must be usable game assets at their real sizes; never produce fancy, higher-resolution or unusable showpiece renditions.
 
 ## Conventions that must not break
