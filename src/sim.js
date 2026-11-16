@@ -45,77 +45,151 @@ const ctr = o => (o.sz || 1) > 1 ? ((o.sz || 1) - 1) / 2 : 0;
 const cheb = (a, b) => Math.max(Math.abs(a.x + ctr(a) - b.x - ctr(b)), Math.abs(a.y + ctr(a) - b.y - ctr(b)));
 const clamp1 = v => Math.max(-1, Math.min(1, v));
 
-// ---- Mountains and hills as landforms ----
-// Every mountain is its own landform: a core of MOUNT_H+ elevation (the solid part, about 3x3 on average, at most about 7x7) that rises to a
-// peak, standing on a skirt of hills that climbs toward it. Bigger mountains are taller and have a wider skirt, so no two start at the
-// same height. Elevation is in sprite pixels: 14+ is mountain, 4..14 is hill.
-const MOUNT_H = 14, HILL_MIN = 2.5;
-const SIDE_W = [[2, 0.2], [3, 0.4], [4, 0.17], [5, 0.11], [6, 0.07], [7, 0.05]];
-// Mountains are rare: a handful per map, each a single massif with one summit, far from the next one (no forests of peaks).
-function mountainSites(seed) {
-  const list = []; let n = 0; const rnd = () => hash2(n++, 17, seed + 300);
-  const pick = r => { let a = 0; for (const [side, w] of SIDE_W) { a += w; if (r < a) return side; } return 3; };
-  const want = Math.max(2, Math.round((3 + (rnd() < 0.6 ? 1 : 0) + (rnd() < 0.3 ? 1 : 0)) * (N * N) / 4096));
-  for (let tries = 0; tries < 3000 && list.length < want; tries++) {
-    const side = pick(rnd()), R = side / 2 * 0.9, Hp = 22 + 6 * side + rnd() * 5, skirt = 1.8 + 0.4 * side;
-    const cx = 5 + rnd() * (N - 10), cy = 5 + rnd() * (N - 10);
-    if (Math.max(Math.abs(cx - START), Math.abs(cy - (START + 2))) < R + skirt * 0.6 + 7) continue;     // keep the start area open
-    if (list.some(m => Math.hypot(m.cx - cx, m.cy - cy) < m.R + R + 11)) continue;                       // well apart from each other
-    list.push({ cx, cy, R, Hp, skirt, ph: rnd() * 90 });
+// ---- Terrain heights ----
+// The ground is a grid of VERTEX heights in whole levels, -8..8, with 0 as base ground (S.hv, (N+1)^2 numbers). A tile's four corners come from it, so
+// slopes run smoothly across tiles. Hills reach level 3, mountains up to 8; shallow basins dip to -1/-2. Roads follow slopes; buildings level their
+// footprint. A tile whose average level is 4 or more is mountain (solid, quarry only); tiles with a spread of 3+ levels are too steep to build on.
+const HMIN = -8, HMAX = 8, MOUNT_LEVEL = 4, LVL_PX = 7;
+const vIdx = (a, b) => b * (N + 1) + a;
+function vh(S, a, b) { if (!S.hv) return 0; a = a < 0 ? 0 : a > N ? N : a; b = b < 0 ? 0 : b > N ? N : b; return S.hv[b * (N + 1) + a] | 0; }
+function tileCorners(S, x, y) { return [vh(S, x, y), vh(S, x + 1, y), vh(S, x, y + 1), vh(S, x + 1, y + 1)]; }
+function tileLevel(S, x, y) { const c = tileCorners(S, x, y); return (c[0] + c[1] + c[2] + c[3]) / 4; }
+function tileSpread(S, x, y) { const c = tileCorners(S, x, y); return Math.max(...c) - Math.min(...c); }
+const tileFlat = (S, x, y) => tileSpread(S, x, y) === 0;
+// Mountain layout: rare. Usually one range (a ridge with several summits and saddles) and maybe one lone massif.
+function mountainLayout(seed) {
+  let n = 0; const rnd = () => hash2(n++, 23, seed + 900);
+  const ranges = [], lone = [];
+  const far = (x, y, r) => Math.max(Math.abs(x - START), Math.abs(y - START)) > r;
+  for (let r = 0, want = 1 + (rnd() < 0.3 ? 1 : 0); r < want; r++) for (let t = 0; t < 400; t++) {
+    const len = 14 + rnd() * 9, ang = rnd() * Math.PI * 2, sx = 6 + rnd() * (N - 12), sy = 6 + rnd() * (N - 12);
+    const bend = (rnd() - 0.5) * 1.1, pts = [];
+    for (let i = 0; i <= 4; i++) { const a = ang + bend * (i / 4 - 0.5) * 2, f = (i / 4 - 0.5) * len; pts.push([sx + Math.cos(a + bend * i * 0.25) * f, sy + Math.sin(a + bend * i * 0.25) * f]); }
+    if (!pts.every(p => p[0] > 4 && p[1] > 4 && p[0] < N - 4 && p[1] < N - 4 && far(p[0], p[1], 15))) continue;
+    if (ranges.some(o => o.pts.some(q => pts.some(p => Math.hypot(p[0] - q[0], p[1] - q[1]) < 14)))) continue;
+    ranges.push({ pts, ph: rnd() * 90 }); break;
   }
-  return list;
-}
-// Hills (TheoTown style): broad, gentle, rolling rises from low-frequency noise; a few tiles high at most, always buildable once levelled.
-function hillElev(seed, x, y) {
-  const f = vnoise(x * 0.055 + 30, y * 0.055 + 30, seed + 400) * 0.72 + vnoise(x * 0.13, y * 0.13, seed + 401) * 0.28;
-  const fade = Math.min(1, Math.max(0, (Math.max(Math.abs(x - START), Math.abs(y - START)) - 6) / 7));   // none right at the Hall
-  return Math.max(0, (f - 0.635) * 46) * fade;
-}
-function elevAt(sites, seed, x, y) {
-  let e = 0;
-  for (const m of sites) {
-    const dx = Math.abs(x - m.cx), dy = Math.abs(y - m.cy);
-    if (dx > m.R + m.skirt + 1 || dy > m.R + m.skirt + 1) continue;
-    const nz = 0.9 + vnoise(x * 0.55 + m.ph, y * 0.55 + m.ph, seed + 2) * 0.22;        // ragged outline, never bigger than ~12%
-    const d = Math.cbrt(dx * dx * dx + dy * dy * dy) / nz;                                // rounded square, so a "7x7" mountain fills a 7x7 box
-    let v = 0;
-    if (d <= m.R) v = MOUNT_H + (m.Hp - MOUNT_H) * Math.pow(1 - d / m.R, 1.15);
-    else if (d < m.R + m.skirt) v = MOUNT_H * Math.pow(1 - (d - m.R) / m.skirt, 1.3);
-    if (v > e) e = v;
+  for (let t = 0, want = rnd() < 0.7 ? 1 : 0; t < 400 && lone.length < want; t++) {
+    const cx = 6 + rnd() * (N - 12), cy = 6 + rnd() * (N - 12), side = 2 + Math.floor(rnd() * 3), Hp = 5.2 + side * 0.5 + rnd() * 1.2;
+    if (!far(cx, cy, 15) || ranges.some(o => o.pts.some(q => Math.hypot(q[0] - cx, q[1] - cy) < 14))) continue;
+    lone.push({ cx, cy, side, Hp });
   }
-  return e;
+  return { ranges, lone };
 }
-// One tile of terrain: fertility, then mountain / hill / ore / tree from the landform field and noise.
-function genTile(S, sites, seed, x, y) {
+function mountainField(L, seed, a, b) {
+  let v = 0;
+  for (const r of L.ranges) {
+    // nearest point on the spine, with how far along it we are
+    let best = 1e9, bs = 0, acc = 0, total = 0;
+    for (let i = 0; i + 1 < r.pts.length; i++) total += Math.hypot(r.pts[i + 1][0] - r.pts[i][0], r.pts[i + 1][1] - r.pts[i][1]);
+    for (let i = 0; i + 1 < r.pts.length; i++) {
+      const [x0, y0] = r.pts[i], [x1, y1] = r.pts[i + 1], dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy;
+      const t = Math.max(0, Math.min(1, ((a - x0) * dx + (b - y0) * dy) / l2)), d = Math.hypot(a - (x0 + dx * t), b - (y0 + dy * t));
+      if (d < best) { best = d; bs = acc + Math.sqrt(l2) * t; } acc += Math.sqrt(l2);
+    }
+    const along = bs, endFade = Math.min(1, 0.25 + Math.min(along, total - along) / 4);
+    const crest = 6.2 + 3.0 * vnoise(along * 0.42 + r.ph, 3.3, seed + 31) - 0.4;           // summits and saddles along the ridge
+    const d = best + (vnoise(a * 0.45 + r.ph, b * 0.45, seed + 32) - 0.5) * 1.6;
+    v = Math.max(v, (crest * endFade) - Math.max(0, d - 0.4) * 1.9);
+  }
+  for (const m of L.lone) {
+    const d = Math.hypot(a - m.cx, b - m.cy) + (vnoise(a * 0.5, b * 0.5, seed + 33) - 0.5) * 1.2;
+    v = Math.max(v, m.Hp - Math.max(0, d - m.side * 0.2) * 1.5);
+  }
+  return v;
+}
+function genHeights(seed) {
+  const M = N + 1, hv = new Array(M * M).fill(0), L = mountainLayout(seed);
+  for (let b = 0; b < M; b++) for (let a = 0; a < M; a++) {
+    const f = vnoise(a * 0.05 + 30, b * 0.05 + 30, seed + 400) * 0.7 + vnoise(a * 0.12, b * 0.12, seed + 401) * 0.3;
+    let v = Math.max(0, Math.min(3.45, (f - 0.575) * 15));                                   // broad rolling hills, at most level 3
+    const g = vnoise(a * 0.045 + 77, b * 0.045 + 77, seed + 500);
+    if (v < 0.5 && g < 0.27) v = -Math.min(2.4, (0.27 - g) * 14);                           // a few shallow basins
+    v = Math.max(v, mountainField(L, seed, a, b));
+    const dist = Math.max(Math.abs(a - START), Math.abs(b - START));
+    v *= Math.min(1, Math.max(0, (dist - 7) / 7));                                           // the start area stays flat
+    hv[b * M + a] = Math.max(HMIN, Math.min(HMAX, Math.round(v)));
+  }
+  const S = { hv };
+  relaxHeights(S, null, null);
+  return hv;
+}
+const vnMountainTouch = (S, a, b) => { for (const [i, j] of [[a - 1, b - 1], [a, b - 1], [a - 1, b], [a, b]]) if (i >= 0 && j >= 0 && i < N && j < N && S.deco && S.deco[j][i] === 'rock' && rockAmt(S, i, j) >= 3) return true; return false; };
+// Keep neighbouring vertices within 1 level (2 on high ground) so slopes stay walkable. Moves the lower vertex up unless it is pinned.
+function relaxHeights(S, box, pinned) {
+  const M = N + 1, hv = S.hv, a0 = box ? box[0] : 0, b0 = box ? box[1] : 0, a1 = box ? box[2] : N, b1 = box ? box[3] : N;
+  const movable = (a, b) => !(pinned && pinned.has(b * M + a)) && !(S.deco && vnMountainTouch(S, a, b));
+  for (let pass = 0; pass < 24; pass++) {
+    let ch = false;
+    for (let b = b0; b <= b1; b++) for (let a = a0; a <= a1; a++) {
+      const h = hv[b * M + a];
+      for (const [da, db] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) {
+        const na = a + da, nb = b + db; if (na < 0 || nb < 0 || na > N || nb > N) continue;
+        const o = hv[nb * M + na], lim = Math.max(h, o) <= 3 ? 1 : 2;
+        if (h - o > lim) { if (movable(na, nb)) { hv[nb * M + na] = h - lim; ch = true; } else if (movable(a, b)) { hv[b * M + a] = o + lim; ch = true; } }
+      }
+    }
+    if (!ch) break;
+  }
+}
+// Level the ground under a building: every corner of its footprint goes to one height, then the land around it is eased back to its slope.
+function levelFootprint(S, tiles) {
+  if (!S.hv) return;
+  const M = N + 1, set = new Set(); let sum = 0, n = 0, a0 = N, b0 = N, a1 = 0, b1 = 0;
+  for (const [x, y] of tiles) for (const [da, db] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+    const k = (y + db) * M + x + da; if (set.has(k)) continue; set.add(k); sum += S.hv[k]; n++;
+    a0 = Math.min(a0, x + da); b0 = Math.min(b0, y + db); a1 = Math.max(a1, x + da); b1 = Math.max(b1, y + db);
+  }
+  const lvl = Math.round(sum / n); let moved = false;
+  for (const k of set) if (S.hv[k] !== lvl) { S.hv[k] = lvl; moved = true; }
+  if (moved) relaxHeights(S, [Math.max(0, a0 - 4), Math.max(0, b0 - 4), Math.min(N, a1 + 4), Math.min(N, b1 + 4)], set);
+}
+// Movement over the land (for combat and walkers): you cannot climb straight up a mountain. An edge between two neighbouring tiles is blocked when either
+// is mountain/solid or their heights differ by 2+ levels; gentle slopes cost more the steeper they are. Saddles between summits are the passes.
+function walkCost(S, x, y, nx, ny) {
+  if (!inb(x, y) || !inb(nx, ny) || isSolid(S, x, y) || isSolid(S, nx, ny)) return Infinity;
+  const d = Math.abs(tileLevel(S, nx, ny) - tileLevel(S, x, y));
+  return d >= 1.75 ? Infinity : 1 + d * 1.5;
+}
+// Saves from before the height map: flat ground, with mountains lifted according to their old height.
+function deriveHeights(S) {
+  const M = N + 1; S.hv = new Array(M * M).fill(0);
+  const lv = (x, y) => (inb(x, y) && S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3) ? Math.max(4, Math.min(8, Math.round(((S.elev && S.elev[y * N + x]) || 40) / 9))) : 0;
+  for (let b = 0; b < M; b++) for (let a = 0; a < M; a++) {
+    const t = [lv(a - 1, b - 1), lv(a, b - 1), lv(a - 1, b), lv(a, b)], m = Math.max(...t), c = t.filter(v => v > 0).length;
+    S.hv[b * M + a] = c === 4 ? Math.round(t.reduce((p, q) => p + q, 0) / 4) : c ? Math.max(1, Math.round(m / 2)) : 0;
+  }
+  relaxHeights(S, null, null);
+}
+// One tile of terrain on top of the height map: fertility, then mountain / rock outcrop / ore / tree.
+function genTile(S, seed, x, y) {
   const dist = Math.max(Math.abs(x - START), Math.abs(y - START));
   S.fert[y][x] = Math.max(Math.abs(x - START), Math.abs(y - (START + 3))) <= 7 || vnoise(x * 0.11 + 10, y * 0.11 + 10, seed + 20) > 0.55;
   if (dist < 6) return;
   const f = vnoise(x * 0.16, y * 0.16, seed) * 0.65 + vnoise(x * 0.4, y * 0.4, seed + 3) * 0.35;
   const o = vnoise(x * 0.3 + 90, y * 0.3 + 90, seed + 13);
-  const e = Math.max(elevAt(sites, seed, x, y), Math.min(11, hillElev(seed, x, y)));
-  if (e >= MOUNT_H) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 3; S.elev[y * N + x] = Math.round(e); }
-  else if (e >= HILL_MIN) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 2; S.elev[y * N + x] = Math.round(e); }
-  else if (o > 0.72 && hash2(x, y, seed + 7) > 0.35) S.deco[y][x] = 'ore';
+  const lvl = tileLevel(S, x, y), k = y * N + x;
+  if (lvl >= MOUNT_LEVEL) { S.deco[y][x] = 'rock'; S.rockAmt[k] = 3; S.elev[k] = Math.round(lvl * 8); return; }
+  const flat = tileFlat(S, x, y) && lvl >= 0;
+  const q = vnoise(x * 0.33 + 210, y * 0.33 + 210, seed + 61);
+  if (flat && q > 0.8 && hash2(x, y, seed + 62) > 0.25 && dist > 7) { S.deco[y][x] = 'rock'; S.rockAmt[k] = q > 0.88 ? 2 : 1; return; }   // stone outcrops: the main stone supply besides mountains
+  if (o > 0.72 && hash2(x, y, seed + 7) > 0.35) S.deco[y][x] = 'ore';
   else if (f > 0.56 && hash2(x, y, seed + 5) > 0.22) S.deco[y][x] = 'tree';
 }
-function lonelyMountains(S) {
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (isMountain(S, x, y)) {
-    let n = 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (inb(x + dx, y + dy) && isMountain(S, x + dx, y + dy)) n++;
-    if (n < 1) S.rockAmt[y * N + x] = 2;
-  }
+function genTerrain(S, seed) {
+  S.hv = genHeights(seed);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) genTile(S, seed, x, y);
 }
 function createWorld(seed) {
   seed = seed || 7;
   const S = {
     seed, grid: [], deco: [], zone: [], fert: [], blds: [], hall: null,
-    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, gold: 0 }, rockAmt: {}, elev: {}, stumpT: {}, dig: {}, oreLeft: {}, v2: true,
+    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, gold: 0 }, hv: null, rockAmt: {}, elev: {}, stumpT: {}, dig: {}, oreLeft: {}, v2: true,
     dem: { res: 0, farm: 0, comm: 0, wood: 0, mine: 0 }, note: { res: '', farm: '', comm: '', wood: '', mine: '' }, flags: {},
     peasants: 6, popAcc: 0, soldiers: 0, day: 1, drafting: true, starving: false, trained: 0, d: null
   };
   for (let y = 0; y < N; y++) { S.grid.push(Array(N).fill(null)); S.deco.push(Array(N).fill(null)); S.zone.push(Array(N).fill(null)); S.fert.push(Array(N).fill(false)); }
-  const sites = mountainSites(seed);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) genTile(S, sites, seed, x, y);
-  lonelyMountains(S);   // a one-tile mountain becomes a hill
+  genTerrain(S, seed);
   // The 3x3 Town Hall is anchored at (19,19), centered on the original (20,20).
   // All nine cells are reserved before roads and zones are placed.
   const C = START;
@@ -131,18 +205,25 @@ function saveWorld(S) { return JSON.stringify(Object.assign({}, S, { grid: undef
 function growSave(o) {
   const oldN = o.deco.length; if (oldN >= N) return o;
   const off = (N - oldN) >> 1, seed = o.seed || 7;
-  const S = Object.assign({}, o), sites = mountainSites(seed);
+  const S = Object.assign({}, o);
   S.deco = []; S.zone = []; S.fert = []; S.rockAmt = {}; S.elev = {}; S.stumpT = {}; S.dig = {}; S.oreLeft = {};
   for (let y = 0; y < N; y++) { S.deco.push(Array(N).fill(null)); S.zone.push(Array(N).fill(null)); S.fert.push(Array(N).fill(false)); }
+  S.hv = genHeights(seed);
   const inOld = (x, y) => x >= off && y >= off && x < off + oldN && y < off + oldN;
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     if (inOld(x, y)) { const ox = x - off, oy = y - off; S.deco[y][x] = o.deco[oy][ox]; S.zone[y][x] = o.zone[oy][ox]; S.fert[y][x] = o.fert[oy][ox]; }
-    else genTile(S, sites, seed, x, y);
+    else genTile(S, seed, x, y);
   }
   for (const key of ['rockAmt', 'elev', 'stumpT', 'dig', 'oreLeft']) for (const k in (o[key] || {})) {
     const ox = k % oldN, oy = Math.floor(k / oldN); S[key][(oy + off) * N + ox + off] = o[key][k];
   }
   S.blds = o.blds.map(b => Object.assign({}, b, { x: b.x + off, y: b.y + off }));
+  // heights inside the old square come from the old tiles (flat, mountains lifted); outside stays as generated
+  const gen = S.hv; deriveHeights(S); const old = S.hv; S.hv = gen;
+  const pinned = new Set();
+  for (let b = off; b <= off + oldN; b++) for (let a = off; a <= off + oldN; a++) { S.hv[b * (N + 1) + a] = old[b * (N + 1) + a]; }
+  for (const bl of S.blds) for (const [i, j] of tilesOf(bl)) for (const [da, db] of [[0, 0], [1, 0], [0, 1], [1, 1]]) pinned.add((j + db) * (N + 1) + i + da);
+  relaxHeights(S, null, pinned);
   return S;
 }
 function loadWorld(str) {
@@ -174,6 +255,7 @@ function loadWorld(str) {
     }
     S.v2 = true;
   }
+  if (!S.hv || S.hv.length !== (N + 1) * (N + 1)) deriveHeights(S);
   for (const b of S.blds) if (b.t === 'house' && !b.var) b.var = pickHutVar(S, b.x, b.y);
   recalc(S); computeDemand(S); return S;
 }
@@ -198,6 +280,7 @@ function addBld(S, t, x, y, sz) {
   S.blds.push(b);
   for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (S.dig) delete S.dig[j * N + i]; if (S.elev) delete S.elev[j * N + i]; if (S.oreLeft) delete S.oreLeft[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
+  if (t !== 'road') levelFootprint(S, tilesOf(b));
   return b;
 }
 function roadPathCheck(S, path) {
@@ -328,7 +411,7 @@ function rockHollow(S, x, y) { return Math.min(1, digDone(S, x, y) / rockCap(S, 
 function oreLeft(S, x, y) { return S.deco[y][x] === 'ore' ? ((S.oreLeft && S.oreLeft[tk(x, y)]) ?? ORE_CAP) : 0; }
 function isMountain(S, x, y) { return S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3; }
 function pitDepth(S, x, y) { return (inb(x, y) && S.deco[y][x] === 'rock' && rockAmt(S, x, y) < 3) ? Math.max(0, -rockLevel(S, x, y)) : 0; }
-function isSolid(S, x, y) { return S.deco[y][x] === 'ore' || isMountain(S, x, y) || pitDepth(S, x, y) > 0; }
+function isSolid(S, x, y) { return S.deco[y][x] === 'ore' || isMountain(S, x, y) || pitDepth(S, x, y) > 0 || tileSpread(S, x, y) >= 3; }   // 3+ levels across one tile is too steep
 // A mountain can only be quarried where it meets open ground or a hollowed-out (worked out) mountain tile, so quarries cut inward.
 function rockOpen(S, x, y) {
   if (!isMountain(S, x, y)) return true;
@@ -591,4 +674,4 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (typeof module !== 'undefined') module.exports = { loadWorld, growSave, START, elevOf, mountainSites, elevAt, MOUNT_H, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (typeof module !== 'undefined') module.exports = { saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };

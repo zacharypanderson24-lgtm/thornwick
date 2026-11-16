@@ -78,3 +78,6 @@ Output speed of every industry comes from how many workers it has, not from the 
 
 ## Update: landforms and map size
 - Mountains are discrete landforms (2..7 tiles a side, average about 3x3). Height and stone reserve scale with size; hill skirts rise toward each mountain so no two start at the same height. Map is 64x64; old 40x40 saves are centred into it (growSave in sim.js). Zoom out to 0.5 to see most of the map.
+
+## Update: height levels
+- Terrain is a vertex height map in levels -8..8 (0 = base). Hills up to 3, mountains up to 8 and rare, in ranges when there are several. Roads climb slopes, buildings level their footprint. Mountains and steep slopes block movement (walkCost), so ranges create chokepoints and passes that should shape base layout once combat is in. Negative levels exist in the data and renderer; today only shallow basins use them (quarry pits are still separate tile sprites), so lakes and pits-as-height are future work.

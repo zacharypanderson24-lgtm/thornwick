@@ -411,16 +411,19 @@ function resize() {
   cv.width = Math.max(1, stage.clientWidth * dprI); cv.height = Math.max(1, stage.clientHeight * dprI);
   viewW = stage.clientWidth / scale; viewH = stage.clientHeight / scale;
 }
-function centerOn(x, y) { const [px, py] = tpos(x, y); cam.x = px - viewW / 2; cam.y = py + 8 - viewH / 2; }
+function centerOn(x, y) { const [px, py] = tpos(x, y), g = geo(x, y); cam.x = px - viewW / 2; cam.y = py + 8 - g.base - viewH / 2; }
 function screenToTile(mx, my) {
-  const wx = mx / scale + Math.round(cam.x), wy = my / scale + Math.round(cam.y);
-  const p = wx / 16, q = wy / 8;
-  const vx = Math.floor((p + q) / 2), vy = Math.floor((q - p) / 2);
-  if (!inb(vx, vy)) return null; const [x, y] = fromView(vx, vy); return { x, y };
+  const wx = mx / scale + Math.round(cam.x), wy = my / scale + Math.round(cam.y), p = wx / 16;
+  // Terrain is lifted, so test each height level from the highest down: the first tile whose surface is at that height under the cursor is the one in front.
+  for (let L = HMAX; L >= HMIN; L -= 0.25) {
+    const q = (wy + L * LV) / 8, fx = (p + q) / 2, fy = (q - p) / 2, vx = Math.floor(fx), vy = Math.floor(fy);
+    if (!inb(vx, vy)) continue;
+    const c = cornersView(vx, vy), uu = fx - vx, vv = fy - vy;
+    const z = c[0] + (c[1] - c[0]) * uu + (c[2] - c[0]) * vv + (c[0] - c[1] - c[2] + c[3]) * uu * vv;
+    if (Math.abs(z - L) <= 0.2) { const [x, y] = fromView(vx, vy); return { x, y }; }
+  }
+  return null;
 }
-// zoom ladder: 0.5 shows most of the big map, then whole-number steps keep the pixel art crisp
-const ZOOMS = [0.5, 1, 2, 3, 4, 5];
-function zoomStep(dir) { const i = ZOOMS.findIndex(z => z >= scale - 1e-6); return ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, (i < 0 ? ZOOMS.length - 1 : i) + dir))]; }
 function setScale(ns, mx, my) {
   ns = Math.max(0.5, Math.min(5, ns)); if (ns === scale) return;
   const wx = mx / scale + cam.x, wy = my / scale + cam.y;
@@ -585,61 +588,71 @@ function peakSprite(hgt, jx, ph, seed, kind, hol) {
   }
   return PEAK_CACHE[key] = c;
 }
-// ---- Mountains and hills as one continuous surface ----
-// Each rock tile is drawn from a little height map: the four corners of the tile are lifted to the average height of the tiles that touch
-// that corner, so neighbouring tiles join up into one smooth hill or one single mountain massif (no separate pyramid per tile).
-// Shading comes from the slope (light from the upper left), so ridges and faces appear on their own.
-const TERRAIN_COL = {
-  grass: [['#4a8636', '#5a9a40', '#6db051', '#82bf66']],
-  rock: [['#3c4054', '#5a5f75', '#7d8196', '#a3a7b8']],
-  snow: ['#b3bdd6', '#c6cee2', '#dfe5f2', '#f2f5fb']
-};
-function tileHeight(S, wx, wy) {
-  if (!inb(wx, wy) || S.deco[wy][wx] !== 'rock') return 0;
-  const lv = rockLevel(S, wx, wy), el = S.elev && S.elev[wy * N + wx];
-  if (lv >= 3) return el || 26;     // old saves have no elevation: use a modest default
-  if (lv === 2) return (el || 5) * 1.5;   // hills read better a little taller than their stored value
-  return 0;                          // dug-down hills are level with the ground
+// ---- Terrain heights in the view ----
+// Vertex heights (S.hv) are whole levels; one level lifts the ground LVL_PX pixels. Corner (a,b) of the view grid is a world vertex, rotated with the camera.
+const LV = LVL_PX;
+function vertW(a, b, r) { r = r === undefined ? ROT : r; return r === 0 ? [a, b] : r === 1 ? [b, N - a] : r === 2 ? [N - a, N - b] : [N - b, a]; }
+function vhV(a, b) { const [X, Y] = vertW(a, b); return vh(S, X, Y); }
+function cornersView(vx, vy) { return [vhV(vx, vy), vhV(vx + 1, vy), vhV(vx, vy + 1), vhV(vx + 1, vy + 1)]; }   // top, right, left, bottom of the diamond
+// Ground sprites (grass, zones, roads, highlights) are bent over the slope: each pixel is lifted to the surface height and shaded by the slope.
+const DRAPE = new WeakMap(), SRCDATA = new WeakMap();
+function srcPixels(src) {
+  let d = SRCDATA.get(src);
+  if (!d) { const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(src, 0, 0); d = g.getImageData(0, 0, c.width, c.height); SRCDATA.set(src, d); }
+  return d;
 }
-function terrainSprite(S, x, y, vx, vy, kind) {
-  // corner (a,b) of view tile (vx,vy): average of the four tiles around that grid point
-  const corner = (a, b) => {
-    let sum = 0, mx = 1e9, my = 1e9, n = 0;
-    for (const [i, j] of [[a - 1, b - 1], [a, b - 1], [a - 1, b], [a, b]]) {
-      if (i < 0 || j < 0 || i >= N || j >= N) { n++; continue; }
-      const [wx, wy] = fromView(i, j); sum += tileHeight(S, wx, wy); n++; mx = Math.min(mx, wx); my = Math.min(my, wy);
-    }
-    let h = sum / 4 * (kind === 'rock' ? 1.18 : 1.05);
-    if (kind === 'rock' && h > 10) h += (hash2(mx, my, 91) - 0.5) * 7;     // ragged crests, same from every camera angle
-    return Math.max(0, Math.round(h));
-  };
-  const cT = corner(vx, vy), cR = corner(vx + 1, vy), cL = corner(vx, vy + 1), cB = corner(vx + 1, vy + 1);
-  const hol = kind === 'rock' ? Math.round(rockHollow(S, x, y) * 6) : 0;
-  const key = 'T' + kind + cT + '_' + cR + '_' + cL + '_' + cB + '_' + hol + (kind === 'rock' ? '_' + x + '_' + y + '_' + vx + '_' + vy : '');
+function drape(src, rT, rR, rL, rB) {
+  let m = DRAPE.get(src); if (!m) { m = new Map(); DRAPE.set(src, m); }
+  const key = rT + ',' + rR + ',' + rL + ',' + rB; let c = m.get(key); if (c) return c;
+  const sd = srcPixels(src), W = sd.width, H = sd.height, extra = Math.max(rT, rR, rL, rB) * LV;
+  c = document.createElement('canvas'); c.width = W; c.height = H + extra; const g = c.getContext('2d'); const od = g.createImageData(W, H + extra), o = od.data, s = sd.data;
+  const k = rT - rR - rL + rB, cl = t => t < 0 ? 0 : t > 1 ? 1 : t;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4; if (!s[i + 3]) continue;
+    const gy = y - (H - 16) + 0.5, px = x + 0.5 - W / 2, u = cl((px / 16 + gy / 8) / 2), v = cl((gy / 8 - px / 16) / 2);
+    const z = (rT + (rR - rT) * u + (rL - rT) * v + k * u * v) * LV;
+    const zu = (rR - rT) + v * k, zv = (rL - rT) + u * k, dzdx = (zu - zv) * LV / 32, dzdy = (zu + zv) * LV / 16;
+    const f = Math.max(0.62, Math.min(1.3, 1 + 0.75 * dzdx - 0.28 * dzdy));
+    const r = Math.min(255, s[i] * f), gg = Math.min(255, s[i + 1] * f), bb = Math.min(255, s[i + 2] * f);
+    const y1 = y + extra, y0 = Math.round(y1 - z);
+    for (let yy = y0; yy <= y1; yy++) { const j = (yy * W + x) * 4; o[j] = r; o[j + 1] = gg; o[j + 2] = bb; o[j + 3] = s[i + 3]; }
+  }
+  g.putImageData(od, 0, 0); m.set(key, c); return c;
+}
+// Geometry of one world tile on screen: its view position, corner levels relative to the lowest corner, and the lift of that lowest corner.
+function geo(x, y) {
+  const [vx, vy] = toView(x, y), c = cornersView(vx, vy), mn = Math.min(c[0], c[1], c[2], c[3]);
+  return { sx: (vx - vy) * 16, sy: (vx + vy) * 8, rel: [c[0] - mn, c[1] - mn, c[2] - mn, c[3] - mn], lift: mn * LV, base: Math.round((c[0] + c[1] + c[2] + c[3]) / 4 * LV) };
+}
+// Draw a flat ground sprite whose bottom edge sits at bottomY, bent over the tile's slope.
+function groundDraw(src, x, bottomY, G) {
+  const r = G.rel;
+  if (!r[0] && !r[1] && !r[2] && !r[3]) { ctx.drawImage(src, x, bottomY - src.height - G.lift); return; }
+  const c = drape(src, r[0], r[1], r[2], r[3]); ctx.drawImage(c, x, bottomY - c.height - G.lift);
+}
+// ---- Mountains: one continuous rock surface ----
+const ROCK_COL = ['#3c4054', '#5a5f75', '#7d8196', '#a3a7b8'], SNOW_COL = ['#b3bdd6', '#c6cee2', '#dfe5f2', '#f2f5fb'];
+function terrainSprite(S, x, y, vx, vy) {
+  const c4 = cornersView(vx, vy).map(h => Math.max(0, h) * LV), cT = c4[0], cR = c4[1], cL = c4[2], cB = c4[3];
+  const hol = Math.round(rockHollow(S, x, y) * 6);
+  const key = 'M' + cT + '_' + cR + '_' + cL + '_' + cB + '_' + hol + '_' + x + '_' + y + '_' + vx + '_' + vy;
   if (PEAK_CACHE[key]) return PEAK_CACHE[key];
   const zmax = Math.max(cT, cR, cL, cB) + 1, Hc = zmax + 16;
   const c = document.createElement('canvas'); c.width = 32; c.height = Hc; const g = c.getContext('2d');
-  const pal = TERRAIN_COL[kind][0], seed = kind === 'rock' ? Math.floor(hash2(x, y, 95) * 40) : 7;
-  const zu = v => cR - cT + v * (cB - cL - (cR - cT)), zv = u => cL - cT + u * (cB - cR - (cL - cT));   // d z / du at v, d z / dv at u
+  const seed = Math.floor(hash2(x, y, 95) * 40);
+  const zu = v => cR - cT + v * (cB - cL - (cR - cT)), zv = u => cL - cT + u * (cB - cR - (cL - cT));
   for (let gy = 0; gy < 16; gy++) for (let gx = 0; gx < 32; gx++) {
     const px = gx + 0.5 - 16, py = gy + 0.5;
     if (Math.abs(px) / 16 + Math.abs(py - 8) / 8 > 1) continue;
     const u = Math.min(1, Math.max(0, (px / 16 + py / 8) / 2)), v = Math.min(1, Math.max(0, (py / 8 - px / 16) / 2));
     const z = cT + (cR - cT) * u + (cL - cT) * v + (cT - cR - cL + cB) * u * v;
-    if (z < 0.8) continue;                                   // toes of a hill stay see-through so the ground texture shows
     const dzdx = (zu(v) - zv(u)) / 32, dzdy = (zu(v) + zv(u)) / 16;
-    let sh = 0.5 + (kind === 'rock' ? 1.5 : 2.6) * dzdx - (kind === 'rock' ? 0.4 : 0.9) * dzdy - (kind === 'rock' ? Math.max(0, 9 - z) * 0.03 : 0);
-    const hh = hash2(gx, gy + zmax, seed + 3);
-    sh += (hh - 0.5) * 0.22;
-    if (kind === 'rock') {
-      // craggy facets: big stretched noise cells give each face its own lit/dark patches, plus thin strata
-      const nx = vx + u, ny = vy + v;
-      sh += (vnoise(nx * 1.7, ny * 1.7, seed) - 0.5) * 1.7 + (vnoise(nx * 4.1, ny * 4.1, seed + 5) - 0.5) * 0.5;
-      sh += Math.sin((z + hash2(gx >> 1, gy >> 1, seed) * 2) * 0.9) * 0.07;
-    }
+    let sh = 0.5 + 1.5 * dzdx - 0.4 * dzdy - Math.max(0, 9 - z) * 0.03 + (hash2(gx, gy + zmax, seed + 3) - 0.5) * 0.22;
+    const nx = vx + u, ny = vy + v;     // craggy facets and thin strata
+    sh += (vnoise(nx * 1.7, ny * 1.7, seed) - 0.5) * 1.7 + (vnoise(nx * 4.1, ny * 4.1, seed + 5) - 0.5) * 0.5 + Math.sin((z + hash2(gx >> 1, gy >> 1, seed) * 2) * 0.9) * 0.07;
     const lvl = Math.max(0, Math.min(3, Math.floor(sh * 4)));
-    let cc = pal[lvl];
-    if (kind === 'rock' && z > 44 + (vnoise((vx + u) * 2.2, (vy + v) * 2.2, seed + 8) - 0.5) * 14 && lvl > 0) cc = TERRAIN_COL.snow[lvl];
+    let cc = ROCK_COL[lvl];
+    if (z > 44 + (vnoise((vx + u) * 2.2, (vy + v) * 2.2, seed + 8) - 0.5) * 14 && lvl > 0) cc = SNOW_COL[lvl];
     const ys = Math.floor(zmax + gy + 0.5 - z), yg = zmax + gy;
     g.fillStyle = cc; g.fillRect(gx, ys, 1, yg - ys + 1);
   }
@@ -685,8 +698,14 @@ function pitSprite(d, wl, wr, lipL, lipR, seed) {
 }
 function rockSprites(S, x, y, vx, vy) {
   const lv = rockLevel(S, x, y);
-  if (lv >= 3) return terrainSprite(S, x, y, vx, vy, 'rock');
-  if (lv === 2) return terrainSprite(S, x, y, vx, vy, 'grass');
+  if (lv >= 3) return terrainSprite(S, x, y, vx, vy);
+  if (lv === 2) {   // a cluster of boulders on level ground
+    const key = 'boulders' + Math.floor(hash2(x, y, 42) * 4); if (PEAK_CACHE[key]) return PEAK_CACHE[key];
+    const c = document.createElement('canvas'); c.width = 32; c.height = 48; const g = c.getContext('2d'), r = SPR.rock;
+    const j = Math.floor(hash2(x, y, 42) * 4);
+    g.drawImage(r[j % r.length], -6, -3); g.drawImage(r[(j + 1) % r.length], 6, -2); g.drawImage(r[(j + 2) % r.length], 0, 2);
+    return PEAK_CACHE[key] = c;
+  }
   if (lv === 0) return scarSprite(x, y);
   const d = -lv, dep = (a, b) => { const [nx, ny] = fromView(a, b); return pitDepth(S, nx, ny); };
   const ul = dep(vx - 1, vy), ur = dep(vx, vy - 1), dl = dep(vx, vy + 1), dr = dep(vx + 1, vy);
@@ -703,18 +722,20 @@ function draw() {
   for (let s = 0; s <= 2 * N - 2; s++) {
     for (let vx = Math.max(0, s - N + 1); vx <= Math.min(N - 1, s); vx++) {
       const vy = s - vx; const [x, y] = fromView(vx, vy); const sx = (vx - vy) * 16, sy = (vx + vy) * 8;
-      if (sx + 16 < cx || sx - 16 > cx + vw || sy + 16 < cy || sy - 32 > cy + vh) continue;
+      if (sx + 16 < cx || sx - 16 > cx + vw || sy + 16 < cy || sy - 32 - 64 > cy + vh) continue;
       const ox = sx - 16, oy = sy - 32;
+      const G = geo(x, y), mtn = S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3, gb = sy + 16;
       const hv = hash2(x, y, 5);
       const gi = Math.floor(hv * 4), gf = hv < 0.5 ? 0 : 1;
-      ctx.drawImage(S.fert[y][x] ? (ovrSprite('grassfert_' + gf, ROT) || SPR.grassF[gf]) : (ovrSprite('grass_' + gi, ROT) || SPR.grass[gi]), ox, oy);
-      if (S.zone[y][x] && !S.grid[y][x]) ctx.drawImage(ZSPR(S.zone[y][x], zmask(x, y, S.zone[y][x])), ox, oy);
+      if (!mtn) groundDraw(S.fert[y][x] ? (ovrSprite('grassfert_' + gf, ROT) || SPR.grassF[gf]) : (ovrSprite('grass_' + gi, ROT) || SPR.grass[gi]), ox, gb, G);
+      if (S.zone[y][x] && !S.grid[y][x]) groundDraw(ZSPR(S.zone[y][x], zmask(x, y, S.zone[y][x])), ox, gb, G);
       if (lensAny) {
         const dk = S.deco[y][x];
         const lk = dk === 'tree' ? 'wood' : dk === 'rock' ? 'stone' : dk === 'ore' ? 'ore' : (!S.grid[y][x] && S.fert[y][x] ? 'fert' : null);
-        if (lk && lensShows(lk)) ctx.drawImage(SPR.lens[lk], ox, oy);
+        if (lk && lensShows(lk)) groundDraw(SPR.lens[lk], ox, gb, G);
       }
       const b = S.grid[y][x];
+      const lift = G.base; if (b && b.t === 'road') { /* roads are bent over the slope below */ } else ctx.translate(0, -lift);
       if (b) {
         let mask = 0;
         if (b.t === 'road') for (let i = 0; i < 4; i++) { const [nx, ny] = nbW(x, y, i); if (inb(nx, ny) && S.grid[ny][nx]) mask |= NBD[i][2]; }
@@ -730,15 +751,16 @@ function draw() {
           }
         } else {
           const spr = spriteFor(b.t, b, mask);
-          ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height);
+          if (b.t === 'road') groundDraw(spr, sx - spr.width / 2, sy + 16, G); else ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height);
           if (!b.served && b.t !== 'road') ctx.drawImage(SPR.warn, ox, oy - 8);
         }
       } else if (S.deco[y][x]) {
         const kind = S.deco[y][x], v = Math.floor(hash2(x, y, 8) * (kind === 'tree' ? 10 : 2));   // ten tree looks; the built-in art only has 3 so it repeats
         const amt = kind === 'rock' ? rockAmt(S, x, y) : 1;
-        if (kind === 'rock' && rockLevel(S, x, y) !== 1) { const ps = rockSprites(S, x, y, vx, vy); ctx.drawImage(ps, ox, oy + 48 - ps.height); }
+        if (kind === 'rock' && rockLevel(S, x, y) !== 1) { const ps = rockSprites(S, x, y, vx, vy); if (mtn) ctx.translate(0, lift); ctx.drawImage(ps, ox, oy + 48 - ps.height); if (mtn) ctx.translate(0, -lift); }
         else ctx.drawImage(ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], ox, oy);
       }
+      if (!(b && b.t === 'road')) ctx.translate(0, lift);
     }
   }
   if (drag && drag.rect) {
@@ -746,11 +768,11 @@ function draw() {
     const x0 = Math.min(r.a.x, r.b.x), x1 = Math.max(r.a.x, r.b.x), y0 = Math.min(r.a.y, r.b.y), y1 = Math.max(r.a.y, r.b.y);
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       let m = 0; for (let i = 0; i < 4; i++) { const [nx, ny] = nbW(x, y, i); if (nx < x0 || nx > x1 || ny < y0 || ny > y1) m |= NBD[i][2]; }
-      const [px, py] = tpos(x, y); ctx.drawImage(zoneCheck(S, kind, x, y).ok ? ZSPR(kind, m) : SPR.hlBad, px - 16, py - 32);
+      const Gz = geo(x, y); groundDraw(zoneCheck(S, kind, x, y).ok ? ZSPR(kind, m) : SPR.hlBad, Gz.sx - 16, Gz.sy + 16, Gz);
     }
     ctx.globalAlpha = 1;
   }
-  const mark = (t, spr) => { if (t) { const [px, py] = tpos(t.x, t.y); ctx.drawImage(spr, px - 16, py - 32); } };
+  const mark = (t, spr) => { if (t) { const Gm = geo(t.x, t.y); groundDraw(spr, Gm.sx - 16, Gm.sy + 16, Gm); } };
   if (pinned) mark(pinned, SPR.hlNone);
   if (hover) {
     if (tool === 'inspect') mark(hover, SPR.hlNone);
@@ -759,7 +781,7 @@ function draw() {
       const path = a ? roadPath(a, hover, !!keys['shift']) : [[hover.x, hover.y]];
       const chk = roadPathCheck(S, path);
       ctx.globalAlpha = 0.7;
-      for (const [x, y] of path) { const g = S.grid[y][x]; if (!g) { const [px, py] = tpos(x, y); ctx.drawImage(SPR.road[15], px - 16, py - 32); } }
+      for (const [x, y] of path) { const g = S.grid[y][x]; if (!g) { const Gr = geo(x, y); groundDraw(SPR.road[15], Gr.sx - 16, Gr.sy + 16, Gr); } }
       ctx.globalAlpha = 1;
       for (const [x, y] of path) mark({ x, y }, chk.ok ? SPR.hlGood : SPR.hlBad);
       if (a) mark(a, SPR.hlNone);
@@ -771,14 +793,14 @@ function draw() {
       ctx.globalAlpha = 0.7;
       if (tool === 'barracks' || tool === 'hall') {
         const footprint = { x: hover.x, y: hover.y, sz: tool === 'hall' ? 3 : 2, t: tool, lvl: 1 };
-        const views = tilesOf(footprint).map(([x, y]) => tpos(x, y));
+        const views = tilesOf(footprint).filter(([x, y]) => inb(x, y)).map(([x, y]) => { const q = geo(x, y); return [q.sx, q.sy - q.base]; });
         const corner = views.reduce((best, pt) => (!best || pt[1] > best[1]) ? pt : best, null);
         const gs = spriteFor(tool, footprint, 0);
         ctx.drawImage(gs, corner[0] - gs.width / 2, corner[1] + 16 - gs.height);
         ctx.globalAlpha = 1;
         for (const [x, y] of tilesOf(footprint)) if (inb(x, y)) mark({ x, y }, c.ok ? SPR.hlGood : SPR.hlBad);
       } else {
-        if (!S.grid[hover.y][hover.x]) { const [px, py] = tpos(hover.x, hover.y); ctx.drawImage(spriteFor(tool, { lvl: 1 }, tool === 'road' ? 15 : 0), px - 16, py - 32); }
+        if (!S.grid[hover.y][hover.x]) { const Gh = geo(hover.x, hover.y), hs = spriteFor(tool, { lvl: 1 }, tool === 'road' ? 15 : 0); if (tool === 'road') groundDraw(hs, Gh.sx - 16, Gh.sy + 16, Gh); else ctx.drawImage(hs, Gh.sx - 16, Gh.sy + 16 - hs.height - Gh.base); }
         ctx.globalAlpha = 1; mark(hover, c.ok ? SPR.hlGood : SPR.hlBad);
       }
     }
