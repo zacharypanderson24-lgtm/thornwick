@@ -97,6 +97,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .goalshead b { font-family: var(--display); font-weight: normal; font-size: 8px; color: var(--accent); white-space: nowrap; }
 .goalshead span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #goals ul { padding: 2px 12px 10px; width: 330px; }
+#flyout { position: absolute; left: 12px; bottom: 8px; display: flex; gap: 6px; padding: 8px; background: var(--panel); border: 3px solid var(--accent); max-width: calc(100% - 140px); overflow-x: auto; z-index: 5; }
+#flyout[hidden] { display: none; } #flyout .grp { display: flex; gap: 6px; } #flyout .grp[hidden] { display: none; }
+#flyout .ftitle { align-self: center; writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--display); font-size: 8px; color: var(--accent); padding: 0 2px; }
+#flyout .tool .tc { gap: 3px; font-size: 13px; }
+#stage.fly #toast { bottom: 140px; }
+.tool.cat { border-color: var(--line); } .tool.cat.open { border-color: var(--accent); background: #3a3320; }
 #info { width: auto; max-width: 270px; padding: 8px 10px; }
 #info p { font-size: 18px; }
 #banner { top: 52px; }
@@ -177,9 +183,10 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     <div id="lab" class="lab" hidden></div>
     <div class="panel" id="banner" hidden><h2>Your banner</h2><div class="chips" id="banner-sw"></div><label class="chk" style="margin-top:8px">Custom <input type="color" id="bannerpick" value="#b3202a"></label><div class="chips" style="margin-top:6px"><button class="chip" id="banner-reset" type="button">Original</button></div></div>
     <div id="rectinfo" class="rectinfo" hidden></div>
+    <div id="flyout" hidden></div>
     <div id="toast"></div>
   </main>
-  <nav id="toolbar" aria-label="Build tools"></nav>
+  <nav id="toolbar" aria-label="Tool categories"></nav>
 </div>
 <script>
 // ---------- Simulation (no DOM) ----------
@@ -1605,13 +1612,20 @@ let scale = 3, cam = { x: 0, y: 0 }, tool = 'inspect', hover = null, pinned = nu
 const keys = {};
 let dprI = 1, viewW = 0, viewH = 0;
 const TOOLS = [
-  { id: 'inspect', label: 'Look', key: '1' }, { id: 'road', label: 'Road', key: '2' }, { id: 'zoneRes', label: 'Housing', key: '3' },
-  { id: 'zoneFarm', label: 'Farmland', key: '4' }, { id: 'zoneComm', label: 'Commerce', key: '5' }, { id: 'zoneWood', label: 'Lumber', key: '6' },
-  { id: 'zoneMine', label: 'Mining', key: '7' }, { id: 'well', label: 'Well', key: '8' }, { id: 'sawmill', label: 'Sawmill', key: 'x' }, { id: 'forester', label: 'Forester', key: 'f' }, { id: 'barracks', label: 'Barracks', key: '9' },
+  { id: 'inspect', label: 'Look', key: '1' },
+  // Construction: things you place yourself, one at a time.
+  { id: 'road', label: 'Road', key: '2', cat: 'build' }, { id: 'well', label: 'Well', key: '8', cat: 'build' }, { id: 'sawmill', label: 'Sawmill', key: 'x', cat: 'build' },
+  { id: 'forester', label: 'Forester', key: 'f', cat: 'build' }, { id: 'barracks', label: 'Barracks', key: '9', cat: 'build' },
+  // Zoning: paint an area and buildings grow there by themselves.
+  { id: 'zoneRes', label: 'Housing', key: '3', cat: 'zone' }, { id: 'zoneFarm', label: 'Farmland', key: '4', cat: 'zone' }, { id: 'zoneComm', label: 'Commerce', key: '5', cat: 'zone' },
+  { id: 'zoneWood', label: 'Lumber', key: '6', cat: 'zone' }, { id: 'zoneMine', label: 'Mining', key: '7', cat: 'zone' },
   { id: 'bulldoze', label: 'Clear', key: '0' }
 ];
+// Bottom bar, TheoTown style: Look, Build, Zone, Clear. Build and Zone open a flyout of their tools above the bar.
+const CATS = [{ id: 'build', label: 'Build', key: 'b', title: 'Construction: roads and buildings you place yourself' }, { id: 'zone', label: 'Zone', key: 'z', title: 'Zoning: paint areas where buildings grow by themselves' }];
+let openCat = null;
 let helpOpen = false;   // declared early: setTool() calls updateInfo() during startup
-const toolBtns = {};
+const toolBtns = {}, catBtns = {};
 function iconFor(id) {
   const c = document.createElement('canvas'); c.width = 32; c.height = 40; const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
   if (id === 'inspect') {
@@ -1626,6 +1640,10 @@ function iconFor(id) {
     const k = ZONE[id];
     g.drawImage(SPR.grass[0], 0, -8); g.drawImage(ZSPR(k), 0, -8);
     g.drawImage({ res: SPR.house1, farm: SPR.farm, comm: SPR.market, wood: SPR.wood, mine: SPR.mine }[k], 0, -8);
+  } else if (id === 'cat-build') {
+    g.drawImage(SPR.grass[0], 0, -8); g.drawImage(SPR.sawmill, 0, -8);
+  } else if (id === 'cat-zone') {
+    g.drawImage(SPR.grass[0], 0, -8); g.drawImage(ZSPR('res'), 0, -8); g.drawImage(SPR.house1, 0, -8);
   } else if (id === 'barracks') {
     const sprite = spriteFor(id, null, 0);
     g.drawImage(sprite, 0, 0, sprite.width, sprite.height, 0, -3, 32, 44);
@@ -1634,24 +1652,47 @@ function iconFor(id) {
   }
   c.className = 'ico'; return c;
 }
-function refreshIcons() { for (const t of TOOLS) { const b = toolBtns[t.id]; if (b) b.replaceChild(iconFor(t.id), b.firstChild); } }
+function refreshIcons() { for (const t of TOOLS) { const b = toolBtns[t.id]; if (b) b.replaceChild(iconFor(t.id), b.firstChild); } for (const c of CATS) { const b = catBtns[c.id]; if (b) b.replaceChild(iconFor('cat-' + c.id), b.firstChild); } }
 function costText(id) {
   const c = COST[id]; if (!c) return '';
   const sym = { wood: ['W', 'cw'], stone: ['S', 'cs'], gold: ['G', 'cg'] };
   return Object.keys(c).map(k => '<i class="' + sym[k][1] + '">' + sym[k][0] + c[k] + '</i>').join('');
 }
 const toolbar = document.getElementById('toolbar');
-for (const t of TOOLS) {
+const flyout = document.getElementById('flyout'), stageEl = document.getElementById('stage');
+const grp = {};
+for (const c of CATS) { const g = document.createElement('div'); g.className = 'grp'; g.hidden = true; const tt = document.createElement('span'); tt.className = 'ftitle'; tt.textContent = c.label; g.appendChild(tt); flyout.appendChild(g); grp[c.id] = g; }
+function mkTool(t) {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'tool'; b.id = 'tool-' + t.id; b.title = NAMES[t.id] || t.label;
   b.appendChild(iconFor(t.id));
   const l = document.createElement('span'); l.className = 'tl'; l.textContent = t.label; b.appendChild(l);
   const c = document.createElement('span'); c.className = 'tc'; c.innerHTML = costText(t.id) || (ZONE[t.id] ? '<i class="cg">free</i>' : '&nbsp;'); b.appendChild(c);
-  const k = document.createElement('span'); k.className = 'tk'; k.textContent = t.key; b.appendChild(k);
+  const k = document.createElement('span'); k.className = 'tk'; k.textContent = t.key.toUpperCase(); b.appendChild(k);
   b.addEventListener('click', () => setTool(t.id));
-  toolbar.appendChild(b); toolBtns[t.id] = b;
+  toolBtns[t.id] = b; return b;
 }
+function mkCat(c) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'tool cat'; b.id = 'cat-' + c.id; b.title = c.title;
+  b.appendChild(iconFor('cat-' + c.id));
+  const l = document.createElement('span'); l.className = 'tl'; l.textContent = c.label; b.appendChild(l);
+  const e = document.createElement('span'); e.className = 'tc'; e.innerHTML = '&nbsp;'; b.appendChild(e);
+  const k = document.createElement('span'); k.className = 'tk'; k.textContent = c.key.toUpperCase(); b.appendChild(k);
+  b.addEventListener('click', () => toggleCat(c.id));
+  catBtns[c.id] = b; return b;
+}
+// Order on the bar: Look, Build, Zone, Clear.
+toolbar.appendChild(mkTool(TOOLS.find(t => t.id === 'inspect')));
+for (const c of CATS) toolbar.appendChild(mkCat(c));
+toolbar.appendChild(mkTool(TOOLS.find(t => t.id === 'bulldoze')));
+for (const t of TOOLS) if (t.cat) grp[t.cat].appendChild(mkTool(t));
+function showCat(id) {
+  openCat = id; flyout.hidden = !id; stageEl.classList.toggle('fly', !!id);
+  for (const c of CATS) { grp[c.id].hidden = c.id !== id; catBtns[c.id].classList.toggle('open', c.id === id); }
+}
+function toggleCat(id) { if (openCat === id) { showCat(null); setTool('inspect'); } else { showCat(id); const first = TOOLS.find(t => t.cat === id); const cur = TOOLS.find(t => t.id === tool); setTool(cur && cur.cat === id ? cur.id : first.id); } }
 function setTool(id) {
   tool = id; roadAnchor = null; for (const k in toolBtns) toolBtns[k].classList.toggle('on', k === id);
+  const t = TOOLS.find(t => t.id === id); showCat(t && t.cat ? t.cat : null);
   if (id !== 'inspect') pinned = null; updateInfo();
 }
 setTool('inspect');
@@ -1771,6 +1812,7 @@ window.addEventListener('keydown', e => {
   if (k === 'escape') { if (roadAnchor) { roadAnchor = null; return; } setTool('inspect'); pinned = null; updateInfo(); return; }
   if (k === '+' || k === '=') { setScale(zoomStep(1), stage.clientWidth / 2, stage.clientHeight / 2); return; }
   if (k === '-') { setScale(zoomStep(-1), stage.clientWidth / 2, stage.clientHeight / 2); return; }
+  const c = CATS.find(c => c.key === k); if (c) { toggleCat(c.id); return; }
   const t = TOOLS.find(t => t.key === k); if (t) { setTool(t.id); return; }
   keys[k] = true;
 });
@@ -2243,7 +2285,7 @@ function updateInfo() {
   const t = pinned || hover; const el = $('info');
   if (!t) {
     el.hidden = !helpOpen;
-    if (helpOpen) el.innerHTML = '<h2>Thornwick</h2><p>Paint zones beside a road that reaches the Town Hall. Buildings grow there by themselves when the demand bars show a need and there is wood. Press V to see forest, stone, ore and farmable soil. Soldiers sleep in barracks, so every recruit needs a bunk.</p><p class="dim">Drag to pan. Scroll to zoom. Pick a tool below. Drag to paint roads, drag a box to zone.</p>';
+    if (helpOpen) el.innerHTML = '<h2>Thornwick</h2><p>Paint zones beside a road that reaches the Town Hall. Buildings grow there by themselves when the demand bars show a need and there is wood. Press V to see forest, stone, ore and farmable soil. Soldiers sleep in barracks, so every recruit needs a bunk.</p><p class="dim">Drag to pan. Scroll to zoom. Open Build (B) or Zone (Z) below. Drag to paint roads, drag a box to zone.</p>';
     return;
   }
   el.hidden = false;
