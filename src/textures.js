@@ -29,6 +29,13 @@ for (let i = 0; i < 4; i++) addSlot('grass_' + i, 'Grass ' + (i + 1), 'Terrain',
 for (let i = 0; i < 2; i++) addSlot('grassfert_' + i, 'Fertile soil ' + (i + 1), 'Terrain', 1, 1, 'ground', 'A flat diamond tile of fertile land: richer, slightly yellower green grass with dark brown soil patches showing and a few ochre grain specks. Must tile seamlessly.');
 for (let i = 0; i < 2; i++) addSlot('tree_' + i, 'Broadleaf tree ' + (i + 1), 'Nature', 1, 1, 'object', 'A broadleaf tree: rounded mid-green canopy with a lighter highlight top-left and dark green underside, a short brown trunk. About one tile wide and two tiles tall. Looks the same from every side.');
 addSlot('tree_2', 'Pine tree', 'Nature', 1, 1, 'object', 'A conifer: layered triangular boughs in dark blue-green with lighter tips, a short brown trunk. About one tile wide and two tiles tall.');
+addSlot('tree_3', 'Spruce tree', 'Nature', 1, 1, 'object', 'A slender tall spruce with layered dark blue-green needle branches and light tips, a short brown trunk.');
+addSlot('tree_4', 'Birch tree', 'Nature', 1, 1, 'object', 'A compact broadleaf birch with green foliage and a pale white-grey trunk with dark bark marks.');
+addSlot('tree_5', 'Willow tree', 'Nature', 1, 1, 'object', 'A small willow with a rounded olive-green canopy and slender drooping leaf fronds.');
+addSlot('tree_6', 'Old oak tree', 'Nature', 1, 1, 'object', 'An old oak with a broad irregular rounded canopy in deep green, a short brown trunk.');
+addSlot('tree_7', 'Fir tree', 'Nature', 1, 1, 'object', 'A full dark evergreen fir with several tiered triangular needle boughs and a brown trunk.');
+addSlot('tree_8', 'Golden maple tree', 'Nature', 1, 1, 'object', 'A deciduous maple with an ochre-gold autumn canopy and a dark timber trunk.');
+addSlot('tree_9', 'Aspen tree', 'Nature', 1, 1, 'object', 'A tall narrow aspen with a slender pale marked trunk and an upright green canopy.');
 for (let i = 0; i < 2; i++) addSlot('rock_' + i, 'Boulders ' + (i + 1), 'Nature', 1, 1, 'object', 'A cluster of two or three rounded grey fieldstones, lit from the top-left, with a few moss specks. Less than one tile wide.');
 for (let i = 0; i < 2; i++) addSlot('ore_' + i, 'Iron ore ' + (i + 1), 'Nature', 1, 1, 'object', 'An outcrop of dark slate-grey rock with rusty orange and pale blue-silver mineral veins. Less than one tile wide.');
 
