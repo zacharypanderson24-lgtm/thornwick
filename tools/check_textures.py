@@ -84,8 +84,12 @@ def is_bg(a):
 
 def check_ground(f):
     base = os.path.basename(f)[:-4]
-    im = Image.open(f).convert('RGBA'); a = np.array(im); H, W = a.shape[:2]
     msgs = []
+    try:
+        im = Image.open(f); im.load(); im = im.convert('RGBA')
+    except Exception as ex:
+        return base, [('FAIL', f'cannot decode the PNG ({ex}); the file is corrupt or truncated, re-export it and upload it again (the game ignores it)')]
+    a = np.array(im); H, W = a.shape[:2]
     if abs(W / H - 2) > 0.02:
         msgs.append(('FAIL', f'canvas {W}x{H} is {W / H:.2f}:1, must be 2:1 (use 2048x1024); the diamond would be the wrong shape'))
     ys, xs = np.mgrid[0:H, 0:W]
