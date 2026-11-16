@@ -68,6 +68,7 @@ namespace CrownAndHearth.Game
 
             _hud = new GameObject("HudRoot", typeof(Hud)).GetComponent<Hud>();
             _hud.Build(Tools);
+            _hud.BannerPicked += SetBanner;
             _hud.ToolPicked += id => SetTool(Tools.First(t => t.Id == id));
             _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); };
             _hud.RotatePicked += Rotate;
@@ -117,6 +118,7 @@ namespace CrownAndHearth.Game
             }
 
             World = loaded;
+            SetBanner(ColorUtility.TryParseHtmlString(loaded.BannerColor ?? "", out _) ? loaded.BannerColor : null);
             _dayAcc = 0;
             _speed = 0;
             _drawnVersion = -1;
@@ -127,11 +129,31 @@ namespace CrownAndHearth.Game
             _hud.Toast("Settlement loaded and paused.");
         }
 
+        void SetBanner(string hex)
+        {
+            if (!string.IsNullOrEmpty(hex))
+            {
+                hex = hex.Trim();
+                if (!hex.StartsWith("#")) hex = "#" + hex;
+                if (hex.Length != 7 || !ColorUtility.TryParseHtmlString(hex, out _))
+                {
+                    _hud.Toast("Enter a six-digit hex color, such as #2A56C4.");
+                    return;
+                }
+            }
+            World.BannerColor = string.IsNullOrEmpty(hex) ? null : hex;
+            _art.SetBanner(World.BannerColor);
+            _hud.ShowBannerColor(World.BannerColor);
+            _drawnVersion = -1;
+        }
+
+        void OnDestroy() => _art?.SetBanner(null);
+
         void Update()
         {
             HandleKeys();
             bool overUi = _hud.PointerOverUi;
-            _cam.Tick(!overUi);
+            _cam.Tick(!overUi, !_hud.EditingBanner);
             HandleMouse(overUi);
 
             if (_speed > 0)
@@ -156,7 +178,7 @@ namespace CrownAndHearth.Game
 
         void HandleKeys()
         {
-            var kb = Keyboard.current; if (kb == null) return;
+            var kb = Keyboard.current; if (kb == null || _hud.EditingBanner) return;
             foreach (var t in Tools) if (kb[t.Hotkey].wasPressedThisFrame) SetTool(t);
             if (kb.escapeKey.wasPressedThisFrame) SetTool(Tools[0]);
             if (kb.qKey.wasPressedThisFrame) Rotate(-1);

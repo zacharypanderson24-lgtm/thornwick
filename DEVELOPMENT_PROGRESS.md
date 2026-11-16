@@ -58,6 +58,12 @@ the Editor (no console errors or warnings). Parity tests compare against the rea
 | HUD (uGUI): resources and rates, speed, rotation, tools, tile info, demand strip, zone notes, Workforce priorities | n/a | yes |
 | Art pipeline: `../assets` imported (magenta keyed out, ground tiles shrunk to 32x16), placeholders for missing art | n/a | yes |
 
+## Art tools pending integration
+
+The `codex/settlement-art-tools` branch adds a saved banner color for the Town
+Hall and barracks, and **Crown & Hearth > Texture Lab** for previewing and
+replacing the art for a specific texture slot and camera view.
+
 ## Not done yet (next candidates)
 
 1. Walking work crews and townsfolk (`sim_crews.js`). Crews are approximated today by the same output per worker

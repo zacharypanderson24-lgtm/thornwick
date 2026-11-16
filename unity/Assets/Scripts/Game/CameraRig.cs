@@ -37,11 +37,11 @@ namespace CrownAndHearth.Game
         }
 
         /// <summary>Called every frame by the game controller; pointerFree is false while the cursor is over the HUD.</summary>
-        public void Tick(bool pointerFree)
+        public void Tick(bool pointerFree, bool keyboardFree = true)
         {
             var kb = Keyboard.current; var mouse = Mouse.current;
             Vector2 dir = Vector2.zero;
-            if (kb != null)
+            if (keyboardFree && kb != null)
             {
                 if (kb.wKey.isPressed || kb.upArrowKey.isPressed) dir.y += 1;
                 if (kb.sKey.isPressed || kb.downArrowKey.isPressed) dir.y -= 1;
