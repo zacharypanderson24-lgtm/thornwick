@@ -43,22 +43,48 @@ namespace CrownAndHearth.Game
         /// <summary>Unity position -> game screen pixels (y down).</summary>
         public static Vector2 ToScreenPx(Vector3 p) => new Vector2(p.x * PPU, -p.y * PPU);
 
-        /// <summary>Which world tile is under a Unity position, testing height levels from the top down (JS screenToTile).</summary>
+        /// <summary>Find the foremost rendered ground triangle under the pointer.</summary>
         public static Vector2Int? PickTile(World w, Vector3 worldPos, int r)
         {
-            var s = ToScreenPx(worldPos);
-            float p = s.x / 16f;
-            for (float L = HMax; L >= HMin; L -= 0.25f)
+            var screen = ToScreenPx(worldPos);
+            float difference = screen.x / 16f;
+            float nearestSum = (screen.y + HMax * LvlPx) / 8f;
+            float farthestSum = (screen.y + HMin * LvlPx) / 8f;
+            int firstDiagonal = Mathf.Max(0, Mathf.CeilToInt(farthestSum - 2f));
+            int lastDiagonal = Mathf.Min(DiagonalCount - 1, Mathf.FloorToInt(nearestSum));
+
+            // A diamond spans one unit on either side of its horizontal centre.
+            // Check candidates in reverse mesh draw order so overlapping slopes pick the visible tile.
+            for (int diagonal = lastDiagonal; diagonal >= firstDiagonal; diagonal--)
             {
-                float q = (s.y + L * LvlPx) / 8f, fx = (p + q) / 2f, fy = (q - p) / 2f;
-                int vx = Mathf.FloorToInt(fx), vy = Mathf.FloorToInt(fy);
-                if (vx < 0 || vy < 0 || vx >= N || vy >= N) continue;
-                float c0 = VhView(w, vx, vy, r), c1 = VhView(w, vx + 1, vy, r), c2 = VhView(w, vx, vy + 1, r), c3 = VhView(w, vx + 1, vy + 1, r);
-                float uu = fx - vx, vv = fy - vy;
-                float z = c0 + (c1 - c0) * uu + (c2 - c0) * vv + (c0 - c1 - c2 + c3) * uu * vv;
-                if (Mathf.Abs(z - L) <= 0.2f) return FromView(vx, vy, r);
+                int firstX = Mathf.Max(Mathf.Max(0, diagonal - (N - 1)), Mathf.CeilToInt((difference + diagonal - 1f) / 2f));
+                int lastX = Mathf.Min(Mathf.Min(N - 1, diagonal), Mathf.FloorToInt((difference + diagonal + 1f) / 2f));
+                for (int vx = lastX; vx >= firstX; vx--)
+                {
+                    int vy = diagonal - vx;
+                    var top = ProjectVertex(w, vx, vy, r);
+                    var right = ProjectVertex(w, vx + 1, vy, r);
+                    var bottom = ProjectVertex(w, vx + 1, vy + 1, r);
+                    var left = ProjectVertex(w, vx, vy + 1, r);
+                    if (InTriangle(screen, top, right, bottom) || InTriangle(screen, top, bottom, left))
+                        return FromView(vx, vy, r);
+                }
             }
             return null;
+        }
+
+        static Vector2 ProjectVertex(World w, int x, int y, int r) =>
+            ToScreenPx(VertexPos(x, y, VhView(w, x, y, r)));
+
+        static float Cross(Vector2 a, Vector2 b, Vector2 p) =>
+            (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+
+        static bool InTriangle(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+        {
+            float area = Cross(a, b, c);
+            if (area == 0) return false;
+            float ab = Cross(a, b, p), bc = Cross(b, c, p), ca = Cross(c, a, p);
+            return area > 0 ? ab >= 0 && bc >= 0 && ca >= 0 : ab <= 0 && bc <= 0 && ca <= 0;
         }
 
         /// <summary>Centre of a world tile's surface, in Unity units (for camera targeting).</summary>
@@ -70,7 +96,12 @@ namespace CrownAndHearth.Game
             return new Vector3(sx / PPU, -sy / PPU, 0);
         }
 
-        /// <summary>Painter's order for something whose front tile is view (vx, vy). Fits in a sortingOrder (max ~32.6k).</summary>
-        public static int SortOrder(int vx, int vy) => (vx + vy) * 128 + vx;
+        public const int DiagonalCount = 2 * N - 1;
+
+        // Each diagonal draws its terrain, its highlights, then sprites from left to right.
+        // Start at the signed 16-bit minimum to leave room for both mesh layers and sprites.
+        public static int GroundOrder(int diagonal) => short.MinValue + diagonal * (N + 2);
+        public static int OverlayOrder(int diagonal) => GroundOrder(diagonal) + 1;
+        public static int SortOrder(int vx, int vy) => GroundOrder(vx + vy) + 2 + vx;
     }
 }

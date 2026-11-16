@@ -24,11 +24,14 @@ namespace CrownAndHearth.Game
         readonly Dictionary<string, Image> _toolButtons = new Dictionary<string, Image>();
         readonly Dictionary<int, Image> _speedButtons = new Dictionary<int, Image>();
         RectTransform _workRows;
+        Image _resourceViewButton;
+        GameObject _resourceLegend;
 
         public event Action<string> ToolPicked;
         public event Action<int> SpeedPicked;
         public event Action<int> RotatePicked;
         public event Action<string, int> PrioMoved;
+        public event Action ResourceViewPicked;
 
         public void Build(IList<GameController.ToolDef> tools)
         {
@@ -94,9 +97,26 @@ namespace CrownAndHearth.Game
             _workText = MakeText(wp, "Summary", 14, TextAnchor.LowerLeft);
             Stretch(_workText.rectTransform, new Vector2(10, 8), new Vector2(-10, -290));
             _workPanel.SetActive(false);
+
+            var lensAnchor = new Vector2(1, 1);
+            _resourceViewButton = MakeButton(root, "Resources (V)", lensAnchor,
+                new Vector2(-82, -63), new Vector2(148, 30), () => ResourceViewPicked?.Invoke());
+            var legend = MakePanel(root, "ResourceLegend", lensAnchor, lensAnchor,
+                new Vector2(-156, -180), new Vector2(-8, -82));
+            var keys = MakeText(legend, "TerrainResources", 15, TextAnchor.MiddleLeft);
+            keys.text = "<color=#6EFF96>Timber</color>\n<color=#E4E8FC>Stone</color>\n<color=#FFBE5A>Ore</color>\n<color=#EBF56E>Fertile soil</color>";
+            Stretch(keys.rectTransform, new Vector2(10, 6), new Vector2(-10, -6));
+            _resourceLegend = legend.gameObject;
+            SetResourceView(false);
         }
 
         public bool PointerOverUi => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+
+        public void SetResourceView(bool on)
+        {
+            _resourceViewButton.color = on ? BtnOn : Btn;
+            _resourceLegend.SetActive(on);
+        }
 
         public void SetTool(string id) { foreach (var kv in _toolButtons) kv.Value.color = kv.Key == id ? BtnOn : Btn; }
         public void SetSpeed(int s) { foreach (var kv in _speedButtons) kv.Value.color = kv.Key == s ? BtnOn : Btn; }

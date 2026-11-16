@@ -16,6 +16,13 @@ _Last updated: 2026-11-16 (Claude Code)._
 ChatGPT and Claude Code each work on their own branch and merge into `unity-migration` through pull requests.
 `unity-migration` now has everything from PR #1, so new branches (ChatGPT's included) should be cut from `unity-migration`.
 
+## Terrain milestone pending integration
+
+The `codex/terrain-occlusion` branch implements terrain occlusion and matching
+tile picking. Press V or click **Resources (V)** to show timber, stone, ore, and
+fertile soil. The relevant zoning tools show their resource highlights while
+active. Banner tint and the texture lab are separate roadmap items.
+
 ## Pull requests
 
 | PR | From → into | Status |
