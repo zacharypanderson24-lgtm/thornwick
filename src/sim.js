@@ -7,7 +7,7 @@ const COST = {
   market: { wood: 12 }, sawmill: { wood: 15 }, forester: { wood: 8 }, well: { wood: 5, stone: 5 }, barracks: { wood: 20, stone: 15, gold: 20 }
 };
 const NAMES = {
-  road: 'Dirt Road', house: 'Timber House', farm: 'Farm', wood: 'Woodcutter', quarry: 'Quarry', mine: 'Iron Mine', market: 'Market', sawmill: 'Sawmill', forester: 'Forester',
+  road: 'Dirt Road', house: 'Timber House', farm: 'Farm', wood: 'Woodcutter Lodge', quarry: 'Quarry', mine: 'Iron Mine', market: 'Market', sawmill: 'Sawmill', forester: 'Forester',
   well: 'Well', barracks: 'Barracks', hall: 'Town Hall',
   zoneRes: 'Housing Zone', zoneFarm: 'Farm Zone', zoneComm: 'Commerce Zone', zoneWood: 'Lumber Zone', zoneMine: 'Mining Zone'
 };
@@ -252,7 +252,7 @@ function growSave(o) {
     if (inOld(x, y)) { const ox = x - off, oy = y - off; S.deco[y][x] = o.deco[oy][ox]; S.zone[y][x] = o.zone[oy][ox]; S.fert[y][x] = o.fert[oy][ox]; }
     else genTile(S, seed, x, y);
   }
-  for (const key of ['rockAmt', 'elev', 'stumpT', 'sapT', 'dig', 'oreLeft']) for (const k in (o[key] || {})) {
+  for (const key of ['rockAmt', 'elev', 'stumpT', 'sapT', 'chop', 'dig', 'oreLeft']) for (const k in (o[key] || {})) {
     const ox = k % oldN, oy = Math.floor(k / oldN); S[key][(oy + off) * N + ox + off] = o[key][k];
   }
   S.blds = o.blds.map(b => Object.assign({}, b, { x: b.x + off, y: b.y + off }));
@@ -512,10 +512,94 @@ function plantSapling(S, x, y, r) {
   if (!best) return false;
   S.deco[best[1]][best[0]] = 'sapling'; S.sapT = S.sapT || {}; S.sapT[tk(best[0], best[1])] = SAPLING_DAYS; return true;
 }
-function fellTree(S, x, y, r) {
-  const t = nearestZoned(S, x, y, r, 'tree', 'wood'); if (!t) return;
-  S.deco[t[1]][t[0]] = 'stump'; if (!foresterCovers(S, t[0], t[1])) S.zone[t[1]][t[0]] = null;   // a forester nearby keeps the tile as a managed woodlot
-  S.stumpT = S.stumpT || {}; S.stumpT[tk(t[0], t[1])] = STUMP_DAYS;
+function fellAt(S, x, y) {
+  S.deco[y][x] = 'stump'; if (!foresterCovers(S, x, y)) S.zone[y][x] = null;   // a forester nearby keeps the tile as a managed woodlot
+  S.stumpT = S.stumpT || {}; S.stumpT[tk(x, y)] = STUMP_DAYS;
+  if (S.chop) delete S.chop[tk(x, y)];
+}
+// ---- Work crews: woodcutters, quarrymen and miners live at their lodge/mine, walk out to a marked tile, work, and carry the load home ----
+// A worker is in one of four states: 'home' (resting inside the building, not drawn), 'out' (walking to the site), 'work' (at the site), 'back' (carrying the load).
+// Crews are runtime only (never saved): after loading, everybody starts at home. Output comes only from loads delivered at the building, so farther sites make slower trips.
+const CREW = new WeakMap();
+const crewOf = b => { let c = CREW.get(b); if (!c) { c = []; CREW.set(b, c); } return c; };
+const CREW_KIND = { wood: 'tree', quarry: 'rock', mine: 'ore' };
+const WORK_T = 2, CHOPS_PER_TREE = 4, LOAD = { wood: 6, quarry: 5, mine: 4 }, CREW_DEPTH = 10;   // 4 chops x 6 logs = 24 logs per tree
+const bfsSeen = new Int32Array(N * N), bfsPar = new Int32Array(N * N), bfsDist = new Int16Array(N * N); let bfsStamp = 0;
+function crewMatch(S, kind, x, y) {
+  const dc = S.deco[y][x];
+  if (kind === 'tree') return dc === 'tree' && S.zone[y][x] === 'wood';
+  if (kind === 'rock') return dc === 'rock' && S.zone[y][x] === 'mine' && rockWorkable(S, x, y);
+  return dc === 'ore';
+}
+// Nearest-by-walking marked tile within WORK_R of the building. Returns { tx, ty, path } where path runs from the building to a tile beside the target, or null.
+function crewTarget(S, b, kind, salt, used) {
+  bfsStamp++;
+  const s0 = b.y * N + b.x; bfsSeen[s0] = bfsStamp; bfsDist[s0] = 0; bfsPar[s0] = -1;
+  const q = [s0];
+  for (let h = 0; h < q.length; h++) {
+    const c = q[h], cx = c % N, cy = (c - cx) / N, dd = bfsDist[c]; if (dd >= CREW_DEPTH) continue;
+    for (const [dx, dy] of NB) {
+      const nx = cx + dx, ny = cy + dy; if (!inb(nx, ny)) continue;
+      const ni = ny * N + nx; if (bfsSeen[ni] === bfsStamp) continue;
+      const g = S.grid[ny][nx]; if (g && g !== b && g.t !== 'road') continue;
+      if (walkCost(S, cx, cy, nx, ny) === Infinity) continue;
+      bfsSeen[ni] = bfsStamp; bfsDist[ni] = dd + 1; bfsPar[ni] = c; q.push(ni);
+    }
+  }
+  let best = null, bs = 1e9;
+  for (let j = b.y - WORK_R; j <= b.y + WORK_R; j++) for (let i = b.x - WORK_R; i <= b.x + WORK_R; i++) {
+    if (!inb(i, j) || !crewMatch(S, kind, i, j)) continue;
+    for (const [dx, dy] of NB) {
+      const nx = i + dx, ny = j + dy; if (!inb(nx, ny)) continue;
+      const ni = ny * N + nx; if (bfsSeen[ni] !== bfsStamp || ni === s0) continue;   // workers step out of the building, never work on its roof
+      const sc = bfsDist[ni] + hash2(i, j, 31 + (salt || 0)) * 0.9 + (used && used.has(ni) ? 2.5 : 0);   // tie-break so workers spread over equally near tiles
+      if (sc < bs) { bs = sc; best = [i, j, ni]; }
+    }
+  }
+  if (!best) return null;
+  const path = []; for (let c = best[2]; c !== -1; c = bfsPar[c]) path.push([c % N, Math.floor(c / N)]);
+  path.reverse();
+  return { tx: best[0], ty: best[1], path };
+}
+function crewAct(S, b, kind, a) {
+  const { tx, ty } = a;
+  if (kind === 'tree') {
+    if (!crewMatch(S, kind, tx, ty)) return 0;
+    S.chop = S.chop || {}; const k = tk(tx, ty); S.chop[k] = (S.chop[k] || 0) + 1;
+    if (S.chop[k] >= CHOPS_PER_TREE) fellAt(S, tx, ty);
+    return LOAD.wood;
+  }
+  if (kind === 'rock') return mineRock(S, tx, ty, 0, LOAD.quarry);
+  return mineOre(S, tx, ty, 0, LOAD.mine);
+}
+// Advance every crew one day. `out` collects what was delivered this day (logs, stone, ore).
+function stepCrews(S, out) {
+  for (const b of S.blds) {
+    const kind = CREW_KIND[b.t]; if (!kind) continue;
+    const crew = crewOf(b), want = b.workers || 0, res = kind === 'tree' ? 'logs' : kind === 'rock' ? 'stone' : 'ore';
+    for (let i = crew.length - 1; i >= 0 && crew.length > want; i--) if (crew[i].st === 'home') crew.splice(i, 1);   // surplus workers who are resting leave; those out finish their trip first
+    while (crew.length < want) crew.push({ st: 'home', x: b.x, y: b.y, px: b.x, py: b.y, path: null, i: 0, t: 0, carry: 0, tx: 0, ty: 0, stand: -1 });
+    for (const a of crew) {
+      a.px = a.x; a.py = a.y;
+      if (a.st === 'home') {
+        if (!b.served) continue;
+        if (kind !== 'tree' && S.res[res] + out[res] >= STORAGE) continue;   // full stockpile: the crew stays home and keeps its reserve in the ground
+        const used = new Set(); for (const o of crew) if (o !== a && o.st !== 'home' && o.stand >= 0) used.add(o.stand);   // spread the crew over different standing tiles
+        const tg = crewTarget(S, b, kind, crew.indexOf(a) * 7 + S.day, used); if (!tg) continue;
+        a.path = tg.path; a.stand = tg.path[tg.path.length - 1][1] * N + tg.path[tg.path.length - 1][0]; a.tx = tg.tx; a.ty = tg.ty; a.i = 0; a.carry = 0;
+        if (a.path.length > 1) { a.i = 1; a.x = a.path[1][0]; a.y = a.path[1][1]; }
+        a.st = a.i === a.path.length - 1 ? 'work' : 'out'; if (a.st === 'work') a.t = WORK_T;
+      } else if (a.st === 'out') {
+        a.i++; a.x = a.path[a.i][0]; a.y = a.path[a.i][1];
+        if (a.i === a.path.length - 1) { a.st = 'work'; a.t = WORK_T; }
+      } else if (a.st === 'work') {
+        if (--a.t <= 0) { a.carry = crewAct(S, b, kind, a); a.path.reverse(); a.i = 0; a.st = 'back'; }
+      } else {   // back
+        if (a.i < a.path.length - 1) { a.i++; a.x = a.path[a.i][0]; a.y = a.path[a.i][1]; }
+      }
+      if (a.st === 'back' && a.i >= a.path.length - 1) { out[res] += a.carry; a.carry = 0; a.st = 'home'; a.path = null; a.stand = -1; a.x = b.x; a.y = b.y; }
+    }
+  }
 }
 function fellNearest(S, x, y, r, kind) {
   let best = null, bd = 1e9;
@@ -693,20 +777,12 @@ function tick(S) {
     if (!b.served) continue;
     const e = b.eff || 0;   // this building's own staffing share
     if (b.t === 'farm') food += foodOf(b) * e;
-    else if (b.t === 'wood') {
-      if (e > 0 && countZoned(S, b.x, b.y, WORK_R, 'tree', 'wood') > 0) {
-        logs += 2.5 * e; b.prog += e;
-        if (b.prog >= 10) { b.prog = 0; fellTree(S, b.x, b.y, WORK_R); }
-      }
-    } else if (b.t === 'forester') {
+    else if (b.t === 'forester') {
       if (e > 0) { b.prog += e; if (b.prog >= PLANT_EVERY) { if (plantSapling(S, b.x, b.y, FORESTER_R)) b.prog = 0; else b.prog = PLANT_EVERY; } }
-    } else if (b.t === 'quarry') {
-      // Finite stone: the quarry pauses (and keeps its reserve in the ground) while the stockpile is full.
-      if (e > 0 && S.res.stone + stone < STORAGE) stone += mineRock(S, b.x, b.y, WORK_R, 2 * e);
-    } else if (b.t === 'mine') {
-      if (e > 0 && S.res.ore + ore < STORAGE) ore += mineOre(S, b.x, b.y, WORK_R, 1.5 * e);
     }
   }
+  // Woodcutters, quarrymen and miners walk out to their marked tiles and carry loads home; only delivered loads count.
+  const got = { logs: 0, stone: 0, ore: 0 }; stepCrews(S, got); logs += got.logs; stone += got.stone; ore += got.ore;
   S.res.logs = (S.res.logs || 0) + logs;
   // Sawmills first (full yield, limited by workers), then the Town Hall pit-saw for what is left.
   for (const b of S.blds) if (b.t === 'sawmill' && b.served && S.res.logs > 0) {
@@ -742,9 +818,9 @@ function tick(S) {
     }
   }
   for (const k in S.res) S.res[k] = Math.max(0, Math.min(STORAGE, S.res[k]));
-  for (const k in S.res) S.rate[k] = S.res[k] - before[k];
+  for (const k in S.res) S.rate[k] = (k === 'logs' || k === 'stone' || k === 'ore') ? 0.85 * (S.rate[k] || 0) + 0.15 * (S.res[k] - before[k]) : S.res[k] - before[k];   // loads arrive in lumps, so smooth those rates
   S.day++;
   recalc(S);
   develop(S);
 }
-if (typeof module !== 'undefined') module.exports = { PLANT_EVERY, SAPLING_DAYS, FORESTER_R, plantSapling, foresterCovers, TRADES, TRADE_OF, TRADE_NAMES, jobsOf, recalc, treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (typeof module !== 'undefined') module.exports = { crewOf, CREW_KIND, WORK_T, LOAD, CHOPS_PER_TREE, stepCrews, PLANT_EVERY, SAPLING_DAYS, FORESTER_R, plantSapling, foresterCovers, TRADES, TRADE_OF, TRADE_NAMES, jobsOf, recalc, treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };

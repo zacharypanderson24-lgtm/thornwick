@@ -146,6 +146,19 @@ function buildSprites() {
     for (let i = 0; i < 3; i++) { const [lt, ll, lr] = tones('#b07a44'); box(g, .72, .18 + i * .22, .94, .34 + i * .22, 0, 3, lt, ll, lr); }
     box(g, .74, .24, .92, .5, 3, 5, '#e0c08a', '#c0a06a', '#a58652');
     SPR.sawmill = c; }
+  // Villagers on the job (6 x 10): tunic colour by trade, a pale hat/head, and a carried load when heading home.
+  SPR.worker = {};
+  for (const [kind, tunic, load] of [['tree', '#5f8a3c', '#8a5a2b'], ['rock', '#8a8d98', '#b4b8c4'], ['ore', '#a8622a', '#e0873a']]) {
+    SPR.worker[kind] = [0, 1].map(carry => {
+      const c = document.createElement('canvas'); c.width = 6; c.height = 10; const g = c.getContext('2d');
+      g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(0, 9, 6, 1);
+      g.fillStyle = '#3a2a1a'; g.fillRect(1, 7, 1, 2); g.fillRect(4, 7, 1, 2);
+      g.fillStyle = '#20180f'; g.fillRect(1, 3, 4, 5); g.fillStyle = tunic; g.fillRect(2, 4, 2, 3);
+      g.fillStyle = '#e0b890'; g.fillRect(2, 1, 2, 2); g.fillStyle = '#4a3220'; g.fillRect(1, 0, 4, 1);
+      if (carry) { g.fillStyle = '#20180f'; g.fillRect(4, 2, 2, 3); g.fillStyle = load; g.fillRect(4, 3, 2, 1); }
+      return c;
+    });
+  }
   // Forester's hut: a small green-roofed cabin with a bundle of saplings by the door.
   { const [c, g] = mkc();
     const [wt, wl, wr] = tones('#7a5a38');
@@ -376,6 +389,7 @@ const CATS = [{ id: 'build', label: 'Build', key: 'b', title: 'Construction: roa
 let openCat = null;
 let helpOpen = false;   // declared early: setTool() calls updateInfo() during startup
 const toolBtns = {}, catBtns = {};
+let tickFrac = 0;   // how far through the current day the render is (0..1), used to slide workers between tiles
 function iconFor(id) {
   const c = document.createElement('canvas'); c.width = 32; c.height = 40; const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
   if (id === 'inspect') {
@@ -833,6 +847,14 @@ function draw() {
   ctx.setTransform(k, 0, 0, k, -cx * k, -cy * k);
   const vw = cv.width / k, vh = cv.height / k;
   if (layered) { const L = groundLayer(); ctx.imageSmoothingEnabled = true; ctx.drawImage(L.cv, -L.OX, -L.OY); ctx.imageSmoothingEnabled = false; }
+  // Workers on the move, bucketed by the tile they are nearest to so they are drawn in the right depth order.
+  const crewAt = new Map();
+  if (!LOD) for (const b of S.blds) if (CREW_KIND[b.t]) for (const a of crewOf(b)) {
+    if (a.st === 'home') continue;
+    const jit = ((crewOf(b).indexOf(a) * 3) % 5) - 2;
+    const wx = a.px + (a.x - a.px) * tickFrac, wy = a.py + (a.y - a.py) * tickFrac, key = Math.round(wy) * N + Math.round(wx);
+    let l = crewAt.get(key); if (!l) crewAt.set(key, l = []); l.push({ jit, wx, wy, kind: CREW_KIND[b.t], carry: a.st === 'back' && a.carry > 0 ? 1 : 0 });
+  }
   for (let s = 0; s <= 2 * N - 2; s++) {
     for (let vx = Math.max(0, s - N + 1); vx <= Math.min(N - 1, s); vx++) {
       const vy = s - vx; const [x, y] = fromView(vx, vy); const sx = (vx - vy) * 16, sy = (vx + vy) * 8;
@@ -878,6 +900,11 @@ function draw() {
           if (kind === 'tree' && !LOD) { const gv = treeGrove(S, x, y); if (gv.n > 1) spr = ovrSprite('tree_' + gv.kind + '_' + gv.n, ROT); }   // a stand of 2-4 trees when that art exists
           ctx.drawImage(spr || ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], ox, oy + ly);
         }
+      }
+      const cl = crewAt.get(y * N + x);
+      if (cl) for (const w of cl) {
+        const [wvx, wvy] = toView(w.wx, w.wy), wsx = (wvx - wvy) * 16, wsy = (wvx + wvy) * 8;
+        ctx.drawImage(SPR.worker[w.kind][w.carry], Math.round(wsx - 3 + w.jit), Math.round(wsy + 8 - G.base - 9));
       }
     }
   }
@@ -940,6 +967,10 @@ function updateHint() {
   else if (tool === 'sawmill') t = 'Place a sawmill beside a road. It turns logs into wood. Without one, the Town Hall saws slowly at half yield.';
   else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings only grow on zone tiles that touch a road, and their doors face it.';
   const el = $('hint'); if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
+}
+function crewLine(b) {
+  const c = crewOf(b), n = st => c.filter(a => a.st === st).length, out = n('out'), at = n('work'), back = n('back'), home = n('home');
+  return c.length ? 'Crew: ' + home + ' resting here, ' + out + ' walking out, ' + at + ' working, ' + back + ' carrying home' : 'No crew yet (needs villagers and a road link)';
 }
 function workLine(b) { return 'Workers: ' + (b.workers || 0) + '/' + jobsOf(b); }
 function updateHUD() {
@@ -1012,10 +1043,10 @@ function describe(t) {
   if (b.t === 'hall') L.push('Houses 6 people. Storage limit ' + STORAGE + ' per resource.');
   if (b.t === 'house') L.push('Level ' + b.lvl + ' · holds ' + capOf(b) + ' people', b.lvl === 1 ? 'A well within 4 tiles upgrades it to level 2.' : 'Upgraded by a nearby well.');
   if (b.t === 'farm') L.push(workLine(b) + ' · makes ' + (b.served ? (foodOf(b) * b.eff).toFixed(1) : '0') + ' food per second', 'Staffed at ' + Math.round((b.eff || 0) * 100) + '%');
-  if (b.t === 'wood') { const n = countZoned(S, b.x, b.y, 3, 'tree', 'wood'); L.push(workLine(b) + ' · ' + n + ' marked trees in range', n ? 'Fells ' + (b.served ? (2.5 * (b.eff || 0)).toFixed(1) : '0') + ' logs per second. A sawmill turns logs into wood.' : 'No marked trees left. Paint a Lumber zone on more forest nearby.'); }
+  if (b.t === 'wood') { const n = countZoned(S, b.x, b.y, 3, 'tree', 'wood'); L.push(workLine(b) + ' · ' + n + ' marked trees in range', crewLine(b), n ? 'Woodcutters live here, walk out to a marked tree, chop it and carry 6 logs home each trip. Farther trees mean slower trips. A sawmill turns logs into wood.' : 'No marked trees left. Paint a Lumber zone on more forest nearby.'); }
   if (b.t === 'quarry') {
     let left = 0, n = 0; for (let j = b.y - 3; j <= b.y + 3; j++) for (let i = b.x - 3; i <= b.x + 3; i++) if (inb(i, j) && S.zone[j][i] === 'mine' && rockWorkable(S, i, j)) { n++; left += rockLeft(S, i, j); }
-    L.push(workLine(b) + ' · ' + n + ' marked rock tiles in reach · ' + Math.ceil(left) + ' stone left in reach', n ? 'Makes ' + (b.served ? (2 * (b.eff || 0)).toFixed(1) : '0') + ' stone per second. Mountains hollow out, hills dig down into pits. Stone never grows back.' : 'Run dry: nothing marked and workable in reach. Paint a Mining zone on more rock nearby.');
+    L.push(workLine(b) + ' · ' + n + ' marked rock tiles in reach · ' + Math.ceil(left) + ' stone left in reach', crewLine(b), n ? 'Quarrymen walk out to a marked rock tile and carry 5 stone home each trip. Mountains hollow out, hills dig down into pits. Stone never grows back.' : 'Run dry: nothing marked and workable in reach. Paint a Mining zone on more rock nearby.');
   }
   if (b.t === 'forester') {
     let open = 0, grow = 0; for (let j = b.y - FORESTER_R; j <= b.y + FORESTER_R; j++) for (let i = b.x - FORESTER_R; i <= b.x + FORESTER_R; i++) if (inb(i, j) && S.zone[j][i] === 'wood') { if (S.deco[j][i] === 'sapling') grow++; else if (!S.deco[j][i] && !S.grid[j][i]) open++; }
@@ -1024,7 +1055,7 @@ function describe(t) {
   if (b.t === 'sawmill') L.push(workLine(b) + ' · saws ' + (b.served ? (SAW_RATE * (b.eff || 0)).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
   if (b.t === 'mine') {
     let left = 0, n = 0; for (let j = b.y - 3; j <= b.y + 3; j++) for (let i = b.x - 3; i <= b.x + 3; i++) if (inb(i, j) && S.deco[j][i] === 'ore') { n++; left += oreLeft(S, i, j); }
-    L.push(workLine(b) + ' · ' + n + ' ore tiles in reach · ' + Math.ceil(left) + ' ore left', n ? 'Makes ' + (b.served ? (1.5 * (b.eff || 0)).toFixed(1) : '0') + ' ore per second. Ore never grows back.' : 'Out of ore. Clear it and zone a new site.');
+    L.push(workLine(b) + ' · ' + n + ' ore tiles in reach · ' + Math.ceil(left) + ' ore left', crewLine(b), n ? 'Miners walk out to an ore tile and carry 4 ore home each trip. Ore never grows back.' : 'Out of ore. Clear it and zone a new site.');
   }
   if (b.t === 'market') L.push(workLine(b) + ' · covers homes within ' + (b.sz === 2 ? 7 : 5) + ' tiles', 'Earns gold from covered villagers (' + Math.round(d.cov * 100) + '% of homes covered).');
   if (b.t === 'barracks') L.push('Sleeps 6 soldiers · army ' + S.soldiers + '/' + d.bunks, 'Each recruit costs 2 wood, 1 gold, 1 ore and one villager.', 'Soldiers eat 1.5x and cost 0.1 gold per second.');
@@ -1085,7 +1116,7 @@ function frame(now) {
   const sp = 340 / scale * dt * 1.0;
   if (keys['w'] || keys['arrowup']) cam.y -= sp; if (keys['s'] || keys['arrowdown']) cam.y += sp;
   if (keys['a'] || keys['arrowleft']) cam.x -= sp; if (keys['d'] || keys['arrowright']) cam.x += sp;
-  if (speed > 0) { acc += dt * speed; while (acc >= 1) { acc -= 1; tick(S); updateHUD(); } }
+  if (speed > 0) { acc += dt * speed; while (acc >= 1) { acc -= 1; tick(S); updateHUD(); } } tickFrac = acc;
   updateHint(); draw(); requestAnimationFrame(frame);
 }
 const hadSave = loadSaved(); try { helpOpen = !hadSave && !localStorage.getItem('thornwick-help-seen'); } catch (e) { } setBanner(S.banner || null); resize(); centerOn(START, START + 4); updateHUD(); updateInfo();
