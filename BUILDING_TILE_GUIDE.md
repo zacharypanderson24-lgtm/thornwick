@@ -39,10 +39,10 @@ Every building, every size, always uses the same four views in the same order. T
 ## 2. The fit rules
 
 1. **Walls sit inside the diamond.** The foot of every wall follows the diamond's lower-left and lower-right edges. The lowest point of the building touches the diamond's bottom corner.
-2. **Props take room, so shrink the building.** Spears, racks, shields, barrels, crates, steps, stumps, hay, flower boxes and lanterns stand on the ground and must sit inside the diamond too. Put the walls and roof on the back 60 to 65 percent of the diamond (the half nearer the top corner). Keep the front 35 to 40 percent free for props and steps. If something will not fit, remove the least important prop. Never let it hang outside. Never shrink the building so far that it looks smaller than its neighbours (see rule 8).
+2. **Props take room, so shrink the building.** Spears, racks, shields, barrels, crates, steps, stumps, hay, flower boxes and lanterns stand on the ground. They may sit outside the building and may extend past the diamond's edges onto the ground around it, as long as they stay inside the green box (never touching or crossing its left, right or bottom edge) and nothing is cut off. The walls and roof still sit on the diamond (rule 1); props are free to stand in front of or beside them. If something will not fit inside the green box, remove the least important prop. Never shrink the building so far that it looks smaller than its neighbours (see rule 8).
 3. **Eaves may overhang a little, never past the left or right edge of the green box.** If a roof touches the left or right edge of the guide, make the whole building a bit smaller.
 4. **Keep a small margin above the highest point.** Leave a few percent of empty space above the ridge, chimney or flag so nothing is cut off. The picture can be as tall as you need.
-5. **Nothing floats or hangs outside.** Banners, flags and signs are attached to the building or stand on the diamond. Poles stay inside the footprint.
+5. **Nothing floats.** Banners, flags and signs are attached to the building or stand on the ground (a standing pole may be outside the diamond but inside the green box).
 6. **One door, same footprint in every view.** The view order is fixed for every building (see "The four views" above): 1 lower-left, 2 upper-left, 3 upper-right, 4 lower-right. Do not invent extra doors, and do not let the building grow or shrink between views. Props rotate with the building.
 7. **Same height in every view.** Wall height, roof height, stone base height and chimney position (on the same roof slope) match across all four views.
 8. **Match the neighbours.** A one-tile building should be about as wide as the diamond (32 px game width). A larger building (Town Hall, barracks) is taller and grander, not just wider. A 2x2 building fills its 64 px diamond.
@@ -68,7 +68,7 @@ The game draws the picture as tall as it is. A 32 px wide house can be 48 px tal
 
 ### What to keep right even though height is free
 
-- **Footprint still holds.** Walls, steps and ground props stay inside the diamond. Only height is free; the base is not.
+- **Footprint still holds.** Walls stay on the diamond; steps and ground props may spill past it but stay inside the green box. Only height is free; the wall base is not.
 - **Same height in all four views** of one building. Wall height, roof height and tower position must match when you rotate.
 - **Tall things need the right base.** A tall tower still stands on its own tiles, not on the ones behind it. If a keep is four times taller than its footprint, it should look like a tall building on that footprint, not a poster.
 - **Scale ratios.** Keep walls, doors and windows the same size in game pixels on every building, so a taller building has more storeys, not bigger doors. A door is about 8 to 10 px tall at game size.
@@ -105,7 +105,7 @@ For reference only: huts 32 to 36 px, barracks about 54, Town Hall about 84 to 9
 | Reads like a barn | Barracks had only a small banner | Add the military cues: big banner, stone base, weapon rack, lantern |
 | Town Hall smaller than the huts | The Hall sprite is still a small placeholder | The Hall must be taller and grander than a hut: see rule 8 |
 | Roof eaves at the image edge | Huts touch the left and right edges of their 32 px frame | Do not scale huts up. If you add anything, shrink the building |
-| Props outside the diamond | Items stuck out past the tile | Rule 2 |
+| Props outside the green box | Items cut off or past the tile width | Rule 2 |
 
 ## 5. Making a new building
 
@@ -119,7 +119,7 @@ For reference only: huts 32 to 36 px, barracks about 54, Town Hall about 84 to 9
 
 - [ ] The lowest point touches the diamond's bottom corner at the bottom centre.
 - [ ] Every wall foot follows the diamond edges; nothing stands outside the diamond.
-- [ ] Props and steps are inside the diamond.
+- [ ] Props and steps are inside the green box (they may be outside the diamond).
 - [ ] Footprint width is right (32, 64 or 96 game px) and the height is whatever the building needs. All four views have the same height.
 - [ ] Roof eaves do not touch the left or right edge of the green box; nothing is cut off at the top of the picture.
 - [ ] No pink, magenta or purple pixels on the building.

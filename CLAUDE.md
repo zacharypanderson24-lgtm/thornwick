@@ -11,6 +11,7 @@ Medieval TheoTown-style pixel isometric city builder. Owner: Zach. Hosted from t
 - Ground tile source art must be a 2048 x 1024 canvas (exactly 2:1) with the diamond corners on the edge midpoints; the loader scales by width, so a 3:2 diamond would be too tall. Edge band ~2 game px stays plain base colour so tiles blend.
 - Design plan for terrain/lumber/ore/workforce: DESIGN_TERRAIN.md (status line at the top says what is built).
 - Commit messages end with the attribution lines the session gives.
+- Props rule (Zach's rule, in CHATGPT_START_HERE.md and BUILDING_TILE_GUIDE.md): walls sit on the footprint diamond, but props (barrels, crates, steps, poles...) may stand outside the building and past the diamond, as long as the whole sprite stays inside the green box / picture width. check_textures.py's base-vs-diamond check may flag such props on 2x2/3x3 buildings; judge those by eye.
 - Art priority (Zach's rule, also in CHATGPT_START_HERE.md): textures must be usable game assets at their real sizes; never produce fancy, higher-resolution or unusable showpiece renditions.
 
 ## Conventions that must not break

@@ -4,7 +4,7 @@ You are the artist for "Thornwick", an isometric pixel-art medieval city-builder
 
 ## Fit rules (read BUILDING_TILE_GUIDE.md)
 
-Buildings must fit their tile. I will attach a footprint guide image (a black diamond for the ground and a green box for the footprint width). Build inside the diamond, keep props inside it by making the building smaller, let the building be as tall as it needs (there is no height limit; keep a small margin above the highest point so nothing is cut off), never go past the left or right edge of the green box, and remove the guide lines from your final image. No pink or magenta pixels on the building. Full rules are in BUILDING_TILE_GUIDE.md.
+Buildings must fit their tile. I will attach a footprint guide image (a black diamond for the ground and a green box for the footprint width). Build the walls inside the diamond. Props (barrels, crates, racks, steps, stumps, hay, banners on poles and similar) may sit outside the building and may spill past the diamond onto the ground around it, as long as everything stays inside the green box and the picture (nothing cut off at the left, right or bottom). You do not need to shrink the building to keep props inside the diamond, let the building be as tall as it needs (there is no height limit; keep a small margin above the highest point so nothing is cut off), never go past the left or right edge of the green box, and remove the guide lines from your final image. No pink or magenta pixels on the building. Full rules are in BUILDING_TILE_GUIDE.md.
 
 ## Your job
 
@@ -179,7 +179,7 @@ Reply "ready" and wait for my first request.
 Run `python3 tools/check_textures.py` on your finished PNGs (copy them into `assets/` first if you can run code). Fix every FAIL it prints. The usual ones:
 
 - **Cut off at the edge:** scale the whole building (eaves, porch, chimney, ground) down until at least 2 px (at 32 px wide) stay empty on the left and right and 1 px below the lowest point.
-- **Base off the diamond:** the stone base must sit on the footprint diamond edges within 1 px. Steps, racks and barrels must not go below the bottom point or outside the side corners.
+- **Base off the diamond:** the stone base must sit on the footprint diamond edges within 1 px. Steps, racks and barrels may stand outside the diamond, but must not be cut off at the bottom or sides of the picture or cross the green box.
 - **Stone base look:** one uniform band, same thickness in all 4 views, max 3 flat grey tones, no white or cream pixels, no dithering, 1 px dark bottom outline.
 - **Fringe:** no pink or purple pixels left from the magenta background.
 
