@@ -580,6 +580,66 @@ function crewAct(S, b, kind, a) {
   if (kind === 'rock') return mineRock(S, tx, ty, 0, LOAD.quarry);
   return mineOre(S, tx, ty, 0, LOAD.mine);
 }
+// ---- Townsfolk: tiny ambient villagers who live in houses and stroll along the roads ----
+// Purely cosmetic and runtime only (never saved, rebuilt after loading): they do not change the economy, they make the town look alive.
+// The number on screen follows the population (FOLK_PER_PEASANT per villager, at most FOLK_MAX). Each one rests in a house (hidden), sets off
+// along the roads to somewhere (market, well, Town Hall, a work building or just a wander), lingers a few days, then walks home.
+const FOLK = new WeakMap();
+const FOLK_MAX = 90, FOLK_PER_PEASANT = 0.6, FOLK_DEPTH = 40, FOLK_VARIANTS = 6;
+const folkOf = S => { let f = FOLK.get(S); if (!f) { f = []; FOLK.set(S, f); } return f; };
+const roadSeen = new Int32Array(N * N), roadPar = new Int32Array(N * N), roadDist = new Int16Array(N * N); let roadStamp = 0;
+const isRoadAt = (S, x, y) => inb(x, y) && !!S.grid[y][x] && S.grid[y][x].t === 'road';
+// A road tile touching the building (preferring the one its door faces).
+function roadBeside(S, b) {
+  const f = faceOf(S, b), T = tilesOf(b);
+  for (const [tx, ty] of T) { const x = tx + FACE_DIRS[f][0], y = ty + FACE_DIRS[f][1]; if (isRoadAt(S, x, y)) return y * N + x; }
+  for (const [tx, ty] of T) for (const [dx, dy] of NB) if (isRoadAt(S, tx + dx, ty + dy)) return (ty + dy) * N + tx + dx;
+  return -1;
+}
+// Walk the road network from one road tile: returns a function giving the path to any reached tile.
+function roadSearch(S, from) {
+  roadStamp++; roadSeen[from] = roadStamp; roadDist[from] = 0; roadPar[from] = -1;
+  const q = [from];
+  for (let h = 0; h < q.length; h++) {
+    const c = q[h], cx = c % N, cy = (c - cx) / N, d = roadDist[c]; if (d >= FOLK_DEPTH) continue;
+    for (const [dx, dy] of NB) { const nx = cx + dx, ny = cy + dy; if (!isRoadAt(S, nx, ny)) continue; const ni = ny * N + nx; if (roadSeen[ni] === roadStamp) continue; roadSeen[ni] = roadStamp; roadDist[ni] = d + 1; roadPar[ni] = c; q.push(ni); }
+  }
+  return q;
+}
+function roadPathTo(to) { const p = []; for (let c = to; c !== -1; c = roadPar[c]) p.push([c % N, Math.floor(c / N)]); return p.reverse(); }
+function stepFolk(S) {
+  const folk = folkOf(S), houses = S.blds.filter(b => b.t === 'house' && b.served && roadBeside(S, b) >= 0);
+  const want = houses.length ? Math.min(FOLK_MAX, Math.round(S.peasants * FOLK_PER_PEASANT)) : 0;
+  for (let i = folk.length - 1; i >= 0 && folk.length > want; i--) if (folk[i].st === 'home' || !houses.includes(folk[i].home)) folk.splice(i, 1);
+  let nextId = folk.reduce((m, w) => Math.max(m, w.id + 1), 0);
+  while (folk.length < want && houses.length) {
+    const h = houses[Math.floor(hash2(nextId, S.day, 91) * houses.length)];
+    folk.push({ id: nextId++, st: 'home', home: h, x: h.x, y: h.y, px: h.x, py: h.y, path: null, i: 0, t: 1 + Math.floor(hash2(nextId, 5, 7) * 8), v: Math.floor(hash2(nextId, 3, 11) * FOLK_VARIANTS) });
+  }
+  const pois = S.blds.filter(b => b.t === 'market' || b.t === 'well' || b.t === 'hall' || b.t === 'sawmill' || b.t === 'barracks');
+  for (const w of folk) {
+    w.px = w.x; w.py = w.y;
+    if (w.st === 'home') {
+      if (--w.t > 0) continue;
+      const door = roadBeside(S, w.home); if (door < 0) { w.t = 6; continue; }
+      const q = roadSearch(S, door);
+      if (q.length < 2) { w.t = 6 + Math.floor(hash2(w.id, S.day, 13) * 6); continue; }   // no road to walk on
+      let dest = -1;
+      const r = hash2(w.id, S.day, 17);
+      if (r < 0.6 && pois.length) { const p = pois[Math.floor(hash2(w.id, S.day, 19) * pois.length)], rb = roadBeside(S, p); if (rb >= 0 && roadSeen[rb] === roadStamp && rb !== door) dest = rb; }
+      if (dest < 0) { const k = 1 + Math.floor(hash2(w.id, S.day, 23) * (q.length - 1)); dest = q[k]; }   // otherwise a wander to some reachable road tile
+      w.path = roadPathTo(dest); w.i = 0; w.x = w.path[0][0]; w.y = w.path[0][1]; w.st = 'walk';
+    } else if (w.st === 'walk') {
+      if (w.i < w.path.length - 1) { w.i++; w.x = w.path[w.i][0]; w.y = w.path[w.i][1]; }
+      if (w.i >= w.path.length - 1) { w.st = 'stay'; w.t = 2 + Math.floor(hash2(w.id, S.day, 29) * 5); }
+    } else if (w.st === 'stay') {
+      if (--w.t <= 0) { w.path.reverse(); w.i = 0; w.st = 'back'; }
+    } else {   // back
+      if (w.i < w.path.length - 1) { w.i++; w.x = w.path[w.i][0]; w.y = w.path[w.i][1]; }
+      if (w.i >= w.path.length - 1) { w.st = 'home'; w.path = null; w.x = w.home.x; w.y = w.home.y; w.t = 3 + Math.floor(hash2(w.id, S.day, 31) * 10); }
+    }
+  }
+}
 // Advance every crew one day. `out` collects what was delivered this day (logs, stone, ore).
 function stepCrews(S, out) {
   for (const b of S.blds) {
@@ -791,6 +851,7 @@ function tick(S) {
   }
   // Woodcutters, quarrymen and miners walk out to their marked tiles and carry loads home; only delivered loads count.
   const got = { logs: 0, stone: 0, ore: 0 }; stepCrews(S, got); logs += got.logs; stone += got.stone; ore += got.ore;
+  stepFolk(S);
   S.res.logs = (S.res.logs || 0) + logs;
   // Sawmills first (full yield, limited by workers), then the Town Hall pit-saw for what is left.
   for (const b of S.blds) if (b.t === 'sawmill' && b.served && S.res.logs > 0) {
@@ -831,4 +892,4 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (typeof module !== 'undefined') module.exports = { crewOf, CREW_KIND, WORK_T, LOAD, CHOPS_PER_TREE, stepCrews, PLANT_EVERY, SAPLING_DAYS, FORESTER_R, plantSapling, foresterCovers, TRADES, TRADE_OF, TRADE_NAMES, jobsOf, recalc, treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (typeof module !== 'undefined') module.exports = { folkOf, FOLK_MAX, FOLK_VARIANTS, crewOf, CREW_KIND, WORK_T, LOAD, CHOPS_PER_TREE, stepCrews, PLANT_EVERY, SAPLING_DAYS, FORESTER_R, plantSapling, foresterCovers, TRADES, TRADE_OF, TRADE_NAMES, jobsOf, recalc, treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };

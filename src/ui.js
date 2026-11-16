@@ -159,6 +159,14 @@ function buildSprites() {
       return c;
     });
   }
+  // Townsfolk: super low-res villagers (3 x 5 px, a head pixel, a tunic and two stepping legs; two walking frames per tunic colour).
+  SPR.folk = ['#8a5a34', '#6b7f3a', '#8d93a5', '#a3412f', '#c9a24a', '#4d6d92'].map(tunic => [0, 1].map(fr => {
+    const c = document.createElement('canvas'); c.width = 3; c.height = 5; const g = c.getContext('2d');
+    g.fillStyle = '#e0b890'; g.fillRect(1, 0, 1, 1);
+    g.fillStyle = tunic; g.fillRect(0, 1, 3, 2);
+    g.fillStyle = '#2e2218'; if (fr) { g.fillRect(0, 4, 1, 1); g.fillRect(2, 3, 1, 1); g.fillRect(1, 3, 1, 1); } else { g.fillRect(0, 3, 1, 1); g.fillRect(2, 4, 1, 1); g.fillRect(1, 3, 1, 1); }
+    return c;
+  }));
   // Forester's hut: a small green-roofed cabin with a bundle of saplings by the door.
   { const [c, g] = mkc();
     const [wt, wl, wr] = tones('#7a5a38');
@@ -875,7 +883,12 @@ function draw() {
     if (a.st === 'home') continue;
     const jit = ((crewOf(b).indexOf(a) * 3) % 5) - 2;
     const wx = a.px + (a.x - a.px) * tickFrac, wy = a.py + (a.y - a.py) * tickFrac, key = Math.round(wy) * N + Math.round(wx);
-    let l = crewAt.get(key); if (!l) crewAt.set(key, l = []); l.push({ jit, wx, wy, kind: CREW_KIND[b.t], carry: a.st === 'back' && a.carry > 0 ? 1 : 0 });
+    let l = crewAt.get(key); if (!l) crewAt.set(key, l = []); l.push({ jit, wx, wy, spr: SPR.worker[CREW_KIND[b.t]][a.st === 'back' && a.carry > 0 ? 1 : 0] });
+  }
+  if (!LOD) for (const w of folkOf(S)) {
+    if (w.st === 'home') continue;
+    const wx = w.px + (w.x - w.px) * tickFrac, wy = w.py + (w.y - w.py) * tickFrac, key = Math.round(wy) * N + Math.round(wx);
+    let l = crewAt.get(key); if (!l) crewAt.set(key, l = []); l.push({ jit: ((w.id * 3) % 5) - 2, jy: ((w.id * 7) % 3) - 1, wx, wy, spr: SPR.folk[w.v][(w.st === 'walk' || w.st === 'back') ? (w.i + w.id) & 1 : 0] });
   }
   for (let s = 0; s <= 2 * N - 2; s++) {
     for (let vx = Math.max(0, s - N + 1); vx <= Math.min(N - 1, s); vx++) {
@@ -926,7 +939,7 @@ function draw() {
       const cl = crewAt.get(y * N + x);
       if (cl) for (const w of cl) {
         const [wvx, wvy] = toView(w.wx, w.wy), wsx = (wvx - wvy) * 16, wsy = (wvx + wvy) * 8;
-        ctx.drawImage(SPR.worker[w.kind][w.carry], Math.round(wsx - 3 + w.jit), Math.round(wsy + 8 - G.base - 9));
+        ctx.drawImage(w.spr, Math.round(wsx - w.spr.width / 2 + w.jit), Math.round(wsy + 8 - G.base - w.spr.height + 1 + (w.jy || 0)));
       }
     }
   }
