@@ -11,10 +11,16 @@ _Last updated: 2026-11-16 (Claude Code)._
 |---|---|---|
 | `main` | Browser prototype (JavaScript). Untouched by the migration. | `4d99fca` |
 | `unity-migration` | Integration branch for the Unity port. Merge feature branches here through pull requests. | `5dccc00` |
-| `claude/settlement-port` | Claude Code's working branch (not merged yet). | see the milestone log below |
+| `claude/settlement-port` | Claude Code's working branch. Open as [PR #1](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) into `unity-migration` (not merged yet). | see the milestone log below |
 
 ChatGPT and Claude Code each work on their own branch and merge into `unity-migration` through pull requests.
-`claude/settlement-port` is **ahead of `unity-migration`**: until it is merged, branches cut from `unity-migration` will not have the port.
+`claude/settlement-port` is **ahead of `unity-migration`**: until PR #1 is merged, branches cut from `unity-migration` will not have the port.
+
+## Open pull requests
+
+| PR | From → into | Status |
+|---|---|---|
+| [#1 Unity port: playable settlement with zone growth](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) | `claude/settlement-port` → `unity-migration` | open, awaiting review and merge |
 
 ## Milestone log
 
@@ -24,7 +30,8 @@ ChatGPT and Claude Code each work on their own branch and merge into `unity-migr
 | `ed4e32f` | `claude/settlement-port` | First playable settlement: C# sim (terrain, placement, roads, zones, workforce, daily economy), isometric renderer with rotation, camera, HUD, art importer, parity tests (10). |
 | `a8de069` | `claude/settlement-port` | Zone development ported (`sim_develop.js`): homes, farms, markets, lodges, quarries and mines grow on zones; 2x2 lots; demand HUD; development parity test (11 tests). |
 | `13e9157` | `claude/settlement-port` | `unity/README.md` updated for the zone tools and 2x2 placeholders. |
-| _this commit_ | `claude/settlement-port` | Adds this progress file. |
+| `c739d7b` | `claude/settlement-port` | Adds this progress file. |
+| _this commit_ | `claude/settlement-port` | Records PR #1 in this file. |
 
 ## Implemented and tested
 
