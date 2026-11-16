@@ -17,7 +17,7 @@ Replace the scattered rock/ore/tree decorations with a real terrain layer. Each 
 Provinces are generated from a seed with a different mix (river valley, mining mountain, deep forest), which gives governors and conquest different jobs.
 
 ## 2. Stone: from the surface
-- **As built:** mountain (rockAmt 3) is permanent: it blocks buildings, zones and roads, cannot be bulldozed, and is never worn down. A quarry takes stone from a mountain tile that meets open ground (its face) indefinitely. Hill (2) and rubble (1) are buildable and roads cross them; building levels the tile, and quarries wear marked hills down: hill -> rubble -> flat. Open question: mountain stone is currently unlimited; a finite per-tile stone amount could be added later.
+- **As built (finite, no regeneration):** stone and ore never grow back. Mountains are permanent and solid; each tile holds 120 stone, and quarrying only hollows it out (a cave that grows with the amount taken; worked-out tiles stay as hollow shells and open the tiles behind them). Hills hold 50 and rubble 40: they dig down level by level, hill -> rubble -> flat ground (buildable) -> pit depth 1, 2, 3, and a worked-out pit is permanent, cannot be built on or filled, and joined pits read as one large hole. Ore tiles hold 30 each and vanish when empty. Quarries and mines only take what is in the ground and pause while the stockpile is full.
 - Mountains and hills are the stone source. Quarries work them.
 - Each tile has a stone amount. As it drops the tile steps down: mountain -> hill -> rubble -> quarry pit -> flat, buildable ground.
 - Quarrying trades defence (mountains are walls) for building space and stone.

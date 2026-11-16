@@ -49,7 +49,7 @@ function createWorld(seed) {
   seed = seed || 7;
   const S = {
     seed, grid: [], deco: [], zone: [], fert: [], blds: [], hall: null,
-    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, gold: 0 }, rockAmt: {}, stumpT: {}, v2: true,
+    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, gold: 0 }, rockAmt: {}, stumpT: {}, dig: {}, oreLeft: {}, v2: true,
     dem: { res: 0, farm: 0, comm: 0, wood: 0, mine: 0 }, note: { res: '', farm: '', comm: '', wood: '', mine: '' }, flags: {},
     peasants: 6, popAcc: 0, soldiers: 0, day: 1, drafting: true, starving: false, trained: 0, d: null
   };
@@ -132,7 +132,7 @@ function addBld(S, t, x, y, sz) {
   const b = { t, x, y, sz: sz || (t === 'hall' ? 3 : t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
   if (t === 'house') b.var = pickHutVar(S, x, y);
   S.blds.push(b);
-  for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
+  for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (S.dig) delete S.dig[j * N + i]; if (S.oreLeft) delete S.oreLeft[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
   return b;
 }
@@ -143,7 +143,7 @@ function roadPathCheck(S, path) {
     const g = S.grid[y][x];
     if (g && g.t === 'road') continue;
     if (g) return { ok: false, n, reason: 'A building is in the way' };
-    if (isSolid(S, x, y)) return { ok: false, n, reason: 'A mountain or ore is in the way. Route around it, over the hills, or quarry a pass' };
+    if (isSolid(S, x, y)) return { ok: false, n, reason: 'A mountain, a quarry pit or ore is in the way. Route around it, or over the hills' };
     n++;
   }
   if (S.res.wood < n * COST.road.wood) return { ok: false, n, reason: 'Not enough wood: ' + n + ' new road tiles need ' + n + ' wood' };
@@ -168,7 +168,7 @@ function canPlace(S, type, x, y) {
     if (!inb(tx, ty)) return { ok: false, reason: 'Outside the map' };
     if (S.grid[ty][tx]) return { ok: false, reason: 'That tile is already built on' };
     if (isSolid(S, tx, ty))
-      return { ok: false, reason: isMountain(S, tx, ty) ? 'You cannot build on a mountain. Hills are fine, or quarry the mountain down to a hill first' : 'Ore blocks this tile. Zone it for mining to clear it' };
+      return { ok: false, reason: isMountain(S, tx, ty) ? 'You cannot build on a mountain. Hills and flat ground are fine' : pitDepth(S, tx, ty) > 0 ? 'A quarry pit is in the way. Pits cannot be filled in' : 'Ore blocks this tile. Zone it for mining to clear it' };
   }
   if (type === 'barracks' && !nextToRoad(S, footprint)) return { ok: false, reason: 'Barracks must touch a road' };
   return canAfford(S, type);
@@ -209,7 +209,7 @@ function remove(S, x, y) {
   if (k) {
     if (k === 'tree') S.res.logs = Math.min(STORAGE, (S.res.logs || 0) + 2);
     else if (k === 'stump') { /* nothing to salvage */ }
-    else if (k === 'rock') { if (rockAmt(S, x, y) >= 3) return { ok: false, reason: 'A mountain cannot be cleared by hand. Mark it for quarrying' }; S.res.stone = Math.min(STORAGE, S.res.stone + 1); if (S.rockAmt) delete S.rockAmt[tk(x, y)]; }
+    else if (k === 'rock') { if (rockAmt(S, x, y) >= 3) return { ok: false, reason: 'A mountain cannot be cleared by hand. Mark it for quarrying' }; if (pitDepth(S, x, y) > 0) return { ok: false, reason: 'A quarry pit cannot be filled in' }; S.res.stone = Math.min(STORAGE, S.res.stone + 1); if (S.rockAmt) delete S.rockAmt[tk(x, y)]; }
     else S.res.ore = Math.min(STORAGE, S.res.ore + 1);
     S.deco[y][x] = null; if (S.stumpT) delete S.stumpT[tk(x, y)]; return { ok: true };
   }
@@ -220,8 +220,11 @@ function zoneCheck(S, kind, x, y) {
   if (S.grid[y][x]) return S.zone[y][x] === kind ? { ok: true } : { ok: false, reason: 'That tile is already built on' };
   const dc = S.deco[y][x];
   if (kind === 'wood') return dc === 'tree' ? { ok: true } : { ok: false, reason: 'Lumber zones go on forest. Press V to see where the trees are' };
-  if (kind === 'mine') return (dc === 'rock' || dc === 'ore') ? { ok: true } : { ok: false, reason: 'Mining zones go on rock or ore. Press V to see the deposits' };
-  if (isSolid(S, x, y)) return { ok: false, reason: isMountain(S, x, y) ? 'Mountains cannot be built on. Hills can; quarry the mountain down first' : 'Ore blocks this zone. Mine it first' };
+  if (kind === 'mine') {
+    if (dc === 'rock') return rockLeft(S, x, y) > 0 ? { ok: true } : { ok: false, reason: 'This rock is worked out. Stone does not grow back' };
+    return dc === 'ore' ? { ok: true } : { ok: false, reason: 'Mining zones go on rock or ore. Press V to see the deposits' };
+  }
+  if (isSolid(S, x, y)) return { ok: false, reason: isMountain(S, x, y) ? 'Mountains cannot be built on. Hills and flat ground can' : pitDepth(S, x, y) > 0 ? 'A quarry pit is in the way. Pits cannot be filled in' : 'Ore blocks this zone. Mine it first' };
   if (kind === 'farm' && !S.fert[y][x]) return { ok: false, reason: 'Farms need fertile soil. Press V to see farmable land' };
   return { ok: true };
 }
@@ -239,41 +242,72 @@ const tk = (x, y) => y * N + x;
 // Trees/rocks that belong to a designated zone (the only ones workers touch).
 function countZoned(S, x, y, r, kind, zone) {
   let n = 0;
-  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++) if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone && (kind !== 'rock' || rockOpen(S, i, j))) n++;
+  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++) if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone && (kind !== 'rock' || rockWorkable(S, i, j))) n++;
   return n;
 }
 // Rock height: 3 = mountain (permanent), 2 = hill, 1 = rubble. Quarrying wears hills and rubble down one stage at a time; mountains never change.
 function rockAmt(S, x, y) { return (S.rockAmt && S.rockAmt[tk(x, y)]) || 1; }
-// Terrain: 3 = mountain (solid, nothing can be built on it), 2 = hill and 1 = rubble (buildable, building levels them).
+// ---- Rock, stone and ore are finite and never regenerate ----
+// Every rock tile has a fixed stone reserve; S.dig[tile] is how much has been taken out so far.
+//   mountain (rockAmt 3): permanent. Reserve MOUNT_CAP. It never changes level; the more is mined, the bigger its hollow (rockHollow).
+//   hill (2), rubble (1): each DIG_U units mined lowers the tile one level: hill -> rubble -> flat -> pit 1 -> pit 2 -> pit 3 (deepest, then worked out).
+// Ore tiles hold ORE_CAP each (S.oreLeft). A mined-out ore tile is gone.
+const DIG_U = 10, MOUNT_CAP = 120, ORE_CAP = 30;
+function digDone(S, x, y) { return (S.dig && S.dig[tk(x, y)]) || 0; }
+function rockCap(S, x, y) { const a = rockAmt(S, x, y); return a >= 3 ? MOUNT_CAP : (a + 3) * DIG_U; }
+function rockLeft(S, x, y) { return S.deco[y][x] === 'rock' ? Math.max(0, rockCap(S, x, y) - digDone(S, x, y)) : 0; }
+// 3 = mountain, 2 = hill, 1 = rubble, 0 = flat, -1..-3 = pit depth
+function rockLevel(S, x, y) { const a = rockAmt(S, x, y); return a >= 3 ? 3 : Math.max(-3, a - Math.floor(digDone(S, x, y) / DIG_U)); }
+function rockHollow(S, x, y) { return Math.min(1, digDone(S, x, y) / MOUNT_CAP); }
+function oreLeft(S, x, y) { return S.deco[y][x] === 'ore' ? ((S.oreLeft && S.oreLeft[tk(x, y)]) ?? ORE_CAP) : 0; }
 function isMountain(S, x, y) { return S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3; }
-function isSolid(S, x, y) { return S.deco[y][x] === 'ore' || isMountain(S, x, y); }
-// A mountain can only be quarried where it meets open ground (its working face);
-// hills and rubble can always be worked.
+function pitDepth(S, x, y) { return (inb(x, y) && S.deco[y][x] === 'rock' && rockAmt(S, x, y) < 3) ? Math.max(0, -rockLevel(S, x, y)) : 0; }
+function isSolid(S, x, y) { return S.deco[y][x] === 'ore' || isMountain(S, x, y) || pitDepth(S, x, y) > 0; }
+// A mountain can only be quarried where it meets open ground or a hollowed-out (worked out) mountain tile, so quarries cut inward.
 function rockOpen(S, x, y) {
-  if (rockAmt(S, x, y) < 3) return true;
-  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const i = x + dx, j = y + dy; if (inb(i, j) && !isMountain(S, i, j)) return true; }
+  if (!isMountain(S, x, y)) return true;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const i = x + dx, j = y + dy; if (inb(i, j) && (!isMountain(S, i, j) || rockLeft(S, i, j) === 0)) return true; }
   return false;
+}
+const rockWorkable = (S, x, y) => S.deco[y][x] === 'rock' && rockLeft(S, x, y) > 0 && rockOpen(S, x, y);
+// Take up to `amount` stone out of the nearest marked workable tiles within r. Returns what was actually taken.
+function mineRock(S, x, y, r, amount) {
+  let got = 0;
+  for (let n = 0; n < 4 && amount > 1e-9; n++) {
+    let best = null, bd = 1e9;
+    for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
+      if (inb(i, j) && S.zone[j][i] === 'mine' && rockWorkable(S, i, j)) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
+    if (!best) break;
+    const e = Math.min(amount, rockLeft(S, best[0], best[1]));
+    S.dig = S.dig || {}; S.dig[tk(best[0], best[1])] = digDone(S, best[0], best[1]) + e; got += e; amount -= e;
+    if (rockLeft(S, best[0], best[1]) <= 1e-9) { S.dig[tk(best[0], best[1])] = rockCap(S, best[0], best[1]); S.zone[best[1]][best[0]] = null; }
+  }
+  return got;
+}
+// Ore: drain the nearest ore tile in range; an empty tile disappears.
+function mineOre(S, x, y, r, amount) {
+  let got = 0;
+  for (let n = 0; n < 4 && amount > 1e-9; n++) {
+    let best = null, bd = 1e9;
+    for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
+      if (inb(i, j) && S.deco[j][i] === 'ore') { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
+    if (!best) break;
+    const k = tk(best[0], best[1]), e = Math.min(amount, oreLeft(S, best[0], best[1]));
+    S.oreLeft = S.oreLeft || {}; S.oreLeft[k] = oreLeft(S, best[0], best[1]) - e; got += e; amount -= e;
+    if (S.oreLeft[k] <= 1e-9) { S.deco[best[1]][best[0]] = null; S.zone[best[1]][best[0]] = null; delete S.oreLeft[k]; }
+  }
+  return got;
 }
 function nearestZoned(S, x, y, r, kind, zone) {
   let best = null, bd = 1e9;
   for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
-    if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone && (kind !== 'rock' || rockOpen(S, i, j))) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
+    if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone && (kind !== 'rock' || rockWorkable(S, i, j))) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
   return best;
 }
 function fellTree(S, x, y, r) {
   const t = nearestZoned(S, x, y, r, 'tree', 'wood'); if (!t) return;
   S.deco[t[1]][t[0]] = 'stump'; S.zone[t[1]][t[0]] = null;
   S.stumpT = S.stumpT || {}; S.stumpT[tk(t[0], t[1])] = STUMP_DAYS;
-}
-// Quarries cut stone from a mountain's exposed face without ever wearing it down: mountains are permanent.
-// Only hills and rubble wear away (hill -> rubble -> flat ground). Hills nearest the quarry go first.
-function wearRock(S, x, y, r) {
-  let best = null, bd = 1e9;
-  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
-    if (inb(i, j) && S.deco[j][i] === 'rock' && S.zone[j][i] === 'mine' && rockAmt(S, i, j) < 3) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
-  if (!best) return;
-  S.rockAmt = S.rockAmt || {}; const k = tk(best[0], best[1]), a = rockAmt(S, best[0], best[1]) - 1;
-  if (a <= 0) { S.deco[best[1]][best[0]] = null; S.zone[best[1]][best[0]] = null; delete S.rockAmt[k]; } else S.rockAmt[k] = a;
 }
 function fellNearest(S, x, y, r, kind) {
   let best = null, bd = 1e9;
@@ -447,15 +481,10 @@ function tick(S) {
         if (b.prog >= 10) { b.prog = 0; fellTree(S, b.x, b.y, WORK_R); }
       }
     } else if (b.t === 'quarry') {
-      if (countZoned(S, b.x, b.y, WORK_R, 'rock', 'mine') > 0) {
-        stone += 2 * ratio; b.prog += ratio;
-        if (b.prog >= 18) { b.prog = 0; wearRock(S, b.x, b.y, WORK_R); }
-      }
+      // Finite stone: the quarry pauses (and keeps its reserve in the ground) while the stockpile is full.
+      if (S.res.stone + stone < STORAGE) stone += mineRock(S, b.x, b.y, WORK_R, 2 * ratio);
     } else if (b.t === 'mine') {
-      if (countDeco(S, b.x, b.y, WORK_R, 'ore') > 0) {
-        ore += 1.5 * ratio; b.prog += ratio;
-        if (b.prog >= 14) { b.prog = 0; fellNearest(S, b.x, b.y, WORK_R, 'ore'); }
-      }
+      if (S.res.ore + ore < STORAGE) ore += mineOre(S, b.x, b.y, WORK_R, 1.5 * ratio);
     }
   }
   S.res.logs = (S.res.logs || 0) + logs;
@@ -496,4 +525,4 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (typeof module !== 'undefined') module.exports = { isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (typeof module !== 'undefined') module.exports = { digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };

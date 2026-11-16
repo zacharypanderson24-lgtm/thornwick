@@ -548,14 +548,17 @@ const PEAK_COL = {
   grass: { L: ['#74b258', '#6fae52'], R: ['#58973f', '#53923c'], lit: '#86c268', dark: '#4b8a37', vale: null, stone: '#9aa0ae' }
 };
 const PEAK_CACHE = {};
-function peakSprite(hgt, jx, ph, seed, kind) {
-  const key = kind + hgt + '_' + jx + '_' + ph + '_' + seed; if (PEAK_CACHE[key]) return PEAK_CACHE[key];
+function peakSprite(hgt, jx, ph, seed, kind, hol) {
+  hol = hol || 0;
+  const key = kind + hgt + '_' + jx + '_' + ph + '_' + seed + '_' + hol; if (PEAK_CACHE[key]) return PEAK_CACHE[key];
   const Hc = hgt + 16, c = document.createElement('canvas'); c.width = 32; c.height = Hc; const g = c.getContext('2d');
   const col = PEAK_COL[kind], ax = 16 + jx, ay = Hc - 8 - hgt;
   const Lp = [0, Hc - 8], Bp = [16, Hc], Rp = [32, Hc - 8];
   const side = (p, a, b) => (p[0] - b[0]) * (a[1] - b[1]) - (a[0] - b[0]) * (p[1] - b[1]);
   const inTri = (p, a, b, d) => { const d1 = side(p, a, b), d2 = side(p, b, d), d3 = side(p, d, a); return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0)); };
   const A = [ax, ay];
+  // Mining hollow: a dark cut in the front of the mountain that widens and climbs the faces as more stone is taken out.
+  const hcx = 16 + (hol > 3 ? 0 : jx), hcy = Hc - 8 - hgt * 0.22, hrx = 4 + hol * 1.4, hry = 3 + hol * (0.35 + hgt * 0.03);
   for (let y = 0; y < Hc; y++) for (let x = 0; x < 32; x++) {
     const p = [x + 0.5, y + 0.5];
     const left = inTri(p, Lp, Bp, A), right = !left && inTri(p, Bp, Rp, A);
@@ -571,19 +574,59 @@ function peakSprite(hgt, jx, ph, seed, kind) {
     } else if (h > 0.9 && h < 0.935 && y > ay + 2) cc = col.stone;
     const vx = ax + (16 - ax) * (p[1] - ay) / (Hc - ay);
     if (col.vale && Math.abs(p[0] - vx) < 0.55 && p[1] > ay + 1) cc = col.vale;
+    if (hol > 0 && kind === 'rock') {
+      const ex = (p[0] - hcx) / hrx, ey = (p[1] - hcy) / hry, dd = ex * ex + ey * ey + (hash2(x, y, seed + 9) - 0.5) * 0.22;
+      if (dd < 1) cc = dd < 0.28 ? '#181a23' : dd < 0.6 ? '#2a2d39' : dd < 0.8 ? '#3c4050' : (p[1] < hcy ? '#c6cad6' : '#8b8fa4');
+    }
     g.fillStyle = cc; g.fillRect(x, y, 1, 1);
   }
   return PEAK_CACHE[key] = c;
 }
 function mountainSprite(S, x, y) {
+  const hol = Math.round(rockHollow(S, x, y) * 6);
   let n = 0;
   for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && inb(x + i, y + j) && isMountain(S, x + i, y + j)) n++;
   // Height: the deeper in the range, the taller; smooth noise makes ridges and a few high summits instead of a field of equal spikes.
   const hgt = Math.round(6 + n * 2 + Math.pow(vnoise(x * 0.2 + 5, y * 0.2 + 5, 77), 1.5) * 44 + hash2(x, y, 31) * 4);
-  return peakSprite(n >= 6 ? Math.min(hgt, 54) : Math.min(hgt, 28), Math.floor(hash2(x, y, 32) * 5) - 2, Math.floor(hash2(x, y, 33) * 2), Math.floor(hash2(x, y, 34) * 3), 'rock');
+  return peakSprite(n >= 6 ? Math.min(hgt, 54) : Math.min(hgt, 28), Math.floor(hash2(x, y, 32) * 5) - 2, Math.floor(hash2(x, y, 33) * 2), Math.floor(hash2(x, y, 34) * 3), 'rock', hol);
 }
 function hillSprite(x, y) {
   return peakSprite(4 + Math.floor(hash2(x, y, 41) * 3), Math.floor(hash2(x, y, 42) * 5) - 2, Math.floor(hash2(x, y, 43) * 2), Math.floor(hash2(x, y, 44) * 3), 'grass');
+}
+// Worked-out ground: flat dirt scar (level 0) and quarry pits (levels -1..-3). Pits show their far walls, so a run of pit tiles reads as one big hole.
+const FLOOR_COL = ['#4d3d2c', '#3d3024', '#2c2219'];
+function flatSprite(key, fn) {
+  if (PEAK_CACHE[key]) return PEAK_CACHE[key];
+  const c = document.createElement('canvas'); c.width = 32; c.height = 48; const g = c.getContext('2d');
+  for (let y = 32; y < 48; y++) for (let x = 0; x < 32; x++) {
+    const px = x + 0.5, py = y + 0.5; if (Math.abs(px - 16) / 16 + Math.abs(py - 40) / 8 > 1) continue;
+    const cc = fn(x, y, px, py); if (cc) { g.fillStyle = cc; g.fillRect(x, y, 1, 1); }
+  }
+  return PEAK_CACHE[key] = c;
+}
+function scarSprite(x, y) {
+  const seed = Math.floor(hash2(x, y, 51) * 4);
+  return flatSprite('scar' + seed, (X, Y) => { const h = hash2(X, Y, seed + 60); return h < 0.07 ? '#a9967a' : h > 0.93 ? '#6f5a3f' : h < 0.5 ? '#8c7656' : '#826c4d'; });
+}
+function pitSprite(d, wl, wr, lipL, lipR, seed) {
+  return flatSprite('pit' + [d, wl, wr, lipL ? 1 : 0, lipR ? 1 : 0, seed].join('_'), (X, Y, px, py) => {
+    const top = px <= 16 ? 40 - 0.5 * px : 32 + 0.5 * (px - 16), bot = px <= 16 ? 40 + 0.5 * px : 48 - 0.5 * (px - 16);
+    const wall = px <= 16 ? wl : wr;
+    if (wall > 0 && py - top < 1) return '#a08461';
+    if (py - top < wall) return px <= 16 ? '#2b2119' : (Math.floor(py - top) % 3 === 0 ? '#6c523a' : '#7e6345');
+    if (bot - py < 1.2 && (px <= 16 ? lipL : lipR)) return '#9a7c55';
+    const h = hash2(X, Y, seed + 70), f = FLOOR_COL[d - 1];
+    return h < 0.08 ? '#00000040' : h > 0.94 ? '#5a4833' : f;
+  });
+}
+function rockSprites(S, x, y, vx, vy) {
+  const lv = rockLevel(S, x, y);
+  if (lv >= 3) return mountainSprite(S, x, y);
+  if (lv === 2) return hillSprite(x, y);
+  if (lv === 0) return scarSprite(x, y);
+  const d = -lv, dep = (a, b) => { const [nx, ny] = fromView(a, b); return pitDepth(S, nx, ny); };
+  const ul = dep(vx - 1, vy), ur = dep(vx, vy - 1), dl = dep(vx, vy + 1), dr = dep(vx + 1, vy);
+  return pitSprite(d, 3 * Math.max(0, d - ul), 3 * Math.max(0, d - ur), dl === 0, dr === 0, Math.floor(hash2(x, y, 52) * 3));
 }
 function draw() {
   const k = scale * dprI;
@@ -629,7 +672,7 @@ function draw() {
       } else if (S.deco[y][x]) {
         const kind = S.deco[y][x], v = Math.floor(hash2(x, y, 8) * (kind === 'tree' ? 3 : 2));
         const amt = kind === 'rock' ? rockAmt(S, x, y) : 1;
-        if (kind === 'rock' && amt >= 2) { const ps = amt >= 3 ? mountainSprite(S, x, y) : hillSprite(x, y); ctx.drawImage(ps, ox, oy + 48 - ps.height); }
+        if (kind === 'rock' && rockLevel(S, x, y) !== 1) { const ps = rockSprites(S, x, y, vx, vy); ctx.drawImage(ps, ox, oy + 48 - ps.height); }
         else ctx.drawImage(ovrSprite(kind + '_' + v, ROT) || SPR[kind][v], ox, oy);
       }
     }
@@ -687,7 +730,7 @@ function updateHint() {
   let t = '';
   if (tool === 'road') t = roadAnchor ? 'Click where the road ends. Shift bends it the other way. Esc cancels.' : 'Click where the road starts, then click where it ends. You can start or end on an existing road.';
   else if (tool === 'zoneWood') t = 'Drag over forest to mark trees for felling. Woodcutters near a road cut them into logs and the land is left clear to build on. Logs need a sawmill.';
-  else if (tool === 'zoneMine') t = 'Drag over rock to mark it for quarrying. Quarries take stone from a mountain\'s edge without wearing it away; hills and rubble wear down to flat ground.';
+  else if (tool === 'zoneMine') t = 'Drag over rock to mark it for quarrying. Stone is limited and never grows back. Mountains hollow out but stay; hills dig down into pits.';
   else if (tool === 'sawmill') t = 'Place a sawmill beside a road. It turns logs into wood. Without one, the Town Hall saws slowly at half yield.';
   else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings only grow on zone tiles that touch a road, and their doors face it.';
   const el = $('hint'); if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
@@ -738,12 +781,15 @@ function describe(t) {
     if (k === 'tree') return ['Forest', [S.zone[t.y][t.x] === 'wood' ? 'Marked for felling. A woodcutter within 3 tiles cuts it into logs.' : 'Paint a Lumber zone here to mark it for felling. Cleared forest becomes open building land.', 'Building here clears the tree.']];
     if (k === 'stump') return ['Tree stump', ['Left behind by felling. It rots away into open grass you can build on.']];
     if (k === 'rock') {
-      const a = rockAmt(S, t.x, t.y), mk = S.zone[t.y][t.x] === 'mine';
-      if (a >= 3) return ['Mountain', [mk ? (rockOpen(S, t.x, t.y) ? 'Marked for quarrying. Its edge is exposed, so quarries can take stone from it. The mountain itself never wears away.' : 'Marked for quarrying, but quarries can only reach the face where the mountain meets open ground.') : 'Solid rock: nothing can be built here and roads cannot cross it. Mark its edge for quarrying: a quarry takes stone from the face, and the mountain stays.']];
-      if (a === 2) return ['Hill', [mk ? 'Marked for quarrying. It will wear down to rubble and then flat ground.' : 'You can build and lay roads here. Building levels the hill. Or mark it for quarrying.']];
-      return ['Rubble', [mk ? 'Marked for quarrying. Quarries clear it to flat ground.' : 'Loose rock. You can build here, or mark it for quarrying.']];
+      const lv = rockLevel(S, t.x, t.y), left = Math.ceil(rockLeft(S, t.x, t.y)), mk = S.zone[t.y][t.x] === 'mine';
+      if (lv >= 3) return ['Mountain', [left > 0
+        ? 'Stone left: ' + left + '. ' + (mk ? (rockOpen(S, t.x, t.y) ? 'Marked for quarrying.' : 'Marked, but quarries can only reach where the mountain meets open ground or a hollow.') : 'Solid rock: nothing can be built here and roads cannot cross it. Mark its edge for quarrying.')
+        : 'Worked out: only a hollow shell of rock is left. It is still a mountain, and stone never grows back.', 'Mining hollows a mountain out but it never goes away.']];
+      if (lv < 0) return ['Quarry pit', [left > 0 ? 'Depth ' + (-lv) + '. Stone left: ' + left + '.' : 'Worked out, ' + (-lv) + ' deep. Stone never grows back.', 'Nothing can be built here or laid over it, and pits cannot be filled in.']];
+      const nm = lv === 2 ? 'Hill' : lv === 1 ? 'Rubble' : 'Quarried ground';
+      return [nm, ['Stone left: ' + left + (mk ? '. Marked for quarrying: it digs down level by level, past flat ground into a pit.' : '. You can build and lay roads here; building levels the ground. Or mark it for quarrying.')]];
     }
-    if (k === 'ore') return ['Iron ore', ['A mining zone here grows iron mines. Soldiers need ore to arm.', 'Ore blocks other buildings.']];
+    if (k === 'ore') return ['Iron ore', ['Ore left: ' + Math.ceil(oreLeft(S, t.x, t.y)) + '. A mine nearby digs it out for good; it never grows back.', 'Ore blocks other buildings.']];
     const z = S.zone[t.y][t.x];
     if (z) {
       const nm = ZONE_NAMES[z];
@@ -759,9 +805,15 @@ function describe(t) {
   if (b.t === 'house') L.push('Level ' + b.lvl + ' · holds ' + capOf(b) + ' people', b.lvl === 1 ? 'A well within 4 tiles upgrades it to level 2.' : 'Upgraded by a nearby well.');
   if (b.t === 'farm') L.push('Jobs: ' + jobsOf(b) + ' · makes ' + (b.served ? (foodOf(b) * d.ratio).toFixed(1) : '0') + ' food per second', 'Staffed at ' + Math.round(d.ratio * 100) + '%');
   if (b.t === 'wood') { const n = countZoned(S, b.x, b.y, 3, 'tree', 'wood'); L.push('Jobs: 3 · ' + n + ' marked trees in range', n ? 'Fells ' + (b.served ? (2.5 * d.ratio).toFixed(1) : '0') + ' logs per second. A sawmill turns logs into wood.' : 'No marked trees left. Paint a Lumber zone on more forest nearby.'); }
-  if (b.t === 'quarry') { const n = countZoned(S, b.x, b.y, 3, 'rock', 'mine'); L.push('Jobs: 3 · ' + n + ' marked rock tiles in range', n ? 'Makes ' + (b.served ? (2 * d.ratio).toFixed(1) : '0') + ' stone per second. Hills and rubble wear down; mountains stay.' : 'No marked rock left. Paint a Mining zone on more rock nearby.'); }
+  if (b.t === 'quarry') {
+    let left = 0, n = 0; for (let j = b.y - 3; j <= b.y + 3; j++) for (let i = b.x - 3; i <= b.x + 3; i++) if (inb(i, j) && S.zone[j][i] === 'mine' && rockWorkable(S, i, j)) { n++; left += rockLeft(S, i, j); }
+    L.push('Jobs: 3 · ' + n + ' marked rock tiles in reach · ' + Math.ceil(left) + ' stone left in reach', n ? 'Makes ' + (b.served ? (2 * d.ratio).toFixed(1) : '0') + ' stone per second. Mountains hollow out, hills dig down into pits. Stone never grows back.' : 'Run dry: nothing marked and workable in reach. Paint a Mining zone on more rock nearby.');
+  }
   if (b.t === 'sawmill') L.push('Jobs: 3 · saws ' + (b.served ? (4 * d.ratio).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
-  if (b.t === 'mine') { const n = countDeco(S, b.x, b.y, 3, 'ore'); L.push('Jobs: 3 · ' + n + ' ore tiles in range', n ? 'Makes ' + (b.served ? (1.5 * d.ratio).toFixed(1) : '0') + ' ore per second' : 'Out of ore. Clear it and zone a new site.'); }
+  if (b.t === 'mine') {
+    let left = 0, n = 0; for (let j = b.y - 3; j <= b.y + 3; j++) for (let i = b.x - 3; i <= b.x + 3; i++) if (inb(i, j) && S.deco[j][i] === 'ore') { n++; left += oreLeft(S, i, j); }
+    L.push('Jobs: 3 · ' + n + ' ore tiles in reach · ' + Math.ceil(left) + ' ore left', n ? 'Makes ' + (b.served ? (1.5 * d.ratio).toFixed(1) : '0') + ' ore per second. Ore never grows back.' : 'Out of ore. Clear it and zone a new site.');
+  }
   if (b.t === 'market') L.push('Jobs: ' + jobsOf(b) + ' · covers homes within ' + (b.sz === 2 ? 7 : 5) + ' tiles', 'Earns gold from covered villagers (' + Math.round(d.cov * 100) + '% of homes covered).');
   if (b.t === 'barracks') L.push('Sleeps 6 soldiers · army ' + S.soldiers + '/' + d.bunks, 'Each recruit costs 2 wood, 1 gold, 1 ore and one villager.', 'Soldiers eat 1.5x and cost 0.1 gold per second.');
   if (b.t === 'well') L.push('Upgrades houses within 4 tiles.');
