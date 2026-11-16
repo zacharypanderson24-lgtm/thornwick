@@ -1822,6 +1822,32 @@ function groundDraw(src, x, bottomY, G) {
   if (!r[0] && !r[1] && !r[2] && !r[3]) { ctx.drawImage(src, x, bottomY - src.height - G.lift); return; }
   const c = drape(src, r[0], r[1], r[2], r[3]); ctx.drawImage(c, x, bottomY - c.height - G.lift);
 }
+// Zoomed-out ground layer: the whole map's ground (grass + zones) pre-drawn once per camera rotation and redrawn only when it changes,
+// so far-out views cost one big drawImage instead of ~4000 small ones.
+const GL = { cv: null, sig: null, OX: 0, OY: 0 };
+function groundSig() {
+  let h = ROT | 0;
+  for (let y = 0; y < N; y++) { const zr = S.zone[y], gr = S.grid[y], fr = S.fert[y], dr = S.deco[y];
+    for (let x = 0; x < N; x++) { const z = zr[x]; h = (Math.imul(h, 31) + (z && !gr[x] ? z.charCodeAt(0) + 7 : 0) + (fr[x] ? 3 : 0) + (dr[x] === 'rock' ? 5 : 0)) | 0; } }
+  const hv = S.hv; for (let i = 0; i < hv.length; i++) h = (Math.imul(h, 31) + hv[i]) | 0;
+  return h;
+}
+function groundLayer() {
+  const sig = groundSig(); if (GL.cv && GL.sig === sig) return GL;
+  const OX = N * 16 + 32, OY = HMAX * LV + 16;
+  if (!GL.cv) GL.cv = document.createElement('canvas');
+  GL.cv.width = N * 32 + 64; GL.cv.height = OY + (2 * N) * 8 + 16 + 40; GL.OX = OX; GL.OY = OY;
+  const g = GL.cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  for (let s2 = 0; s2 <= 2 * N - 2; s2++) for (let vx = Math.max(0, s2 - N + 1); vx <= Math.min(N - 1, s2); vx++) {
+    const vy = s2 - vx, [x, y] = fromView(vx, vy);
+    if (S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3) continue;
+    const G = geo(x, y), hv = hash2(x, y, 5), gi = Math.floor(hv * 4), gf = hv < 0.5 ? 0 : 1, gb = G.sy + 16;
+    const put = src => { const r = G.rel, c = (r[0] || r[1] || r[2] || r[3]) ? drape(src, r[0], r[1], r[2], r[3]) : src; g.drawImage(c, G.sx - 16 + OX, gb - c.height - G.lift + OY); };   // full slope draping: it is only built when the ground changes
+    put(S.fert[y][x] ? (ovrSprite('grassfert_' + gf, ROT) || SPR.grassF[gf]) : (ovrSprite('grass_' + gi, ROT) || SPR.grass[gi]));
+    if (S.zone[y][x] && !S.grid[y][x]) put(ZSPR(S.zone[y][x], zmask(x, y, S.zone[y][x])));
+  }
+  GL.sig = sig; return GL;
+}
 // ---- Mountains: one continuous rock surface ----
 const ROCK_COL = ['#3c4054', '#5a5f75', '#7d8196', '#a3a7b8'], SNOW_COL = ['#b3bdd6', '#c6cee2', '#dfe5f2', '#f2f5fb'];
 function terrainSprite(S, x, y, vx, vy) {
@@ -1908,9 +1934,12 @@ function draw() {
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#0e1118'; ctx.fillRect(0, 0, cv.width, cv.height);
   ctx.imageSmoothingEnabled = false;
   const lensAny = lensOn || ZONE[tool];
+  const LOD = scale <= 0.5;   // zoomed far out: skip tree groves and warning icons
+  const layered = LOD && !lensAny;   // ...and draw the ground from one cached layer
   const cx = Math.round(cam.x), cy = Math.round(cam.y);
   ctx.setTransform(k, 0, 0, k, -cx * k, -cy * k);
   const vw = cv.width / k, vh = cv.height / k;
+  if (layered) { const L = groundLayer(); ctx.imageSmoothingEnabled = true; ctx.drawImage(L.cv, -L.OX, -L.OY); ctx.imageSmoothingEnabled = false; }
   for (let s = 0; s <= 2 * N - 2; s++) {
     for (let vx = Math.max(0, s - N + 1); vx <= Math.min(N - 1, s); vx++) {
       const vy = s - vx; const [x, y] = fromView(vx, vy); const sx = (vx - vy) * 16, sy = (vx + vy) * 8;
@@ -1919,15 +1948,16 @@ function draw() {
       const G = geo(x, y), mtn = S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3, gb = sy + 16;
       const hv = hash2(x, y, 5);
       const gi = Math.floor(hv * 4), gf = hv < 0.5 ? 0 : 1;
-      if (!mtn) groundDraw(S.fert[y][x] ? (ovrSprite('grassfert_' + gf, ROT) || SPR.grassF[gf]) : (ovrSprite('grass_' + gi, ROT) || SPR.grass[gi]), ox, gb, G);
-      if (S.zone[y][x] && !S.grid[y][x]) groundDraw(ZSPR(S.zone[y][x], zmask(x, y, S.zone[y][x])), ox, gb, G);
+      if (!mtn && !layered) groundDraw(S.fert[y][x] ? (ovrSprite('grassfert_' + gf, ROT) || SPR.grassF[gf]) : (ovrSprite('grass_' + gi, ROT) || SPR.grass[gi]), ox, gb, G);
+      if (!layered && S.zone[y][x] && !S.grid[y][x]) groundDraw(ZSPR(S.zone[y][x], zmask(x, y, S.zone[y][x])), ox, gb, G);
       if (lensAny) {
         const dk = S.deco[y][x];
         const lk = dk === 'tree' ? 'wood' : dk === 'rock' ? 'stone' : dk === 'ore' ? 'ore' : (!S.grid[y][x] && S.fert[y][x] ? 'fert' : null);
         if (lk && lensShows(lk)) groundDraw(SPR.lens[lk], ox, gb, G);
       }
       const b = S.grid[y][x];
-      const lift = G.base; if (b && b.t === 'road') { /* roads are bent over the slope below */ } else ctx.translate(0, -lift);
+      const lift = (b && b.t === 'road') ? 0 : G.base;   // roads are bent over the slope below
+      const ly = -lift;   // vertical offset for this tile (a plain offset is much cheaper than ctx.translate)
       if (b) {
         let mask = 0;
         if (b.t === 'road') for (let i = 0; i < 4; i++) { const [nx, ny] = nbW(x, y, i); if (inb(nx, ny) && S.grid[ny][nx]) mask |= NBD[i][2]; }
@@ -1938,25 +1968,24 @@ function draw() {
           const depth = vx + vy;
           if (footprint.every(([a, c]) => a + c <= depth)) {
             const spr = spriteFor(b.t, b, 0);
-            ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height);
-            if (!b.served) ctx.drawImage(SPR.warn, sx - 16, sy - 40);
+            ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height + ly);
+            if (!b.served && !LOD) ctx.drawImage(SPR.warn, sx - 16, sy - 40 + ly);
           }
         } else {
           const spr = spriteFor(b.t, b, mask);
-          if (b.t === 'road') groundDraw(spr, sx - spr.width / 2, sy + 16, G); else ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height);
-          if (!b.served && b.t !== 'road') ctx.drawImage(SPR.warn, ox, oy - 8);
+          if (b.t === 'road') groundDraw(spr, sx - spr.width / 2, sy + 16, G); else ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height + ly);
+          if (!b.served && b.t !== 'road' && !LOD) ctx.drawImage(SPR.warn, ox, oy - 8 + ly);
         }
       } else if (S.deco[y][x]) {
         const kind = S.deco[y][x], v = kind === 'tree' ? treeVariant(S, x, y) : Math.floor(hash2(x, y, 8) * 2);   // ten tree looks; the built-in art only has 3 so it repeats
         const amt = kind === 'rock' ? rockAmt(S, x, y) : 1;
-        if (kind === 'rock' && rockLevel(S, x, y) !== 1) { const ps = rockSprites(S, x, y, vx, vy); if (mtn) ctx.translate(0, lift); ctx.drawImage(ps, ox, oy + 48 - ps.height); if (mtn) ctx.translate(0, -lift); }
+        if (kind === 'rock' && rockLevel(S, x, y) !== 1) { const ps = rockSprites(S, x, y, vx, vy); ctx.drawImage(ps, ox, oy + 48 - ps.height + (mtn ? 0 : ly)); }
         else {
           let spr = null;
-          if (kind === 'tree') { const gv = treeGrove(S, x, y); if (gv.n > 1) spr = ovrSprite('tree_' + gv.kind + '_' + gv.n, ROT); }   // a stand of 2-4 trees when that art exists
-          ctx.drawImage(spr || ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], ox, oy);
+          if (kind === 'tree' && !LOD) { const gv = treeGrove(S, x, y); if (gv.n > 1) spr = ovrSprite('tree_' + gv.kind + '_' + gv.n, ROT); }   // a stand of 2-4 trees when that art exists
+          ctx.drawImage(spr || ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], ox, oy + ly);
         }
       }
-      if (!(b && b.t === 'road')) ctx.translate(0, lift);
     }
   }
   if (drag && drag.rect) {
