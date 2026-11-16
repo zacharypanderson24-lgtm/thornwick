@@ -49,26 +49,27 @@ const clamp1 = v => Math.max(-1, Math.min(1, v));
 // Every mountain is its own landform: a core of MOUNT_H+ elevation (the solid part, about 3x3 on average, at most about 7x7) that rises to a
 // peak, standing on a skirt of hills that climbs toward it. Bigger mountains are taller and have a wider skirt, so no two start at the
 // same height. Elevation is in sprite pixels: 14+ is mountain, 4..14 is hill.
-const MOUNT_H = 14, HILL_MIN = 4;
+const MOUNT_H = 14, HILL_MIN = 2.5;
 const SIDE_W = [[2, 0.2], [3, 0.4], [4, 0.17], [5, 0.11], [6, 0.07], [7, 0.05]];
+// Mountains are rare: a handful per map, each a single massif with one summit, far from the next one (no forests of peaks).
 function mountainSites(seed) {
   const list = []; let n = 0; const rnd = () => hash2(n++, 17, seed + 300);
   const pick = r => { let a = 0; for (const [side, w] of SIDE_W) { a += w; if (r < a) return side; } return 3; };
-  const want = Math.round((15 + Math.floor(rnd() * 4)) * (N * N) / 1600);
-  for (let tries = 0; tries < 2500 && list.length < want; tries++) {
-    const side = pick(rnd()), R = side / 2 * 0.9, Hp = 22 + 6 * side + rnd() * 5, skirt = 1.0 + 0.3 * side;
-    const cx = 3 + rnd() * (N - 6), cy = 3 + rnd() * (N - 6);
-    if (Math.max(Math.abs(cx - START), Math.abs(cy - (START + 2))) < R + skirt * 0.6 + 6) continue;       // keep the start area open
-    if (list.some(m => Math.hypot(m.cx - cx, m.cy - cy) < m.R + R + 2.0)) continue;           // cores stay separate; skirts may overlap
+  const want = Math.max(2, Math.round((3 + (rnd() < 0.6 ? 1 : 0) + (rnd() < 0.3 ? 1 : 0)) * (N * N) / 4096));
+  for (let tries = 0; tries < 3000 && list.length < want; tries++) {
+    const side = pick(rnd()), R = side / 2 * 0.9, Hp = 22 + 6 * side + rnd() * 5, skirt = 1.8 + 0.4 * side;
+    const cx = 5 + rnd() * (N - 10), cy = 5 + rnd() * (N - 10);
+    if (Math.max(Math.abs(cx - START), Math.abs(cy - (START + 2))) < R + skirt * 0.6 + 7) continue;     // keep the start area open
+    if (list.some(m => Math.hypot(m.cx - cx, m.cy - cy) < m.R + R + 11)) continue;                       // well apart from each other
     list.push({ cx, cy, R, Hp, skirt, ph: rnd() * 90 });
   }
-  // a few plain hill clusters with no mountain in them
-  for (let k = 0, kn = Math.round(5 * (N * N) / 1600); k < kn; k++) {
-    const R = 0, Hp = 7 + rnd() * 6, skirt = 2.2 + rnd() * 2.2, cx = 3 + rnd() * (N - 6), cy = 3 + rnd() * (N - 6);
-    if (Math.max(Math.abs(cx - START), Math.abs(cy - (START + 2))) < skirt + 6) continue;
-    list.push({ cx, cy, R, Hp, skirt, ph: rnd() * 90, plain: true });
-  }
   return list;
+}
+// Hills (TheoTown style): broad, gentle, rolling rises from low-frequency noise; a few tiles high at most, always buildable once levelled.
+function hillElev(seed, x, y) {
+  const f = vnoise(x * 0.055 + 30, y * 0.055 + 30, seed + 400) * 0.72 + vnoise(x * 0.13, y * 0.13, seed + 401) * 0.28;
+  const fade = Math.min(1, Math.max(0, (Math.max(Math.abs(x - START), Math.abs(y - START)) - 6) / 7));   // none right at the Hall
+  return Math.max(0, (f - 0.635) * 46) * fade;
 }
 function elevAt(sites, seed, x, y) {
   let e = 0;
@@ -78,8 +79,7 @@ function elevAt(sites, seed, x, y) {
     const nz = 0.9 + vnoise(x * 0.55 + m.ph, y * 0.55 + m.ph, seed + 2) * 0.22;        // ragged outline, never bigger than ~12%
     const d = Math.cbrt(dx * dx * dx + dy * dy * dy) / nz;                                // rounded square, so a "7x7" mountain fills a 7x7 box
     let v = 0;
-    if (m.plain) v = d < m.skirt ? m.Hp * Math.pow(1 - d / m.skirt, 1.2) : 0;
-    else if (d <= m.R) v = MOUNT_H + (m.Hp - MOUNT_H) * Math.pow(1 - d / m.R, 1.15);
+    if (d <= m.R) v = MOUNT_H + (m.Hp - MOUNT_H) * Math.pow(1 - d / m.R, 1.15);
     else if (d < m.R + m.skirt) v = MOUNT_H * Math.pow(1 - (d - m.R) / m.skirt, 1.3);
     if (v > e) e = v;
   }
@@ -92,9 +92,9 @@ function genTile(S, sites, seed, x, y) {
   if (dist < 6) return;
   const f = vnoise(x * 0.16, y * 0.16, seed) * 0.65 + vnoise(x * 0.4, y * 0.4, seed + 3) * 0.35;
   const o = vnoise(x * 0.3 + 90, y * 0.3 + 90, seed + 13);
-  const e = elevAt(sites, seed, x, y);
+  const e = Math.max(elevAt(sites, seed, x, y), Math.min(11, hillElev(seed, x, y)));
   if (e >= MOUNT_H) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 3; S.elev[y * N + x] = Math.round(e); }
-  else if (e >= HILL_MIN && hash2(x, y, seed + 6) > 0.05) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 2; S.elev[y * N + x] = Math.round(e); }
+  else if (e >= HILL_MIN) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 2; S.elev[y * N + x] = Math.round(e); }
   else if (o > 0.72 && hash2(x, y, seed + 7) > 0.35) S.deco[y][x] = 'ore';
   else if (f > 0.56 && hash2(x, y, seed + 5) > 0.22) S.deco[y][x] = 'tree';
 }

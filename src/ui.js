@@ -585,22 +585,77 @@ function peakSprite(hgt, jx, ph, seed, kind, hol) {
   }
   return PEAK_CACHE[key] = c;
 }
-function mountainSprite(S, x, y) {
-  const hol = Math.round(rockHollow(S, x, y) * 6), el = S.elev && S.elev[y * N + x];
-  let hgt;
-  if (el) hgt = Math.min(72, el);   // generated landforms carry their own elevation: bigger mountains are taller, slopes step down to the hills
-  else {   // old saves: height from how deep in the range the tile is
-    let n = 0;
-    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && inb(x + i, y + j) && isMountain(S, x + i, y + j)) n++;
-    hgt = Math.round(6 + n * 2 + Math.pow(vnoise(x * 0.2 + 5, y * 0.2 + 5, 77), 1.5) * 44 + hash2(x, y, 31) * 4);
-    hgt = n >= 6 ? Math.min(hgt, 54) : Math.min(hgt, 28);
-  }
-  return peakSprite(hgt, Math.floor(hash2(x, y, 32) * 5) - 2, Math.floor(hash2(x, y, 33) * 2), Math.floor(hash2(x, y, 34) * 3), 'rock', hol);
+// ---- Mountains and hills as one continuous surface ----
+// Each rock tile is drawn from a little height map: the four corners of the tile are lifted to the average height of the tiles that touch
+// that corner, so neighbouring tiles join up into one smooth hill or one single mountain massif (no separate pyramid per tile).
+// Shading comes from the slope (light from the upper left), so ridges and faces appear on their own.
+const TERRAIN_COL = {
+  grass: [['#4a8636', '#5a9a40', '#6db051', '#82bf66']],
+  rock: [['#3c4054', '#5a5f75', '#7d8196', '#a3a7b8']],
+  snow: ['#b3bdd6', '#c6cee2', '#dfe5f2', '#f2f5fb']
+};
+function tileHeight(S, wx, wy) {
+  if (!inb(wx, wy) || S.deco[wy][wx] !== 'rock') return 0;
+  const lv = rockLevel(S, wx, wy), el = S.elev && S.elev[wy * N + wx];
+  if (lv >= 3) return el || 26;     // old saves have no elevation: use a modest default
+  if (lv === 2) return (el || 5) * 1.5;   // hills read better a little taller than their stored value
+  return 0;                          // dug-down hills are level with the ground
 }
-function hillSprite(S, x, y) {
-  const el = S.elev && S.elev[y * N + x];
-  const hgt = el ? Math.max(3, Math.round(el * 0.55)) : 4 + Math.floor(hash2(x, y, 41) * 3);   // hills get taller the nearer they are to a mountain
-  return peakSprite(hgt, Math.floor(hash2(x, y, 42) * 5) - 2, Math.floor(hash2(x, y, 43) * 2), Math.floor(hash2(x, y, 44) * 3), 'grass');
+function terrainSprite(S, x, y, vx, vy, kind) {
+  // corner (a,b) of view tile (vx,vy): average of the four tiles around that grid point
+  const corner = (a, b) => {
+    let sum = 0, mx = 1e9, my = 1e9, n = 0;
+    for (const [i, j] of [[a - 1, b - 1], [a, b - 1], [a - 1, b], [a, b]]) {
+      if (i < 0 || j < 0 || i >= N || j >= N) { n++; continue; }
+      const [wx, wy] = fromView(i, j); sum += tileHeight(S, wx, wy); n++; mx = Math.min(mx, wx); my = Math.min(my, wy);
+    }
+    let h = sum / 4 * (kind === 'rock' ? 1.18 : 1.05);
+    if (kind === 'rock' && h > 10) h += (hash2(mx, my, 91) - 0.5) * 7;     // ragged crests, same from every camera angle
+    return Math.max(0, Math.round(h));
+  };
+  const cT = corner(vx, vy), cR = corner(vx + 1, vy), cL = corner(vx, vy + 1), cB = corner(vx + 1, vy + 1);
+  const hol = kind === 'rock' ? Math.round(rockHollow(S, x, y) * 6) : 0;
+  const key = 'T' + kind + cT + '_' + cR + '_' + cL + '_' + cB + '_' + hol + (kind === 'rock' ? '_' + x + '_' + y + '_' + vx + '_' + vy : '');
+  if (PEAK_CACHE[key]) return PEAK_CACHE[key];
+  const zmax = Math.max(cT, cR, cL, cB) + 1, Hc = zmax + 16;
+  const c = document.createElement('canvas'); c.width = 32; c.height = Hc; const g = c.getContext('2d');
+  const pal = TERRAIN_COL[kind][0], seed = kind === 'rock' ? Math.floor(hash2(x, y, 95) * 40) : 7;
+  const zu = v => cR - cT + v * (cB - cL - (cR - cT)), zv = u => cL - cT + u * (cB - cR - (cL - cT));   // d z / du at v, d z / dv at u
+  for (let gy = 0; gy < 16; gy++) for (let gx = 0; gx < 32; gx++) {
+    const px = gx + 0.5 - 16, py = gy + 0.5;
+    if (Math.abs(px) / 16 + Math.abs(py - 8) / 8 > 1) continue;
+    const u = Math.min(1, Math.max(0, (px / 16 + py / 8) / 2)), v = Math.min(1, Math.max(0, (py / 8 - px / 16) / 2));
+    const z = cT + (cR - cT) * u + (cL - cT) * v + (cT - cR - cL + cB) * u * v;
+    if (z < 0.8) continue;                                   // toes of a hill stay see-through so the ground texture shows
+    const dzdx = (zu(v) - zv(u)) / 32, dzdy = (zu(v) + zv(u)) / 16;
+    let sh = 0.5 + (kind === 'rock' ? 1.5 : 2.6) * dzdx - (kind === 'rock' ? 0.4 : 0.9) * dzdy - (kind === 'rock' ? Math.max(0, 9 - z) * 0.03 : 0);
+    const hh = hash2(gx, gy + zmax, seed + 3);
+    sh += (hh - 0.5) * 0.22;
+    if (kind === 'rock') {
+      // craggy facets: big stretched noise cells give each face its own lit/dark patches, plus thin strata
+      const nx = vx + u, ny = vy + v;
+      sh += (vnoise(nx * 1.7, ny * 1.7, seed) - 0.5) * 1.7 + (vnoise(nx * 4.1, ny * 4.1, seed + 5) - 0.5) * 0.5;
+      sh += Math.sin((z + hash2(gx >> 1, gy >> 1, seed) * 2) * 0.9) * 0.07;
+    }
+    const lvl = Math.max(0, Math.min(3, Math.floor(sh * 4)));
+    let cc = pal[lvl];
+    if (kind === 'rock' && z > 44 + (vnoise((vx + u) * 2.2, (vy + v) * 2.2, seed + 8) - 0.5) * 14 && lvl > 0) cc = TERRAIN_COL.snow[lvl];
+    const ys = Math.floor(zmax + gy + 0.5 - z), yg = zmax + gy;
+    g.fillStyle = cc; g.fillRect(gx, ys, 1, yg - ys + 1);
+  }
+  if (hol > 0) {   // mining hollow: a dark cut in the front of the mass that widens as stone is taken out
+    const zc = (cT + cR + cL + cB) / 4, hcx = 16, hcy = zmax + 9 - zc * 0.35, hrx = 4 + hol * 1.4, hry = 3 + hol * (0.35 + zc * 0.03);
+    const id = g.getImageData(0, 0, 32, Hc);
+    for (let yy = 0; yy < Hc; yy++) for (let xx = 0; xx < 32; xx++) {
+      if (!id.data[(yy * 32 + xx) * 4 + 3]) continue;
+      const ex = (xx + 0.5 - hcx) / hrx, ey = (yy + 0.5 - hcy) / hry, dd = ex * ex + ey * ey + (hash2(xx, yy, seed + 9) - 0.5) * 0.22;
+      if (dd >= 1) continue;
+      const col = dd < 0.28 ? [24, 26, 35] : dd < 0.6 ? [42, 45, 57] : dd < 0.8 ? [60, 64, 80] : (yy < hcy ? [198, 202, 214] : [139, 143, 164]);
+      id.data.set([col[0], col[1], col[2], 255], (yy * 32 + xx) * 4);
+    }
+    g.putImageData(id, 0, 0);
+  }
+  return PEAK_CACHE[key] = c;
 }
 // Worked-out ground: flat dirt scar (level 0) and quarry pits (levels -1..-3). Pits show their far walls, so a run of pit tiles reads as one big hole.
 const FLOOR_COL = ['#4d3d2c', '#3d3024', '#2c2219'];
@@ -630,8 +685,8 @@ function pitSprite(d, wl, wr, lipL, lipR, seed) {
 }
 function rockSprites(S, x, y, vx, vy) {
   const lv = rockLevel(S, x, y);
-  if (lv >= 3) return mountainSprite(S, x, y);
-  if (lv === 2) return hillSprite(S, x, y);
+  if (lv >= 3) return terrainSprite(S, x, y, vx, vy, 'rock');
+  if (lv === 2) return terrainSprite(S, x, y, vx, vy, 'grass');
   if (lv === 0) return scarSprite(x, y);
   const d = -lv, dep = (a, b) => { const [nx, ny] = fromView(a, b); return pitDepth(S, nx, ny); };
   const ul = dep(vx - 1, vy), ur = dep(vx, vy - 1), dl = dep(vx, vy + 1), dr = dep(vx + 1, vy);
