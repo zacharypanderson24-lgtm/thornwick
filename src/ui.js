@@ -424,6 +424,9 @@ function screenToTile(mx, my) {
   }
   return null;
 }
+// zoom ladder: 0.5 shows most of the big map, then whole-number steps keep the pixel art crisp
+const ZOOMS = [0.5, 1, 2, 3, 4, 5];
+function zoomStep(dir) { const i = ZOOMS.findIndex(z => z >= scale - 1e-6); return ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, (i < 0 ? ZOOMS.length - 1 : i) + dir))]; }
 function setScale(ns, mx, my) {
   ns = Math.max(0.5, Math.min(5, ns)); if (ns === scale) return;
   const wx = mx / scale + cam.x, wy = my / scale + cam.y;
