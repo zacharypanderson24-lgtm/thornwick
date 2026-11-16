@@ -60,8 +60,8 @@ const HMIN = -8, HMAX = 8, MOUNT_LEVEL = 4, LVL_PX = 7;
 const vIdx = (a, b) => b * (N + 1) + a;
 function vh(S, a, b) { if (!S.hv) return 0; a = a < 0 ? 0 : a > N ? N : a; b = b < 0 ? 0 : b > N ? N : b; return S.hv[b * (N + 1) + a] | 0; }
 function tileCorners(S, x, y) { return [vh(S, x, y), vh(S, x + 1, y), vh(S, x, y + 1), vh(S, x + 1, y + 1)]; }
-function tileLevel(S, x, y) { const c = tileCorners(S, x, y); return (c[0] + c[1] + c[2] + c[3]) / 4; }
-function tileSpread(S, x, y) { const c = tileCorners(S, x, y); return Math.max(...c) - Math.min(...c); }
+function tileLevel(S, x, y) { return (vh(S, x, y) + vh(S, x + 1, y) + vh(S, x, y + 1) + vh(S, x + 1, y + 1)) / 4; }   // no temporary arrays: these run thousands of times a day
+function tileSpread(S, x, y) { const a = vh(S, x, y), b = vh(S, x + 1, y), c = vh(S, x, y + 1), d = vh(S, x + 1, y + 1); return Math.max(a, b, c, d) - Math.min(a, b, c, d); }
 const tileFlat = (S, x, y) => tileSpread(S, x, y) === 0;
 // Mountain layout: rare. Usually one range (a ridge with several summits and saddles) and maybe one lone massif.
 let MTN_AVOID = null;   // [x0, y0, x1, y1]: while upgrading a save, keep new mountain ranges clear of the old square so they do not get cut off at its border
@@ -327,6 +327,7 @@ function addBld(S, t, x, y, sz) {
   for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (S.dig) delete S.dig[j * N + i]; if (S.elev) delete S.elev[j * N + i]; if (S.oreLeft) delete S.oreLeft[j * N + i]; if (S.sapT) delete S.sapT[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
   if (t !== 'road') levelFootprint(S, tilesOf(b));
+  onAdd(S, b);
   return b;
 }
 function roadPathCheck(S, path) {
@@ -360,6 +361,7 @@ function canPlace(S, type, x, y) {
   const footprint = { x, y, sz: type === 'hall' ? 3 : type === 'barracks' ? 2 : 1, t: type };
   for (const [tx, ty] of tilesOf(footprint)) {
     if (!inb(tx, ty)) return { ok: false, reason: 'Outside the map' };
+    if (!claimed(S, tx, ty)) return { ok: false, reason: 'That land is not yours yet' };
     if (S.grid[ty][tx]) return { ok: false, reason: 'That tile is already built on' };
     if (hasTree(S, tx, ty)) return { ok: false, reason: TREE_MSG };
     if (isSolid(S, tx, ty))
@@ -397,21 +399,23 @@ function remove(S, x, y) {
     for (const k in c) S.res[k] = Math.min(STORAGE, S.res[k] + Math.floor(c[k] / 2));
     for (const [i, j] of tilesOf(b)) { S.grid[j][i] = null; S.zone[j][i] = null; }
     S.blds.splice(S.blds.indexOf(b), 1);
+    onRemove(S, b);
     recalc(S); return { ok: true };
   }
-  if (S.zone[y][x]) { S.zone[y][x] = null; return { ok: true }; }
+  if (S.zone[y][x]) { S.zone[y][x] = null; touch(S, x, y, F_GROUND); return { ok: true }; }
   const k = S.deco[y][x];
   if (k) {
     if (k === 'tree') S.res.logs = Math.min(STORAGE, (S.res.logs || 0) + 2);
     else if (k === 'stump' || k === 'sapling') { /* nothing to salvage */ }
     else if (k === 'rock') { if (rockAmt(S, x, y) >= 3) return { ok: false, reason: 'A mountain cannot be cleared by hand. Mark it for quarrying' }; if (pitDepth(S, x, y) > 0) return { ok: false, reason: 'A quarry pit cannot be filled in' }; S.res.stone = Math.min(STORAGE, S.res.stone + 1); if (S.rockAmt) delete S.rockAmt[tk(x, y)]; }
     else S.res.ore = Math.min(STORAGE, S.res.ore + 1);
-    S.deco[y][x] = null; if (S.stumpT) delete S.stumpT[tk(x, y)]; if (S.sapT) delete S.sapT[tk(x, y)]; return { ok: true };
+    S.deco[y][x] = null; if (S.stumpT) delete S.stumpT[tk(x, y)]; if (S.sapT) delete S.sapT[tk(x, y)]; touch(S, x, y, F_DECO | F_GROUND | F_WALK); return { ok: true };
   }
   return { ok: false, reason: 'Nothing to clear here' };
 }
 function zoneCheck(S, kind, x, y) {
   if (!inb(x, y)) return { ok: false, reason: 'Outside the map' };
+  if (!claimed(S, x, y)) return { ok: false, reason: 'That land is not yours yet' };
   if (S.grid[y][x]) return S.zone[y][x] === kind ? { ok: true } : { ok: false, reason: 'That tile is already built on' };
   const dc = S.deco[y][x];
   if (kind === 'wood') {
@@ -430,7 +434,7 @@ function zoneCheck(S, kind, x, y) {
 }
 function setZone(S, kind, x, y) {
   const c = zoneCheck(S, kind, x, y);
-  if (c.ok && !S.grid[y][x]) S.zone[y][x] = kind;
+  if (c.ok && !S.grid[y][x]) { if (S.zone[y][x] !== kind) touch(S, x, y, F_GROUND); S.zone[y][x] = kind; }
   return c;
 }
 function countDeco(S, x, y, r, kind) {
@@ -482,9 +486,11 @@ function mineRock(S, x, y, r, amount) {
     for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
       if (inb(i, j) && S.zone[j][i] === 'mine' && rockWorkable(S, i, j)) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
     if (!best) break;
-    const e = Math.min(amount, rockLeft(S, best[0], best[1]));
+    const e = Math.min(amount, rockLeft(S, best[0], best[1])), wasSolid = isSolid(S, best[0], best[1]);
     S.dig = S.dig || {}; S.dig[tk(best[0], best[1])] = digDone(S, best[0], best[1]) + e; got += e; amount -= e;
-    if (rockLeft(S, best[0], best[1]) <= 1e-9) { S.dig[tk(best[0], best[1])] = rockCap(S, best[0], best[1]); S.zone[best[1]][best[0]] = null; }
+    let fl = isSolid(S, best[0], best[1]) !== wasSolid ? F_WALK : 0;   // a hill that has been dug into a pit is no longer walkable
+    if (rockLeft(S, best[0], best[1]) <= 1e-9) { S.dig[tk(best[0], best[1])] = rockCap(S, best[0], best[1]); S.zone[best[1]][best[0]] = null; fl |= F_GROUND; }
+    touch(S, best[0], best[1], fl);
   }
   return got;
 }
@@ -498,7 +504,7 @@ function mineOre(S, x, y, r, amount) {
     if (!best) break;
     const k = tk(best[0], best[1]), e = Math.min(amount, oreLeft(S, best[0], best[1]));
     S.oreLeft = S.oreLeft || {}; S.oreLeft[k] = oreLeft(S, best[0], best[1]) - e; got += e; amount -= e;
-    if (S.oreLeft[k] <= 1e-9) { S.deco[best[1]][best[0]] = null; S.zone[best[1]][best[0]] = null; delete S.oreLeft[k]; }
+    if (S.oreLeft[k] <= 1e-9) { S.deco[best[1]][best[0]] = null; S.zone[best[1]][best[0]] = null; delete S.oreLeft[k]; touch(S, best[0], best[1], F_DECO | F_GROUND | F_WALK); }
   }
   return got;
 }
@@ -518,156 +524,13 @@ function plantSapling(S, x, y, r) {
     const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; }
   }
   if (!best) return false;
-  S.deco[best[1]][best[0]] = 'sapling'; S.sapT = S.sapT || {}; S.sapT[tk(best[0], best[1])] = SAPLING_DAYS; return true;
+  S.deco[best[1]][best[0]] = 'sapling'; S.sapT = S.sapT || {}; S.sapT[tk(best[0], best[1])] = SAPLING_DAYS; touch(S, best[0], best[1], F_DECO); return true;
 }
 function fellAt(S, x, y) {
   S.deco[y][x] = 'stump'; if (!foresterCovers(S, x, y)) S.zone[y][x] = null;   // a forester nearby keeps the tile as a managed woodlot
   S.stumpT = S.stumpT || {}; S.stumpT[tk(x, y)] = STUMP_DAYS;
   if (S.chop) delete S.chop[tk(x, y)];
-}
-// ---- Work crews: woodcutters, quarrymen and miners live at their lodge/mine, walk out to a marked tile, work, and carry the load home ----
-// A worker is in one of four states: 'home' (resting inside the building, not drawn), 'out' (walking to the site), 'work' (at the site), 'back' (carrying the load).
-// Crews are runtime only (never saved): after loading, everybody starts at home. Output comes only from loads delivered at the building, so farther sites make slower trips.
-const CREW = new WeakMap();
-const crewOf = b => { let c = CREW.get(b); if (!c) { c = []; CREW.set(b, c); } return c; };
-const CREW_KIND = { wood: 'tree', quarry: 'rock', mine: 'ore' };
-const WORK_T = 2, CHOPS_PER_TREE = 4, LOAD = { wood: 6, quarry: 5, mine: 4 }, CREW_DEPTH = 10;   // 4 chops x 6 logs = 24 logs per tree
-const bfsSeen = new Int32Array(N * N), bfsPar = new Int32Array(N * N), bfsDist = new Int16Array(N * N); let bfsStamp = 0;
-function crewMatch(S, kind, x, y) {
-  const dc = S.deco[y][x];
-  if (kind === 'tree') return dc === 'tree' && S.zone[y][x] === 'wood';
-  if (kind === 'rock') return dc === 'rock' && S.zone[y][x] === 'mine' && rockWorkable(S, x, y);
-  return dc === 'ore';
-}
-// Nearest-by-walking marked tile within WORK_R of the building. Returns { tx, ty, path } where path runs from the building to a tile beside the target, or null.
-function crewTarget(S, b, kind, salt, used) {
-  bfsStamp++;
-  const s0 = b.y * N + b.x; bfsSeen[s0] = bfsStamp; bfsDist[s0] = 0; bfsPar[s0] = -1;
-  const q = [s0];
-  for (let h = 0; h < q.length; h++) {
-    const c = q[h], cx = c % N, cy = (c - cx) / N, dd = bfsDist[c]; if (dd >= CREW_DEPTH) continue;
-    for (const [dx, dy] of NB) {
-      const nx = cx + dx, ny = cy + dy; if (!inb(nx, ny)) continue;
-      const ni = ny * N + nx; if (bfsSeen[ni] === bfsStamp) continue;
-      const g = S.grid[ny][nx]; if (g && g !== b && g.t !== 'road') continue;
-      if (walkCost(S, cx, cy, nx, ny) === Infinity) continue;
-      bfsSeen[ni] = bfsStamp; bfsDist[ni] = dd + 1; bfsPar[ni] = c; q.push(ni);
-    }
-  }
-  let best = null, bs = 1e9;
-  for (let j = b.y - WORK_R; j <= b.y + WORK_R; j++) for (let i = b.x - WORK_R; i <= b.x + WORK_R; i++) {
-    if (!inb(i, j) || !crewMatch(S, kind, i, j)) continue;
-    for (const [dx, dy] of NB) {
-      const nx = i + dx, ny = j + dy; if (!inb(nx, ny)) continue;
-      const ni = ny * N + nx; if (bfsSeen[ni] !== bfsStamp || ni === s0) continue;   // workers step out of the building, never work on its roof
-      const sc = bfsDist[ni] + hash2(i, j, 31 + (salt || 0)) * 0.9 + (used && used.has(ni) ? 2.5 : 0);   // tie-break so workers spread over equally near tiles
-      if (sc < bs) { bs = sc; best = [i, j, ni]; }
-    }
-  }
-  if (!best) return null;
-  const path = []; for (let c = best[2]; c !== -1; c = bfsPar[c]) path.push([c % N, Math.floor(c / N)]);
-  path.reverse();
-  return { tx: best[0], ty: best[1], path };
-}
-function crewAct(S, b, kind, a) {
-  const { tx, ty } = a;
-  if (kind === 'tree') {
-    if (!crewMatch(S, kind, tx, ty)) return 0;
-    S.chop = S.chop || {}; const k = tk(tx, ty); S.chop[k] = (S.chop[k] || 0) + 1;
-    if (S.chop[k] >= CHOPS_PER_TREE) fellAt(S, tx, ty);
-    return LOAD.wood;
-  }
-  if (kind === 'rock') return mineRock(S, tx, ty, 0, LOAD.quarry);
-  return mineOre(S, tx, ty, 0, LOAD.mine);
-}
-// ---- Townsfolk: tiny ambient villagers who live in houses and stroll along the roads ----
-// Purely cosmetic and runtime only (never saved, rebuilt after loading): they do not change the economy, they make the town look alive.
-// The number on screen follows the population (FOLK_PER_PEASANT per villager, at most FOLK_MAX). Each one rests in a house (hidden), sets off
-// along the roads to somewhere (market, well, Town Hall, a work building or just a wander), lingers a few days, then walks home.
-const FOLK = new WeakMap();
-const FOLK_MAX = 90, FOLK_PER_PEASANT = 0.6, FOLK_DEPTH = 40, FOLK_VARIANTS = 6;
-const folkOf = S => { let f = FOLK.get(S); if (!f) { f = []; FOLK.set(S, f); } return f; };
-const roadSeen = new Int32Array(N * N), roadPar = new Int32Array(N * N), roadDist = new Int16Array(N * N); let roadStamp = 0;
-const isRoadAt = (S, x, y) => inb(x, y) && !!S.grid[y][x] && S.grid[y][x].t === 'road';
-// A road tile touching the building (preferring the one its door faces).
-function roadBeside(S, b) {
-  const f = faceOf(S, b), T = tilesOf(b);
-  for (const [tx, ty] of T) { const x = tx + FACE_DIRS[f][0], y = ty + FACE_DIRS[f][1]; if (isRoadAt(S, x, y)) return y * N + x; }
-  for (const [tx, ty] of T) for (const [dx, dy] of NB) if (isRoadAt(S, tx + dx, ty + dy)) return (ty + dy) * N + tx + dx;
-  return -1;
-}
-// Walk the road network from one road tile: returns a function giving the path to any reached tile.
-function roadSearch(S, from) {
-  roadStamp++; roadSeen[from] = roadStamp; roadDist[from] = 0; roadPar[from] = -1;
-  const q = [from];
-  for (let h = 0; h < q.length; h++) {
-    const c = q[h], cx = c % N, cy = (c - cx) / N, d = roadDist[c]; if (d >= FOLK_DEPTH) continue;
-    for (const [dx, dy] of NB) { const nx = cx + dx, ny = cy + dy; if (!isRoadAt(S, nx, ny)) continue; const ni = ny * N + nx; if (roadSeen[ni] === roadStamp) continue; roadSeen[ni] = roadStamp; roadDist[ni] = d + 1; roadPar[ni] = c; q.push(ni); }
-  }
-  return q;
-}
-function roadPathTo(to) { const p = []; for (let c = to; c !== -1; c = roadPar[c]) p.push([c % N, Math.floor(c / N)]); return p.reverse(); }
-function stepFolk(S) {
-  const folk = folkOf(S), houses = S.blds.filter(b => b.t === 'house' && b.served && roadBeside(S, b) >= 0);
-  const want = houses.length ? Math.min(FOLK_MAX, Math.round(S.peasants * FOLK_PER_PEASANT)) : 0;
-  for (let i = folk.length - 1; i >= 0 && folk.length > want; i--) if (folk[i].st === 'home' || !houses.includes(folk[i].home)) folk.splice(i, 1);
-  let nextId = folk.reduce((m, w) => Math.max(m, w.id + 1), 0);
-  while (folk.length < want && houses.length) {
-    const h = houses[Math.floor(hash2(nextId, S.day, 91) * houses.length)];
-    folk.push({ id: nextId++, st: 'home', home: h, x: h.x, y: h.y, px: h.x, py: h.y, path: null, i: 0, t: 1 + Math.floor(hash2(nextId, 5, 7) * 8), v: Math.floor(hash2(nextId, 3, 11) * FOLK_VARIANTS) });
-  }
-  const pois = S.blds.filter(b => b.t === 'market' || b.t === 'well' || b.t === 'hall' || b.t === 'sawmill' || b.t === 'barracks');
-  for (const w of folk) {
-    w.px = w.x; w.py = w.y;
-    if (w.st === 'home') {
-      if (--w.t > 0) continue;
-      const door = roadBeside(S, w.home); if (door < 0) { w.t = 6; continue; }
-      const q = roadSearch(S, door);
-      if (q.length < 2) { w.t = 6 + Math.floor(hash2(w.id, S.day, 13) * 6); continue; }   // no road to walk on
-      let dest = -1;
-      const r = hash2(w.id, S.day, 17);
-      if (r < 0.6 && pois.length) { const p = pois[Math.floor(hash2(w.id, S.day, 19) * pois.length)], rb = roadBeside(S, p); if (rb >= 0 && roadSeen[rb] === roadStamp && rb !== door) dest = rb; }
-      if (dest < 0) { const k = 1 + Math.floor(hash2(w.id, S.day, 23) * (q.length - 1)); dest = q[k]; }   // otherwise a wander to some reachable road tile
-      w.path = roadPathTo(dest); w.i = 0; w.x = w.path[0][0]; w.y = w.path[0][1]; w.st = 'walk';
-    } else if (w.st === 'walk') {
-      if (w.i < w.path.length - 1) { w.i++; w.x = w.path[w.i][0]; w.y = w.path[w.i][1]; }
-      if (w.i >= w.path.length - 1) { w.st = 'stay'; w.t = 2 + Math.floor(hash2(w.id, S.day, 29) * 5); }
-    } else if (w.st === 'stay') {
-      if (--w.t <= 0) { w.path.reverse(); w.i = 0; w.st = 'back'; }
-    } else {   // back
-      if (w.i < w.path.length - 1) { w.i++; w.x = w.path[w.i][0]; w.y = w.path[w.i][1]; }
-      if (w.i >= w.path.length - 1) { w.st = 'home'; w.path = null; w.x = w.home.x; w.y = w.home.y; w.t = 3 + Math.floor(hash2(w.id, S.day, 31) * 10); }
-    }
-  }
-}
-// Advance every crew one day. `out` collects what was delivered this day (logs, stone, ore).
-function stepCrews(S, out) {
-  for (const b of S.blds) {
-    const kind = CREW_KIND[b.t]; if (!kind) continue;
-    const crew = crewOf(b), want = b.workers || 0, res = kind === 'tree' ? 'logs' : kind === 'rock' ? 'stone' : 'ore';
-    for (let i = crew.length - 1; i >= 0 && crew.length > want; i--) if (crew[i].st === 'home') crew.splice(i, 1);   // surplus workers who are resting leave; those out finish their trip first
-    while (crew.length < want) crew.push({ st: 'home', x: b.x, y: b.y, px: b.x, py: b.y, path: null, i: 0, t: 0, carry: 0, tx: 0, ty: 0, stand: -1 });
-    for (const a of crew) {
-      a.px = a.x; a.py = a.y;
-      if (a.st === 'home') {
-        if (!b.served) continue;
-        if (kind !== 'tree' && S.res[res] + out[res] >= STORAGE) continue;   // full stockpile: the crew stays home and keeps its reserve in the ground
-        const used = new Set(); for (const o of crew) if (o !== a && o.st !== 'home' && o.stand >= 0) used.add(o.stand);   // spread the crew over different standing tiles
-        const tg = crewTarget(S, b, kind, crew.indexOf(a) * 7 + S.day, used); if (!tg) continue;
-        a.path = tg.path; a.stand = tg.path[tg.path.length - 1][1] * N + tg.path[tg.path.length - 1][0]; a.tx = tg.tx; a.ty = tg.ty; a.i = 0; a.carry = 0;
-        if (a.path.length > 1) { a.i = 1; a.x = a.path[1][0]; a.y = a.path[1][1]; }
-        a.st = a.i === a.path.length - 1 ? 'work' : 'out'; if (a.st === 'work') a.t = WORK_T;
-      } else if (a.st === 'out') {
-        a.i++; a.x = a.path[a.i][0]; a.y = a.path[a.i][1];
-        if (a.i === a.path.length - 1) { a.st = 'work'; a.t = WORK_T; }
-      } else if (a.st === 'work') {
-        if (--a.t <= 0) { a.carry = crewAct(S, b, kind, a); a.path.reverse(); a.i = 0; a.st = 'back'; }
-      } else {   // back
-        if (a.i < a.path.length - 1) { a.i++; a.x = a.path[a.i][0]; a.y = a.path[a.i][1]; }
-      }
-      if (a.st === 'back' && a.i >= a.path.length - 1) { out[res] += a.carry; a.carry = 0; a.st = 'home'; a.path = null; a.stand = -1; a.x = b.x; a.y = b.y; }
-    }
-  }
+  touch(S, x, y, F_DECO | F_GROUND);
 }
 function fellNearest(S, x, y, r, kind) {
   let best = null, bd = 1e9;
@@ -683,213 +546,3 @@ function servedAt(S, b, conn) {
   }
   return false;
 }
-function recalc(S) {
-  const conn = new Uint8Array(N * N), q = [], h = S.hall;
-  const isRoad = (x, y) => inb(x, y) && S.grid[y][x] && S.grid[y][x].t === 'road';
-  // A road can connect to any external edge of the multi-tile Town Hall.
-  for (const [hx, hy] of tilesOf(h)) for (const [dx, dy] of NB) {
-    const x = hx + dx, y = hy + dy;
-    if (inb(x, y) && S.grid[y][x] !== h && isRoad(x, y) && !conn[y * N + x]) {
-      conn[y * N + x] = 1; q.push([x, y]);
-    }
-  }
-  while (q.length) {
-    const [cx, cy] = q.pop();
-    for (const [dx, dy] of NB) { const x = cx + dx, y = cy + dy; if (isRoad(x, y) && !conn[y * N + x]) { conn[y * N + x] = 1; q.push([x, y]); } }
-  }
-  const wells = S.blds.filter(b => b.t === 'well');
-  let civ = HALL_CAP, bunks = 0, jobs = 0, markets = 0;
-  for (const b of S.blds) {
-    if (b.t === 'hall') { b.served = true; b.face = faceOf(S, b); continue; }
-    if (b.t === 'road') { b.served = !!conn[b.y * N + b.x]; continue; }
-    b.face = faceOf(S, b);
-    b.served = servedAt(S, b, conn);
-    if (b.t === 'house') {
-      b.lvl = (b.served && wells.some(w => cheb(w, b) <= WELL_R)) ? 2 : 1;
-      if (b.served) civ += capOf(b);
-    } else if (b.t === 'barracks') { if (b.served) bunks += BUNKS; }
-    else if (JOBS[b.t] && b.served) { jobs += jobsOf(b); if (b.t === 'market') markets++; }
-  }
-  // Fill the jobs: villagers go to trades in priority order, and within a trade to the oldest buildings first.
-  const prio = (Array.isArray(S.prio) && S.prio.length === TRADES.length && TRADES.every(t => S.prio.includes(t))) ? S.prio : TRADES;
-  let avail = S.peasants; const work = {};
-  for (const t of prio) work[t] = { workers: 0, jobs: 0, blds: 0, short: 0 };
-  for (const b of S.blds) if (JOBS[b.t]) { b.workers = 0; b.eff = 0; }
-  for (const t of prio) for (const b of S.blds) if (TRADE_OF[b.t] === t && b.served) {
-    const j = jobsOf(b), w = Math.min(j, avail); avail -= w; b.workers = w; b.eff = j ? w / j : 0;
-    const r = work[t]; r.workers += w; r.jobs += j; r.blds++; if (w < j) r.short++;
-  }
-  let mkW = 0, mkJ = 0; for (const b of S.blds) if (b.t === 'market' && b.served) { mkW += b.workers; mkJ += jobsOf(b); }
-  const mk = S.blds.filter(b => b.t === 'market' && b.served);
-  let houseCap = 0, covCap = 0;
-  for (const b of S.blds) if (b.t === 'house' && b.served) {
-    const cap = capOf(b); houseCap += cap;
-    b.covered = mk.some(m => cheb(m, b) <= marketR(m)); if (b.covered) covCap += cap;
-  }
-  S.d = { civ, bunks, jobs, work, prio, idle: avail, employed: S.peasants - avail, mkEff: mkJ ? mkW / mkJ : 0, conn, markets, houseCap, covCap, cov: houseCap ? covCap / houseCap : 1, ratio: jobs ? Math.min(1, S.peasants / jobs) : 0 };
-  return S.d;
-}
-function zoneServed(S, x, y) {
-  const conn = S.d.conn, h = S.hall;
-  return NB.some(([dx, dy]) => { const a = x + dx, b = y + dy; return inb(a, b) && (conn[b * N + a] === 1 || S.grid[b][a] === h); });
-}
-function computeDemand(S) {
-  const d = S.d, r = S.res;
-  const occ = d.civ ? S.peasants / d.civ : 1;
-  const eat = Math.max(1, (S.peasants + S.soldiers * 1.5) * 0.2);
-  let prod = 0;
-  for (const b of S.blds) if (b.t === 'farm' && b.served) prod += foodOf(b) * b.eff;
-  const staffed = d.jobs <= S.peasants + 4;
-  const dem = {};
-  dem.res = (S.starving || r.food < 10) ? -0.3 : clamp1((occ - 0.7) * 4);
-  if (S.rate.food < -0.3 && r.food < 120) dem.res = Math.min(dem.res, 0);
-  dem.farm = clamp1((1.25 - prod / eat) * 3 + (r.food < 40 ? 0.3 : 0) - (r.food > 250 ? 0.5 : 0));
-  if (S.starving) dem.farm = 1;
-  dem.comm = d.houseCap < 8 ? -0.2 : clamp1((1 - d.cov) * 1.6 - 0.15);
-  dem.wood = clamp1((120 - r.wood - (r.logs || 0) * 0.7) / 120);
-  dem.mine = clamp1(Math.max((60 - r.stone) / 60, (30 - r.ore) / 30));
-  if (!staffed) { dem.farm = Math.min(dem.farm, 0); dem.wood = Math.min(dem.wood, 0); dem.mine = Math.min(dem.mine, 0); }
-  S.dem = dem;
-  return dem;
-}
-function lotOk(S, kind, x, y, sz) {
-  for (let j = 0; j < sz; j++) for (let i = 0; i < sz; i++) {
-    const a = x + i, c = y + j;
-    if (!inb(a, c) || S.zone[c][a] !== kind || S.grid[c][a]) return false;
-    if (isSolid(S, a, c) || hasTree(S, a, c)) return false;
-    if (kind === 'farm' && !S.fert[c][a]) return false;
-  }
-  return true;
-}
-function choose(S, kind) {
-  const h = S.hall, r = S.res;
-  const dist = (cx, cy) => Math.abs(cx - h.x) + Math.abs(cy - h.y);
-  const ltype = { res: 'house', farm: 'farm', comm: 'market' }[kind];
-  if (ltype) {
-    const small = [], big = [];
-    const unc = kind === 'comm' ? S.blds.filter(b => b.t === 'house' && b.served && !b.covered) : null;
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) for (const sz of [1, 2]) {
-      if (!lotOk(S, kind, x, y, sz)) continue;
-      if (!servedAt(S, { x, y, sz, t: ltype }, S.d.conn)) continue;
-      const cx = x + (sz - 1) / 2, cy = y + (sz - 1) / 2;
-      let score = dist(cx, cy) + hash2(x, y, S.day + sz) * 2.5;
-      if (kind === 'comm') {
-        const R = sz === 2 ? 7 : 5; let gain = 0;
-        for (const b of unc) if (cheb(b, { x: cx, y: cy }) <= R) gain += capOf(b);
-        if (gain <= 0) continue; score = -gain * 2 + dist(cx, cy) * 0.1;
-      }
-      (sz === 2 ? big : small).push({ x, y, type: ltype, sz, cost: costOf(ltype, sz).wood, score });
-    }
-    small.sort((a, b) => a.score - b.score); big.sort((a, b) => a.score - b.score);
-    if (!small.length && !big.length) return { pick: null };
-    const bigOk = big.length && r.wood >= big[0].cost, smallOk = small.length && r.wood >= small[0].cost;
-    const preferBig = bigOk && (!smallOk || hash2(S.day, 77, S.seed) < 0.7);
-    if (preferBig) return { pick: big[0] };
-    if (smallOk) return { pick: small[0] };
-    return { pick: null, wait: Math.min(small.length ? small[0].cost : 999, big.length ? big[0].cost : 999) };
-  }
-  const cands = [];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    if (S.zone[y][x] !== kind || S.grid[y][x] || !zoneServed(S, x, y)) continue;
-    if (kind === 'wood') {
-      const n = countZoned(S, x, y, WORK_R, 'tree', 'wood');
-      if (n < 3 || S.blds.some(b => b.t === 'wood' && cheb(b, { x, y }) <= 2)) continue;
-      cands.push({ x, y, type: 'wood', sz: 1, cost: COST.wood.wood, score: -n * 2 + dist(x, y) * 0.1 });
-    } else if (kind === 'mine') {
-      const rk = countZoned(S, x, y, WORK_R, 'rock', 'mine'), ok = countDeco(S, x, y, WORK_R, 'ore');
-      const needOre = (30 - r.ore) / 30, needStone = (60 - r.stone) / 60;
-      let type = null, cnt = 0;
-      if (ok >= 2 && (rk < 2 || needOre >= needStone)) { type = 'mine'; cnt = ok; } else if (rk >= 2) { type = 'quarry'; cnt = rk; }
-      if (!type || S.blds.some(b => b.t === type && cheb(b, { x, y }) <= 2)) continue;
-      cands.push({ x, y, type, sz: 1, cost: COST[type].wood, score: -cnt * 2 + dist(x, y) * 0.1 });
-    }
-  }
-  if (!cands.length) return { pick: null };
-  cands.sort((a, b) => a.score - b.score);
-  return r.wood >= cands[0].cost ? { pick: cands[0] } : { pick: null, wait: cands[0].cost };
-}
-function develop(S) {
-  computeDemand(S);
-  const T = 0.12;
-  const idle = {
-    res: 'No demand yet. Homes grow once houses are nearly full and food is stocked.',
-    farm: 'No demand yet. Farms grow when food runs low.',
-    comm: 'No demand yet. Markets grow when homes have no market within 5 tiles.',
-    wood: 'No demand yet. Woodcutters grow when wood runs low.',
-    mine: 'No demand yet. Mines and quarries grow when stone or ore run low.'
-  };
-  const nosite = {
-    res: 'Needs empty zone tiles right beside a road that leads to the Town Hall.',
-    farm: 'Needs empty fertile zone tiles right beside a road that leads to the Town Hall.',
-    comm: 'Needs a road-linked commerce lot near homes that lack a market.',
-    wood: 'Needs a road-linked lumber tile with 3+ trees in range, and space from other woodcutters.',
-    mine: 'Needs a road-linked mining tile with 2+ rock or ore tiles in range.'
-  };
-  for (const kind of ZONE_KINDS) {
-    S.note[kind] = '';
-    if (S.dem[kind] <= T) { S.note[kind] = idle[kind]; continue; }
-    const res = choose(S, kind);
-    if (!res.pick) { S.note[kind] = res.wait ? 'Waiting for ' + res.wait + ' wood to build.' : nosite[kind]; continue; }
-    const p = res.pick;
-    S.res.wood -= p.cost;
-    addBld(S, p.type, p.x, p.y, p.sz).zoned = true;
-    recalc(S);
-  }
-}
-function tick(S) {
-  recalc(S);
-  const d = S.d, before = { ...S.res };
-  const employed = d.employed;
-  let food = 0, wood = 0, logs = 0, stone = 0, ore = 0;
-  for (const b of S.blds) {
-    if (!b.served) continue;
-    const e = b.eff || 0;   // this building's own staffing share
-    if (b.t === 'farm') food += foodOf(b) * e;
-    else if (b.t === 'forester') {
-      if (e > 0) { b.prog += e; if (b.prog >= PLANT_EVERY) { if (plantSapling(S, b.x, b.y, FORESTER_R)) b.prog = 0; else b.prog = PLANT_EVERY; } }
-    }
-  }
-  // Woodcutters, quarrymen and miners walk out to their marked tiles and carry loads home; only delivered loads count.
-  const got = { logs: 0, stone: 0, ore: 0 }; stepCrews(S, got); logs += got.logs; stone += got.stone; ore += got.ore;
-  stepFolk(S);
-  S.res.logs = (S.res.logs || 0) + logs;
-  // Sawmills first (full yield, limited by workers), then the Town Hall pit-saw for what is left.
-  for (const b of S.blds) if (b.t === 'sawmill' && b.served && S.res.logs > 0) {
-    const c = Math.min(S.res.logs, SAW_RATE * b.eff); S.res.logs -= c; wood += c;
-  }
-  if (S.res.logs > 0) { const c = Math.min(S.res.logs, HALL_SAW); S.res.logs -= c; wood += c * HALL_YIELD; }
-  // Stumps rot away into open, buildable grass.
-  if (S.stumpT) for (const k in S.stumpT) if (--S.stumpT[k] <= 0) { delete S.stumpT[k]; const y = Math.floor(k / N), x = k % N; if (S.deco[y][x] === 'stump') S.deco[y][x] = null; }
-  // Saplings grow into trees (the forester's tile stays in its Lumber zone, ready for felling again).
-  if (S.sapT) for (const k in S.sapT) if (--S.sapT[k] <= 0) { delete S.sapT[k]; const y = Math.floor(k / N), x = k % N; if (S.deco[y][x] === 'sapling') S.deco[y][x] = 'tree'; }
-  const trade = d.markets ? 0.04 * S.peasants * d.cov * d.mkEff : 0;
-  const eat = (S.peasants + S.soldiers * 1.5) * 0.2;
-  S.res.food += food - eat; S.res.wood += wood; S.res.stone += stone; S.res.ore += ore;
-  S.res.gold += employed * 0.12 + trade - S.soldiers * 0.1;
-  S.starving = false;
-  if (S.res.food <= 0) {
-    S.res.food = 0; S.starving = true;
-    if (S.peasants > 0) S.peasants--; else if (S.soldiers > 0) S.soldiers--;
-  } else {
-    const free = Math.max(0, 1 - S.peasants / Math.max(1, d.civ));
-    const births = S.peasants * 0.04 * free * (S.res.food > 40 ? 1 : 0.5);
-    S.popAcc += births - S.peasants * 0.004 + (S.peasants < 2 ? 0.05 : 0);
-    while (S.popAcc >= 1 && S.peasants < d.civ) { S.peasants++; S.popAcc -= 1; }
-    if (S.popAcc > 0.99) S.popAcc = 0.99;
-    while (S.popAcc <= -1 && S.peasants > 0) { S.peasants--; S.popAcc += 1; }
-  }
-  if (S.peasants > d.civ) S.peasants--;
-  if (S.soldiers > d.bunks) S.soldiers--;
-  for (const b of S.blds) if (b.t === 'barracks' && b.served) {
-    b.prog = Math.min(4, b.prog + 1);
-    if (b.prog >= 4 && S.drafting && S.soldiers < d.bunks && S.peasants >= 3 && S.res.wood >= 2 && S.res.gold >= 1 && S.res.ore >= 1) {
-      S.soldiers++; S.peasants--; S.trained++; S.res.wood -= 2; S.res.gold -= 1; S.res.ore -= 1; b.prog = 0;
-    }
-  }
-  for (const k in S.res) S.res[k] = Math.max(0, Math.min(STORAGE, S.res[k]));
-  for (const k in S.res) S.rate[k] = (k === 'logs' || k === 'stone' || k === 'ore') ? 0.85 * (S.rate[k] || 0) + 0.15 * (S.res[k] - before[k]) : S.res[k] - before[k];   // loads arrive in lumps, so smooth those rates
-  S.day++;
-  recalc(S);
-  develop(S);
-}
-if (typeof module !== 'undefined') module.exports = { folkOf, FOLK_MAX, FOLK_VARIANTS, crewOf, CREW_KIND, WORK_T, LOAD, CHOPS_PER_TREE, stepCrews, PLANT_EVERY, SAPLING_DAYS, FORESTER_R, plantSapling, foresterCovers, TRADES, TRADE_OF, TRADE_NAMES, jobsOf, recalc, treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };

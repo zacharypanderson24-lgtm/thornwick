@@ -250,8 +250,8 @@ const HMIN = -8, HMAX = 8, MOUNT_LEVEL = 4, LVL_PX = 7;
 const vIdx = (a, b) => b * (N + 1) + a;
 function vh(S, a, b) { if (!S.hv) return 0; a = a < 0 ? 0 : a > N ? N : a; b = b < 0 ? 0 : b > N ? N : b; return S.hv[b * (N + 1) + a] | 0; }
 function tileCorners(S, x, y) { return [vh(S, x, y), vh(S, x + 1, y), vh(S, x, y + 1), vh(S, x + 1, y + 1)]; }
-function tileLevel(S, x, y) { const c = tileCorners(S, x, y); return (c[0] + c[1] + c[2] + c[3]) / 4; }
-function tileSpread(S, x, y) { const c = tileCorners(S, x, y); return Math.max(...c) - Math.min(...c); }
+function tileLevel(S, x, y) { return (vh(S, x, y) + vh(S, x + 1, y) + vh(S, x, y + 1) + vh(S, x + 1, y + 1)) / 4; }   // no temporary arrays: these run thousands of times a day
+function tileSpread(S, x, y) { const a = vh(S, x, y), b = vh(S, x + 1, y), c = vh(S, x, y + 1), d = vh(S, x + 1, y + 1); return Math.max(a, b, c, d) - Math.min(a, b, c, d); }
 const tileFlat = (S, x, y) => tileSpread(S, x, y) === 0;
 // Mountain layout: rare. Usually one range (a ridge with several summits and saddles) and maybe one lone massif.
 let MTN_AVOID = null;   // [x0, y0, x1, y1]: while upgrading a save, keep new mountain ranges clear of the old square so they do not get cut off at its border
@@ -517,6 +517,7 @@ function addBld(S, t, x, y, sz) {
   for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (S.dig) delete S.dig[j * N + i]; if (S.elev) delete S.elev[j * N + i]; if (S.oreLeft) delete S.oreLeft[j * N + i]; if (S.sapT) delete S.sapT[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
   if (t !== 'road') levelFootprint(S, tilesOf(b));
+  onAdd(S, b);
   return b;
 }
 function roadPathCheck(S, path) {
@@ -550,6 +551,7 @@ function canPlace(S, type, x, y) {
   const footprint = { x, y, sz: type === 'hall' ? 3 : type === 'barracks' ? 2 : 1, t: type };
   for (const [tx, ty] of tilesOf(footprint)) {
     if (!inb(tx, ty)) return { ok: false, reason: 'Outside the map' };
+    if (!claimed(S, tx, ty)) return { ok: false, reason: 'That land is not yours yet' };
     if (S.grid[ty][tx]) return { ok: false, reason: 'That tile is already built on' };
     if (hasTree(S, tx, ty)) return { ok: false, reason: TREE_MSG };
     if (isSolid(S, tx, ty))
@@ -587,21 +589,23 @@ function remove(S, x, y) {
     for (const k in c) S.res[k] = Math.min(STORAGE, S.res[k] + Math.floor(c[k] / 2));
     for (const [i, j] of tilesOf(b)) { S.grid[j][i] = null; S.zone[j][i] = null; }
     S.blds.splice(S.blds.indexOf(b), 1);
+    onRemove(S, b);
     recalc(S); return { ok: true };
   }
-  if (S.zone[y][x]) { S.zone[y][x] = null; return { ok: true }; }
+  if (S.zone[y][x]) { S.zone[y][x] = null; touch(S, x, y, F_GROUND); return { ok: true }; }
   const k = S.deco[y][x];
   if (k) {
     if (k === 'tree') S.res.logs = Math.min(STORAGE, (S.res.logs || 0) + 2);
     else if (k === 'stump' || k === 'sapling') { /* nothing to salvage */ }
     else if (k === 'rock') { if (rockAmt(S, x, y) >= 3) return { ok: false, reason: 'A mountain cannot be cleared by hand. Mark it for quarrying' }; if (pitDepth(S, x, y) > 0) return { ok: false, reason: 'A quarry pit cannot be filled in' }; S.res.stone = Math.min(STORAGE, S.res.stone + 1); if (S.rockAmt) delete S.rockAmt[tk(x, y)]; }
     else S.res.ore = Math.min(STORAGE, S.res.ore + 1);
-    S.deco[y][x] = null; if (S.stumpT) delete S.stumpT[tk(x, y)]; if (S.sapT) delete S.sapT[tk(x, y)]; return { ok: true };
+    S.deco[y][x] = null; if (S.stumpT) delete S.stumpT[tk(x, y)]; if (S.sapT) delete S.sapT[tk(x, y)]; touch(S, x, y, F_DECO | F_GROUND | F_WALK); return { ok: true };
   }
   return { ok: false, reason: 'Nothing to clear here' };
 }
 function zoneCheck(S, kind, x, y) {
   if (!inb(x, y)) return { ok: false, reason: 'Outside the map' };
+  if (!claimed(S, x, y)) return { ok: false, reason: 'That land is not yours yet' };
   if (S.grid[y][x]) return S.zone[y][x] === kind ? { ok: true } : { ok: false, reason: 'That tile is already built on' };
   const dc = S.deco[y][x];
   if (kind === 'wood') {
@@ -620,7 +624,7 @@ function zoneCheck(S, kind, x, y) {
 }
 function setZone(S, kind, x, y) {
   const c = zoneCheck(S, kind, x, y);
-  if (c.ok && !S.grid[y][x]) S.zone[y][x] = kind;
+  if (c.ok && !S.grid[y][x]) { if (S.zone[y][x] !== kind) touch(S, x, y, F_GROUND); S.zone[y][x] = kind; }
   return c;
 }
 function countDeco(S, x, y, r, kind) {
@@ -672,9 +676,11 @@ function mineRock(S, x, y, r, amount) {
     for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
       if (inb(i, j) && S.zone[j][i] === 'mine' && rockWorkable(S, i, j)) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
     if (!best) break;
-    const e = Math.min(amount, rockLeft(S, best[0], best[1]));
+    const e = Math.min(amount, rockLeft(S, best[0], best[1])), wasSolid = isSolid(S, best[0], best[1]);
     S.dig = S.dig || {}; S.dig[tk(best[0], best[1])] = digDone(S, best[0], best[1]) + e; got += e; amount -= e;
-    if (rockLeft(S, best[0], best[1]) <= 1e-9) { S.dig[tk(best[0], best[1])] = rockCap(S, best[0], best[1]); S.zone[best[1]][best[0]] = null; }
+    let fl = isSolid(S, best[0], best[1]) !== wasSolid ? F_WALK : 0;   // a hill that has been dug into a pit is no longer walkable
+    if (rockLeft(S, best[0], best[1]) <= 1e-9) { S.dig[tk(best[0], best[1])] = rockCap(S, best[0], best[1]); S.zone[best[1]][best[0]] = null; fl |= F_GROUND; }
+    touch(S, best[0], best[1], fl);
   }
   return got;
 }
@@ -688,7 +694,7 @@ function mineOre(S, x, y, r, amount) {
     if (!best) break;
     const k = tk(best[0], best[1]), e = Math.min(amount, oreLeft(S, best[0], best[1]));
     S.oreLeft = S.oreLeft || {}; S.oreLeft[k] = oreLeft(S, best[0], best[1]) - e; got += e; amount -= e;
-    if (S.oreLeft[k] <= 1e-9) { S.deco[best[1]][best[0]] = null; S.zone[best[1]][best[0]] = null; delete S.oreLeft[k]; }
+    if (S.oreLeft[k] <= 1e-9) { S.deco[best[1]][best[0]] = null; S.zone[best[1]][best[0]] = null; delete S.oreLeft[k]; touch(S, best[0], best[1], F_DECO | F_GROUND | F_WALK); }
   }
   return got;
 }
@@ -708,54 +714,275 @@ function plantSapling(S, x, y, r) {
     const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; }
   }
   if (!best) return false;
-  S.deco[best[1]][best[0]] = 'sapling'; S.sapT = S.sapT || {}; S.sapT[tk(best[0], best[1])] = SAPLING_DAYS; return true;
+  S.deco[best[1]][best[0]] = 'sapling'; S.sapT = S.sapT || {}; S.sapT[tk(best[0], best[1])] = SAPLING_DAYS; touch(S, best[0], best[1], F_DECO); return true;
 }
 function fellAt(S, x, y) {
   S.deco[y][x] = 'stump'; if (!foresterCovers(S, x, y)) S.zone[y][x] = null;   // a forester nearby keeps the tile as a managed woodlot
   S.stumpT = S.stumpT || {}; S.stumpT[tk(x, y)] = STUMP_DAYS;
   if (S.chop) delete S.chop[tk(x, y)];
+  touch(S, x, y, F_DECO | F_GROUND);
 }
-// ---- Work crews: woodcutters, quarrymen and miners live at their lodge/mine, walk out to a marked tile, work, and carry the load home ----
+function fellNearest(S, x, y, r, kind) {
+  let best = null, bd = 1e9;
+  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
+    if (inb(i, j) && S.deco[j][i] === kind) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
+  if (best) S.deco[best[1]][best[0]] = null;
+}
+function servedAt(S, b, conn) {
+  for (const [tx, ty] of tilesOf(b)) for (const [dx, dy] of NB) {
+    const x = tx + dx, y = ty + dy;
+    if (!inb(x, y) || S.grid[y][x] === b) continue;
+    if (conn[y * N + x] === 1 || S.grid[y][x] === S.hall) return true;
+  }
+  return false;
+}
+
+// ---------- Chunks, change stamps and derived-data caches (no DOM) ----------
+// Everything in here is RUNTIME ONLY: it lives in a WeakMap keyed by the world object S, is never saved, and is rebuilt from the world after loading.
+// The world stays the single source of truth; a cache is only ever a faster way of asking a question about it.
+//
+// MAP SIZE: nothing here assumes 128x128. All sizes come from N (sim.js), and the map is cut into CHUNK x CHUNK tile chunks (CH x CH of them). Every
+// cache is bucketed by chunk, so changing one tile invalidates only the chunks near it, never the whole map. A 256x256 region is CH = 16 chunks a side.
+//
+// CHANGE STAMPS: touch(S, x, y, flags) records "something changed at this tile". Each chunk keeps the sequence number of its last change (cSeq) and of
+// its last walkability change (wSeq); a cache entry built at stamp s is still valid while the stamps it depended on are still s. A change pads outwards by
+// TOUCH_PAD tiles, because the things we cache about a tile (a worker site count, whether a 2x2 lot fits) look a few tiles around it.
+//
+// OWNERSHIP (future territory system): claimed(S, x, y) says whether the player may build on / extract from a tile. It is true everywhere today. Walking
+// (walkCost, roads, armies, travellers) deliberately never asks it, so unclaimed land is never impassable. When land changes hands the territory code only
+// has to call touchBox() over the parcel and every chunk cache refreshes itself.
+const CHUNK_SHIFT = 4, CHUNK = 1 << CHUNK_SHIFT;   // 16x16-tile chunks (use 5 for 32x32)
+const CH = Math.ceil(N / CHUNK);                   // chunks per row / column
+const TOUCH_PAD = 4;                               // WORK_R + 1: a worker site count looks 3 tiles out, and rock workability looks one tile further
+const F_WALK = 1, F_GROUND = 2, F_DECO = 4;        // touch flags: walkability, ground-layer look (zones, built tiles, rock, heights), baked decoration (trees, ore, stumps)
+const CACHE = new WeakMap();
+let WORLD_IDS = 0;
+const claimed = (S, x, y) => true;                 // seam for land ownership; see above
+
+function cacheOf(S) {
+  let C = CACHE.get(S);
+  if (!C) {
+    C = {
+      id: ++WORLD_IDS, ready: false, seq: 1, cSeq: new Int32Array(CH * CH), wSeq: new Int32Array(CH * CH),
+      gSeq: 1, dSeq: 1,                 // whole-map stamps for the renderer's baked layers (ground, decoration)
+      topoSeq: 1, listSeq: 1,           // topology changes (roads, buildings, who is served) and building-list changes
+      roadOps: [], pendServe: new Set(), pendHouse: new Set(), totalsDirty: true, workDirty: true,
+      L: null, hb: null, root: null, conn: null, dev: {}, reach: new WeakMap(), folk: null, tot: null, lastPeas: -1, lastPrio: null
+    };
+    CACHE.set(S, C);
+  }
+  return C;
+}
+// Throw every cache away; the next recalc rebuilds from the world. For code that edits the world directly instead of through place/remove/setZone.
+function invalidateCaches(S) { const C = CACHE.get(S); if (C) { C.ready = false; C.dev = {}; C.reach = new WeakMap(); C.folk = null; C.seq++; C.cSeq.fill(C.seq); C.wSeq.fill(C.seq); C.gSeq++; C.dSeq++; C.topoSeq++; C.listSeq++; } }
+
+function touchBox(S, x0, y0, x1, y1, flags) {
+  const C = cacheOf(S), s = ++C.seq, w = (flags & F_WALK) !== 0;
+  const cx0 = Math.max(0, x0) >> CHUNK_SHIFT, cx1 = Math.min(N - 1, x1) >> CHUNK_SHIFT, cy0 = Math.max(0, y0) >> CHUNK_SHIFT, cy1 = Math.min(N - 1, y1) >> CHUNK_SHIFT;
+  for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const c = cy * CH + cx; C.cSeq[c] = s; if (w) C.wSeq[c] = s; }
+  if (flags & F_GROUND) C.gSeq++;
+  if (flags & F_DECO) C.dSeq++;
+}
+const touch = (S, x, y, flags) => touchBox(S, x - TOUCH_PAD, y - TOUCH_PAD, x + TOUCH_PAD, y + TOUCH_PAD, flags || 0);
+// Highest stamp in the chunks overlapping a tile box: a cached value built when this was s is still good while it still equals s.
+function stampOver(arr, x0, y0, x1, y1) {
+  const cx0 = Math.max(0, x0) >> CHUNK_SHIFT, cx1 = Math.min(N - 1, x1) >> CHUNK_SHIFT, cy0 = Math.max(0, y0) >> CHUNK_SHIFT, cy1 = Math.min(N - 1, y1) >> CHUNK_SHIFT;
+  let m = 0; for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) { const v = arr[cy * CH + cx]; if (v > m) m = v; }
+  return m;
+}
+// Render stamps: the renderer compares these instead of scanning the whole map every frame.
+// The world's id is part of the stamp, so a freshly loaded or new world never matches the old one's stamp.
+const groundStamp = S => { const C = cacheOf(S); return C.id + ':' + C.gSeq; }, decoStamp = S => { const C = cacheOf(S); return C.id + ':' + C.dSeq; };
+
+// ---- Building lists (all in S.blds order, roads excluded) and a chunk index of houses ----
+function buildLists(S, C) {
+  const L = { by: {}, jobs: [], trade: {}, crews: [] };
+  C.hb = []; for (let i = 0; i < CH * CH; i++) C.hb.push([]);
+  for (const b of S.blds) if (b.t !== 'road') listAdd(C, L, b);
+  C.L = L;
+}
+function listAdd(C, L, b) {
+  (L.by[b.t] || (L.by[b.t] = [])).push(b);
+  if (JOBS[b.t]) { L.jobs.push(b); (L.trade[TRADE_OF[b.t]] || (L.trade[TRADE_OF[b.t]] = [])).push(b); }
+  if (CREW_KIND[b.t]) L.crews.push(b);
+  if (b.t === 'house') C.hb[(b.y >> CHUNK_SHIFT) * CH + (b.x >> CHUNK_SHIFT)].push(b);
+  C.listSeq++;
+}
+function listDel(C, L, b) {
+  const del = arr => { const i = arr ? arr.indexOf(b) : -1; if (i >= 0) arr.splice(i, 1); };
+  del(L.by[b.t]); if (JOBS[b.t]) { del(L.jobs); del(L.trade[TRADE_OF[b.t]]); } if (CREW_KIND[b.t]) del(L.crews);
+  if (b.t === 'house') del(C.hb[(b.y >> CHUNK_SHIFT) * CH + (b.x >> CHUNK_SHIFT)]);
+  C.listSeq++;
+}
+const listOf = (C, t) => C.L.by[t] || EMPTY;
+const EMPTY = [];
+// Houses whose centre is within r (Chebyshev) of the point (cx, cy): bucket lookup, then the exact test.
+function housesNear(C, cx, cy, r, fn) {
+  const x0 = Math.max(0, Math.floor(cx - r - 1)) >> CHUNK_SHIFT, x1 = Math.min(N - 1, Math.ceil(cx + r + 1)) >> CHUNK_SHIFT;
+  const y0 = Math.max(0, Math.floor(cy - r - 1)) >> CHUNK_SHIFT, y1 = Math.min(N - 1, Math.ceil(cy + r + 1)) >> CHUNK_SHIFT;
+  for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) for (const h of C.hb[j * CH + i]) { const c = ctr(h); if (Math.abs(h.x + c - cx) <= r && Math.abs(h.y + c - cy) <= r) fn(h); }
+}
+
+// ---- Events: sim.js calls these when the world changes, so recalc only redoes what is affected ----
+function onAdd(S, b) {
+  const C = cacheOf(S), T = tilesOf(b);
+  if (b.t === 'road') { for (const [x, y] of T) touch(S, x, y, F_WALK | F_GROUND); }
+  else { const x0 = b.x, y0 = b.y, e = b.sz || 1; touchBox(S, x0 - 6, y0 - 6, x0 + e + 6, y0 + e + 6, F_WALK | F_GROUND | F_DECO); }   // the footprint is levelled and the slope around it eased (up to 5 tiles)
+  if (!C.ready) return;
+  C.topoSeq++;
+  if (b.t === 'road') { C.roadOps.push(b.y * N + b.x); return; }
+  if (b.t === 'hall') { C.ready = false; return; }   // the Town Hall is placed once, at creation
+  listAdd(C, C.L, b); C.pendServe.add(b); C.totalsDirty = C.workDirty = true;
+  if (b.t === 'house') C.pendHouse.add(b);
+  else if (b.t === 'well') markHouses(C, b, WELL_R);
+  else if (b.t === 'market') markHouses(C, b, marketR(b));
+}
+function onRemove(S, b) {
+  const C = cacheOf(S);
+  for (const [x, y] of tilesOf(b)) touch(S, x, y, F_WALK | F_GROUND);
+  if (!C.ready) return;
+  C.topoSeq++;
+  if (b.t === 'road') { C.roadOps.push(b.y * N + b.x); return; }
+  C.pendServe.delete(b); C.pendHouse.delete(b); C.totalsDirty = C.workDirty = true;
+  if (b.t === 'well') markHouses(C, b, WELL_R); else if (b.t === 'market') markHouses(C, b, marketR(b));
+  listDel(C, C.L, b);
+  C.reach.delete(b);
+}
+function markHouses(C, b, r) { housesNear(C, b.x + ctr(b), b.y + ctr(b), r + 1, h => C.pendHouse.add(h)); }
+
+// ---------- Road connectivity: which road tiles are linked to the Town Hall ----------
+// conn[tile] = 1 for a road tile that can reach the Town Hall along roads. It is kept up to date incrementally:
+//  * a new road tile is added by flooding outwards only through road tiles that are not yet connected (so the cost is the size of what it joins);
+//  * a removed road tile is checked by a best-first search from each neighbour towards the Town Hall: usually it finds another way round after a few
+//    steps; if it can't, it has walked the whole cut-off network, which is exactly the set that has to be switched off (bridges and chokepoints included).
+// A full flood fill (rebuildConn) only runs when the world is loaded or after invalidateCaches.
+const rdSeen = new Int32Array(N * N), rdOk = new Int32Array(N * N), rdVis = new Int32Array(N * N), rdStack = new Int32Array(N * N);
+const hpK = new Int32Array(N * N), hpV = new Int32Array(N * N);
+let rdStamp = 0, rdOkStamp = 0;
+const roadAt = (S, x, y) => { if (x < 0 || y < 0 || x >= N || y >= N) return false; const g = S.grid[y][x]; return !!g && g.t === 'road'; };
+
+function computeRoots(S, C) {   // road tiles touching any edge of the multi-tile Town Hall are connected by definition
+  const root = new Uint8Array(N * N), h = S.hall;
+  for (const [hx, hy] of tilesOf(h)) for (const [dx, dy] of NB) { const x = hx + dx, y = hy + dy; if (x >= 0 && y >= 0 && x < N && y < N && S.grid[y][x] !== h) root[y * N + x] = 1; }
+  C.root = root; C.hcx = h.x + 1; C.hcy = h.y + 1;
+}
+function rebuildConn(S, C) {
+  const conn = C.conn || (C.conn = new Uint8Array(N * N)), root = C.root; conn.fill(0);
+  let sp = 0;
+  for (let i = 0; i < N * N; i++) if (root[i] && roadAt(S, i % N, (i / N) | 0)) { conn[i] = 1; rdStack[sp++] = i; }
+  while (sp) {
+    const c = rdStack[--sp], cx = c % N, cy = (c - cx) / N;
+    for (let k = 0; k < 4; k++) { const nx = cx + NB[k][0], ny = cy + NB[k][1]; if (roadAt(S, nx, ny)) { const ni = ny * N + nx; if (!conn[ni]) { conn[ni] = 1; rdStack[sp++] = ni; } } }
+  }
+}
+// Flood from tile t through road tiles that are not connected yet, switching them on.
+function floodOn(S, C, t, changed) {
+  const conn = C.conn; let sp = 0; conn[t] = 1; changed.push(t); rdStack[sp++] = t;
+  while (sp) {
+    const c = rdStack[--sp], cx = c % N, cy = (c - cx) / N;
+    for (let k = 0; k < 4; k++) { const nx = cx + NB[k][0], ny = cy + NB[k][1]; if (roadAt(S, nx, ny)) { const ni = ny * N + nx; if (!conn[ni]) { conn[ni] = 1; changed.push(ni); rdStack[sp++] = ni; } } }
+  }
+}
+// Best-first search (nearest the Town Hall first) over the road network from tile s. Success = it reaches a Town Hall edge (or tiles already proven connected in this pass).
+// Failure = the whole network around s was explored without finding one: it is cut off, so every tile seen is switched off.
+function verifyFrom(S, C, s, changed) {
+  const root = C.root, conn = C.conn, stamp = ++rdStamp, hcx = C.hcx, hcy = C.hcy;
+  let hn = 0, nv = 0, ok = false;
+  const push = (i) => {
+    const key = Math.abs((i % N) - hcx) + Math.abs(((i / N) | 0) - hcy); let p = hn++;
+    while (p > 0) { const q = (p - 1) >> 1; if (hpK[q] <= key) break; hpK[p] = hpK[q]; hpV[p] = hpV[q]; p = q; }
+    hpK[p] = key; hpV[p] = i;
+  };
+  rdSeen[s] = stamp; push(s);
+  while (hn) {
+    const c = hpV[0]; const lk = hpK[--hn], lv = hpV[hn];   // pop the smallest, sift the last element down
+    if (hn) { let p = 0; for (;;) { let q = 2 * p + 1; if (q >= hn) break; if (q + 1 < hn && hpK[q + 1] < hpK[q]) q++; if (hpK[q] >= lk) break; hpK[p] = hpK[q]; hpV[p] = hpV[q]; p = q; } hpK[p] = lk; hpV[p] = lv; }
+    rdVis[nv++] = c;
+    if (root[c] || rdOk[c] === rdOkStamp) { ok = true; break; }
+    const cx = c % N, cy = (c - cx) / N;
+    for (let k = 0; k < 4; k++) { const nx = cx + NB[k][0], ny = cy + NB[k][1]; if (roadAt(S, nx, ny)) { const ni = ny * N + nx; if (rdSeen[ni] !== stamp) { rdSeen[ni] = stamp; push(ni); } } }
+  }
+  if (ok) { for (let i = 0; i < nv; i++) rdOk[rdVis[i]] = rdOkStamp; }
+  else { for (let i = 0; i < nv; i++) { const c = rdVis[i]; if (conn[c]) { conn[c] = 0; changed.push(c); } } }
+}
+// Bring conn up to date with the road tiles added or removed since the last call (C.roadOps). Returns the tile indexes whose neighbours need re-evaluating.
+function applyRoadOps(S, C) {
+  const dirty = Array.from(new Set(C.roadOps)); C.roadOps = [];
+  const conn = C.conn, changed = [], root = C.root;
+  for (const t of dirty) if (!roadAt(S, t % N, (t / N) | 0) && conn[t]) { conn[t] = 0; changed.push(t); }   // a removed tile is no longer connected
+  const seeds = [];
+  for (const t of dirty) {
+    const x = t % N, y = (t / N) | 0; if (roadAt(S, x, y) && conn[t]) seeds.push(t);
+    for (let k = 0; k < 4; k++) { const nx = x + NB[k][0], ny = y + NB[k][1]; if (roadAt(S, nx, ny) && conn[ny * N + nx]) seeds.push(ny * N + nx); }
+  }
+  rdOkStamp++;
+  for (const s of seeds) if (conn[s] && rdOk[s] !== rdOkStamp) verifyFrom(S, C, s, changed);   // did losing a neighbour cut it off from the Town Hall?
+  for (const t of dirty) {   // a new (or re-laid) tile joins the network if it touches the Town Hall or a connected road
+    const x = t % N, y = (t / N) | 0; if (conn[t] || !roadAt(S, x, y)) continue;
+    let join = root[t] === 1;
+    for (let k = 0; k < 4 && !join; k++) { const nx = x + NB[k][0], ny = y + NB[k][1]; if (roadAt(S, nx, ny) && conn[ny * N + nx]) join = true; }
+    if (join) floodOn(S, C, t, changed);
+  }
+  return dirty.concat(changed);
+}
+
+// ---------- Work crews and townsfolk (movement) ----------
+// Work crews: woodcutters, quarrymen and miners live at their lodge/mine, walk out to a marked tile, work, and carry the load home.
 // A worker is in one of four states: 'home' (resting inside the building, not drawn), 'out' (walking to the site), 'work' (at the site), 'back' (carrying the load).
 // Crews are runtime only (never saved): after loading, everybody starts at home. Output comes only from loads delivered at the building, so farther sites make slower trips.
+//
+// PATHFINDING: the walkable area around each work building (a BFS out to CREW_DEPTH steps) is cached per building and reused by every worker and every day
+// until something that affects walking (a building, road, rock, pit, ore or height) changes within reach of it. Which tile a worker picks still depends on the
+// day and on who else is out, so that choice is made fresh from the cached area each time. Trips already under way keep their route, as before.
 const CREW = new WeakMap();
 const crewOf = b => { let c = CREW.get(b); if (!c) { c = []; CREW.set(b, c); } return c; };
 const CREW_KIND = { wood: 'tree', quarry: 'rock', mine: 'ore' };
 const WORK_T = 2, CHOPS_PER_TREE = 4, LOAD = { wood: 6, quarry: 5, mine: 4 }, CREW_DEPTH = 10;   // 4 chops x 6 logs = 24 logs per tree
-const bfsSeen = new Int32Array(N * N), bfsPar = new Int32Array(N * N), bfsDist = new Int16Array(N * N); let bfsStamp = 0;
+const REACH_W = 2 * CREW_DEPTH + 1, rcQ = new Int32Array(REACH_W * REACH_W);
 function crewMatch(S, kind, x, y) {
+  if (!claimed(S, x, y)) return false;   // ownership: no extraction on land the player does not hold (walking there is still fine)
   const dc = S.deco[y][x];
   if (kind === 'tree') return dc === 'tree' && S.zone[y][x] === 'wood';
   if (kind === 'rock') return dc === 'rock' && S.zone[y][x] === 'mine' && rockWorkable(S, x, y);
   return dc === 'ore';
 }
-// Nearest-by-walking marked tile within WORK_R of the building. Returns { tx, ty, path } where path runs from the building to a tile beside the target, or null.
-function crewTarget(S, b, kind, salt, used) {
-  bfsStamp++;
-  const s0 = b.y * N + b.x; bfsSeen[s0] = bfsStamp; bfsDist[s0] = 0; bfsPar[s0] = -1;
-  const q = [s0];
-  for (let h = 0; h < q.length; h++) {
-    const c = q[h], cx = c % N, cy = (c - cx) / N, dd = bfsDist[c]; if (dd >= CREW_DEPTH) continue;
-    for (const [dx, dy] of NB) {
-      const nx = cx + dx, ny = cy + dy; if (!inb(nx, ny)) continue;
-      const ni = ny * N + nx; if (bfsSeen[ni] === bfsStamp) continue;
+// The tiles a worker from b can walk to within CREW_DEPTH steps: dist (-1 = unreached) and parent, in a (2D+1)^2 window around b. Cached until walking changes nearby.
+function crewReach(S, b) {
+  const C = cacheOf(S), D = CREW_DEPTH, ox = b.x - D, oy = b.y - D;
+  const stamp = stampOver(C.wSeq, ox, oy, b.x + D, b.y + D);
+  let R = C.reach.get(b);
+  if (R && R.stamp === stamp) return R;
+  if (!R) R = { dist: new Int16Array(REACH_W * REACH_W), par: new Int32Array(REACH_W * REACH_W), ox, oy };
+  R.stamp = stamp; R.dist.fill(-1);
+  const dist = R.dist, par = R.par, s0 = b.y * N + b.x, l0 = (b.y - oy) * REACH_W + (b.x - ox);
+  dist[l0] = 0; par[l0] = -1; rcQ[0] = s0; let qn = 1;
+  for (let h = 0; h < qn; h++) {
+    const c = rcQ[h], cx = c % N, cy = (c - cx) / N, dd = dist[(cy - oy) * REACH_W + (cx - ox)]; if (dd >= D) continue;
+    for (let k = 0; k < 4; k++) {
+      const nx = cx + NB[k][0], ny = cy + NB[k][1]; if (!inb(nx, ny)) continue;
+      const nl = (ny - oy) * REACH_W + (nx - ox); if (dist[nl] >= 0) continue;
       const g = S.grid[ny][nx]; if (g && g !== b && g.t !== 'road') continue;
       if (walkCost(S, cx, cy, nx, ny) === Infinity) continue;
-      bfsSeen[ni] = bfsStamp; bfsDist[ni] = dd + 1; bfsPar[ni] = c; q.push(ni);
+      dist[nl] = dd + 1; par[nl] = c; rcQ[qn++] = ny * N + nx;
     }
   }
+  C.reach.set(b, R); return R;
+}
+// Nearest-by-walking marked tile within WORK_R of the building. Returns { tx, ty, path } where path runs from the building to a tile beside the target, or null.
+function crewTarget(S, b, kind, salt, used) {
+  const R = crewReach(S, b), dist = R.dist, ox = R.ox, oy = R.oy, s0 = b.y * N + b.x;
   let best = null, bs = 1e9;
   for (let j = b.y - WORK_R; j <= b.y + WORK_R; j++) for (let i = b.x - WORK_R; i <= b.x + WORK_R; i++) {
     if (!inb(i, j) || !crewMatch(S, kind, i, j)) continue;
     for (const [dx, dy] of NB) {
       const nx = i + dx, ny = j + dy; if (!inb(nx, ny)) continue;
-      const ni = ny * N + nx; if (bfsSeen[ni] !== bfsStamp || ni === s0) continue;   // workers step out of the building, never work on its roof
-      const sc = bfsDist[ni] + hash2(i, j, 31 + (salt || 0)) * 0.9 + (used && used.has(ni) ? 2.5 : 0);   // tie-break so workers spread over equally near tiles
+      const ni = ny * N + nx, dd = dist[(ny - oy) * REACH_W + (nx - ox)]; if (dd < 0 || ni === s0) continue;   // workers step out of the building, never work on its roof
+      const sc = dd + hash2(i, j, 31 + (salt || 0)) * 0.9 + (used && used.has(ni) ? 2.5 : 0);   // tie-break so workers spread over equally near tiles
       if (sc < bs) { bs = sc; best = [i, j, ni]; }
     }
   }
   if (!best) return null;
-  const path = []; for (let c = best[2]; c !== -1; c = bfsPar[c]) path.push([c % N, Math.floor(c / N)]);
+  const path = []; for (let c = best[2]; c !== -1; c = R.par[(((c / N) | 0) - oy) * REACH_W + (c % N - ox)]) path.push([c % N, Math.floor(c / N)]);
   path.reverse();
   return { tx: best[0], ty: best[1], path };
 }
@@ -770,70 +997,10 @@ function crewAct(S, b, kind, a) {
   if (kind === 'rock') return mineRock(S, tx, ty, 0, LOAD.quarry);
   return mineOre(S, tx, ty, 0, LOAD.mine);
 }
-// ---- Townsfolk: tiny ambient villagers who live in houses and stroll along the roads ----
-// Purely cosmetic and runtime only (never saved, rebuilt after loading): they do not change the economy, they make the town look alive.
-// The number on screen follows the population (FOLK_PER_PEASANT per villager, at most FOLK_MAX). Each one rests in a house (hidden), sets off
-// along the roads to somewhere (market, well, Town Hall, a work building or just a wander), lingers a few days, then walks home.
-const FOLK = new WeakMap();
-const FOLK_MAX = 90, FOLK_PER_PEASANT = 0.6, FOLK_DEPTH = 40, FOLK_VARIANTS = 6;
-const folkOf = S => { let f = FOLK.get(S); if (!f) { f = []; FOLK.set(S, f); } return f; };
-const roadSeen = new Int32Array(N * N), roadPar = new Int32Array(N * N), roadDist = new Int16Array(N * N); let roadStamp = 0;
-const isRoadAt = (S, x, y) => inb(x, y) && !!S.grid[y][x] && S.grid[y][x].t === 'road';
-// A road tile touching the building (preferring the one its door faces).
-function roadBeside(S, b) {
-  const f = faceOf(S, b), T = tilesOf(b);
-  for (const [tx, ty] of T) { const x = tx + FACE_DIRS[f][0], y = ty + FACE_DIRS[f][1]; if (isRoadAt(S, x, y)) return y * N + x; }
-  for (const [tx, ty] of T) for (const [dx, dy] of NB) if (isRoadAt(S, tx + dx, ty + dy)) return (ty + dy) * N + tx + dx;
-  return -1;
-}
-// Walk the road network from one road tile: returns a function giving the path to any reached tile.
-function roadSearch(S, from) {
-  roadStamp++; roadSeen[from] = roadStamp; roadDist[from] = 0; roadPar[from] = -1;
-  const q = [from];
-  for (let h = 0; h < q.length; h++) {
-    const c = q[h], cx = c % N, cy = (c - cx) / N, d = roadDist[c]; if (d >= FOLK_DEPTH) continue;
-    for (const [dx, dy] of NB) { const nx = cx + dx, ny = cy + dy; if (!isRoadAt(S, nx, ny)) continue; const ni = ny * N + nx; if (roadSeen[ni] === roadStamp) continue; roadSeen[ni] = roadStamp; roadDist[ni] = d + 1; roadPar[ni] = c; q.push(ni); }
-  }
-  return q;
-}
-function roadPathTo(to) { const p = []; for (let c = to; c !== -1; c = roadPar[c]) p.push([c % N, Math.floor(c / N)]); return p.reverse(); }
-function stepFolk(S) {
-  const folk = folkOf(S), houses = S.blds.filter(b => b.t === 'house' && b.served && roadBeside(S, b) >= 0);
-  const want = houses.length ? Math.min(FOLK_MAX, Math.round(S.peasants * FOLK_PER_PEASANT)) : 0;
-  for (let i = folk.length - 1; i >= 0 && folk.length > want; i--) if (folk[i].st === 'home' || !houses.includes(folk[i].home)) folk.splice(i, 1);
-  let nextId = folk.reduce((m, w) => Math.max(m, w.id + 1), 0);
-  while (folk.length < want && houses.length) {
-    const h = houses[Math.floor(hash2(nextId, S.day, 91) * houses.length)];
-    folk.push({ id: nextId++, st: 'home', home: h, x: h.x, y: h.y, px: h.x, py: h.y, path: null, i: 0, t: 1 + Math.floor(hash2(nextId, 5, 7) * 8), v: Math.floor(hash2(nextId, 3, 11) * FOLK_VARIANTS) });
-  }
-  const pois = S.blds.filter(b => b.t === 'market' || b.t === 'well' || b.t === 'hall' || b.t === 'sawmill' || b.t === 'barracks');
-  for (const w of folk) {
-    w.px = w.x; w.py = w.y;
-    if (w.st === 'home') {
-      if (--w.t > 0) continue;
-      const door = roadBeside(S, w.home); if (door < 0) { w.t = 6; continue; }
-      const q = roadSearch(S, door);
-      if (q.length < 2) { w.t = 6 + Math.floor(hash2(w.id, S.day, 13) * 6); continue; }   // no road to walk on
-      let dest = -1;
-      const r = hash2(w.id, S.day, 17);
-      if (r < 0.6 && pois.length) { const p = pois[Math.floor(hash2(w.id, S.day, 19) * pois.length)], rb = roadBeside(S, p); if (rb >= 0 && roadSeen[rb] === roadStamp && rb !== door) dest = rb; }
-      if (dest < 0) { const k = 1 + Math.floor(hash2(w.id, S.day, 23) * (q.length - 1)); dest = q[k]; }   // otherwise a wander to some reachable road tile
-      w.path = roadPathTo(dest); w.i = 0; w.x = w.path[0][0]; w.y = w.path[0][1]; w.st = 'walk';
-    } else if (w.st === 'walk') {
-      if (w.i < w.path.length - 1) { w.i++; w.x = w.path[w.i][0]; w.y = w.path[w.i][1]; }
-      if (w.i >= w.path.length - 1) { w.st = 'stay'; w.t = 2 + Math.floor(hash2(w.id, S.day, 29) * 5); }
-    } else if (w.st === 'stay') {
-      if (--w.t <= 0) { w.path.reverse(); w.i = 0; w.st = 'back'; }
-    } else {   // back
-      if (w.i < w.path.length - 1) { w.i++; w.x = w.path[w.i][0]; w.y = w.path[w.i][1]; }
-      if (w.i >= w.path.length - 1) { w.st = 'home'; w.path = null; w.x = w.home.x; w.y = w.home.y; w.t = 3 + Math.floor(hash2(w.id, S.day, 31) * 10); }
-    }
-  }
-}
 // Advance every crew one day. `out` collects what was delivered this day (logs, stone, ore).
 function stepCrews(S, out) {
-  for (const b of S.blds) {
-    const kind = CREW_KIND[b.t]; if (!kind) continue;
+  for (const b of cacheOf(S).L.crews.slice()) {
+    const kind = CREW_KIND[b.t];
     const crew = crewOf(b), want = b.workers || 0, res = kind === 'tree' ? 'logs' : kind === 'rock' ? 'stone' : 'ore';
     for (let i = crew.length - 1; i >= 0 && crew.length > want; i--) if (crew[i].st === 'home') crew.splice(i, 1);   // surplus workers who are resting leave; those out finish their trip first
     while (crew.length < want) crew.push({ st: 'home', x: b.x, y: b.y, px: b.x, py: b.y, path: null, i: 0, t: 0, carry: 0, tx: 0, ty: 0, stand: -1 });
@@ -859,76 +1026,203 @@ function stepCrews(S, out) {
     }
   }
 }
-function fellNearest(S, x, y, r, kind) {
-  let best = null, bd = 1e9;
-  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
-    if (inb(i, j) && S.deco[j][i] === kind) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
-  if (best) S.deco[best[1]][best[0]] = null;
+// ---- Townsfolk: tiny ambient villagers who live in houses and stroll along the roads ----
+// Purely cosmetic and runtime only (never saved, rebuilt after loading): they do not change the economy, they make the town look alive.
+// The number on screen follows the population (FOLK_PER_PEASANT per villager, at most FOLK_MAX), so the crowd stays small however big the city gets;
+// the economy never looks at them. Each one rests in a house (hidden), sets off along the roads to somewhere, lingers a few days, then walks home.
+const FOLK = new WeakMap();
+const FOLK_MAX = 90, FOLK_PER_PEASANT = 0.6, FOLK_DEPTH = 40, FOLK_VARIANTS = 6;
+const folkOf = S => { let f = FOLK.get(S); if (!f) { f = []; FOLK.set(S, f); } return f; };
+const roadSeen = new Int32Array(N * N), roadPar = new Int32Array(N * N), roadDist = new Int16Array(N * N); let roadStamp = 0;
+const isRoadAt = (S, x, y) => inb(x, y) && !!S.grid[y][x] && S.grid[y][x].t === 'road';
+// A road tile touching the building (preferring the one its door faces).
+function roadBeside(S, b) {
+  const f = faceOf(S, b), T = tilesOf(b);
+  for (const [tx, ty] of T) { const x = tx + FACE_DIRS[f][0], y = ty + FACE_DIRS[f][1]; if (isRoadAt(S, x, y)) return y * N + x; }
+  for (const [tx, ty] of T) for (const [dx, dy] of NB) if (isRoadAt(S, tx + dx, ty + dy)) return (ty + dy) * N + tx + dx;
+  return -1;
 }
-function servedAt(S, b, conn) {
-  for (const [tx, ty] of tilesOf(b)) for (const [dx, dy] of NB) {
-    const x = tx + dx, y = ty + dy;
-    if (!inb(x, y) || S.grid[y][x] === b) continue;
-    if (conn[y * N + x] === 1 || S.grid[y][x] === S.hall) return true;
+// Walk the road network from one road tile: returns the reached tiles in order; roadPathTo gives the path to any of them.
+function roadSearch(S, from) {
+  roadStamp++; roadSeen[from] = roadStamp; roadDist[from] = 0; roadPar[from] = -1;
+  const q = [from];
+  for (let h = 0; h < q.length; h++) {
+    const c = q[h], cx = c % N, cy = (c - cx) / N, d = roadDist[c]; if (d >= FOLK_DEPTH) continue;
+    for (const [dx, dy] of NB) { const nx = cx + dx, ny = cy + dy; if (!isRoadAt(S, nx, ny)) continue; const ni = ny * N + nx; if (roadSeen[ni] === roadStamp) continue; roadSeen[ni] = roadStamp; roadDist[ni] = d + 1; roadPar[ni] = c; q.push(ni); }
   }
-  return false;
+  return q;
 }
-function recalc(S) {
-  const conn = new Uint8Array(N * N), q = [], h = S.hall;
-  const isRoad = (x, y) => inb(x, y) && S.grid[y][x] && S.grid[y][x].t === 'road';
-  // A road can connect to any external edge of the multi-tile Town Hall.
-  for (const [hx, hy] of tilesOf(h)) for (const [dx, dy] of NB) {
-    const x = hx + dx, y = hy + dy;
-    if (inb(x, y) && S.grid[y][x] !== h && isRoad(x, y) && !conn[y * N + x]) {
-      conn[y * N + x] = 1; q.push([x, y]);
+function roadPathTo(to) { const p = []; for (let c = to; c !== -1; c = roadPar[c]) p.push([c % N, Math.floor(c / N)]); return p.reverse(); }
+// Houses that can send out a villager and the places they walk to; recomputed only when buildings, roads or service change.
+function folkPlaces(S) {
+  const C = cacheOf(S);
+  if (C.folk && C.folk.topo === C.topoSeq) return C.folk;
+  const houses = listOf(C, 'house').filter(b => b.served && roadBeside(S, b) >= 0);
+  const pois = S.blds.filter(b => b.t === 'market' || b.t === 'well' || b.t === 'hall' || b.t === 'sawmill' || b.t === 'barracks');
+  C.folk = { topo: C.topoSeq, houses, set: new Set(houses), pois };
+  return C.folk;
+}
+function stepFolk(S) {
+  const folk = folkOf(S), P = folkPlaces(S), houses = P.houses;
+  const want = houses.length ? Math.min(FOLK_MAX, Math.round(S.peasants * FOLK_PER_PEASANT)) : 0;
+  for (let i = folk.length - 1; i >= 0 && folk.length > want; i--) if (folk[i].st === 'home' || !P.set.has(folk[i].home)) folk.splice(i, 1);
+  let nextId = folk.reduce((m, w) => Math.max(m, w.id + 1), 0);
+  while (folk.length < want && houses.length) {
+    const h = houses[Math.floor(hash2(nextId, S.day, 91) * houses.length)];
+    folk.push({ id: nextId++, st: 'home', home: h, x: h.x, y: h.y, px: h.x, py: h.y, path: null, i: 0, t: 1 + Math.floor(hash2(nextId, 5, 7) * 8), v: Math.floor(hash2(nextId, 3, 11) * FOLK_VARIANTS) });
+  }
+  const pois = P.pois;
+  for (const w of folk) {
+    w.px = w.x; w.py = w.y;
+    if (w.st === 'home') {
+      if (--w.t > 0) continue;
+      const door = roadBeside(S, w.home); if (door < 0) { w.t = 6; continue; }
+      const q = roadSearch(S, door);
+      if (q.length < 2) { w.t = 6 + Math.floor(hash2(w.id, S.day, 13) * 6); continue; }   // no road to walk on
+      let dest = -1;
+      const r = hash2(w.id, S.day, 17);
+      if (r < 0.6 && pois.length) { const p = pois[Math.floor(hash2(w.id, S.day, 19) * pois.length)], rb = roadBeside(S, p); if (rb >= 0 && roadSeen[rb] === roadStamp && rb !== door) dest = rb; }
+      if (dest < 0) { const k = 1 + Math.floor(hash2(w.id, S.day, 23) * (q.length - 1)); dest = q[k]; }   // otherwise a wander to some reachable road tile
+      w.path = roadPathTo(dest); w.i = 0; w.x = w.path[0][0]; w.y = w.path[0][1]; w.st = 'walk';
+    } else if (w.st === 'walk') {
+      if (w.i < w.path.length - 1) { w.i++; w.x = w.path[w.i][0]; w.y = w.path[w.i][1]; }
+      if (w.i >= w.path.length - 1) { w.st = 'stay'; w.t = 2 + Math.floor(hash2(w.id, S.day, 29) * 5); }
+    } else if (w.st === 'stay') {
+      if (--w.t <= 0) { w.path.reverse(); w.i = 0; w.st = 'back'; }
+    } else {   // back
+      if (w.i < w.path.length - 1) { w.i++; w.x = w.path[w.i][0]; w.y = w.path[w.i][1]; }
+      if (w.i >= w.path.length - 1) { w.st = 'home'; w.path = null; w.x = w.home.x; w.y = w.home.y; w.t = 3 + Math.floor(hash2(w.id, S.day, 31) * 10); }
     }
   }
-  while (q.length) {
-    const [cx, cy] = q.pop();
-    for (const [dx, dy] of NB) { const x = cx + dx, y = cy + dy; if (isRoad(x, y) && !conn[y * N + x]) { conn[y * N + x] = 1; q.push([x, y]); } }
+}
+
+// ---------- recalc: services, coverage and the workforce, each redone only when its inputs changed ----------
+// Dependency map (what invalidates what):
+//   road added / removed      -> conn (sim_roads.js) -> doors faces + "served" of the buildings touching the changed tiles
+//   building served flips     -> house level + market cover of houses in range (if it is a market), jobs and workforce, totals
+//   well / market built or removed -> only the houses within its radius (house level, market cover)
+//   job building built / removed / served flips, peasants change, trade priority change -> workforce allocation
+// recalc(S) stays the one entry point: the game calls it after every action and every day. With nothing changed it is almost free.
+function markServeAround(S, C, tiles) {
+  for (const t of tiles) {
+    const x = t % N, y = (t / N) | 0, g = S.grid[y][x];
+    if (g && g.t === 'road') g.served = !!C.conn[t];
+    touch(S, x, y, 0);   // lots and work sites near a tile whose connection changed may have become (in)eligible
+    for (let k = 0; k < 4; k++) { const nx = x + NB[k][0], ny = y + NB[k][1]; if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue; const o = S.grid[ny][nx]; if (o && o.t !== 'road') C.pendServe.add(o); }
   }
-  const wells = S.blds.filter(b => b.t === 'well');
-  let civ = HALL_CAP, bunks = 0, jobs = 0, markets = 0;
+}
+// One building's face and service state from the current roads. Returns true when "served" flipped.
+function serveOne(S, C, b) {
+  if (b.t === 'hall') { b.served = true; b.face = faceOf(S, b); return false; }
+  b.face = faceOf(S, b);
+  const was = b.served; b.served = servedAt(S, b, C.conn);
+  if (was === b.served) return false;
+  C.topoSeq++; C.totalsDirty = C.workDirty = true;
+  if (b.t === 'house') C.pendHouse.add(b); else if (b.t === 'market') markHouses(C, b, marketR(b));
+  return true;
+}
+// House level (well in range) and market cover. Mirrors the original rules: level is set for every house, cover only for served ones.
+function houseOne(S, C, b, mk) {
+  const wells = listOf(C, 'well');
+  b.lvl = (b.served && wells.some(w => cheb(w, b) <= WELL_R)) ? 2 : 1;
+  if (b.served) b.covered = mk.some(m => cheb(m, b) <= marketR(m));
+}
+const servedMarkets = C => listOf(C, 'market').filter(b => b.served);
+
+function rebuildAll(S, C) {
+  C.roadOps = []; C.pendServe.clear(); C.pendHouse.clear();
+  buildLists(S, C); computeRoots(S, C); rebuildConn(S, C);
   for (const b of S.blds) {
-    if (b.t === 'hall') { b.served = true; b.face = faceOf(S, b); continue; }
-    if (b.t === 'road') { b.served = !!conn[b.y * N + b.x]; continue; }
-    b.face = faceOf(S, b);
-    b.served = servedAt(S, b, conn);
-    if (b.t === 'house') {
-      b.lvl = (b.served && wells.some(w => cheb(w, b) <= WELL_R)) ? 2 : 1;
-      if (b.served) civ += capOf(b);
-    } else if (b.t === 'barracks') { if (b.served) bunks += BUNKS; }
-    else if (JOBS[b.t] && b.served) { jobs += jobsOf(b); if (b.t === 'market') markets++; }
+    if (b.t === 'road') b.served = !!C.conn[b.y * N + b.x];
+    else serveOne(S, C, b);
+  }
+  C.pendServe.clear(); C.pendHouse.clear();
+  const mk = servedMarkets(C);
+  for (const b of listOf(C, 'house')) houseOne(S, C, b, mk);
+  C.dev = {}; C.reach = new WeakMap(); C.folk = null;
+  C.topoSeq++; C.totalsDirty = C.workDirty = true; C.ready = true;
+}
+
+function recalc(S, force) {
+  const C = cacheOf(S);
+  if (force || !C.ready) rebuildAll(S, C);
+  else {
+    if (C.roadOps.length) markServeAround(S, C, applyRoadOps(S, C));
+    if (C.pendServe.size) { const ps = Array.from(C.pendServe); C.pendServe.clear(); for (const b of ps) serveOne(S, C, b); }
+    if (C.pendHouse.size) { const mk = servedMarkets(C), hs = Array.from(C.pendHouse); C.pendHouse.clear(); for (const b of hs) houseOne(S, C, b, mk); C.totalsDirty = true; }
+  }
+  const prioSig = Array.isArray(S.prio) ? S.prio.join(',') : '';
+  if (S.d && !C.totalsDirty && !C.workDirty && C.lastPeas === S.peasants && C.lastPrio === prioSig) return S.d;
+  return refreshD(S, C, prioSig);
+}
+function refreshD(S, C, prioSig) {
+  const L = C.L;
+  if (C.totalsDirty || !C.tot) {
+    let civ = HALL_CAP, bunks = 0, jobs = 0, markets = 0, houseCap = 0, covCap = 0;
+    for (const b of listOf(C, 'house')) if (b.served) { const cap = capOf(b); civ += cap; houseCap += cap; if (b.covered) covCap += cap; }
+    for (const b of listOf(C, 'barracks')) if (b.served) bunks += BUNKS;
+    for (const b of L.jobs) if (b.served) { jobs += jobsOf(b); if (b.t === 'market') markets++; }
+    C.tot = { civ, bunks, jobs, markets, houseCap, covCap };
   }
   // Fill the jobs: villagers go to trades in priority order, and within a trade to the oldest buildings first.
   const prio = (Array.isArray(S.prio) && S.prio.length === TRADES.length && TRADES.every(t => S.prio.includes(t))) ? S.prio : TRADES;
   let avail = S.peasants; const work = {};
   for (const t of prio) work[t] = { workers: 0, jobs: 0, blds: 0, short: 0 };
-  for (const b of S.blds) if (JOBS[b.t]) { b.workers = 0; b.eff = 0; }
-  for (const t of prio) for (const b of S.blds) if (TRADE_OF[b.t] === t && b.served) {
+  for (const b of L.jobs) { b.workers = 0; b.eff = 0; }
+  for (const t of prio) for (const b of (L.trade[t] || EMPTY)) if (b.served) {
     const j = jobsOf(b), w = Math.min(j, avail); avail -= w; b.workers = w; b.eff = j ? w / j : 0;
     const r = work[t]; r.workers += w; r.jobs += j; r.blds++; if (w < j) r.short++;
   }
-  let mkW = 0, mkJ = 0; for (const b of S.blds) if (b.t === 'market' && b.served) { mkW += b.workers; mkJ += jobsOf(b); }
-  const mk = S.blds.filter(b => b.t === 'market' && b.served);
-  let houseCap = 0, covCap = 0;
-  for (const b of S.blds) if (b.t === 'house' && b.served) {
-    const cap = capOf(b); houseCap += cap;
-    b.covered = mk.some(m => cheb(m, b) <= marketR(m)); if (b.covered) covCap += cap;
-  }
-  S.d = { civ, bunks, jobs, work, prio, idle: avail, employed: S.peasants - avail, mkEff: mkJ ? mkW / mkJ : 0, conn, markets, houseCap, covCap, cov: houseCap ? covCap / houseCap : 1, ratio: jobs ? Math.min(1, S.peasants / jobs) : 0 };
+  let mkW = 0, mkJ = 0; for (const b of listOf(C, 'market')) if (b.served) { mkW += b.workers; mkJ += jobsOf(b); }
+  const T = C.tot;
+  S.d = { civ: T.civ, bunks: T.bunks, jobs: T.jobs, work, prio, idle: avail, employed: S.peasants - avail, mkEff: mkJ ? mkW / mkJ : 0, conn: C.conn, markets: T.markets, houseCap: T.houseCap, covCap: T.covCap, cov: T.houseCap ? T.covCap / T.houseCap : 1, ratio: T.jobs ? Math.min(1, S.peasants / T.jobs) : 0 };
+  C.totalsDirty = C.workDirty = false; C.lastPeas = S.peasants; C.lastPrio = prioSig;
   return S.d;
 }
+// Recompute everything from scratch (the original recalc) WITHOUT touching the world or the caches and report any field where the caches disagree.
+// Used by the tests after random play; cheap enough to call every day in a long run.
+function auditCaches(S) {
+  const bad = [], conn = new Uint8Array(N * N), h = S.hall, q = [];
+  const isRoad = (x, y) => inb(x, y) && S.grid[y][x] && S.grid[y][x].t === 'road';
+  for (const [hx, hy] of tilesOf(h)) for (const [dx, dy] of NB) { const x = hx + dx, y = hy + dy; if (inb(x, y) && S.grid[y][x] !== h && isRoad(x, y) && !conn[y * N + x]) { conn[y * N + x] = 1; q.push([x, y]); } }
+  while (q.length) { const [cx, cy] = q.pop(); for (const [dx, dy] of NB) { const x = cx + dx, y = cy + dy; if (isRoad(x, y) && !conn[y * N + x]) { conn[y * N + x] = 1; q.push([x, y]); } } }
+  const C = cacheOf(S); recalc(S);
+  for (let i = 0; i < N * N; i++) if ((conn[i] | 0) !== (C.conn[i] | 0)) { bad.push('conn@' + i % N + ',' + ((i / N) | 0) + ' want ' + conn[i]); if (bad.length > 5) return bad; }
+  const wells = S.blds.filter(b => b.t === 'well'), mk = S.blds.filter(b => b.t === 'market' && b.served);
+  let civ = HALL_CAP, bunks = 0, jobs = 0, markets = 0, houseCap = 0, covCap = 0;
+  for (const b of S.blds) {
+    if (b.t === 'hall') continue;
+    if (b.t === 'road') { if (b.served !== !!conn[b.y * N + b.x]) bad.push('road served ' + b.x + ',' + b.y); continue; }
+    const sv = servedAt(S, b, conn); if (b.served !== sv) bad.push(b.t + ' served ' + b.x + ',' + b.y + ' want ' + sv);
+    const fc = faceOf(S, b); if (b.face !== fc) bad.push(b.t + ' face ' + b.x + ',' + b.y + ' want ' + fc);
+    if (b.t === 'house') {
+      const lv = (sv && wells.some(w => cheb(w, b) <= WELL_R)) ? 2 : 1; if (b.lvl !== lv) bad.push('house lvl ' + b.x + ',' + b.y + ' want ' + lv);
+      if (sv) { civ += capOf(b); houseCap += capOf(b); const cv = mk.some(m => cheb(m, b) <= marketR(m)); if (b.covered !== cv) bad.push('house covered ' + b.x + ',' + b.y + ' want ' + cv); if (cv) covCap += capOf(b); }
+    } else if (b.t === 'barracks') { if (sv) bunks += BUNKS; }
+    else if (JOBS[b.t] && sv) { jobs += jobsOf(b); if (b.t === 'market') markets++; }
+  }
+  const d = S.d, same = (k, v) => { if (d[k] !== v) bad.push('d.' + k + ' ' + d[k] + ' want ' + v); };
+  same('civ', civ); same('bunks', bunks); same('jobs', jobs); same('markets', markets); same('houseCap', houseCap); same('covCap', covCap);
+  const prio = d.prio; let avail = S.peasants;
+  for (const t of prio) for (const b of S.blds) if (TRADE_OF[b.t] === t && b.served) { const j = jobsOf(b), w = Math.min(j, avail); avail -= w; if (b.workers !== w) bad.push(b.t + ' workers ' + b.x + ',' + b.y + ' ' + b.workers + ' want ' + w); }
+  same('idle', avail);
+  return bad;
+}
+
+// ---------- Zoning and automatic development ----------
+// The rules are exactly the original ones (same eligibility, same scoring including the per-day hash noise, same tie-breaks). What changed is where the
+// candidates come from: instead of scanning every tile of the map each time, each 16x16 chunk keeps its own list of eligible lots per zone kind, rebuilt only
+// when something within a few tiles of that chunk changed (see sim_cache.js stamps). Searching then only visits chunks that can beat the best score so far.
 function zoneServed(S, x, y) {
   const conn = S.d.conn, h = S.hall;
   return NB.some(([dx, dy]) => { const a = x + dx, b = y + dy; return inb(a, b) && (conn[b * N + a] === 1 || S.grid[b][a] === h); });
 }
 function computeDemand(S) {
-  const d = S.d, r = S.res;
+  const d = S.d, r = S.res, C = cacheOf(S);
   const occ = d.civ ? S.peasants / d.civ : 1;
   const eat = Math.max(1, (S.peasants + S.soldiers * 1.5) * 0.2);
   let prod = 0;
-  for (const b of S.blds) if (b.t === 'farm' && b.served) prod += foodOf(b) * b.eff;
+  for (const b of listOf(C, 'farm')) if (b.served) prod += foodOf(b) * b.eff;
   const staffed = d.jobs <= S.peasants + 4;
   const dem = {};
   dem.res = (S.starving || r.food < 10) ? -0.3 : clamp1((occ - 0.7) * 4);
@@ -946,57 +1240,123 @@ function lotOk(S, kind, x, y, sz) {
   for (let j = 0; j < sz; j++) for (let i = 0; i < sz; i++) {
     const a = x + i, c = y + j;
     if (!inb(a, c) || S.zone[c][a] !== kind || S.grid[c][a]) return false;
-    if (isSolid(S, a, c) || hasTree(S, a, c)) return false;
+    if (!claimed(S, a, c) || isSolid(S, a, c) || hasTree(S, a, c)) return false;
     if (kind === 'farm' && !S.fert[c][a]) return false;
   }
   return true;
 }
+// servedAt for a lot that has no building object yet (same rule, no allocation).
+function lotServed(S, conn, x, y, sz) {
+  const h = S.hall;
+  for (let j = 0; j < sz; j++) for (let i = 0; i < sz; i++) for (let k = 0; k < 4; k++) {
+    const nx = x + i + NB[k][0], ny = y + j + NB[k][1];
+    if (nx < 0 || ny < 0 || nx >= N || ny >= N) continue;
+    if (nx >= x && ny >= y && nx < x + sz && ny < y + sz) continue;   // the lot's own tiles are not neighbours
+    if (conn[ny * N + nx] === 1 || S.grid[ny][nx] === h) return true;
+  }
+  return false;
+}
+// The chunk's eligible lots for one zone kind, rebuilt if anything near the chunk changed since it was built.
+// res/farm/comm: small[] and big[] hold lot anchors (y*N+x) for 1x1 and 2x2 lots. wood/mine: sites[] holds x,y,count,count triples.
+function devChunk(S, C, kind, c) {
+  const store = C.dev[kind] || (C.dev[kind] = []);
+  let e = store[c];
+  if (e && e.stamp === C.cSeq[c]) return e;
+  const x0 = (c % CH) << CHUNK_SHIFT, y0 = ((c / CH) | 0) << CHUNK_SHIFT, x1 = Math.min(N, x0 + CHUNK), y1 = Math.min(N, y0 + CHUNK), conn = S.d.conn;
+  e = { stamp: C.cSeq[c], small: [], big: [], sites: [] };
+  const lot = kind === 'res' || kind === 'farm' || kind === 'comm';
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    if (S.zone[y][x] !== kind || S.grid[y][x]) continue;
+    if (lot) {
+      if (lotOk(S, kind, x, y, 1) && lotServed(S, conn, x, y, 1)) e.small.push(y * N + x);
+      if (x + 1 < N && y + 1 < N && lotOk(S, kind, x, y, 2) && lotServed(S, conn, x, y, 2)) e.big.push(y * N + x);
+    } else if (zoneServed(S, x, y)) {
+      if (kind === 'wood') { const n = countZoned(S, x, y, WORK_R, 'tree', 'wood'); if (n >= 3) e.sites.push(x, y, n, 0); }
+      else { const rk = countZoned(S, x, y, WORK_R, 'rock', 'mine'), ok = countDeco(S, x, y, WORK_R, 'ore'); if (rk >= 2 || ok >= 2) e.sites.push(x, y, rk, ok); }
+    }
+  }
+  store[c] = e; return e;
+}
+// Smallest possible distance-to-Town-Hall score inside a chunk (the score is never below the distance), used to skip chunks that cannot win.
+function chunkLB(h, c) {
+  const x0 = (c % CH) << CHUNK_SHIFT, y0 = ((c / CH) | 0) << CHUNK_SHIFT, x1 = x0 + CHUNK - 1, y1 = y0 + CHUNK - 1;
+  const dx = h.x < x0 ? x0 - h.x : h.x > x1 ? h.x - x1 : 0, dy = h.y < y0 ? y0 - h.y : h.y > y1 ? h.y - y1 : 0;
+  return dx + dy - 1;   // -1: a 2x2 lot is scored at its centre, half a tile each way
+}
 function choose(S, kind) {
-  const h = S.hall, r = S.res;
+  const h = S.hall, r = S.res, C = cacheOf(S);
   const dist = (cx, cy) => Math.abs(cx - h.x) + Math.abs(cy - h.y);
   const ltype = { res: 'house', farm: 'farm', comm: 'market' }[kind];
   if (ltype) {
-    const small = [], big = [];
-    const unc = kind === 'comm' ? S.blds.filter(b => b.t === 'house' && b.served && !b.covered) : null;
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) for (const sz of [1, 2]) {
-      if (!lotOk(S, kind, x, y, sz)) continue;
-      if (!servedAt(S, { x, y, sz, t: ltype }, S.d.conn)) continue;
-      const cx = x + (sz - 1) / 2, cy = y + (sz - 1) / 2;
-      let score = dist(cx, cy) + hash2(x, y, S.day + sz) * 2.5;
-      if (kind === 'comm') {
-        const R = sz === 2 ? 7 : 5; let gain = 0;
-        for (const b of unc) if (cheb(b, { x: cx, y: cy }) <= R) gain += capOf(b);
-        if (gain <= 0) continue; score = -gain * 2 + dist(cx, cy) * 0.1;
+    let sBest = null, bBest = null;   // best (lowest score; ties go to the lower y*N+x, like the original stable sort) small and big lot
+    const consider = (a, sz, score) => {
+      const cur = sz === 2 ? bBest : sBest;
+      if (!cur || score < cur.score || (score === cur.score && a < cur.a)) { const o = { a, score }; if (sz === 2) bBest = o; else sBest = o; }
+    };
+    if (kind !== 'comm') {
+      const order = [];
+      for (let c = 0; c < CH * CH; c++) order.push([chunkLB(h, c), c]);
+      order.sort((p, q) => p[0] - q[0]);   // nearest chunks first; stop once no remaining chunk can beat the best small and the best big lot
+      for (const [lb, c] of order) {
+        const wantS = !sBest || lb <= sBest.score, wantB = !bBest || lb <= bBest.score;
+        if (!wantS && !wantB) break;
+        const e = devChunk(S, C, kind, c);
+        if (wantS) for (const a of e.small) { const x = a % N, y = (a - x) / N; consider(a, 1, dist(x, y) + hash2(x, y, S.day + 1) * 2.5); }
+        if (wantB) for (const a of e.big) { const x = a % N, y = (a - x) / N; consider(a, 2, dist(x + 0.5, y + 0.5) + hash2(x, y, S.day + 2) * 2.5); }
       }
-      (sz === 2 ? big : small).push({ x, y, type: ltype, sz, cost: costOf(ltype, sz).wood, score });
+    } else {
+      const unc = listOf(C, 'house').filter(b => b.served && !b.covered);
+      if (unc.length) {
+        const bk = []; for (let i = 0; i < CH * CH; i++) bk.push(null);
+        for (const b of unc) { const i = (b.y >> CHUNK_SHIFT) * CH + (b.x >> CHUNK_SHIFT); (bk[i] || (bk[i] = [])).push(b); }
+        const gainAt = (cx, cy, R) => {
+          let gain = 0;
+          const x0 = Math.max(0, Math.floor(cx - R - 1)) >> CHUNK_SHIFT, x1 = Math.min(N - 1, Math.ceil(cx + R + 1)) >> CHUNK_SHIFT, y0 = Math.max(0, Math.floor(cy - R - 1)) >> CHUNK_SHIFT, y1 = Math.min(N - 1, Math.ceil(cy + R + 1)) >> CHUNK_SHIFT;
+          for (let j = y0; j <= y1; j++) for (let i = x0; i <= x1; i++) { const l = bk[j * CH + i]; if (l) for (const b of l) if (cheb(b, { x: cx, y: cy }) <= R) gain += capOf(b); }
+          return gain;
+        };
+        for (let c = 0; c < CH * CH; c++) {
+          const e = devChunk(S, C, kind, c);
+          for (const sz of [1, 2]) for (const a of (sz === 2 ? e.big : e.small)) {
+            const x = a % N, y = (a - x) / N, cx = x + (sz - 1) / 2, cy = y + (sz - 1) / 2, gain = gainAt(cx, cy, sz === 2 ? 7 : 5);
+            if (gain <= 0) continue;
+            consider(a, sz, -gain * 2 + dist(cx, cy) * 0.1);
+          }
+        }
+      }
     }
-    small.sort((a, b) => a.score - b.score); big.sort((a, b) => a.score - b.score);
-    if (!small.length && !big.length) return { pick: null };
-    const bigOk = big.length && r.wood >= big[0].cost, smallOk = small.length && r.wood >= small[0].cost;
+    const mk = (b, sz) => b ? { x: b.a % N, y: (b.a - b.a % N) / N, type: ltype, sz, cost: costOf(ltype, sz).wood, score: b.score } : null;
+    const small = mk(sBest, 1), big = mk(bBest, 2);
+    if (!small && !big) return { pick: null };
+    const bigOk = big && r.wood >= big.cost, smallOk = small && r.wood >= small.cost;
     const preferBig = bigOk && (!smallOk || hash2(S.day, 77, S.seed) < 0.7);
-    if (preferBig) return { pick: big[0] };
-    if (smallOk) return { pick: small[0] };
-    return { pick: null, wait: Math.min(small.length ? small[0].cost : 999, big.length ? big[0].cost : 999) };
+    if (preferBig) return { pick: big };
+    if (smallOk) return { pick: small };
+    return { pick: null, wait: Math.min(small ? small.cost : 999, big ? big.cost : 999) };
   }
-  const cands = [];
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    if (S.zone[y][x] !== kind || S.grid[y][x] || !zoneServed(S, x, y)) continue;
-    if (kind === 'wood') {
-      const n = countZoned(S, x, y, WORK_R, 'tree', 'wood');
-      if (n < 3 || S.blds.some(b => b.t === 'wood' && cheb(b, { x, y }) <= 2)) continue;
-      cands.push({ x, y, type: 'wood', sz: 1, cost: COST.wood.wood, score: -n * 2 + dist(x, y) * 0.1 });
-    } else if (kind === 'mine') {
-      const rk = countZoned(S, x, y, WORK_R, 'rock', 'mine'), ok = countDeco(S, x, y, WORK_R, 'ore');
-      const needOre = (30 - r.ore) / 30, needStone = (60 - r.stone) / 60;
-      let type = null, cnt = 0;
-      if (ok >= 2 && (rk < 2 || needOre >= needStone)) { type = 'mine'; cnt = ok; } else if (rk >= 2) { type = 'quarry'; cnt = rk; }
-      if (!type || S.blds.some(b => b.t === type && cheb(b, { x, y }) <= 2)) continue;
-      cands.push({ x, y, type, sz: 1, cost: COST[type].wood, score: -cnt * 2 + dist(x, y) * 0.1 });
+  // wood and mine: one candidate per site tile, score has no daily noise. Ties go to the earlier tile in (y, x) order, like the original stable sort.
+  let best = null; const needOre = (30 - r.ore) / 30, needStone = (60 - r.stone) / 60;
+  const woods = listOf(C, 'wood'), quarries = listOf(C, 'quarry'), mines = listOf(C, 'mine');
+  for (let c = 0; c < CH * CH; c++) {
+    const s = devChunk(S, C, kind, c).sites;
+    for (let i = 0; i < s.length; i += 4) {
+      const x = s[i], y = s[i + 1]; let type, cnt, score;
+      if (kind === 'wood') {
+        if (woods.some(b => cheb(b, { x, y }) <= 2)) continue;
+        type = 'wood'; cnt = s[i + 2];
+      } else {
+        const rk = s[i + 2], ok = s[i + 3]; type = null; cnt = 0;
+        if (ok >= 2 && (rk < 2 || needOre >= needStone)) { type = 'mine'; cnt = ok; } else if (rk >= 2) { type = 'quarry'; cnt = rk; }
+        if (!type || (type === 'mine' ? mines : quarries).some(b => cheb(b, { x, y }) <= 2)) continue;
+      }
+      score = -cnt * 2 + dist(x, y) * 0.1;
+      const a = y * N + x;
+      if (!best || score < best.score || (score === best.score && a < best.a)) best = { a, x, y, type, cnt, score };
     }
   }
-  if (!cands.length) return { pick: null };
-  cands.sort((a, b) => a.score - b.score);
-  return r.wood >= cands[0].cost ? { pick: cands[0] } : { pick: null, wait: cands[0].cost };
+  if (!best) return { pick: null };
+  const cand = { x: best.x, y: best.y, type: best.type, sz: 1, cost: COST[best.type].wood, score: best.score };
+  return r.wood >= cand.cost ? { pick: cand } : { pick: null, wait: cand.cost };
 }
 function develop(S) {
   computeDemand(S);
@@ -1026,36 +1386,51 @@ function develop(S) {
     recalc(S);
   }
 }
-function tick(S) {
-  recalc(S);
-  const d = S.d, before = { ...S.res };
-  const employed = d.employed;
-  let food = 0, wood = 0, logs = 0, stone = 0, ore = 0;
-  for (const b of S.blds) {
-    if (!b.served) continue;
-    const e = b.eff || 0;   // this building's own staffing share
-    if (b.t === 'farm') food += foodOf(b) * e;
-    else if (b.t === 'forester') {
-      if (e > 0) { b.prog += e; if (b.prog >= PLANT_EVERY) { if (plantSapling(S, b.x, b.y, FORESTER_R)) b.prog = 0; else b.prog = PLANT_EVERY; } }
-    }
-  }
-  // Woodcutters, quarrymen and miners walk out to their marked tiles and carry loads home; only delivered loads count.
-  const got = { logs: 0, stone: 0, ore: 0 }; stepCrews(S, got); logs += got.logs; stone += got.stone; ore += got.ore;
-  stepFolk(S);
-  S.res.logs = (S.res.logs || 0) + logs;
-  // Sawmills first (full yield, limited by workers), then the Town Hall pit-saw for what is left.
-  for (const b of S.blds) if (b.t === 'sawmill' && b.served && S.res.logs > 0) {
-    const c = Math.min(S.res.logs, SAW_RATE * b.eff); S.res.logs -= c; wood += c;
-  }
-  if (S.res.logs > 0) { const c = Math.min(S.res.logs, HALL_SAW); S.res.logs -= c; wood += c * HALL_YIELD; }
+
+// ---------- The simulation clock and scheduler ----------
+// One deterministic clock: S.day (saved with the world). A day is one tick() call. Everything that happens in a day is a named task in the TASKS table below,
+// run in table order; a task says how often it runs (every N days, from an offset), so slower systems (a yearly harvest, a monthly census) and faster ones
+// (movement and combat can take several sub-steps per day) slot in without new timers. Right now every task runs every day, in exactly the order the
+// original tick() used, so gameplay and numbers are unchanged.
+// Event-driven work (roads, workforce, services, development candidates) is not scheduled: it is done on demand through the dirty flags and chunk stamps in
+// sim_cache.js / sim_econ.js, so it costs nothing on days when nothing changed.
+//   stage 'sync'       bring derived data (services, workforce) up to date
+//   stage 'production' daily production (farms, foresters, sawmills)
+//   stage 'movement'   crews and townsfolk step (this is where combat / formations will step, several times a day if wanted)
+//   stage 'nature'     stumps rot, saplings grow
+//   stage 'economy'    consumption, income, population, military training, summaries
+//   stage 'develop'    automatic development grows new buildings
+const TASKS = [];
+function schedule(name, stage, every, offset, run) { TASKS.push({ name, stage, every, offset, run }); }
+function runTasks(S, T) { for (const t of TASKS) if (t.every === 1 || ((S.day - t.offset) % t.every + t.every) % t.every === 0) t.run(S, T); }
+
+schedule('sync', 'sync', 1, 0, (S, T) => { recalc(S); T.d = S.d; T.before = { ...S.res }; T.employed = T.d.employed; T.food = 0; T.wood = 0; T.logs = 0; T.stone = 0; T.ore = 0; });
+schedule('farms+foresters', 'production', 1, 0, (S, T) => {
+  const C = cacheOf(S);
+  for (const b of listOf(C, 'farm')) if (b.served) T.food += foodOf(b) * (b.eff || 0);
+  for (const b of listOf(C, 'forester')) if (b.served) { const e = b.eff || 0; if (e > 0) { b.prog += e; if (b.prog >= PLANT_EVERY) { if (plantSapling(S, b.x, b.y, FORESTER_R)) b.prog = 0; else b.prog = PLANT_EVERY; } } }
+});
+// Woodcutters, quarrymen and miners walk out to their marked tiles and carry loads home; only delivered loads count.
+schedule('crews', 'movement', 1, 0, (S, T) => { const got = { logs: 0, stone: 0, ore: 0 }; stepCrews(S, got); T.logs += got.logs; T.stone += got.stone; T.ore += got.ore; });
+schedule('townsfolk', 'movement', 1, 0, (S, T) => { stepFolk(S); });
+schedule('deliver logs', 'production', 1, 0, (S, T) => { S.res.logs = (S.res.logs || 0) + T.logs; });
+// Sawmills first (full yield, limited by workers), then the Town Hall pit-saw for what is left.
+schedule('sawing', 'production', 1, 0, (S, T) => {
+  for (const b of listOf(cacheOf(S), 'sawmill')) if (b.served && S.res.logs > 0) { const c = Math.min(S.res.logs, SAW_RATE * b.eff); S.res.logs -= c; T.wood += c; }
+  if (S.res.logs > 0) { const c = Math.min(S.res.logs, HALL_SAW); S.res.logs -= c; T.wood += c * HALL_YIELD; }
+});
+schedule('nature', 'nature', 1, 0, (S, T) => {
   // Stumps rot away into open, buildable grass.
-  if (S.stumpT) for (const k in S.stumpT) if (--S.stumpT[k] <= 0) { delete S.stumpT[k]; const y = Math.floor(k / N), x = k % N; if (S.deco[y][x] === 'stump') S.deco[y][x] = null; }
+  if (S.stumpT) for (const k in S.stumpT) if (--S.stumpT[k] <= 0) { delete S.stumpT[k]; const y = Math.floor(k / N), x = k % N; if (S.deco[y][x] === 'stump') { S.deco[y][x] = null; touch(S, x, y, F_DECO); } }
   // Saplings grow into trees (the forester's tile stays in its Lumber zone, ready for felling again).
-  if (S.sapT) for (const k in S.sapT) if (--S.sapT[k] <= 0) { delete S.sapT[k]; const y = Math.floor(k / N), x = k % N; if (S.deco[y][x] === 'sapling') S.deco[y][x] = 'tree'; }
+  if (S.sapT) for (const k in S.sapT) if (--S.sapT[k] <= 0) { delete S.sapT[k]; const y = Math.floor(k / N), x = k % N; if (S.deco[y][x] === 'sapling') { S.deco[y][x] = 'tree'; touch(S, x, y, F_DECO); } }
+});
+schedule('economy', 'economy', 1, 0, (S, T) => {
+  const d = T.d, before = T.before;
   const trade = d.markets ? 0.04 * S.peasants * d.cov * d.mkEff : 0;
   const eat = (S.peasants + S.soldiers * 1.5) * 0.2;
-  S.res.food += food - eat; S.res.wood += wood; S.res.stone += stone; S.res.ore += ore;
-  S.res.gold += employed * 0.12 + trade - S.soldiers * 0.1;
+  S.res.food += T.food - eat; S.res.wood += T.wood; S.res.stone += T.stone; S.res.ore += T.ore;
+  S.res.gold += T.employed * 0.12 + trade - S.soldiers * 0.1;
   S.starving = false;
   if (S.res.food <= 0) {
     S.res.food = 0; S.starving = true;
@@ -1070,7 +1445,7 @@ function tick(S) {
   }
   if (S.peasants > d.civ) S.peasants--;
   if (S.soldiers > d.bunks) S.soldiers--;
-  for (const b of S.blds) if (b.t === 'barracks' && b.served) {
+  for (const b of listOf(cacheOf(S), 'barracks')) if (b.served) {
     b.prog = Math.min(4, b.prog + 1);
     if (b.prog >= 4 && S.drafting && S.soldiers < d.bunks && S.peasants >= 3 && S.res.wood >= 2 && S.res.gold >= 1 && S.res.ore >= 1) {
       S.soldiers++; S.peasants--; S.trained++; S.res.wood -= 2; S.res.gold -= 1; S.res.ore -= 1; b.prog = 0;
@@ -1079,10 +1454,12 @@ function tick(S) {
   for (const k in S.res) S.res[k] = Math.max(0, Math.min(STORAGE, S.res[k]));
   for (const k in S.res) S.rate[k] = (k === 'logs' || k === 'stone' || k === 'ore') ? 0.85 * (S.rate[k] || 0) + 0.15 * (S.res[k] - before[k]) : S.res[k] - before[k];   // loads arrive in lumps, so smooth those rates
   S.day++;
-  recalc(S);
-  develop(S);
-}
-if (false) module.exports = { folkOf, FOLK_MAX, FOLK_VARIANTS, crewOf, CREW_KIND, WORK_T, LOAD, CHOPS_PER_TREE, stepCrews, PLANT_EVERY, SAPLING_DAYS, FORESTER_R, plantSapling, foresterCovers, TRADES, TRADE_OF, TRADE_NAMES, jobsOf, recalc, treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+});
+schedule('develop', 'develop', 1, 0, (S, T) => { recalc(S); develop(S); });
+function tick(S) { runTasks(S, {}); }
+
+if (false) module.exports = { folkOf, FOLK_MAX, FOLK_VARIANTS, crewOf, CREW_KIND, WORK_T, LOAD, CHOPS_PER_TREE, stepCrews, PLANT_EVERY, SAPLING_DAYS, FORESTER_R, plantSapling, foresterCovers, TRADES, TRADE_OF, TRADE_NAMES, jobsOf, recalc, treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, countDeco, addBld, setZone, zoneCheck, computeDemand,
+  CHUNK, CH, claimed, cacheOf, invalidateCaches, touch, touchBox, groundStamp, decoStamp, auditCaches, schedule, TASKS };
 
 // ---------- Texture slots, overrides, asset loader, and the texture lab ----------
 const STYLE = 'Isometric pixel art for a medieval city-builder game in the spirit of TheoTown. True 2:1 isometric: a ground tile is a diamond exactly twice as wide as it is tall. Hard pixel edges, no anti-aliasing, no gradients, no blur, no outline thicker than 1 pixel, about 24 colours at most. Warm, earthy early-medieval palette: weathered timber, straw thatch, packed dirt, grey fieldstone, muted greens. Light comes from the top-left: left-facing walls are mid-tone, right-facing walls are darker, roofs are lightest on their left slope. No cast shadow on the ground and nothing drawn on the ground except the object itself. One object per image, centred, completely visible, viewed from a fixed camera about 30 degrees above the horizon. Background: one flat solid pure magenta (#FF00FF) so it can be removed.';
@@ -2135,13 +2512,8 @@ function groundDraw(src, x, bottomY, G) {
 // Zoomed-out ground layer: the whole map's ground (grass + zones) pre-drawn once per camera rotation and redrawn only when it changes,
 // so far-out views cost one big drawImage instead of ~4000 small ones.
 const GL = { cv: null, sig: null, OX: 0, OY: 0 };
-function groundSig() {
-  let h = ROT | 0;
-  for (let y = 0; y < N; y++) { const zr = S.zone[y], gr = S.grid[y], fr = S.fert[y], dr = S.deco[y];
-    for (let x = 0; x < N; x++) { const z = zr[x]; h = (Math.imul(h, 31) + (z && !gr[x] ? z.charCodeAt(0) + 7 : 0) + (fr[x] ? 3 : 0) + (dr[x] === 'rock' ? 5 : 0)) | 0; } }
-  const hv = S.hv; for (let i = 0; i < hv.length; i++) h = (Math.imul(h, 31) + hv[i]) | 0;
-  return h;
-}
+// The sim stamps every change to zones, built tiles, rock and heights (and to trees/ore/stumps/saplings below), so these are O(1) instead of scanning the whole map each frame.
+function groundSig() { return ROT + '|' + groundStamp(S); }
 function groundLayer() {
   const sig = groundSig(); if (GL.cv && GL.sig === sig) return GL;
   const OX = N * 16 + 32, OY = HMAX * LV + 16;
@@ -2162,11 +2534,7 @@ function groundLayer() {
 // Baked flat, so at LOD zoom buildings are drawn on top of all of it (a tree in front of a house is a few pixels, not worth 6000 drawImage calls a frame).
 const BAKED = { tree: 1, ore: 1, stump: 1, sapling: 1 };
 const DL = { cv: null, sig: null };
-function decoSig() {
-  let h = ROT | 0;
-  for (let y = 0; y < N; y++) { const dr = S.deco[y]; for (let x = 0; x < N; x++) { const k = dr[x]; if (k && BAKED[k]) h = (Math.imul(h, 31) + k.charCodeAt(0) * 3 + k.length + ((y * N + x) & 255)) | 0; } }
-  return h;
-}
+function decoSig() { return ROT + '|' + decoStamp(S); }
 function decoLayer() {
   const G0 = groundLayer(), sig = decoSig(); if (DL.cv && DL.sig === sig && DL.cv.width === G0.cv.width && DL.cv.height === G0.cv.height) return G0 && DL;
   if (!DL.cv) DL.cv = document.createElement('canvas');

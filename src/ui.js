@@ -740,13 +740,8 @@ function groundDraw(src, x, bottomY, G) {
 // Zoomed-out ground layer: the whole map's ground (grass + zones) pre-drawn once per camera rotation and redrawn only when it changes,
 // so far-out views cost one big drawImage instead of ~4000 small ones.
 const GL = { cv: null, sig: null, OX: 0, OY: 0 };
-function groundSig() {
-  let h = ROT | 0;
-  for (let y = 0; y < N; y++) { const zr = S.zone[y], gr = S.grid[y], fr = S.fert[y], dr = S.deco[y];
-    for (let x = 0; x < N; x++) { const z = zr[x]; h = (Math.imul(h, 31) + (z && !gr[x] ? z.charCodeAt(0) + 7 : 0) + (fr[x] ? 3 : 0) + (dr[x] === 'rock' ? 5 : 0)) | 0; } }
-  const hv = S.hv; for (let i = 0; i < hv.length; i++) h = (Math.imul(h, 31) + hv[i]) | 0;
-  return h;
-}
+// The sim stamps every change to zones, built tiles, rock and heights (and to trees/ore/stumps/saplings below), so these are O(1) instead of scanning the whole map each frame.
+function groundSig() { return ROT + '|' + groundStamp(S); }
 function groundLayer() {
   const sig = groundSig(); if (GL.cv && GL.sig === sig) return GL;
   const OX = N * 16 + 32, OY = HMAX * LV + 16;
@@ -767,11 +762,7 @@ function groundLayer() {
 // Baked flat, so at LOD zoom buildings are drawn on top of all of it (a tree in front of a house is a few pixels, not worth 6000 drawImage calls a frame).
 const BAKED = { tree: 1, ore: 1, stump: 1, sapling: 1 };
 const DL = { cv: null, sig: null };
-function decoSig() {
-  let h = ROT | 0;
-  for (let y = 0; y < N; y++) { const dr = S.deco[y]; for (let x = 0; x < N; x++) { const k = dr[x]; if (k && BAKED[k]) h = (Math.imul(h, 31) + k.charCodeAt(0) * 3 + k.length + ((y * N + x) & 255)) | 0; } }
-  return h;
-}
+function decoSig() { return ROT + '|' + decoStamp(S); }
 function decoLayer() {
   const G0 = groundLayer(), sig = decoSig(); if (DL.cv && DL.sig === sig && DL.cv.width === G0.cv.width && DL.cv.height === G0.cv.height) return G0 && DL;
   if (!DL.cv) DL.cv = document.createElement('canvas');
