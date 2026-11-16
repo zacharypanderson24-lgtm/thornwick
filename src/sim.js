@@ -242,12 +242,12 @@ function countZoned(S, x, y, r, kind, zone) {
   for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++) if (inb(i, j) && S.deco[j][i] === kind && S.zone[j][i] === zone && (kind !== 'rock' || rockOpen(S, i, j))) n++;
   return n;
 }
-// Rock height: 3 = mountain, 2 = hill, 1 = rubble. Quarrying wears a tile down one stage at a time.
+// Rock height: 3 = mountain (permanent), 2 = hill, 1 = rubble. Quarrying wears hills and rubble down one stage at a time; mountains never change.
 function rockAmt(S, x, y) { return (S.rockAmt && S.rockAmt[tk(x, y)]) || 1; }
 // Terrain: 3 = mountain (solid, nothing can be built on it), 2 = hill and 1 = rubble (buildable, building levels them).
 function isMountain(S, x, y) { return S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3; }
 function isSolid(S, x, y) { return S.deco[y][x] === 'ore' || isMountain(S, x, y); }
-// A mountain can only be quarried where it meets open ground (its working face), so quarries cut inward;
+// A mountain can only be quarried where it meets open ground (its working face);
 // hills and rubble can always be worked.
 function rockOpen(S, x, y) {
   if (rockAmt(S, x, y) < 3) return true;
@@ -265,10 +265,15 @@ function fellTree(S, x, y, r) {
   S.deco[t[1]][t[0]] = 'stump'; S.zone[t[1]][t[0]] = null;
   S.stumpT = S.stumpT || {}; S.stumpT[tk(t[0], t[1])] = STUMP_DAYS;
 }
+// Quarries cut stone from a mountain's exposed face without ever wearing it down: mountains are permanent.
+// Only hills and rubble wear away (hill -> rubble -> flat ground). Hills nearest the quarry go first.
 function wearRock(S, x, y, r) {
-  const t = nearestZoned(S, x, y, r, 'rock', 'mine'); if (!t) return;
-  S.rockAmt = S.rockAmt || {}; const k = tk(t[0], t[1]), a = rockAmt(S, t[0], t[1]) - 1;
-  if (a <= 0) { S.deco[t[1]][t[0]] = null; S.zone[t[1]][t[0]] = null; delete S.rockAmt[k]; } else S.rockAmt[k] = a;
+  let best = null, bd = 1e9;
+  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
+    if (inb(i, j) && S.deco[j][i] === 'rock' && S.zone[j][i] === 'mine' && rockAmt(S, i, j) < 3) { const d = (i - x) * (i - x) + (j - y) * (j - y); if (d < bd) { bd = d; best = [i, j]; } }
+  if (!best) return;
+  S.rockAmt = S.rockAmt || {}; const k = tk(best[0], best[1]), a = rockAmt(S, best[0], best[1]) - 1;
+  if (a <= 0) { S.deco[best[1]][best[0]] = null; S.zone[best[1]][best[0]] = null; delete S.rockAmt[k]; } else S.rockAmt[k] = a;
 }
 function fellNearest(S, x, y, r, kind) {
   let best = null, bd = 1e9;

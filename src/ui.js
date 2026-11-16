@@ -98,7 +98,7 @@ function buildSprites() {
     blob(g, 14 + k * 2, 37, 4, '#8a8d98'); blob(g, 19 - k * 2, 38, 3, '#767985'); blob(g, 13 + k * 2, 35, 2, '#b4b8c4'); blob(g, 20, 36, 2, '#9ea2ae');
     SPR.rock.push(c);
   }
-  // Felled-tree stumps, plus the stages a quarried rock wears down through (mountain -> hill -> rubble).
+  // Felled-tree stumps.
   SPR.stump = [];
   for (let k = 0; k < 2; k++) {
     const [c, g] = mkc();
@@ -687,7 +687,7 @@ function updateHint() {
   let t = '';
   if (tool === 'road') t = roadAnchor ? 'Click where the road ends. Shift bends it the other way. Esc cancels.' : 'Click where the road starts, then click where it ends. You can start or end on an existing road.';
   else if (tool === 'zoneWood') t = 'Drag over forest to mark trees for felling. Woodcutters near a road cut them into logs and the land is left clear to build on. Logs need a sawmill.';
-  else if (tool === 'zoneMine') t = 'Drag over rock to mark it for quarrying. Quarries wear mountains down to hills, rubble and then flat ground.';
+  else if (tool === 'zoneMine') t = 'Drag over rock to mark it for quarrying. Quarries take stone from a mountain\'s edge without wearing it away; hills and rubble wear down to flat ground.';
   else if (tool === 'sawmill') t = 'Place a sawmill beside a road. It turns logs into wood. Without one, the Town Hall saws slowly at half yield.';
   else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings only grow on zone tiles that touch a road, and their doors face it.';
   const el = $('hint'); if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
@@ -739,7 +739,7 @@ function describe(t) {
     if (k === 'stump') return ['Tree stump', ['Left behind by felling. It rots away into open grass you can build on.']];
     if (k === 'rock') {
       const a = rockAmt(S, t.x, t.y), mk = S.zone[t.y][t.x] === 'mine';
-      if (a >= 3) return ['Mountain', [mk ? (rockOpen(S, t.x, t.y) ? 'Marked for quarrying. Its edge is exposed, so quarries can work it.' : 'Marked for quarrying, but quarries can only cut where the mountain meets open ground. They work inward from the edge.') : 'Solid rock: nothing can be built here and roads cannot cross it. Mark its edge for quarrying; it wears down into hills.']];
+      if (a >= 3) return ['Mountain', [mk ? (rockOpen(S, t.x, t.y) ? 'Marked for quarrying. Its edge is exposed, so quarries can take stone from it. The mountain itself never wears away.' : 'Marked for quarrying, but quarries can only reach the face where the mountain meets open ground.') : 'Solid rock: nothing can be built here and roads cannot cross it. Mark its edge for quarrying: a quarry takes stone from the face, and the mountain stays.']];
       if (a === 2) return ['Hill', [mk ? 'Marked for quarrying. It will wear down to rubble and then flat ground.' : 'You can build and lay roads here. Building levels the hill. Or mark it for quarrying.']];
       return ['Rubble', [mk ? 'Marked for quarrying. Quarries clear it to flat ground.' : 'Loose rock. You can build here, or mark it for quarrying.']];
     }
@@ -759,7 +759,7 @@ function describe(t) {
   if (b.t === 'house') L.push('Level ' + b.lvl + ' · holds ' + capOf(b) + ' people', b.lvl === 1 ? 'A well within 4 tiles upgrades it to level 2.' : 'Upgraded by a nearby well.');
   if (b.t === 'farm') L.push('Jobs: ' + jobsOf(b) + ' · makes ' + (b.served ? (foodOf(b) * d.ratio).toFixed(1) : '0') + ' food per second', 'Staffed at ' + Math.round(d.ratio * 100) + '%');
   if (b.t === 'wood') { const n = countZoned(S, b.x, b.y, 3, 'tree', 'wood'); L.push('Jobs: 3 · ' + n + ' marked trees in range', n ? 'Fells ' + (b.served ? (2.5 * d.ratio).toFixed(1) : '0') + ' logs per second. A sawmill turns logs into wood.' : 'No marked trees left. Paint a Lumber zone on more forest nearby.'); }
-  if (b.t === 'quarry') { const n = countZoned(S, b.x, b.y, 3, 'rock', 'mine'); L.push('Jobs: 3 · ' + n + ' marked rock tiles in range', n ? 'Makes ' + (b.served ? (2 * d.ratio).toFixed(1) : '0') + ' stone per second and wears the rock down.' : 'No marked rock left. Paint a Mining zone on more rock nearby.'); }
+  if (b.t === 'quarry') { const n = countZoned(S, b.x, b.y, 3, 'rock', 'mine'); L.push('Jobs: 3 · ' + n + ' marked rock tiles in range', n ? 'Makes ' + (b.served ? (2 * d.ratio).toFixed(1) : '0') + ' stone per second. Hills and rubble wear down; mountains stay.' : 'No marked rock left. Paint a Mining zone on more rock nearby.'); }
   if (b.t === 'sawmill') L.push('Jobs: 3 · saws ' + (b.served ? (4 * d.ratio).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
   if (b.t === 'mine') { const n = countDeco(S, b.x, b.y, 3, 'ore'); L.push('Jobs: 3 · ' + n + ' ore tiles in range', n ? 'Makes ' + (b.served ? (1.5 * d.ratio).toFixed(1) : '0') + ' ore per second' : 'Out of ore. Clear it and zone a new site.'); }
   if (b.t === 'market') L.push('Jobs: ' + jobsOf(b) + ' · covers homes within ' + (b.sz === 2 ? 7 : 5) + ' tiles', 'Earns gold from covered villagers (' + Math.round(d.cov * 100) + '% of homes covered).');

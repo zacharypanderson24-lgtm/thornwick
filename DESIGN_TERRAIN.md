@@ -1,6 +1,6 @@
 # Thornwick: terrain, stone, ore and lumber (future design)
 
-Status: first pass built (felling zones, logs, sawmill, stumps, quarry stages: mountain -> hill -> rubble -> flat). Mountains and hills reworked: smooth mountain ranges ringed by hills; mountains are solid, hills are buildable and roads cross them; quarries work only the exposed face of a mountain (section 2). Not yet built: terrain types beyond rock/forest, underground ore, regrowth/foresters, workforce panel, per-building worker counts. Written so ChatGPT (art) and Claude (code) work from the same plan.
+Status: first pass built (felling zones, logs, sawmill, stumps, quarry stages: hill -> rubble -> flat). Mountains and hills reworked: smooth mountain ranges ringed by hills; mountains are permanent and solid, hills are buildable and roads cross them; quarries take stone from the exposed face of a mountain without wearing it down (section 2). Not yet built: terrain types beyond rock/forest, underground ore, regrowth/foresters, workforce panel, per-building worker counts. Written so ChatGPT (art) and Claude (code) work from the same plan.
 Core principle: **resources come out of the land, and taking them changes the land.**
 
 ## 1. Terrain grid
@@ -11,13 +11,13 @@ Replace the scattered rock/ore/tree decorations with a real terrain layer. Each 
 | grass | fertility | yes | (stays) |
 | forest | tree density | no | stumps -> cleared grass |
 | hill | stone | no (roads ok) | rubble -> quarry pit -> flat |
-| mountain | lots of stone, may cover ore | no, blocks roads | hill -> rubble -> pit -> flat |
+| mountain | permanent stone source, may cover ore | no, blocks roads | (never changes) |
 | water / river | | no (bridges) | |
 
 Provinces are generated from a seed with a different mix (river valley, mining mountain, deep forest), which gives governors and conquest different jobs.
 
 ## 2. Stone: from the surface
-- **As built:** mountain (rockAmt 3) blocks buildings, zones and roads and cannot be bulldozed. Hill (2) and rubble (1) are buildable; roads cross them and building levels the tile. A quarry only works a mountain tile that touches open ground, so it cuts inward from the edge, and each tile it finishes steps down: mountain -> hill -> rubble -> flat. Quarrying a face turns a mountain into hills you can build on.
+- **As built:** mountain (rockAmt 3) is permanent: it blocks buildings, zones and roads, cannot be bulldozed, and is never worn down. A quarry takes stone from a mountain tile that meets open ground (its face) indefinitely. Hill (2) and rubble (1) are buildable and roads cross them; building levels the tile, and quarries wear marked hills down: hill -> rubble -> flat. Open question: mountain stone is currently unlimited; a finite per-tile stone amount could be added later.
 - Mountains and hills are the stone source. Quarries work them.
 - Each tile has a stone amount. As it drops the tile steps down: mountain -> hill -> rubble -> quarry pit -> flat, buildable ground.
 - Quarrying trades defence (mountains are walls) for building space and stone.
