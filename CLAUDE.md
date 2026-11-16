@@ -5,7 +5,8 @@ Medieval TheoTown-style pixel isometric city builder. Owner: Zach. Hosted from t
 ## Layout and build
 - Source: src/sim.js (pure game logic, node-testable), src/textures.js (texture slots, lab, banner tint), src/ui.js (render/input/HUD), src/template.html, src/build.py.
 - Build: `cd src && python3 build.py && mv index.html ../index.html`. index.html at repo root is the built single file; always rebuild before committing source changes.
-- Assets: assets/name_1..4.png (building views), see TEXTURE_SPEC.md and BUILDING_TILE_GUIDE.md. Art check: `python3 tools/check_textures.py`.
+- Assets: assets/name_1..4.png (building views), see TEXTURE_SPEC.md and BUILDING_TILE_GUIDE.md. Art check: `python3 tools/check_textures.py` (buildings, plus ground tiles grass_N / grassfert_N).
+- Ground tile source art must be a 2048 x 1024 canvas (exactly 2:1) with the diamond corners on the edge midpoints; the loader scales by width, so a 3:2 diamond would be too tall. Edge band ~2 game px stays plain base colour so tiles blend.
 - Design plan for terrain/lumber/ore/workforce: DESIGN_TERRAIN.md (status line at the top says what is built).
 - Commit messages end with the attribution lines the session gives.
 
@@ -25,7 +26,7 @@ Medieval TheoTown-style pixel isometric city builder. Owner: Zach. Hosted from t
 ## Open work (update as it changes)
 1. Workforce panel (workers per trade) + per-building worker counts so output scales with workers (DESIGN_TERRAIN sections 7-8).
 2. Terrain beyond rock/forest, forest regrowth/foresters, underground ore + prospecting + mine levels.
-3. World art mismatch: grass, trees, rocks, farms, market, well, mine, quarry, sawmill, stump, hill/mountain stages are still flat code-drawn sprites; need ChatGPT textures and slots.
+3. World art mismatch: grass, trees, rocks, farms, market, well, mine, quarry, sawmill, stump, hill/mountain stages are still flat code-drawn sprites; need ChatGPT textures and slots. Grass (grass_0..3) prompt is ready and the checker validates ground tiles; waiting for Zach to push the textures, then review (checker, side by side, in-game render).
 4. Hut textures pass the clipping checks but sit at 2 px margin (checker wants 3): relax or redo.
 5. Starting huts overlap the Hall porch (move start layout down one tile).
 6. Older goals: tech tree, conquest map with governors, villager sprites, threats.

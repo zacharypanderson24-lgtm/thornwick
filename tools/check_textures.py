@@ -6,6 +6,10 @@ Checks every building sprite in assets/ for the mistakes that keep recurring:
   - stone base / lowest pixels sit on the footprint diamond (within TOL px)
   - no pink/magenta fringe left over from the background
   - the 4 views of one building do not differ much in width
+Ground tiles (assets/grass_N.png, grassfert_N.png) get their own check:
+  - canvas is 2:1 (a diamond touching all four edges is only 2:1 if the canvas is)
+  - magenta/transparent outside the diamond, no magenta inside it, diamond fills the image
+  - the band along the diamond edge is one flat base colour (so tiles blend when repeated)
 Exit code 1 if any FAIL, so it can run in CI or before a push."""
 import glob, os, re, sys
 from PIL import Image
@@ -66,6 +70,49 @@ for f in sorted(glob.glob('assets/*_[1-4].png')):
         lo = a[H - 16:]
         sp = int(((lo[:, :, 3] > 128) & (lo[:, :, 0] > 200) & (lo[:, :, 1] > 190) & (lo[:, :, 2] > 150)).sum())
         if sp > 10: msgs.append(('WARN', f'{sp} near-white speckle px in the base (should be ~0)'))
+    for lvl, m in msgs:
+        print(f'{lvl:4} {base}: {m}')
+        if lvl == 'FAIL': fails += 1
+        else: warns += 1
+
+# ---------- ground tiles ----------
+GROUND_BASE = {'grass': (0x5F, 0x9E, 0x48)}     # expected base colour, warn if the edge band is far from it
+
+def is_bg(a):
+    r, g, b, al = (a[:, :, i].astype(int) for i in range(4))
+    return (al < 128) | ((r > 200) & (b > 200) & (g < 90))
+
+def check_ground(f):
+    base = os.path.basename(f)[:-4]
+    im = Image.open(f).convert('RGBA'); a = np.array(im); H, W = a.shape[:2]
+    msgs = []
+    if abs(W / H - 2) > 0.02:
+        msgs.append(('FAIL', f'canvas {W}x{H} is {W / H:.2f}:1, must be 2:1 (use 2048x1024); the diamond would be the wrong shape'))
+    ys, xs = np.mgrid[0:H, 0:W]
+    d = np.abs(2 * (xs + 0.5) / W - 1) + np.abs(2 * (ys + 0.5) / H - 1)     # 1.0 on the diamond edge
+    bg = is_bg(a)
+    out = d > 1.03; inn = d < 0.97
+    if bg[out].mean() < 0.97:
+        msgs.append(('FAIL', f'{100 * (1 - bg[out].mean()):.1f}% of the area outside the diamond is not magenta/transparent (ground or shadow around the tile?)'))
+    if bg[inn].mean() > 0.001:
+        msgs.append(('FAIL', f'{100 * bg[inn].mean():.1f}% of the diamond is magenta/transparent (diamond must fill the image edge to edge)'))
+    band = (d > 0.86) & (d < 0.97) & ~bg
+    if band.sum() > 100:
+        px = a[:, :, :3][band].astype(int)
+        med = np.median(px, axis=0)
+        flat = (np.abs(px - med).sum(1) < 40).mean()
+        if flat < 0.80: msgs.append(('FAIL', f'edge band is only {100 * flat:.0f}% one flat colour (keep ~2 game px along the edges plain; no tufts, outline or rim)'))
+        elif flat < 0.92: msgs.append(('WARN', f'edge band is {100 * flat:.0f}% one flat colour; keep it plainer so tiles blend'))
+        for k, c in GROUND_BASE.items():
+            if base.startswith(k) and not base.startswith('grassfert') and np.abs(med - np.array(c)).sum() > 60:
+                msgs.append(('WARN', f'edge colour {tuple(int(v) for v in med)} is far from the palette base {c}'))
+        # tiles repeat, so busy contrast shows as a grid: report luminance spread inside the diamond
+        lum = (0.3 * a[:, :, 0] + 0.59 * a[:, :, 1] + 0.11 * a[:, :, 2])[inn & ~bg]
+        if lum.std() > 22: msgs.append(('WARN', f'high contrast (luminance std {lum.std():.0f}); tiles may show a visible grid when repeated'))
+    return base, msgs
+
+for f in sorted(glob.glob('assets/grass_[0-9].png') + glob.glob('assets/grassfert_[0-9].png')):
+    base, msgs = check_ground(f)
     for lvl, m in msgs:
         print(f'{lvl:4} {base}: {m}')
         if lvl == 'FAIL': fails += 1

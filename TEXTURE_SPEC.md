@@ -29,12 +29,19 @@ ChatGPT cannot make an exact 32 x 48 image, and it does not need to. Ask for lar
 |---|---|---|
 | One-tile building, tree, rock, ore | **1024 x 1536 (portrait)** | exactly 2:3, the same shape as 32 x 48 |
 | Two-by-two building | **1024 x 1536 (portrait)**, object fills the width | game sprite is 8:11, close enough; the lab fits it |
-| Ground tile | **1536 x 1024 (landscape)**, diamond fills the whole image edge to edge | diamond is 2:1 |
+| Ground tile | **2048 x 1024 (landscape, exactly 2:1)**, diamond corners touch the middle of all four edges | the diamond is 2:1, so the canvas must be 2:1 too. 1536 x 1024 is 3:2 and would give a diamond that is too tall |
 | Four-view sheet (optional) | **1536 x 1536 (square), 2 x 2 grid** | each cell 768 x 768 |
 
 Pixel size: aim for each game pixel to be about **8 to 32 real pixels** wide in ChatGPT's picture, with visible square blocks and no soft edges. If ChatGPT gives smooth or blurry art, tell it: "redo with large, clearly visible square pixels, hard edges, no anti-aliasing".
 
 Background: **flat pure magenta #FF00FF**, nothing else. No floor, no shadow, no border, no text.
+
+### Ground tiles (grass, fertile soil)
+
+- Canvas exactly **2048 x 1024**. The diamond's four corners touch the midpoints of the four edges; everything outside the diamond is flat magenta #FF00FF.
+- The game crops to the diamond and scales it to 32 px wide, so a 3:2 diamond would come out 21 px tall instead of 16 and overlap its neighbours.
+- Ground tiles repeat across the whole map: keep contrast low, keep the outer band along the diamond edges (about 2 game pixels) plain base colour, and draw no outline, rim or shading at the edge.
+- `python3 tools/check_textures.py` checks ground tiles too (`grass_N.png`, `grassfert_N.png`).
 
 ## 4. Style
 
