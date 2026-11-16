@@ -132,17 +132,21 @@ function relaxHeights(S, box, pinned) {
     if (!ch) break;
   }
 }
-// Level the ground under a building: every corner of its footprint goes to one height, then the land around it is eased back to its slope.
+// Build UP the hill, not into it: the footprint is raised to its highest corner (a terrace, like a foundation), so the slope above is left alone and
+// the land below is filled out to meet it. Other buildings keep their ground; the land around is eased back to a gentle slope.
 function levelFootprint(S, tiles) {
   if (!S.hv) return;
-  const M = N + 1, set = new Set(); let sum = 0, n = 0, a0 = N, b0 = N, a1 = 0, b1 = 0;
+  const M = N + 1, set = new Set(); let top = HMIN, a0 = N, b0 = N, a1 = 0, b1 = 0;
   for (const [x, y] of tiles) for (const [da, db] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
-    const k = (y + db) * M + x + da; if (set.has(k)) continue; set.add(k); sum += S.hv[k]; n++;
+    const k = (y + db) * M + x + da; if (set.has(k)) continue; set.add(k); top = Math.max(top, S.hv[k]);
     a0 = Math.min(a0, x + da); b0 = Math.min(b0, y + db); a1 = Math.max(a1, x + da); b1 = Math.max(b1, y + db);
   }
-  const lvl = Math.round(sum / n); let moved = false;
-  for (const k of set) if (S.hv[k] !== lvl) { S.hv[k] = lvl; moved = true; }
-  if (moved) relaxHeights(S, [Math.max(0, a0 - 4), Math.max(0, b0 - 4), Math.min(N, a1 + 4), Math.min(N, b1 + 4)], set);
+  let moved = false;
+  for (const k of set) if (S.hv[k] !== top) { S.hv[k] = top; moved = true; }
+  if (!moved) return;
+  const box = [Math.max(0, a0 - 5), Math.max(0, b0 - 5), Math.min(N, a1 + 5), Math.min(N, b1 + 5)], pinned = new Set(set);
+  for (const bl of S.blds) if (bl.t !== 'road') for (const [i, j] of tilesOf(bl)) for (const [da, db] of [[0, 0], [1, 0], [0, 1], [1, 1]]) pinned.add((j + db) * M + i + da);
+  relaxHeights(S, box, pinned);
 }
 // Movement over the land (for combat and walkers): you cannot climb straight up a mountain. An edge between two neighbouring tiles is blocked when either
 // is mountain/solid or their heights differ by 2+ levels; gentle slopes cost more the steeper they are. Saddles between summits are the passes.
