@@ -168,7 +168,7 @@ function deriveHeights(S) {
 // Forests: each tree belongs to a species, and neighbouring trees are mostly the same species (patches of oak, stands of conifer...), but which variation
 // of that species a tile gets is random. Derived from position and seed, so nothing extra is saved.
 // Variants are the tree_N slots: 0/1 broadleaf, 6 old oak | 2 pine, 3 spruce, 7 fir | 4 birch, 9 aspen | 5 willow | 8 maple.
-const TREE_SPECIES = [{ v: [0, 6], w: 0.30 }, { v: [2, 3, 7], w: 0.30 }, { v: [4, 9], w: 0.18 }, { v: [5], w: 0.08 }, { v: [8], w: 0.14 }];
+const TREE_SPECIES = [{ v: [0, 6, 6], w: 0.30 }, { v: [2, 3, 7], w: 0.30 }, { v: [4, 9], w: 0.18 }, { v: [5], w: 0.08 }, { v: [8], w: 0.14 }];
 function treeSpecies(S, x, y) {
   const seed = S.seed || 7;
   // an odd tree out now and then: about one in eight picks its species at random, so patches are mixed at their edges
