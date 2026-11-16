@@ -1,0 +1,298 @@
+// Placement, removal, zoning and the services/workforce recalculation, ported from src/sim.js and src/sim_econ.js.
+// recalc here is the straightforward full version (the prototype's audit path); the chunked, incremental caches of the
+// JS Phase 1 optimisation are not needed at this map size yet.
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using static CrownAndHearth.Sim.Defs;
+
+namespace CrownAndHearth.Sim
+{
+    public struct Result
+    {
+        public bool Ok; public string Reason; public int Count;
+        public static Result Yes(int n = 0) => new Result { Ok = true, Count = n };
+        public static Result No(string why, int n = 0) => new Result { Ok = false, Reason = why, Count = n };
+    }
+
+    /// <summary>Derived totals (JS: S.d).</summary>
+    public class Derived
+    {
+        public int Civ, Bunks, Jobs, Idle, Employed, Markets, HouseCap, CovCap;
+        public double MkEff, Cov, Ratio;
+        public Dictionary<string, (int workers, int jobs, int blds, int shortCount)> Work = new Dictionary<string, (int, int, int, int)>();
+        public bool[] Conn = new bool[N * N];
+    }
+
+    public partial class World
+    {
+        public Derived D { get; private set; }
+
+        // ---------- Buildings ----------
+        int PickHutVar(int x, int y)
+        {
+            var used = new HashSet<int>();
+            for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++)
+            {
+                if (dx == 0 && dy == 0) continue;
+                int nx = x + dx, ny = y + dy;
+                if (!Inb(nx, ny)) continue;
+                var o = Grid[ny, nx];
+                if (o != null && o.T == "house" && o.Var != 0) used.Add(o.Var);
+            }
+            int start = (int)Math.Floor(Noise.Hash2(x, y, 173) * HutVariants);
+            for (int i = 0; i < HutVariants; i++) { int v = 1 + (start + i) % HutVariants; if (!used.Contains(v)) return v; }
+            return 1 + start;
+        }
+
+        public Building AddBld(string t, int x, int y, int sz = 0)
+        {
+            var b = new Building { T = t, X = x, Y = y, Sz = sz != 0 ? sz : DefaultSize(t) };
+            if (t == "house") b.Var = PickHutVar(x, y);
+            Blds.Add(b);
+            foreach (var (i, j) in b.Tiles())
+            {
+                int k = Tk(i, j);
+                Grid[j, i] = b; DecoMap[j, i] = Deco.None;
+                RockAmtMap.Remove(k); Dig.Remove(k); Elev.Remove(k); OreLeftMap.Remove(k); SapT.Remove(k);
+                if (t == "road") ZoneMap[j, i] = Zone.None;
+            }
+            if (t == "hall") Hall = b;
+            if (t != "road") LevelFootprint(b);
+            Touch();
+            return b;
+        }
+
+        public Result CanAfford(string type)
+        {
+            foreach (var kv in CostOf(type, 1)) if (ResAmt[kv.Key] < kv.Value) return Result.No($"Not enough {kv.Key.ToString().ToLower()} (need {kv.Value})");
+            return Result.Yes();
+        }
+
+        public Result CanPlace(string type, int x, int y)
+        {
+            var fp = new Building { T = type, X = x, Y = y, Sz = DefaultSize(type) };
+            foreach (var (tx, ty) in fp.Tiles())
+            {
+                if (!Inb(tx, ty)) return Result.No("Outside the map");
+                if (Grid[ty, tx] != null) return Result.No("That tile is already built on");
+                if (HasTree(tx, ty)) return Result.No(TreeMsg);
+                if (IsSolid(tx, ty))
+                    return Result.No(IsMountain(tx, ty) ? "You cannot build on a mountain. Hills and flat ground are fine"
+                        : PitDepth(tx, ty) > 0 ? "A quarry pit is in the way. Pits cannot be filled in"
+                        : DecoMap[ty, tx] == Deco.Ore ? "Ore blocks this tile. Zone it for mining to clear it"
+                        : "Too steep to build on");
+            }
+            if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");
+            return CanAfford(type);
+        }
+
+        public Result Place(string type, int x, int y)
+        {
+            var c = CanPlace(type, x, y);
+            if (!c.Ok) return c;
+            foreach (var kv in CostOf(type, 1)) ResAmt[kv.Key] -= kv.Value;
+            AddBld(type, x, y);
+            Recalc();
+            return Result.Yes();
+        }
+
+        /// <summary>Bulldoze a building, clear a zone or clear a tree/rock/ore by hand. JS: remove.</summary>
+        public Result Remove(int x, int y)
+        {
+            if (!Inb(x, y)) return Result.No("Outside the map");
+            var b = Grid[y, x];
+            int k = Tk(x, y);
+            if (b != null)
+            {
+                if (b.T == "hall") return Result.No("The Town Hall cannot be removed");
+                foreach (var kv in CostOf(b.T, b.Sz)) ResAmt[kv.Key] = Math.Min(Storage, ResAmt[kv.Key] + Math.Floor(kv.Value / 2.0));
+                foreach (var (i, j) in b.Tiles()) { Grid[j, i] = null; ZoneMap[j, i] = Zone.None; }
+                Blds.Remove(b);
+                Touch(); Recalc();
+                return Result.Yes();
+            }
+            if (ZoneMap[y, x] != Zone.None) { ZoneMap[y, x] = Zone.None; Touch(); return Result.Yes(); }
+            var d = DecoMap[y, x];
+            if (d == Deco.None) return Result.No("Nothing to clear here");
+            if (d == Deco.Tree) ResAmt[Res.Logs] = Math.Min(Storage, ResAmt[Res.Logs] + 2);
+            else if (d == Deco.Rock)
+            {
+                if (RockAmt(x, y) >= 3) return Result.No("A mountain cannot be cleared by hand. Mark it for quarrying");
+                if (PitDepth(x, y) > 0) return Result.No("A quarry pit cannot be filled in");
+                ResAmt[Res.Stone] = Math.Min(Storage, ResAmt[Res.Stone] + 1); RockAmtMap.Remove(k);
+            }
+            else if (d == Deco.Ore) ResAmt[Res.Ore] = Math.Min(Storage, ResAmt[Res.Ore] + 1);
+            DecoMap[y, x] = Deco.None; StumpT.Remove(k); SapT.Remove(k);
+            Touch();
+            return Result.Yes();
+        }
+
+        // ---------- Roads ----------
+        public Result RoadPathCheck(IList<(int x, int y)> path)
+        {
+            int n = 0;
+            foreach (var (x, y) in path)
+            {
+                if (!Inb(x, y)) return Result.No("Outside the map", n);
+                var g = Grid[y, x];
+                if (g != null && g.T == "road") continue;
+                if (g != null) return Result.No("A building is in the way", n);
+                if (HasTree(x, y)) return Result.No(TreeMsg, n);
+                if (IsSolid(x, y)) return Result.No("A mountain, a quarry pit, ore or ground too steep to build on is in the way. Route around it", n);
+                n++;
+            }
+            if (ResAmt[Res.Wood] < n * Cost["road"][Res.Wood]) return Result.No($"Not enough wood: {n} new road tiles need {n} wood", n);
+            return Result.Yes(n);
+        }
+
+        public Result PlaceRoadPath(IList<(int x, int y)> path)
+        {
+            var c = RoadPathCheck(path);
+            if (!c.Ok || c.Count == 0) return c;
+            ResAmt[Res.Wood] -= c.Count * Cost["road"][Res.Wood];
+            foreach (var (x, y) in path) if (Grid[y, x] == null) AddBld("road", x, y);
+            Recalc();
+            return c;
+        }
+
+        /// <summary>An L-shaped road path from a to b: along x first, then along y.</summary>
+        public static List<(int x, int y)> LPath(int ax, int ay, int bx, int by)
+        {
+            var p = new List<(int, int)>();
+            int sx = Math.Sign(bx - ax), sy = Math.Sign(by - ay);
+            for (int x = ax; ; x += sx) { p.Add((x, ay)); if (x == bx) break; }
+            if (ay != by) for (int y = ay + sy; ; y += sy) { p.Add((bx, y)); if (y == by) break; }
+            return p;
+        }
+
+        // ---------- Zones ----------
+        public Result ZoneCheck(Zone kind, int x, int y)
+        {
+            if (!Inb(x, y)) return Result.No("Outside the map");
+            if (Grid[y, x] != null) return ZoneMap[y, x] == kind ? Result.Yes() : Result.No("That tile is already built on");
+            var dc = DecoMap[y, x];
+            if (kind == Zone.Wood)
+            {
+                if (dc == Deco.Tree || dc == Deco.Sapling) return Result.Yes();
+                if (dc == Deco.None || dc == Deco.Stump)
+                    return IsSolid(x, y) || TileSpread(x, y) >= 2 ? Result.No("Too steep or rocky to plant. Foresters need gentle open ground") : Result.Yes();
+                return Result.No("Lumber zones go on forest or open ground for a forester to replant");
+            }
+            if (kind == Zone.Mine)
+            {
+                if (dc == Deco.Rock) return RockLeft(x, y) > 0 ? Result.Yes() : Result.No("This rock is worked out. Stone does not grow back");
+                return dc == Deco.Ore ? Result.Yes() : Result.No("Mining zones go on rock or ore");
+            }
+            if (HasTree(x, y)) return Result.No(TreeMsg);
+            if (IsSolid(x, y)) return Result.No(IsMountain(x, y) ? "Mountains cannot be built on. Hills and flat ground can" : PitDepth(x, y) > 0 ? "A quarry pit is in the way" : "Ore blocks this zone. Mine it first");
+            if (kind == Zone.Farm && !Fert[y, x]) return Result.No("Farms need fertile soil");
+            return Result.Yes();
+        }
+
+        public Result SetZone(Zone kind, int x, int y)
+        {
+            var c = ZoneCheck(kind, x, y);
+            if (c.Ok && Grid[y, x] == null && ZoneMap[y, x] != kind) { ZoneMap[y, x] = kind; Touch(); }
+            return c;
+        }
+
+        // ---------- Services, faces, workforce ----------
+        bool RoadOrHall(int x, int y, Building self)
+        {
+            if (!Inb(x, y)) return false;
+            var g = Grid[y, x];
+            return g != null && g != self && (g.T == "road" || g == Hall);
+        }
+        bool NextToRoad(Building b)
+        {
+            foreach (var (x, y) in b.Tiles()) for (int k = 0; k < 4; k++) if (RoadOrHall(x + Nb[k, 0], y + Nb[k, 1], b)) return true;
+            return false;
+        }
+        int FaceOf(Building b)
+        {
+            bool Has(int f) { foreach (var (x, y) in b.Tiles()) if (RoadOrHall(x + FaceDirs[f, 0], y + FaceDirs[f, 1], b)) return true; return false; }
+            if (b.Face >= 0 && Has(b.Face)) return b.Face;
+            for (int f = 0; f < 4; f++) if (Has(f)) return f;
+            return b.Face >= 0 ? b.Face : 0;
+        }
+        bool ServedAt(Building b, bool[] conn)
+        {
+            foreach (var (tx, ty) in b.Tiles())
+                for (int k = 0; k < 4; k++)
+                {
+                    int x = tx + Nb[k, 0], y = ty + Nb[k, 1];
+                    if (!Inb(x, y) || Grid[y, x] == b) continue;
+                    if (conn[Tk(x, y)] || Grid[y, x] == Hall) return true;
+                }
+            return false;
+        }
+
+        /// <summary>Road connectivity, service, house levels and the workforce, recomputed from scratch. JS: recalc / auditCaches.</summary>
+        public Derived Recalc()
+        {
+            var d = new Derived();
+            var conn = d.Conn;
+            bool IsRoad(int x, int y) => Inb(x, y) && Grid[y, x] != null && Grid[y, x].T == "road";
+            var stack = new Stack<(int, int)>();
+            foreach (var (hx, hy) in Hall.Tiles())
+                for (int k = 0; k < 4; k++)
+                {
+                    int x = hx + Nb[k, 0], y = hy + Nb[k, 1];
+                    if (Inb(x, y) && Grid[y, x] != Hall && IsRoad(x, y) && !conn[Tk(x, y)]) { conn[Tk(x, y)] = true; stack.Push((x, y)); }
+                }
+            while (stack.Count > 0)
+            {
+                var (cx, cy) = stack.Pop();
+                for (int k = 0; k < 4; k++) { int x = cx + Nb[k, 0], y = cy + Nb[k, 1]; if (IsRoad(x, y) && !conn[Tk(x, y)]) { conn[Tk(x, y)] = true; stack.Push((x, y)); } }
+            }
+
+            foreach (var b in Blds)
+            {
+                if (b.T == "road") { b.Served = conn[Tk(b.X, b.Y)]; continue; }
+                b.Face = FaceOf(b);
+                b.Served = b.T == "hall" || ServedAt(b, conn);
+            }
+            var wells = Blds.Where(b => b.T == "well").ToList();
+            var markets = Blds.Where(b => b.T == "market" && b.Served).ToList();
+            int civ = HallCap, bunks = 0, jobs = 0, nMarkets = 0, houseCap = 0, covCap = 0;
+            foreach (var b in Blds)
+            {
+                if (b.T == "house")
+                {
+                    b.Lvl = b.Served && wells.Any(w => Building.Cheb(w, b) <= WellR) ? 2 : 1;
+                    if (b.Served)
+                    {
+                        b.Covered = markets.Any(m => Building.Cheb(m, b) <= m.MarketRange);
+                        civ += b.Capacity; houseCap += b.Capacity; if (b.Covered) covCap += b.Capacity;
+                    }
+                }
+                else if (b.T == "barracks") { if (b.Served) bunks += Bunks; }
+                else if (Defs.Jobs.ContainsKey(b.T) && b.Served) { jobs += b.Jobs; if (b.T == "market") nMarkets++; }
+            }
+
+            // Fill the jobs: villagers go to trades in priority order, and within a trade to the oldest buildings first.
+            int avail = Peasants;
+            foreach (var b in Blds) { b.Workers = 0; b.Eff = 0; }
+            foreach (var t in Prio)
+            {
+                int w = 0, j = 0, n = 0, sh = 0;
+                foreach (var b in Blds)
+                {
+                    if (!b.Served || !TradeOf.TryGetValue(b.T, out var tr) || tr != t) continue;
+                    int bj = b.Jobs, bw = Math.Min(bj, avail); avail -= bw;
+                    b.Workers = bw; b.Eff = bj > 0 ? (double)bw / bj : 0;
+                    w += bw; j += bj; n++; if (bw < bj) sh++;
+                }
+                d.Work[t] = (w, j, n, sh);
+            }
+            int mkW = 0, mkJ = 0;
+            foreach (var b in Blds) if (b.T == "market" && b.Served) { mkW += b.Workers; mkJ += b.Jobs; }
+            d.Civ = civ; d.Bunks = bunks; d.Jobs = jobs; d.Idle = avail; d.Employed = Peasants - avail;
+            d.MkEff = mkJ > 0 ? (double)mkW / mkJ : 0; d.Markets = nMarkets; d.HouseCap = houseCap; d.CovCap = covCap;
+            d.Cov = houseCap > 0 ? (double)covCap / houseCap : 1; d.Ratio = jobs > 0 ? Math.Min(1, (double)Peasants / jobs) : 0;
+            D = d;
+            return d;
+        }
+    }
+}
