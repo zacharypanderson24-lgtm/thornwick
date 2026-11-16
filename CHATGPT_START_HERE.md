@@ -10,6 +10,10 @@ Buildings must fit their tile. I will attach a footprint guide image (a black di
 
 When I name an asset and a view (for example "hut, view 1" or "Town Hall, all four views"), generate that image using the asset description and the rules below. Then wait. Do not generate anything until I ask.
 
+## Priority: usable game textures, not showpieces
+
+Everything you make must be a texture that drops straight into the game at its real size. Focus on that and nothing else. Do not spend effort on fancier, more detailed or higher-resolution renditions that cannot be used in the game: no extra fine detail that will turn to noise when scaled down to 32 x 48 / 64 x 88 / 96 x 128 game pixels, no painterly or smooth-shaded "upgrades", no illustration-style variants, and no bigger canvases than the sizes below. Chunky, readable pixel art that fits the tile and matches the existing style beats a prettier image that has to be redone. If you are unsure whether a detail will survive at game size, leave it out.
+
 ## Rules for every image
 
 Isometric pixel art for a medieval city-builder game in the spirit of TheoTown. True 2:1 isometric: a ground tile is a diamond exactly twice as wide as it is tall. Hard pixel edges, no anti-aliasing, no gradients, no blur, no outline thicker than 1 pixel, about 24 colours at most. Warm, earthy early-medieval palette: weathered timber, straw thatch, packed dirt, grey fieldstone, muted greens. Light comes from the top-left: left-facing walls are mid-tone, right-facing walls are darker, roofs are lightest on their left slope. No cast shadow on the ground and nothing drawn on the ground except the object itself. One object per image, centred, completely visible, viewed from a fixed camera about 30 degrees above the horizon. Background: one flat solid pure magenta (#FF00FF) so it can be removed.
