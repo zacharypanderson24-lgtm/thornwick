@@ -81,3 +81,7 @@ Output speed of every industry comes from how many workers it has, not from the 
 
 ## Update: height levels
 - Terrain is a vertex height map in levels -8..8 (0 = base). Hills up to 3, mountains up to 8 and rare, in ranges when there are several. Roads climb slopes, buildings level their footprint. Mountains and steep slopes block movement (walkCost), so ranges create chokepoints and passes that should shape base layout once combat is in. Negative levels exist in the data and renderer; today only shallow basins use them (quarry pits are still separate tile sprites), so lakes and pits-as-height are future work.
+
+## Update: workers set the pace (built) and mining decisions
+- Built: per-building workers (b.workers, b.eff) filled by trade priority (default food first, player can reorder in the Workforce panel, S.prio saved). Output = base rate x b.eff. Sections 7 and 8 above are now real except builders, soldiers-vs-labour rows, children/elderly and quotas.
+- Mining decisions (Zach): ore lives in a hidden underground layer (revealed by prospecting, shown by an underground view toggle); mines dig down through depth levels (deeper = richer ore, more cost); cave-ins are a real risk unless timber supports are supplied, and crowding raises the risk. Next build step: the underground grid + prospecting.

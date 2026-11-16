@@ -22,6 +22,11 @@ const NB = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const COST2 = { house: { wood: 30 }, farm: { wood: 24 }, market: { wood: 32 } };
 const costOf = (type, sz) => (sz === 2 && COST2[type]) ? COST2[type] : (COST[type] || {});
 const capOf = b => b.sz === 2 ? [0, 14, 20][b.lvl] : HOUSE_CAP[b.lvl];
+// Trades: which job buildings belong to which trade. Villagers fill jobs in priority order (default: food first), so each building ends up with its own
+// worker count (b.workers) and staffing share (b.eff = workers / jobs). Output scales with b.eff, never with one global ratio.
+const TRADE_OF = { farm: 'farming', wood: 'timber', sawmill: 'woodwork', quarry: 'quarrying', mine: 'mining', market: 'trade' };
+const TRADES = ['farming', 'timber', 'woodwork', 'quarrying', 'mining', 'trade'];
+const TRADE_NAMES = { farming: 'Farming', timber: 'Timber (felling)', woodwork: 'Woodworking (sawmill)', quarrying: 'Quarrying', mining: 'Mining', trade: 'Trade (market)' };
 const jobsOf = b => Math.round((JOBS[b.t] || 0) * (b.sz === 2 ? 2.5 : 1));
 const foodOf = b => 3 * (b.sz === 2 ? 2.6 : 1);
 const marketR = b => b.sz === 2 ? 7 : 5;
@@ -535,13 +540,23 @@ function recalc(S) {
     } else if (b.t === 'barracks') { if (b.served) bunks += BUNKS; }
     else if (JOBS[b.t] && b.served) { jobs += jobsOf(b); if (b.t === 'market') markets++; }
   }
+  // Fill the jobs: villagers go to trades in priority order, and within a trade to the oldest buildings first.
+  const prio = (Array.isArray(S.prio) && S.prio.length === TRADES.length && TRADES.every(t => S.prio.includes(t))) ? S.prio : TRADES;
+  let avail = S.peasants; const work = {};
+  for (const t of prio) work[t] = { workers: 0, jobs: 0, blds: 0, short: 0 };
+  for (const b of S.blds) if (JOBS[b.t]) { b.workers = 0; b.eff = 0; }
+  for (const t of prio) for (const b of S.blds) if (TRADE_OF[b.t] === t && b.served) {
+    const j = jobsOf(b), w = Math.min(j, avail); avail -= w; b.workers = w; b.eff = j ? w / j : 0;
+    const r = work[t]; r.workers += w; r.jobs += j; r.blds++; if (w < j) r.short++;
+  }
+  let mkW = 0, mkJ = 0; for (const b of S.blds) if (b.t === 'market' && b.served) { mkW += b.workers; mkJ += jobsOf(b); }
   const mk = S.blds.filter(b => b.t === 'market' && b.served);
   let houseCap = 0, covCap = 0;
   for (const b of S.blds) if (b.t === 'house' && b.served) {
     const cap = capOf(b); houseCap += cap;
     b.covered = mk.some(m => cheb(m, b) <= marketR(m)); if (b.covered) covCap += cap;
   }
-  S.d = { civ, bunks, jobs, conn, markets, houseCap, covCap, cov: houseCap ? covCap / houseCap : 1, ratio: jobs ? Math.min(1, S.peasants / jobs) : 0 };
+  S.d = { civ, bunks, jobs, work, prio, idle: avail, employed: S.peasants - avail, mkEff: mkJ ? mkW / mkJ : 0, conn, markets, houseCap, covCap, cov: houseCap ? covCap / houseCap : 1, ratio: jobs ? Math.min(1, S.peasants / jobs) : 0 };
   return S.d;
 }
 function zoneServed(S, x, y) {
@@ -553,7 +568,7 @@ function computeDemand(S) {
   const occ = d.civ ? S.peasants / d.civ : 1;
   const eat = Math.max(1, (S.peasants + S.soldiers * 1.5) * 0.2);
   let prod = 0;
-  for (const b of S.blds) if (b.t === 'farm' && b.served) prod += foodOf(b) * d.ratio;
+  for (const b of S.blds) if (b.t === 'farm' && b.served) prod += foodOf(b) * b.eff;
   const staffed = d.jobs <= S.peasants + 4;
   const dem = {};
   dem.res = (S.starving || r.food < 10) ? -0.3 : clamp1((occ - 0.7) * 4);
@@ -654,33 +669,33 @@ function develop(S) {
 function tick(S) {
   recalc(S);
   const d = S.d, before = { ...S.res };
-  const ratio = d.ratio;
-  const employed = Math.min(S.peasants, d.jobs);
+  const employed = d.employed;
   let food = 0, wood = 0, logs = 0, stone = 0, ore = 0;
   for (const b of S.blds) {
     if (!b.served) continue;
-    if (b.t === 'farm') food += foodOf(b) * ratio;
+    const e = b.eff || 0;   // this building's own staffing share
+    if (b.t === 'farm') food += foodOf(b) * e;
     else if (b.t === 'wood') {
-      if (countZoned(S, b.x, b.y, WORK_R, 'tree', 'wood') > 0) {
-        logs += 2.5 * ratio; b.prog += ratio;
+      if (e > 0 && countZoned(S, b.x, b.y, WORK_R, 'tree', 'wood') > 0) {
+        logs += 2.5 * e; b.prog += e;
         if (b.prog >= 10) { b.prog = 0; fellTree(S, b.x, b.y, WORK_R); }
       }
     } else if (b.t === 'quarry') {
       // Finite stone: the quarry pauses (and keeps its reserve in the ground) while the stockpile is full.
-      if (S.res.stone + stone < STORAGE) stone += mineRock(S, b.x, b.y, WORK_R, 2 * ratio);
+      if (e > 0 && S.res.stone + stone < STORAGE) stone += mineRock(S, b.x, b.y, WORK_R, 2 * e);
     } else if (b.t === 'mine') {
-      if (S.res.ore + ore < STORAGE) ore += mineOre(S, b.x, b.y, WORK_R, 1.5 * ratio);
+      if (e > 0 && S.res.ore + ore < STORAGE) ore += mineOre(S, b.x, b.y, WORK_R, 1.5 * e);
     }
   }
   S.res.logs = (S.res.logs || 0) + logs;
   // Sawmills first (full yield, limited by workers), then the Town Hall pit-saw for what is left.
   for (const b of S.blds) if (b.t === 'sawmill' && b.served && S.res.logs > 0) {
-    const c = Math.min(S.res.logs, SAW_RATE * ratio); S.res.logs -= c; wood += c;
+    const c = Math.min(S.res.logs, SAW_RATE * b.eff); S.res.logs -= c; wood += c;
   }
   if (S.res.logs > 0) { const c = Math.min(S.res.logs, HALL_SAW); S.res.logs -= c; wood += c * HALL_YIELD; }
   // Stumps rot away into open, buildable grass.
   if (S.stumpT) for (const k in S.stumpT) if (--S.stumpT[k] <= 0) { delete S.stumpT[k]; const y = Math.floor(k / N), x = k % N; if (S.deco[y][x] === 'stump') S.deco[y][x] = null; }
-  const trade = d.markets ? 0.04 * S.peasants * d.cov * ratio : 0;
+  const trade = d.markets ? 0.04 * S.peasants * d.cov * d.mkEff : 0;
   const eat = (S.peasants + S.soldiers * 1.5) * 0.2;
   S.res.food += food - eat; S.res.wood += wood; S.res.stone += stone; S.res.ore += ore;
   S.res.gold += employed * 0.12 + trade - S.soldiers * 0.1;
@@ -710,4 +725,4 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (typeof module !== 'undefined') module.exports = { treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (typeof module !== 'undefined') module.exports = { TRADES, TRADE_OF, TRADE_NAMES, jobsOf, recalc, treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };

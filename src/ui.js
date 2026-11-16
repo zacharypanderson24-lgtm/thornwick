@@ -529,6 +529,36 @@ function lensShows(k) {
 }
 function setLens(on) { lensOn = on; if (on) S.flags.lens = true; $('lensbtn').classList.toggle('on', on); $('lens').hidden = !on; updateGoals(); }
 $('lensbtn').onclick = () => setLens(!lensOn);
+// ---------- Workforce panel ----------
+// Who works where: one row per trade, in priority order (villagers fill the top rows first). Click a row to light up its buildings on the map.
+let workOpen = false, workHi = null;
+function setWork(on) { workOpen = on; $('work').hidden = !on; $('workbtn').classList.toggle('on', on); if (!on) workHi = null; renderWork(); }
+$('workbtn').onclick = () => setWork(!workOpen);
+function movePrio(t, dir) {
+  const p = (S.d || recalc(S)).prio.slice(), i = p.indexOf(t), j = i + dir; if (i < 0 || j < 0 || j >= p.length) return;
+  [p[i], p[j]] = [p[j], p[i]]; S.prio = p; recalc(S); updateHUD();
+}
+function renderWork() {
+  if (!workOpen) return;
+  const d = S.d || recalc(S), el = $('work');
+  let h = '<h2>Workforce <span style="color:var(--dim)">top row hires first</span></h2>';
+  d.prio.forEach((t, i) => {
+    const w = d.work[t], pct = w.jobs ? Math.round(100 * w.workers / w.jobs) : 0, short = w.short > 0;
+    h += '<div class="wrow' + (workHi === t ? ' on' : '') + '" data-t="' + t + '" title="Click to show these buildings on the map">'
+      + '<span class="wn">' + TRADE_NAMES[t] + (w.blds ? ' <span style="color:var(--dim)">x' + w.blds + '</span>' : '') + '</span>'
+      + '<span class="wm"><button type="button" data-m="-1" title="Hire earlier">&#9650;</button><button type="button" data-m="1" title="Hire later">&#9660;</button><span class="wc ' + (!w.jobs ? 'none' : short ? 'short' : 'full') + '">' + (w.jobs ? w.workers + '/' + w.jobs : '-') + '</span></span>'
+      + '<div class="wbar"><i class="' + (short ? 'short' : '') + '" style="width:' + pct + '%"></i></div></div>';
+  });
+  h += '<div class="wtot"><span>Working</span><span>' + d.employed + '</span><span class="idle">Idle (no job)</span><span class="idle">' + d.idle + '</span><span>Soldiers</span><span>' + S.soldiers + '/' + d.bunks + '</span><span>Villagers / homes</span><span>' + S.peasants + '/' + d.civ + '</span></div>';
+  if (d.idle > 0 && d.jobs === d.employed) h += '<p class="dim" style="margin-top:6px">Everyone has a job. Build more workplaces for the idle.</p>';
+  else if (d.jobs > d.employed) h += '<p class="dim" style="margin-top:6px">Red rows are short of hands. Build homes and farms to grow, or move a trade up.</p>';
+  el.innerHTML = h;
+}
+$('work').addEventListener('click', e => {
+  const mv = e.target.closest('button[data-m]'), row = e.target.closest('.wrow'); if (!row) return;
+  if (mv) { movePrio(row.dataset.t, +mv.dataset.m); return; }
+  workHi = workHi === row.dataset.t ? null : row.dataset.t; renderWork();
+});
 for (const k of ['wood', 'stone', 'ore', 'fert']) $('lc-' + k).onclick = () => { lensSet[k] = !lensSet[k]; $('lc-' + k).classList.toggle('off', !lensSet[k]); };
 // ---------- Rendering ----------
 function zmask(x, y, z) {
@@ -809,6 +839,7 @@ function draw() {
     ctx.globalAlpha = 1;
   }
   const mark = (t, spr) => { if (t) { const Gm = geo(t.x, t.y); groundDraw(spr, Gm.sx - 16, Gm.sy + 16, Gm); } };
+  if (workHi) for (const b of S.blds) if (TRADE_OF[b.t] === workHi) for (const [tx, ty] of tilesOf(b)) mark({ x: tx, y: ty }, b.served && b.eff >= 1 ? SPR.hlGood : SPR.hlBad);   // Workforce panel: lit buildings of the chosen trade, red when short of workers
   if (pinned) mark(pinned, SPR.hlNone);
   if (hover) {
     if (tool === 'inspect') mark(hover, SPR.hlNone);
@@ -857,6 +888,7 @@ function updateHint() {
   else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings only grow on zone tiles that touch a road, and their doors face it.';
   const el = $('hint'); if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
 }
+function workLine(b) { return 'Workers: ' + (b.workers || 0) + '/' + jobsOf(b); }
 function updateHUD() {
   const d = S.d || recalc(S);
   for (const k of ['food', 'wood', 'logs', 'stone', 'ore', 'gold']) {
@@ -866,10 +898,10 @@ function updateHUD() {
   $('v-day').textContent = S.day;
   $('v-peas').textContent = S.peasants + '/' + d.civ;
   $('v-sold').textContent = S.soldiers + '/' + d.bunks;
-  const emp = Math.min(S.peasants, d.jobs);
-  $('v-jobs').textContent = emp + '/' + d.jobs;
+  $('v-jobs').textContent = d.employed + '/' + d.jobs;
   for (const k of DEM_KEYS) { const v = S.dem[k] || 0, f = $('db-' + k); f.style.height = Math.round(Math.abs(v) * 22) + 'px'; f.className = 'fill ' + (v >= 0 ? 'pos' : 'neg'); f.style[v >= 0 ? 'bottom' : 'top'] = '22px'; f.style[v >= 0 ? 'top' : 'bottom'] = 'auto'; }
   $('hud-warn').textContent = S.starving ? 'Starving: build farms' : '';
+  renderWork();
   $('draft').textContent = 'Drafting ' + (S.drafting ? 'on' : 'off'); $('draft').classList.toggle('off', !S.drafting);
   updateGoals();
 }
@@ -925,18 +957,18 @@ function describe(t) {
   if (b.t === 'road') L.push(b.served ? 'Connected to the Town Hall' : 'Not connected to the Town Hall');
   if (b.t === 'hall') L.push('Houses 6 people. Storage limit ' + STORAGE + ' per resource.');
   if (b.t === 'house') L.push('Level ' + b.lvl + ' · holds ' + capOf(b) + ' people', b.lvl === 1 ? 'A well within 4 tiles upgrades it to level 2.' : 'Upgraded by a nearby well.');
-  if (b.t === 'farm') L.push('Jobs: ' + jobsOf(b) + ' · makes ' + (b.served ? (foodOf(b) * d.ratio).toFixed(1) : '0') + ' food per second', 'Staffed at ' + Math.round(d.ratio * 100) + '%');
-  if (b.t === 'wood') { const n = countZoned(S, b.x, b.y, 3, 'tree', 'wood'); L.push('Jobs: 3 · ' + n + ' marked trees in range', n ? 'Fells ' + (b.served ? (2.5 * d.ratio).toFixed(1) : '0') + ' logs per second. A sawmill turns logs into wood.' : 'No marked trees left. Paint a Lumber zone on more forest nearby.'); }
+  if (b.t === 'farm') L.push(workLine(b) + ' · makes ' + (b.served ? (foodOf(b) * b.eff).toFixed(1) : '0') + ' food per second', 'Staffed at ' + Math.round((b.eff || 0) * 100) + '%');
+  if (b.t === 'wood') { const n = countZoned(S, b.x, b.y, 3, 'tree', 'wood'); L.push(workLine(b) + ' · ' + n + ' marked trees in range', n ? 'Fells ' + (b.served ? (2.5 * (b.eff || 0)).toFixed(1) : '0') + ' logs per second. A sawmill turns logs into wood.' : 'No marked trees left. Paint a Lumber zone on more forest nearby.'); }
   if (b.t === 'quarry') {
     let left = 0, n = 0; for (let j = b.y - 3; j <= b.y + 3; j++) for (let i = b.x - 3; i <= b.x + 3; i++) if (inb(i, j) && S.zone[j][i] === 'mine' && rockWorkable(S, i, j)) { n++; left += rockLeft(S, i, j); }
-    L.push('Jobs: 3 · ' + n + ' marked rock tiles in reach · ' + Math.ceil(left) + ' stone left in reach', n ? 'Makes ' + (b.served ? (2 * d.ratio).toFixed(1) : '0') + ' stone per second. Mountains hollow out, hills dig down into pits. Stone never grows back.' : 'Run dry: nothing marked and workable in reach. Paint a Mining zone on more rock nearby.');
+    L.push(workLine(b) + ' · ' + n + ' marked rock tiles in reach · ' + Math.ceil(left) + ' stone left in reach', n ? 'Makes ' + (b.served ? (2 * (b.eff || 0)).toFixed(1) : '0') + ' stone per second. Mountains hollow out, hills dig down into pits. Stone never grows back.' : 'Run dry: nothing marked and workable in reach. Paint a Mining zone on more rock nearby.');
   }
-  if (b.t === 'sawmill') L.push('Jobs: 3 · saws ' + (b.served ? (4 * d.ratio).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
+  if (b.t === 'sawmill') L.push(workLine(b) + ' · saws ' + (b.served ? (SAW_RATE * (b.eff || 0)).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
   if (b.t === 'mine') {
     let left = 0, n = 0; for (let j = b.y - 3; j <= b.y + 3; j++) for (let i = b.x - 3; i <= b.x + 3; i++) if (inb(i, j) && S.deco[j][i] === 'ore') { n++; left += oreLeft(S, i, j); }
-    L.push('Jobs: 3 · ' + n + ' ore tiles in reach · ' + Math.ceil(left) + ' ore left', n ? 'Makes ' + (b.served ? (1.5 * d.ratio).toFixed(1) : '0') + ' ore per second. Ore never grows back.' : 'Out of ore. Clear it and zone a new site.');
+    L.push(workLine(b) + ' · ' + n + ' ore tiles in reach · ' + Math.ceil(left) + ' ore left', n ? 'Makes ' + (b.served ? (1.5 * (b.eff || 0)).toFixed(1) : '0') + ' ore per second. Ore never grows back.' : 'Out of ore. Clear it and zone a new site.');
   }
-  if (b.t === 'market') L.push('Jobs: ' + jobsOf(b) + ' · covers homes within ' + (b.sz === 2 ? 7 : 5) + ' tiles', 'Earns gold from covered villagers (' + Math.round(d.cov * 100) + '% of homes covered).');
+  if (b.t === 'market') L.push(workLine(b) + ' · covers homes within ' + (b.sz === 2 ? 7 : 5) + ' tiles', 'Earns gold from covered villagers (' + Math.round(d.cov * 100) + '% of homes covered).');
   if (b.t === 'barracks') L.push('Sleeps 6 soldiers · army ' + S.soldiers + '/' + d.bunks, 'Each recruit costs 2 wood, 1 gold, 1 ore and one villager.', 'Soldiers eat 1.5x and cost 0.1 gold per second.');
   if (b.t === 'well') L.push('Upgrades houses within 4 tiles.');
   return [nm, L];
