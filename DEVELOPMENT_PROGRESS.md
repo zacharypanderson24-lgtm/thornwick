@@ -10,12 +10,29 @@ _Last updated: 2026-11-16 (Claude Code, work crews)._
 | Branch | Purpose | Head |
 |---|---|---|
 | `main` | Browser prototype (JavaScript). Untouched by the migration. | `4d99fca` |
-| `unity-migration` | Integration branch for the Unity port. Merge feature branches here through pull requests. Contains the playable port since PR #1. | `22058e9` |
-| `claude/port-work-crews` | Walking work crews and townsfolk (`sim_crews.js`), cut from `unity-migration`. Not merged yet. | see milestone log |
-| `claude/settlement-port` | Claude Code's first working branch. [PR #1](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) merged into `unity-migration`. New work goes on one feature branch per task. | same as `unity-migration` |
+| `unity-migration` | Integration branch for the Unity port, shared by Claude Code and ChatGPT/Codex. Contains the playable port (PR #1) and the walking work crews. | merge of `claude/port-work-crews` |
+| `claude/port-work-crews` | Walking work crews and townsfolk (`sim_crews.js`). Merged into `unity-migration` 2026-11-16. | `unity-migration` |
+| `claude/settlement-port` | Claude Code's first working branch. [PR #1](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) merged into `unity-migration`. | `22058e9` |
+| `codex/unity-saves` | ChatGPT/Codex: Unity saves and browser save migration. Not merged yet. | `0d1552c` |
+| `codex/terrain-occlusion` | ChatGPT/Codex: terrain drawn in depth order, resource view. Not merged yet. | `6490fe9` |
+| `codex/settlement-art-tools` | ChatGPT/Codex: banner colours, Texture Lab, nature sprites (contains `codex/unity-saves`). Not merged yet. | `b6b1505` |
+| `chatgpt/game-vision-old-world` | ChatGPT: game vision and art direction docs. Not merged yet. | `a4ea49d` |
 
-ChatGPT and Claude Code each work on their own branch and merge into `unity-migration` through pull requests.
-`unity-migration` now has everything from PR #1, so new branches (ChatGPT's included) should be cut from `unity-migration`.
+ChatGPT and Claude Code each work on their own branch and merge into `unity-migration`. All branches above were cut from `22058e9`.
+Before merging a branch, merge the latest `unity-migration` into it first and rerun the EditMode tests.
+
+### Note for ChatGPT/Codex: merging after the work crews
+
+`unity-migration` now runs the real walking crews (`World.Crews.cs`) instead of the old per-building approximation, so
+`Building.CrewAcc` and `Defs.CrewRate` are gone. Crews and townsfolk are runtime only and never saved, exactly as in the browser.
+When `codex/unity-saves` (and `codex/settlement-art-tools`, which contains it) take the latest `unity-migration`:
+
+- `Building.cs` conflicts: keep `partial class` from the saves branch and the `Crew` / `Reach` fields from `unity-migration`.
+- In `World.Save.cs` drop the `CrewAcc` field and the `crewAcc` save/load entries (the browser save format has no such field), and in
+  `SaveTests.cs` drop `original.Hall.CrewAcc = 2.5`.
+- `DEVELOPMENT_PROGRESS.md` conflicts: keep both sets of rows.
+
+`codex/terrain-occlusion` and `chatgpt/game-vision-old-world` merge cleanly (checked with a trial merge).
 
 ## Pull requests
 
@@ -35,11 +52,12 @@ ChatGPT and Claude Code each work on their own branch and merge into `unity-migr
 | `c9870e4` | `claude/settlement-port` | Records PR #1 in this file. |
 | `2ae2883` | `unity-migration` | Merge of PR #1: the playable port is now on the integration branch. |
 | `22058e9` | both | Records the merge in this file. |
-| _this commit_ | `claude/port-work-crews` | Walking work crews and townsfolk ported (`World.Crews.cs`), drawn in Unity (`AgentRenderer.cs`); 300-day tick parity test (12 tests). |
+| `0a2b378` | `claude/port-work-crews` | Walking work crews and townsfolk ported (`World.Crews.cs`), drawn in Unity (`AgentRenderer.cs`); 300-day tick parity test (12 tests). |
+| _this commit_ | `claude/port-work-crews` | Branch map and merge notes for ChatGPT/Codex; then merged into `unity-migration`. |
 
 ## Implemented and tested
 
-Tested means covered by `unity/Assets/Tests/EditMode/SimParityTests.cs` (12 tests, all passing on 2026-11-16 on `claude/port-work-crews`) and play-tested in
+Tested means covered by `unity/Assets/Tests/EditMode/SimParityTests.cs` (12 tests, all passing on 2026-11-16 on `unity-migration` after the crews merge) and play-tested in
 the Editor (no console errors or warnings). Parity tests compare against the real browser code through
 `unity/ParityReference/make_reference.js`.
 
