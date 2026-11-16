@@ -69,7 +69,30 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .tool .tl { font-family: var(--display); font-size: 7px; line-height: 1.4; margin-top: 18px; }
 .tool .tc { font-size: 17px; line-height: 1; min-height: 17px; display: flex; gap: 5px; } .tc i { font-style: normal; } .cw { color: #d9a56a; } .cs { color: #b9bfd0; } .cg { color: #f2c94c; }
 .tool .tk { position: absolute; top: 3px; left: 5px; font-size: 15px; color: var(--dim); }
-@media (max-width: 700px) { #goals { display: none; } #info { width: 230px; } .brand { width: 100%; } }
+
+/* Decluttered HUD: one compact top row, menu for the rarely used buttons, collapsible goals, info only on demand. */
+#hud { position: relative; flex-wrap: wrap; gap: 4px 14px; padding: 6px 12px; }
+.brand { font-size: 10px; }
+.res { gap: 4px 12px; } .res .stat { gap: 4px; }
+.stat .val { font-size: 22px; } .rate { font-size: 15px; min-width: 2.6ch; }
+.stat .lbl { font-size: 7px; }
+.bar .track { width: 10px; height: 30px; } .bar .mid { top: 13px; } .bar span { font-size: 13px; }
+.btn { padding: 6px 8px; }
+.menu { right: 8px; top: calc(100% + 2px); z-index: 30; display: grid; gap: 6px; padding: 8px; width: auto; }
+.menu .btn { text-align: left; min-width: 120px; }
+#goals { width: auto; max-width: 370px; padding: 0; cursor: pointer; }
+.goalshead { display: flex; align-items: baseline; gap: 8px; width: 100%; background: none; border: 0; color: var(--ink); font-family: var(--body); font-size: 19px; padding: 5px 10px; text-align: left; cursor: pointer; }
+.goalshead b { font-family: var(--display); font-weight: normal; font-size: 8px; color: var(--accent); white-space: nowrap; }
+.goalshead span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#goals ul { padding: 2px 12px 10px; width: 330px; }
+#info { width: auto; max-width: 270px; padding: 8px 10px; }
+#info p { font-size: 18px; }
+#banner { top: 52px; }
+#toolbar { gap: 5px; padding: 5px 10px 6px; }
+.tool { width: 80px; padding: 2px 2px 4px; }
+.tool .ico { margin-top: -10px; margin-bottom: -26px; }
+.tool .tl { margin-top: 20px; font-size: 6.5px; } .tool .tc { font-size: 15px; min-height: 15px; }
+@media (max-width: 700px) { #goals { display: none; } #info { max-width: 230px; } .brand { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
 
 .lab { position: absolute; inset: 0; background: #131826; z-index: 20; display: flex; flex-direction: column; padding: 14px 18px; overflow: hidden; }
@@ -94,45 +117,48 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 <div id="app">
   <header id="hud">
     <div class="brand">THORNWICK</div>
-    <div class="grp">
-      <div class="stat"><span class="sw" style="background:#d9b94a"></span><span class="lbl">FOOD</span><span class="val" id="v-food">0</span><span class="rate" id="r-food"></span></div>
-      <div class="stat"><span class="sw" style="background:#8a5a34"></span><span class="lbl">WOOD</span><span class="val" id="v-wood">0</span><span class="rate" id="r-wood"></span></div>
-      <div class="stat"><span class="sw" style="background:#b98a52"></span><span class="lbl">LOGS</span><span class="val" id="v-logs">0</span><span class="rate" id="r-logs"></span></div>
-      <div class="stat"><span class="sw" style="background:#9fa2ad"></span><span class="lbl">STONE</span><span class="val" id="v-stone">0</span><span class="rate" id="r-stone"></span></div>
-      <div class="stat"><span class="sw" style="background:#e0873a"></span><span class="lbl">ORE</span><span class="val" id="v-ore">0</span><span class="rate" id="r-ore"></span></div>
-      <div class="stat"><span class="sw" style="background:#f2c94c"></span><span class="lbl">GOLD</span><span class="val" id="v-gold">0</span><span class="rate" id="r-gold"></span></div>
+    <div class="grp res">
+      <div class="stat" title="Food"><span class="sw" style="background:#d9b94a"></span><span class="val" id="v-food">0</span><span class="rate" id="r-food"></span></div>
+      <div class="stat" title="Wood"><span class="sw" style="background:#8a5a34"></span><span class="val" id="v-wood">0</span><span class="rate" id="r-wood"></span></div>
+      <div class="stat" title="Logs (a sawmill turns them into wood)"><span class="sw" style="background:#b98a52"></span><span class="val" id="v-logs">0</span><span class="rate" id="r-logs"></span></div>
+      <div class="stat" title="Stone"><span class="sw" style="background:#9fa2ad"></span><span class="val" id="v-stone">0</span><span class="rate" id="r-stone"></span></div>
+      <div class="stat" title="Iron ore"><span class="sw" style="background:#e0873a"></span><span class="val" id="v-ore">0</span><span class="rate" id="r-ore"></span></div>
+      <div class="stat" title="Gold"><span class="sw" style="background:#f2c94c"></span><span class="val" id="v-gold">0</span><span class="rate" id="r-gold"></span></div>
     </div>
     <div class="grp">
-      <div class="stat"><span class="lbl">VILLAGERS</span><span class="val" id="v-peas">0</span></div>
-      <div class="stat"><span class="lbl">JOBS FILLED</span><span class="val" id="v-jobs">0</span></div>
-      <div class="stat"><span class="lbl">SOLDIERS</span><span class="val" id="v-sold">0</span></div>
-      <div class="stat"><span class="lbl">DAY</span><span class="val" id="v-day">1</span></div>
+      <div class="stat" title="Villagers / housing"><span class="lbl">POP</span><span class="val" id="v-peas">0</span></div>
+      <div class="stat" title="Jobs filled / jobs available"><span class="lbl">JOBS</span><span class="val" id="v-jobs">0</span></div>
+      <div class="stat" title="Soldiers / bunks"><span class="lbl">ARMY</span><span class="val" id="v-sold">0</span></div>
+      <div class="stat" title="Day"><span class="lbl">DAY</span><span class="val" id="v-day">1</span></div>
     </div>
     <div class="grp" id="dem" aria-label="Demand"></div>
     <span id="hud-warn"></span>
     <div class="spacer"></div>
     <div class="grp">
       <button class="btn" id="lensbtn" type="button">Resources (V)</button>
-      <button class="btn" id="bannerbtn" type="button">Banner</button>
-      <button class="btn" id="texbtn" type="button">Textures</button>
-      <button class="btn" id="savebtn" type="button">Save</button>
-      <button class="btn" id="newbtn" type="button">New</button>
-      <button class="btn" id="draft" type="button">Drafting on</button>
       <button class="btn" id="sp0" type="button">Pause</button>
       <button class="btn" id="sp1" type="button">1x</button>
       <button class="btn" id="sp3" type="button">3x</button>
+      <button class="btn" id="menubtn" type="button" aria-haspopup="true" aria-expanded="false">Menu</button>
+    </div>
+    <div class="panel menu" id="menu" hidden>
+      <button class="btn" id="bannerbtn" type="button">Banner</button>
+      <button class="btn" id="texbtn" type="button">Textures</button>
+      <button class="btn" id="draft" type="button">Drafting on</button>
+      <button class="btn" id="savebtn" type="button">Save</button>
+      <button class="btn" id="newbtn" type="button">New</button>
     </div>
   </header>
   <main id="stage">
     <canvas id="c"></canvas>
     <aside class="panel" id="info"></aside>
-    <aside class="panel" id="goals"><h2>First goals</h2><ul id="goals-list"></ul></aside>
+    <aside class="panel" id="goals"><button type="button" id="goals-head" class="goalshead" aria-expanded="false"><b id="goals-count">GOALS</b><span id="goals-next"></span></button><ul id="goals-list" hidden></ul></aside>
     <div class="panel" id="lens" hidden><h2>Resource view</h2><div class="chips">
       <button class="chip" id="lc-wood" type="button"><i style="background:#3fd264"></i>Forest</button>
       <button class="chip" id="lc-stone" type="button"><i style="background:#dfe3f2"></i>Stone</button>
       <button class="chip" id="lc-ore" type="button"><i style="background:#ff8c28"></i>Iron ore</button>
       <button class="chip" id="lc-fert" type="button"><i style="background:#cdeb3c"></i>Fertile soil</button></div></div>
-    <div id="zoom"><button class="btn" id="rotl" type="button" title="Rotate view (Q)">&#8634;</button><button class="btn" id="rotr" type="button" title="Rotate view (E)">&#8635;</button><button class="btn" id="zout" type="button">-</button><button class="btn" id="zin" type="button">+</button></div>
+    <div id="zoom"><button class="btn" id="helpbtn" type="button" title="How to play">?</button><button class="btn" id="rotl" type="button" title="Rotate view (Q)">&#8634;</button><button class="btn" id="rotr" type="button" title="Rotate view (E)">&#8635;</button><button class="btn" id="zout" type="button">-</button><button class="btn" id="zin" type="button">+</button></div>
     <div id="hint" class="hint" hidden></div>
     <div id="lab" class="lab" hidden></div>
     <div class="panel" id="banner" hidden><h2>Your banner</h2><div class="chips" id="banner-sw"></div><label class="chk" style="margin-top:8px">Custom <input type="color" id="bannerpick" value="#b3202a"></label><div class="chips" style="margin-top:6px"><button class="chip" id="banner-reset" type="button">Original</button></div></div>
@@ -754,7 +780,23 @@ function fitToSlot(src, slot, o) {
   try { const id = g.getImageData(0, 0, W, OH), d = id.data; for (let i = 3; i < d.length; i += 4) d[i] = d[i] < 128 ? 0 : 255; g.putImageData(id, 0, 0); } catch (e) { }
   return out;
 }
+// A ground tile must be solid inside its diamond: no holes (a truncated or corrupt PNG decodes with transparent rows)
+// and no magenta left over from the background. Anything else is rejected so the built-in grass stays.
+function validGround(c) {
+  try {
+    const W = c.width, H = c.height, d = c.getContext('2d').getImageData(0, 0, W, H).data; let bad = 0;
+    for (let y = H - 16; y < H; y++) for (let x = 0; x < W; x++) {
+      const u = Math.abs(x + 0.5 - W / 2) / (W / 2), v = Math.abs(y - (H - 16) + 0.5 - 8) / 8;
+      if (u + v >= 0.8) continue;
+      const i = (y * W + x) * 4, r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3];
+      if (a < 128 || (r > 200 && b > 200 && g < 110)) bad++;
+    }
+    return bad === 0;
+  } catch (e) { return true; }
+}
 function fitAsset(img, slot) {
+  // Ground tiles arrive as a 2:1 diamond on a magenta canvas: key the magenta out, crop to the diamond and scale it to 32 px wide, same as the lab does.
+  if (slot.type === 'ground') { const out = fitToSlot(img, slot, { bg: true }); return validGround(out) ? out : null; }
   const [W, H] = slotDims(slot);
   // Building files keep their own height (any height is fine); only the width is tied to the footprint.
   const tall = slot.views === 4 && slot.type !== 'ground';
@@ -795,7 +837,7 @@ async function loadSheet(name, file, layout) {
 function probeAssets() {
   for (const s of SLOTS) for (const vk of viewKeys(s)) {
     const file = 'assets/' + s.name + (s.views === 4 ? '_' + vk : '') + '.png';
-    const im = new Image(); im.onload = () => { if (!(CELL[s.name] && CELL[s.name][vk])) { (OVR[s.name] = OVR[s.name] || {})[vk] = fitAsset(im, s); (ASSET_OK[s.name] = ASSET_OK[s.name] || {})[vk] = true; texChanged(); } }; im.onerror = () => { }; im.src = file;
+    const im = new Image(); im.onload = () => { if (!(CELL[s.name] && CELL[s.name][vk])) { const fit = fitAsset(im, s); if (!fit) { if (typeof toast === 'function') toast(file + ' looks broken (holes or leftover magenta), so the built-in art is used'); return; } (OVR[s.name] = OVR[s.name] || {})[vk] = fit; (ASSET_OK[s.name] = ASSET_OK[s.name] || {})[vk] = true; texChanged(); } }; im.onerror = () => { }; im.src = file;
   }
 }
 
@@ -1243,6 +1285,7 @@ const TOOLS = [
   { id: 'zoneMine', label: 'Mining', key: '7' }, { id: 'well', label: 'Well', key: '8' }, { id: 'sawmill', label: 'Sawmill', key: 'x' }, { id: 'barracks', label: 'Barracks', key: '9' },
   { id: 'bulldoze', label: 'Clear', key: '0' }
 ];
+let helpOpen = false;   // declared early: setTool() calls updateInfo() during startup
 const toolBtns = {};
 function iconFor(id) {
   const c = document.createElement('canvas'); c.width = 32; c.height = 40; const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
@@ -1566,7 +1609,16 @@ const GOALS = [
 ];
 const goalsEl = $('goals-list');
 GOALS.forEach((g, i) => { const li = document.createElement('li'); li.id = 'g' + i; li.textContent = g[0]; goalsEl.appendChild(li); });
-function updateGoals() { GOALS.forEach((g, i) => { if (g[1](S)) S['goal' + i] = true; $('g' + i).classList.toggle('done', !!S['goal' + i]); }); }
+let goalsOpen = false; try { goalsOpen = localStorage.getItem('thornwick-goals-open') === '1'; } catch (e) { }
+function updateGoals() {
+  let done = 0, next = null;
+  GOALS.forEach((g, i) => { if (g[1](S)) S['goal' + i] = true; const d = !!S['goal' + i]; if (d) done++; else if (next === null) next = g[0]; $('g' + i).classList.toggle('done', d); });
+  $('goals-count').textContent = 'GOALS ' + done + '/' + GOALS.length;
+  $('goals-next').textContent = next || 'All done'; $('goals-next').hidden = goalsOpen;
+  $('goals-list').hidden = !goalsOpen; $('goals-head').setAttribute('aria-expanded', goalsOpen);
+  $('goals').hidden = done === GOALS.length && !goalsOpen;
+}
+$('goals-head').onclick = () => { goalsOpen = !goalsOpen; try { localStorage.setItem('thornwick-goals-open', goalsOpen ? '1' : '0'); } catch (e) { } updateGoals(); };
 function describe(t) {
   const b = S.grid[t.y][t.x], d = S.d;
   if (!b) {
@@ -1601,12 +1653,16 @@ function describe(t) {
 function updateInfo() {
   const t = pinned || hover; const el = $('info');
   if (!t) {
-    el.innerHTML = '<h2>Thornwick</h2><p>Paint zones beside a road that reaches the Town Hall. Buildings grow there by themselves when the demand bars show a need and there is wood. Press V to see forest, stone, ore and farmable soil. Soldiers sleep in barracks, so every recruit needs a bunk.</p><p class="dim">Drag to pan. Scroll to zoom. Pick a tool below. Drag to paint roads, drag a box to zone.</p>';
+    el.hidden = !helpOpen;
+    if (helpOpen) el.innerHTML = '<h2>Thornwick</h2><p>Paint zones beside a road that reaches the Town Hall. Buildings grow there by themselves when the demand bars show a need and there is wood. Press V to see forest, stone, ore and farmable soil. Soldiers sleep in barracks, so every recruit needs a bunk.</p><p class="dim">Drag to pan. Scroll to zoom. Pick a tool below. Drag to paint roads, drag a box to zone.</p>';
     return;
   }
+  el.hidden = false;
   const [name, lines] = describe(t);
-  el.innerHTML = '<h2>' + name + '</h2>' + lines.map(l => '<p>' + l + '</p>').join('') + '<p class="dim">Tile ' + t.x + ', ' + t.y + '</p>';
+  const shown = pinned ? lines : lines.slice(0, 1);
+  el.innerHTML = '<h2>' + name + '</h2>' + shown.map(l => '<p>' + l + '</p>').join('') + (pinned ? '<p class="dim">Tile ' + t.x + ', ' + t.y + '</p>' : '');
 }
+$('helpbtn').onclick = () => { helpOpen = !helpOpen; if (!helpOpen) { try { localStorage.setItem('thornwick-help-seen', '1'); } catch (e) { } } updateInfo(); };
 function setSpeed(s) { speed = s; for (const id of [0, 1, 3]) $('sp' + id).classList.toggle('on', id === s); }
 $('sp0').onclick = () => setSpeed(0); $('sp1').onclick = () => setSpeed(1); $('sp3').onclick = () => setSpeed(3);
 $('draft').onclick = () => { S.drafting = !S.drafting; updateHUD(); };
@@ -1615,6 +1671,12 @@ $('rotr').onclick = () => setRot(ROT + 1);
 $('zin').onclick = () => setScale(scale + 1, stage.clientWidth / 2, stage.clientHeight / 2);
 $('zout').onclick = () => setScale(scale - 1, stage.clientWidth / 2, stage.clientHeight / 2);
 setSpeed(1);
+// ---------- Menu dropdown (banner, textures, drafting, save, new) ----------
+function setMenu(on) { $('menu').hidden = !on; $('menubtn').classList.toggle('on', on); $('menubtn').setAttribute('aria-expanded', on); }
+$('menubtn').onclick = e => { e.stopPropagation(); setMenu($('menu').hidden); };
+$('menu').addEventListener('click', e => { if (e.target.closest('button')) setMenu(false); });
+document.addEventListener('click', e => { if (!$('menu').hidden && !e.target.closest('#menu')) setMenu(false); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('menu').hidden) setMenu(false); });
 // ---------- Banner colour ----------
 const BANNER_COLORS = [['Crimson', '#b3202a'], ['Royal blue', '#2a56c4'], ['Forest green', '#2f8f46'], ['Purple', '#7a3fa8'], ['Gold', '#d9a31a'], ['Black', '#2b2b33'], ['White', '#e8e4d6'], ['Teal', '#1f9a9a']];
 function chooseBanner(hex) {
@@ -1645,7 +1707,7 @@ function frame(now) {
   if (speed > 0) { acc += dt * speed; while (acc >= 1) { acc -= 1; tick(S); updateHUD(); } }
   updateHint(); draw(); requestAnimationFrame(frame);
 }
-loadSaved(); setBanner(S.banner || null); resize(); centerOn(20, 24); updateHUD(); updateInfo();
+const hadSave = loadSaved(); try { helpOpen = !hadSave && !localStorage.getItem('thornwick-help-seen'); } catch (e) { } setBanner(S.banner || null); resize(); centerOn(20, 24); updateHUD(); updateInfo();
 requestAnimationFrame(frame);
 window.__game = { zone: (k, x, y) => setZone(S, k, x, y), get S() { return S; }, setTool, place: (t, x, y) => place(S, t, x, y), tick: () => { tick(S); updateHUD(); } };
 

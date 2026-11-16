@@ -133,7 +133,23 @@ function fitToSlot(src, slot, o) {
   try { const id = g.getImageData(0, 0, W, OH), d = id.data; for (let i = 3; i < d.length; i += 4) d[i] = d[i] < 128 ? 0 : 255; g.putImageData(id, 0, 0); } catch (e) { }
   return out;
 }
+// A ground tile must be solid inside its diamond: no holes (a truncated or corrupt PNG decodes with transparent rows)
+// and no magenta left over from the background. Anything else is rejected so the built-in grass stays.
+function validGround(c) {
+  try {
+    const W = c.width, H = c.height, d = c.getContext('2d').getImageData(0, 0, W, H).data; let bad = 0;
+    for (let y = H - 16; y < H; y++) for (let x = 0; x < W; x++) {
+      const u = Math.abs(x + 0.5 - W / 2) / (W / 2), v = Math.abs(y - (H - 16) + 0.5 - 8) / 8;
+      if (u + v >= 0.8) continue;
+      const i = (y * W + x) * 4, r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3];
+      if (a < 128 || (r > 200 && b > 200 && g < 110)) bad++;
+    }
+    return bad === 0;
+  } catch (e) { return true; }
+}
 function fitAsset(img, slot) {
+  // Ground tiles arrive as a 2:1 diamond on a magenta canvas: key the magenta out, crop to the diamond and scale it to 32 px wide, same as the lab does.
+  if (slot.type === 'ground') { const out = fitToSlot(img, slot, { bg: true }); return validGround(out) ? out : null; }
   const [W, H] = slotDims(slot);
   // Building files keep their own height (any height is fine); only the width is tied to the footprint.
   const tall = slot.views === 4 && slot.type !== 'ground';
@@ -174,7 +190,7 @@ async function loadSheet(name, file, layout) {
 function probeAssets() {
   for (const s of SLOTS) for (const vk of viewKeys(s)) {
     const file = 'assets/' + s.name + (s.views === 4 ? '_' + vk : '') + '.png';
-    const im = new Image(); im.onload = () => { if (!(CELL[s.name] && CELL[s.name][vk])) { (OVR[s.name] = OVR[s.name] || {})[vk] = fitAsset(im, s); (ASSET_OK[s.name] = ASSET_OK[s.name] || {})[vk] = true; texChanged(); } }; im.onerror = () => { }; im.src = file;
+    const im = new Image(); im.onload = () => { if (!(CELL[s.name] && CELL[s.name][vk])) { const fit = fitAsset(im, s); if (!fit) { if (typeof toast === 'function') toast(file + ' looks broken (holes or leftover magenta), so the built-in art is used'); return; } (OVR[s.name] = OVR[s.name] || {})[vk] = fit; (ASSET_OK[s.name] = ASSET_OK[s.name] || {})[vk] = true; texChanged(); } }; im.onerror = () => { }; im.src = file;
   }
 }
 

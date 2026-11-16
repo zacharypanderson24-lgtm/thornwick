@@ -359,6 +359,7 @@ const TOOLS = [
   { id: 'zoneMine', label: 'Mining', key: '7' }, { id: 'well', label: 'Well', key: '8' }, { id: 'sawmill', label: 'Sawmill', key: 'x' }, { id: 'barracks', label: 'Barracks', key: '9' },
   { id: 'bulldoze', label: 'Clear', key: '0' }
 ];
+let helpOpen = false;   // declared early: setTool() calls updateInfo() during startup
 const toolBtns = {};
 function iconFor(id) {
   const c = document.createElement('canvas'); c.width = 32; c.height = 40; const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
@@ -682,7 +683,16 @@ const GOALS = [
 ];
 const goalsEl = $('goals-list');
 GOALS.forEach((g, i) => { const li = document.createElement('li'); li.id = 'g' + i; li.textContent = g[0]; goalsEl.appendChild(li); });
-function updateGoals() { GOALS.forEach((g, i) => { if (g[1](S)) S['goal' + i] = true; $('g' + i).classList.toggle('done', !!S['goal' + i]); }); }
+let goalsOpen = false; try { goalsOpen = localStorage.getItem('thornwick-goals-open') === '1'; } catch (e) { }
+function updateGoals() {
+  let done = 0, next = null;
+  GOALS.forEach((g, i) => { if (g[1](S)) S['goal' + i] = true; const d = !!S['goal' + i]; if (d) done++; else if (next === null) next = g[0]; $('g' + i).classList.toggle('done', d); });
+  $('goals-count').textContent = 'GOALS ' + done + '/' + GOALS.length;
+  $('goals-next').textContent = next || 'All done'; $('goals-next').hidden = goalsOpen;
+  $('goals-list').hidden = !goalsOpen; $('goals-head').setAttribute('aria-expanded', goalsOpen);
+  $('goals').hidden = done === GOALS.length && !goalsOpen;
+}
+$('goals-head').onclick = () => { goalsOpen = !goalsOpen; try { localStorage.setItem('thornwick-goals-open', goalsOpen ? '1' : '0'); } catch (e) { } updateGoals(); };
 function describe(t) {
   const b = S.grid[t.y][t.x], d = S.d;
   if (!b) {
@@ -717,12 +727,16 @@ function describe(t) {
 function updateInfo() {
   const t = pinned || hover; const el = $('info');
   if (!t) {
-    el.innerHTML = '<h2>Thornwick</h2><p>Paint zones beside a road that reaches the Town Hall. Buildings grow there by themselves when the demand bars show a need and there is wood. Press V to see forest, stone, ore and farmable soil. Soldiers sleep in barracks, so every recruit needs a bunk.</p><p class="dim">Drag to pan. Scroll to zoom. Pick a tool below. Drag to paint roads, drag a box to zone.</p>';
+    el.hidden = !helpOpen;
+    if (helpOpen) el.innerHTML = '<h2>Thornwick</h2><p>Paint zones beside a road that reaches the Town Hall. Buildings grow there by themselves when the demand bars show a need and there is wood. Press V to see forest, stone, ore and farmable soil. Soldiers sleep in barracks, so every recruit needs a bunk.</p><p class="dim">Drag to pan. Scroll to zoom. Pick a tool below. Drag to paint roads, drag a box to zone.</p>';
     return;
   }
+  el.hidden = false;
   const [name, lines] = describe(t);
-  el.innerHTML = '<h2>' + name + '</h2>' + lines.map(l => '<p>' + l + '</p>').join('') + '<p class="dim">Tile ' + t.x + ', ' + t.y + '</p>';
+  const shown = pinned ? lines : lines.slice(0, 1);
+  el.innerHTML = '<h2>' + name + '</h2>' + shown.map(l => '<p>' + l + '</p>').join('') + (pinned ? '<p class="dim">Tile ' + t.x + ', ' + t.y + '</p>' : '');
 }
+$('helpbtn').onclick = () => { helpOpen = !helpOpen; if (!helpOpen) { try { localStorage.setItem('thornwick-help-seen', '1'); } catch (e) { } } updateInfo(); };
 function setSpeed(s) { speed = s; for (const id of [0, 1, 3]) $('sp' + id).classList.toggle('on', id === s); }
 $('sp0').onclick = () => setSpeed(0); $('sp1').onclick = () => setSpeed(1); $('sp3').onclick = () => setSpeed(3);
 $('draft').onclick = () => { S.drafting = !S.drafting; updateHUD(); };
@@ -731,6 +745,12 @@ $('rotr').onclick = () => setRot(ROT + 1);
 $('zin').onclick = () => setScale(scale + 1, stage.clientWidth / 2, stage.clientHeight / 2);
 $('zout').onclick = () => setScale(scale - 1, stage.clientWidth / 2, stage.clientHeight / 2);
 setSpeed(1);
+// ---------- Menu dropdown (banner, textures, drafting, save, new) ----------
+function setMenu(on) { $('menu').hidden = !on; $('menubtn').classList.toggle('on', on); $('menubtn').setAttribute('aria-expanded', on); }
+$('menubtn').onclick = e => { e.stopPropagation(); setMenu($('menu').hidden); };
+$('menu').addEventListener('click', e => { if (e.target.closest('button')) setMenu(false); });
+document.addEventListener('click', e => { if (!$('menu').hidden && !e.target.closest('#menu')) setMenu(false); });
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('menu').hidden) setMenu(false); });
 // ---------- Banner colour ----------
 const BANNER_COLORS = [['Crimson', '#b3202a'], ['Royal blue', '#2a56c4'], ['Forest green', '#2f8f46'], ['Purple', '#7a3fa8'], ['Gold', '#d9a31a'], ['Black', '#2b2b33'], ['White', '#e8e4d6'], ['Teal', '#1f9a9a']];
 function chooseBanner(hex) {
@@ -761,6 +781,6 @@ function frame(now) {
   if (speed > 0) { acc += dt * speed; while (acc >= 1) { acc -= 1; tick(S); updateHUD(); } }
   updateHint(); draw(); requestAnimationFrame(frame);
 }
-loadSaved(); setBanner(S.banner || null); resize(); centerOn(20, 24); updateHUD(); updateInfo();
+const hadSave = loadSaved(); try { helpOpen = !hadSave && !localStorage.getItem('thornwick-help-seen'); } catch (e) { } setBanner(S.banner || null); resize(); centerOn(20, 24); updateHUD(); updateInfo();
 requestAnimationFrame(frame);
 window.__game = { zone: (k, x, y) => setZone(S, k, x, y), get S() { return S; }, setTool, place: (t, x, y) => place(S, t, x, y), tick: () => { tick(S); updateHUD(); } };
