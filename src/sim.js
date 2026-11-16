@@ -17,8 +17,8 @@ const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2, sawmill: 3, fore
 const HOUSE_CAP = [0, 4, 6];
 // Lumber chain: woodcutters fell designated trees into logs; a sawmill turns 1 log into 1 plank (wood). The Town Hall can pit-saw 1 log/tick at half yield.
 const SAW_RATE = 4, HALL_SAW = 1, HALL_YIELD = 0.5, STUMP_DAYS = 8;
-// Foresters replant open Lumber-zone tiles: one sapling per PLANT_EVERY days at full staffing, and a sapling grows into a tree after SAPLING_DAYS.
-const PLANT_EVERY = 4, SAPLING_DAYS = 30, FORESTER_R = 4;
+// Foresters replant open Lumber-zone tiles: one sapling per PLANT_EVERY days at full staffing, and a sapling grows into a tree after SAPLING_DAYS (three game years of 365 days; one day = one second at 1x).
+const PLANT_EVERY = 4, SAPLING_DAYS = 3 * 365, FORESTER_R = 4;
 const BUNKS = 6, HALL_CAP = 6, WELL_R = 4, WORK_R = 3, MARKET_R = 5, STORAGE = 400;
 const NB = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const COST2 = { house: { wood: 30 }, farm: { wood: 24 }, market: { wood: 32 } };

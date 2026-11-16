@@ -951,7 +951,7 @@ function describe(t) {
   if (!b) {
     const k = S.deco[t.y][t.x];
     if (k === 'tree') return ['Forest', [S.zone[t.y][t.x] === 'wood' ? 'Marked for felling. A woodcutter within 3 tiles cuts it into logs.' : 'Paint a Lumber zone here to mark it for felling. Cleared forest becomes open building land.', 'Building here clears the tree.']];
-    if (k === 'sapling') return ['Sapling', ['Planted by a forester. It grows into a tree in ' + Math.max(1, (S.sapT && S.sapT[t.y * N + t.x]) || 0) + ' days.']];
+    if (k === 'sapling') return ['Sapling', ['Planted by a forester. It grows into a tree in ' + (d => d > 365 ? (d / 365).toFixed(1) + ' years' : d + ' days')(Math.max(1, (S.sapT && S.sapT[t.y * N + t.x]) || 0)) + '.']];
     if (k === 'stump') return ['Tree stump', ['Left behind by felling. It rots away into open grass you can build on.']];
     if (k === 'rock') {
       const lv = rockLevel(S, t.x, t.y), left = Math.ceil(rockLeft(S, t.x, t.y)), mk = S.zone[t.y][t.x] === 'mine';
@@ -984,7 +984,7 @@ function describe(t) {
   }
   if (b.t === 'forester') {
     let open = 0, grow = 0; for (let j = b.y - FORESTER_R; j <= b.y + FORESTER_R; j++) for (let i = b.x - FORESTER_R; i <= b.x + FORESTER_R; i++) if (inb(i, j) && S.zone[j][i] === 'wood') { if (S.deco[j][i] === 'sapling') grow++; else if (!S.deco[j][i] && !S.grid[j][i]) open++; }
-    L.push(workLine(b) + ' · ' + open + ' open Lumber tiles in reach · ' + grow + ' saplings growing', open ? 'Plants a sapling every ' + (PLANT_EVERY / Math.max(0.01, b.eff || 0)).toFixed(0) + ' days at current staffing. Saplings take ' + SAPLING_DAYS + ' days to become trees.' : 'Paint a Lumber zone over open ground within ' + FORESTER_R + ' tiles for it to plant.');
+    L.push(workLine(b) + ' · ' + open + ' open Lumber tiles in reach · ' + grow + ' saplings growing', open ? 'Plants a sapling every ' + (PLANT_EVERY / Math.max(0.01, b.eff || 0)).toFixed(0) + ' days at current staffing. Saplings take ' + (SAPLING_DAYS / 365) + ' years to become trees.' : 'Paint a Lumber zone over open ground within ' + FORESTER_R + ' tiles for it to plant.');
   }
   if (b.t === 'sawmill') L.push(workLine(b) + ' · saws ' + (b.served ? (SAW_RATE * (b.eff || 0)).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
   if (b.t === 'mine') {
