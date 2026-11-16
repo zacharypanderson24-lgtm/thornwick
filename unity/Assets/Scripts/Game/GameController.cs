@@ -43,6 +43,7 @@ namespace CrownAndHearth.Game
         public World World { get; private set; }
         int _rot, _drawnVersion = -1, _drawnRot = -1, _speed = 1;
         float _dayAcc;
+        bool _resourceView, _groundDirty;
         ToolDef _tool = Tools[0];
         Vector2Int? _hover, _roadAnchor, _lastPaint;
         ArtLibrary _art;
@@ -54,9 +55,9 @@ namespace CrownAndHearth.Game
             World = new World(Seed);
             _art = new ArtLibrary();
             if (SpriteMaterial == null) Debug.LogError("GameController needs the Sprite-Unlit material. Run Crown & Hearth > Rebuild Settlement Scene.");
-            _ground = new GameObject("Ground", typeof(MeshFilter), typeof(MeshRenderer), typeof(GroundRenderer)).GetComponent<GroundRenderer>();
+            _ground = new GameObject("Ground", typeof(GroundRenderer)).GetComponent<GroundRenderer>();
             _ground.transform.SetParent(transform, false); _ground.Init(SpriteMaterial, _art.GroundAtlas);
-            _overlay = new GameObject("Overlay", typeof(MeshFilter), typeof(MeshRenderer), typeof(OverlayRenderer)).GetComponent<OverlayRenderer>();
+            _overlay = new GameObject("Overlay", typeof(OverlayRenderer)).GetComponent<OverlayRenderer>();
             _overlay.transform.SetParent(transform, false); _overlay.Init(SpriteMaterial, _art.GroundAtlas);
             _objects = new GameObject("Objects", typeof(ObjectRenderer)).GetComponent<ObjectRenderer>();
             _objects.transform.SetParent(transform, false); _objects.Init(_art, SpriteMaterial);
@@ -73,6 +74,7 @@ namespace CrownAndHearth.Game
             _hud.PrioMoved += MovePrio;
             _hud.SetTool(_tool.Id); _hud.SetSpeed(_speed);
             _hud.Toast("Welcome to Crown & Hearth. Right-drag or WASD to pan, scroll to zoom, Q/E to rotate.", 6);
+            _hud.ResourceViewPicked += ToggleResourceView;
         }
 
         void Update()
@@ -90,9 +92,15 @@ namespace CrownAndHearth.Game
                 if (_dayAcc > 1f) _dayAcc = 0;
             }
 
-            if (World.Version != _drawnVersion || _rot != _drawnRot)
+            bool worldChanged = World.Version != _drawnVersion || _rot != _drawnRot;
+            if (worldChanged || _groundDirty)
             {
-                _ground.Build(World, _rot); _objects.Build(World, _rot);
+                _ground.Build(World, _rot, _resourceView, _tool.Zone);
+                _groundDirty = false;
+            }
+            if (worldChanged)
+            {
+                _objects.Build(World, _rot);
                 _drawnVersion = World.Version; _drawnRot = _rot;
             }
             DrawOverlay();
@@ -109,11 +117,20 @@ namespace CrownAndHearth.Game
             if (kb.escapeKey.wasPressedThisFrame) SetTool(Tools[0]);
             if (kb.qKey.wasPressedThisFrame) Rotate(-1);
             if (kb.eKey.wasPressedThisFrame) Rotate(1);
+            if (kb.vKey.wasPressedThisFrame) ToggleResourceView();
             if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
+        }
+
+        void ToggleResourceView()
+        {
+            _resourceView = !_resourceView;
+            _groundDirty = true;
+            _hud.SetResourceView(_resourceView);
         }
 
         void SetTool(ToolDef t)
         {
+            if (_tool.Zone != t.Zone) _groundDirty = true;
             _tool = t; _roadAnchor = null; _hud.SetTool(t.Id);
             if (t.Build != null) _hud.Toast($"{Defs.Names[t.Build]}: {CostText(t.Build)}");
             if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + " " + World.Note[t.Zone], 6);
