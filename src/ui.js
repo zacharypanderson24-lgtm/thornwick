@@ -761,7 +761,11 @@ function draw() {
         const kind = S.deco[y][x], v = kind === 'tree' ? treeVariant(S, x, y) : Math.floor(hash2(x, y, 8) * 2);   // ten tree looks; the built-in art only has 3 so it repeats
         const amt = kind === 'rock' ? rockAmt(S, x, y) : 1;
         if (kind === 'rock' && rockLevel(S, x, y) !== 1) { const ps = rockSprites(S, x, y, vx, vy); if (mtn) ctx.translate(0, lift); ctx.drawImage(ps, ox, oy + 48 - ps.height); if (mtn) ctx.translate(0, -lift); }
-        else ctx.drawImage(ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], ox, oy);
+        else {
+          let spr = null;
+          if (kind === 'tree') { const gv = treeGrove(S, x, y); if (gv.n > 1) spr = ovrSprite('tree_' + gv.kind + '_' + gv.n, ROT); }   // a stand of 2-4 trees when that art exists
+          ctx.drawImage(spr || ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], ox, oy);
+        }
       }
       if (!(b && b.t === 'road')) ctx.translate(0, lift);
     }

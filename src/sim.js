@@ -178,6 +178,17 @@ function treeSpecies(S, x, y) {
   return TREE_SPECIES.length - 1;
 }
 function treeVariant(S, x, y) { const sp = TREE_SPECIES[treeSpecies(S, x, y)].v; return sp[Math.floor(hash2(x, y, (S.seed || 7) + 813) * sp.length) % sp.length]; }
+// Groves: oak and pine tiles in thick forest are drawn as a stand of 2-4 trees (tree_oak_N / tree_pine_N art). The denser the surrounding forest, the bigger the stand.
+function treeGrove(S, x, y) {
+  const sp = treeSpecies(S, x, y), kind = sp === 0 ? 'oak' : sp === 1 ? 'pine' : null; if (!kind) return { n: 1 };
+  let d = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && inb(x + i, y + j) && S.deco[y + j][x + i] === 'tree') d++;
+  const r = hash2(x, y, (S.seed || 7) + 820), r2 = hash2(x, y, (S.seed || 7) + 821);
+  let n = 1;
+  if (d >= 6) { if (r2 < 0.8) n = 2 + Math.floor(r * 3); }
+  else if (d >= 4) { if (r2 < 0.6) n = 2 + Math.floor(r * 2); }
+  else if (d >= 2) { if (r2 < 0.3) n = 2; }
+  return { n, kind };
+}
 // One tile of terrain on top of the height map: fertility, then mountain / rock outcrop / ore / tree.
 function genTile(S, seed, x, y) {
   const dist = Math.max(Math.abs(x - START), Math.abs(y - START));
@@ -696,4 +707,4 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (typeof module !== 'undefined') module.exports = { treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (typeof module !== 'undefined') module.exports = { treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };

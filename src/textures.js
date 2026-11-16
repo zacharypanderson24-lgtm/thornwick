@@ -113,6 +113,9 @@ function keyOut(id) {
   const push = (x, y) => { if (x < 0 || y < 0 || x >= w || y >= h) return; const k = y * w + x; if (seen[k]) return; seen[k] = 1; if (near(k * 4)) { d[k * 4 + 3] = 0; stack.push(k); } };
   for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); } for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
   while (stack.length) { const k = stack.pop(), x = k % w, y = (k / w) | 0; push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1); }
+  // Magenta pockets enclosed by the art (gaps between the trees of a grove, holes in foliage) are not reachable from the edge: a flat magenta key
+  // is never wanted in a sprite, so clear every pixel that is almost exactly the key colour.
+  if (key[0] > 200 && key[1] < 60 && key[2] > 200) for (let i = 0; i < d.length; i += 4) if (d[i + 3] && d[i] > 225 && d[i + 1] < 40 && d[i + 2] > 225) d[i + 3] = 0;
 }
 function alphaBox(id) {
   const w = id.width, h = id.height, d = id.data; let x0 = w, y0 = h, x1 = -1, y1 = -1;

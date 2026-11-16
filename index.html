@@ -347,6 +347,17 @@ function treeSpecies(S, x, y) {
   return TREE_SPECIES.length - 1;
 }
 function treeVariant(S, x, y) { const sp = TREE_SPECIES[treeSpecies(S, x, y)].v; return sp[Math.floor(hash2(x, y, (S.seed || 7) + 813) * sp.length) % sp.length]; }
+// Groves: oak and pine tiles in thick forest are drawn as a stand of 2-4 trees (tree_oak_N / tree_pine_N art). The denser the surrounding forest, the bigger the stand.
+function treeGrove(S, x, y) {
+  const sp = treeSpecies(S, x, y), kind = sp === 0 ? 'oak' : sp === 1 ? 'pine' : null; if (!kind) return { n: 1 };
+  let d = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && inb(x + i, y + j) && S.deco[y + j][x + i] === 'tree') d++;
+  const r = hash2(x, y, (S.seed || 7) + 820), r2 = hash2(x, y, (S.seed || 7) + 821);
+  let n = 1;
+  if (d >= 6) { if (r2 < 0.8) n = 2 + Math.floor(r * 3); }
+  else if (d >= 4) { if (r2 < 0.6) n = 2 + Math.floor(r * 2); }
+  else if (d >= 2) { if (r2 < 0.3) n = 2; }
+  return { n, kind };
+}
 // One tile of terrain on top of the height map: fertility, then mountain / rock outcrop / ore / tree.
 function genTile(S, seed, x, y) {
   const dist = Math.max(Math.abs(x - START), Math.abs(y - START));
@@ -865,7 +876,7 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (false) module.exports = { treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (false) module.exports = { treeGrove, treeSpecies, treeVariant, TREE_SPECIES, hasTree, saveWorld, walkCost, loadWorld, growSave, START, elevOf, vh, tileCorners, tileLevel, tileSpread, tileFlat, genHeights, levelFootprint, deriveHeights, relaxHeights, HMIN, HMAX, MOUNT_LEVEL, LVL_PX, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
 
 // ---------- Texture slots, overrides, asset loader, and the texture lab ----------
 const STYLE = 'Isometric pixel art for a medieval city-builder game in the spirit of TheoTown. True 2:1 isometric: a ground tile is a diamond exactly twice as wide as it is tall. Hard pixel edges, no anti-aliasing, no gradients, no blur, no outline thicker than 1 pixel, about 24 colours at most. Warm, earthy early-medieval palette: weathered timber, straw thatch, packed dirt, grey fieldstone, muted greens. Light comes from the top-left: left-facing walls are mid-tone, right-facing walls are darker, roofs are lightest on their left slope. No cast shadow on the ground and nothing drawn on the ground except the object itself. One object per image, centred, completely visible, viewed from a fixed camera about 30 degrees above the horizon. Background: one flat solid pure magenta (#FF00FF) so it can be removed.';
@@ -981,6 +992,9 @@ function keyOut(id) {
   const push = (x, y) => { if (x < 0 || y < 0 || x >= w || y >= h) return; const k = y * w + x; if (seen[k]) return; seen[k] = 1; if (near(k * 4)) { d[k * 4 + 3] = 0; stack.push(k); } };
   for (let x = 0; x < w; x++) { push(x, 0); push(x, h - 1); } for (let y = 0; y < h; y++) { push(0, y); push(w - 1, y); }
   while (stack.length) { const k = stack.pop(), x = k % w, y = (k / w) | 0; push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1); }
+  // Magenta pockets enclosed by the art (gaps between the trees of a grove, holes in foliage) are not reachable from the edge: a flat magenta key
+  // is never wanted in a sprite, so clear every pixel that is almost exactly the key colour.
+  if (key[0] > 200 && key[1] < 60 && key[2] > 200) for (let i = 0; i < d.length; i += 4) if (d[i + 3] && d[i] > 225 && d[i + 1] < 40 && d[i + 2] > 225) d[i + 3] = 0;
 }
 function alphaBox(id) {
   const w = id.width, h = id.height, d = id.data; let x0 = w, y0 = h, x1 = -1, y1 = -1;
@@ -1926,7 +1940,11 @@ function draw() {
         const kind = S.deco[y][x], v = kind === 'tree' ? treeVariant(S, x, y) : Math.floor(hash2(x, y, 8) * 2);   // ten tree looks; the built-in art only has 3 so it repeats
         const amt = kind === 'rock' ? rockAmt(S, x, y) : 1;
         if (kind === 'rock' && rockLevel(S, x, y) !== 1) { const ps = rockSprites(S, x, y, vx, vy); if (mtn) ctx.translate(0, lift); ctx.drawImage(ps, ox, oy + 48 - ps.height); if (mtn) ctx.translate(0, -lift); }
-        else ctx.drawImage(ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], ox, oy);
+        else {
+          let spr = null;
+          if (kind === 'tree') { const gv = treeGrove(S, x, y); if (gv.n > 1) spr = ovrSprite('tree_' + gv.kind + '_' + gv.n, ROT); }   // a stand of 2-4 trees when that art exists
+          ctx.drawImage(spr || ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], ox, oy);
+        }
       }
       if (!(b && b.t === 'road')) ctx.translate(0, lift);
     }
