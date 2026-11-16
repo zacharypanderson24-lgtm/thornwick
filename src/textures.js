@@ -162,8 +162,15 @@ function fitAsset(img, slot) {
   // Building files keep their own height (any height is fine); only the width is tied to the footprint.
   const tall = slot.views === 4 && slot.type !== 'ground';
   const OH = tall ? Math.max(1, Math.round(img.height * W / img.width)) : H;
+  // Files may arrive with the flat magenta background still on (the lab removes it, files in assets/ did not): key it out of the edges.
+  let src = img;
+  try {
+    const kc = document.createElement('canvas'); kc.width = img.naturalWidth || img.width; kc.height = img.naturalHeight || img.height;
+    const kg = kc.getContext('2d', { willReadFrequently: true }); kg.drawImage(img, 0, 0);
+    const id = kg.getImageData(0, 0, kc.width, kc.height); keyOut(id); kg.putImageData(id, 0, 0); src = kc;
+  } catch (e) { }
   const out = document.createElement('canvas'); out.width = W; out.height = OH;
-  const g = out.getContext('2d'); g.imageSmoothingEnabled = img.width !== W; g.imageSmoothingQuality = 'high'; g.drawImage(img, 0, 0, W, OH); return out;
+  const g = out.getContext('2d'); g.imageSmoothingEnabled = img.width !== W; g.imageSmoothingQuality = 'high'; g.drawImage(src, 0, 0, W, OH); return out;
 }
 function texChanged() { if (typeof refreshIcons === 'function') refreshIcons(); if (typeof labRefresh === 'function') labRefresh(); }
 const IDB = {

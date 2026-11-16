@@ -74,3 +74,7 @@ Output speed of every industry comes from how many workers it has, not from the 
 - **Soldiers:** more soldiers means a larger army but less labour, which is the central guns-vs-butter choice.
 - **Allocation:** citizens fill jobs by priority (default: food first). The player can move priority sliders in the Workforce panel; unfilled jobs show red. Growth in population (housing + food) is the long-term way to raise total output.
 - **Upgrades:** tech and better buildings raise per-worker output or building capacity, so a small skilled town can out-produce a big unskilled one.
+
+
+## Update: landforms and map size
+- Mountains are discrete landforms (2..7 tiles a side, average about 3x3). Height and stone reserve scale with size; hill skirts rise toward each mountain so no two start at the same height. Map is 64x64; old 40x40 saves are centred into it (growSave in sim.js). Zoom out to 0.5 to see most of the map.

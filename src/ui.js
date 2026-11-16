@@ -418,8 +418,11 @@ function screenToTile(mx, my) {
   const vx = Math.floor((p + q) / 2), vy = Math.floor((q - p) / 2);
   if (!inb(vx, vy)) return null; const [x, y] = fromView(vx, vy); return { x, y };
 }
+// zoom ladder: 0.5 shows most of the big map, then whole-number steps keep the pixel art crisp
+const ZOOMS = [0.5, 1, 2, 3, 4, 5];
+function zoomStep(dir) { const i = ZOOMS.findIndex(z => z >= scale - 1e-6); return ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, (i < 0 ? ZOOMS.length - 1 : i) + dir))]; }
 function setScale(ns, mx, my) {
-  ns = Math.max(2, Math.min(5, ns)); if (ns === scale) return;
+  ns = Math.max(0.5, Math.min(5, ns)); if (ns === scale) return;
   const wx = mx / scale + cam.x, wy = my / scale + cam.y;
   scale = ns; resize(); cam.x = wx - mx / scale; cam.y = wy - my / scale;
 }
@@ -490,7 +493,7 @@ cv.addEventListener('pointerup', () => {
   drag = null;
 });
 cv.addEventListener('pointerleave', () => { if (!drag) { hover = null; updateInfo(); } });
-cv.addEventListener('wheel', e => { e.preventDefault(); const [mx, my] = mousePos(e); setScale(scale + (e.deltaY < 0 ? 1 : -1), mx, my); }, { passive: false });
+cv.addEventListener('wheel', e => { e.preventDefault(); const [mx, my] = mousePos(e); setScale(zoomStep(e.deltaY < 0 ? 1 : -1), mx, my); }, { passive: false });
 window.addEventListener('keydown', e => {
   if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
   const k = e.key.toLowerCase();
@@ -500,8 +503,8 @@ window.addEventListener('keydown', e => {
   if (k === 'q') { setRot(ROT - 1); return; }
   if (k === 'e') { setRot(ROT + 1); return; }
   if (k === 'escape') { if (roadAnchor) { roadAnchor = null; return; } setTool('inspect'); pinned = null; updateInfo(); return; }
-  if (k === '+' || k === '=') { setScale(scale + 1, stage.clientWidth / 2, stage.clientHeight / 2); return; }
-  if (k === '-') { setScale(scale - 1, stage.clientWidth / 2, stage.clientHeight / 2); return; }
+  if (k === '+' || k === '=') { setScale(zoomStep(1), stage.clientWidth / 2, stage.clientHeight / 2); return; }
+  if (k === '-') { setScale(zoomStep(-1), stage.clientWidth / 2, stage.clientHeight / 2); return; }
   const t = TOOLS.find(t => t.key === k); if (t) { setTool(t.id); return; }
   keys[k] = true;
 });
@@ -583,15 +586,21 @@ function peakSprite(hgt, jx, ph, seed, kind, hol) {
   return PEAK_CACHE[key] = c;
 }
 function mountainSprite(S, x, y) {
-  const hol = Math.round(rockHollow(S, x, y) * 6);
-  let n = 0;
-  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && inb(x + i, y + j) && isMountain(S, x + i, y + j)) n++;
-  // Height: the deeper in the range, the taller; smooth noise makes ridges and a few high summits instead of a field of equal spikes.
-  const hgt = Math.round(6 + n * 2 + Math.pow(vnoise(x * 0.2 + 5, y * 0.2 + 5, 77), 1.5) * 44 + hash2(x, y, 31) * 4);
-  return peakSprite(n >= 6 ? Math.min(hgt, 54) : Math.min(hgt, 28), Math.floor(hash2(x, y, 32) * 5) - 2, Math.floor(hash2(x, y, 33) * 2), Math.floor(hash2(x, y, 34) * 3), 'rock', hol);
+  const hol = Math.round(rockHollow(S, x, y) * 6), el = S.elev && S.elev[y * N + x];
+  let hgt;
+  if (el) hgt = Math.min(72, el);   // generated landforms carry their own elevation: bigger mountains are taller, slopes step down to the hills
+  else {   // old saves: height from how deep in the range the tile is
+    let n = 0;
+    for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && inb(x + i, y + j) && isMountain(S, x + i, y + j)) n++;
+    hgt = Math.round(6 + n * 2 + Math.pow(vnoise(x * 0.2 + 5, y * 0.2 + 5, 77), 1.5) * 44 + hash2(x, y, 31) * 4);
+    hgt = n >= 6 ? Math.min(hgt, 54) : Math.min(hgt, 28);
+  }
+  return peakSprite(hgt, Math.floor(hash2(x, y, 32) * 5) - 2, Math.floor(hash2(x, y, 33) * 2), Math.floor(hash2(x, y, 34) * 3), 'rock', hol);
 }
-function hillSprite(x, y) {
-  return peakSprite(4 + Math.floor(hash2(x, y, 41) * 3), Math.floor(hash2(x, y, 42) * 5) - 2, Math.floor(hash2(x, y, 43) * 2), Math.floor(hash2(x, y, 44) * 3), 'grass');
+function hillSprite(S, x, y) {
+  const el = S.elev && S.elev[y * N + x];
+  const hgt = el ? Math.max(3, Math.round(el * 0.55)) : 4 + Math.floor(hash2(x, y, 41) * 3);   // hills get taller the nearer they are to a mountain
+  return peakSprite(hgt, Math.floor(hash2(x, y, 42) * 5) - 2, Math.floor(hash2(x, y, 43) * 2), Math.floor(hash2(x, y, 44) * 3), 'grass');
 }
 // Worked-out ground: flat dirt scar (level 0) and quarry pits (levels -1..-3). Pits show their far walls, so a run of pit tiles reads as one big hole.
 const FLOOR_COL = ['#4d3d2c', '#3d3024', '#2c2219'];
@@ -622,7 +631,7 @@ function pitSprite(d, wl, wr, lipL, lipR, seed) {
 function rockSprites(S, x, y, vx, vy) {
   const lv = rockLevel(S, x, y);
   if (lv >= 3) return mountainSprite(S, x, y);
-  if (lv === 2) return hillSprite(x, y);
+  if (lv === 2) return hillSprite(S, x, y);
   if (lv === 0) return scarSprite(x, y);
   const d = -lv, dep = (a, b) => { const [nx, ny] = fromView(a, b); return pitDepth(S, nx, ny); };
   const ul = dep(vx - 1, vy), ur = dep(vx, vy - 1), dl = dep(vx, vy + 1), dr = dep(vx + 1, vy);
@@ -670,10 +679,10 @@ function draw() {
           if (!b.served && b.t !== 'road') ctx.drawImage(SPR.warn, ox, oy - 8);
         }
       } else if (S.deco[y][x]) {
-        const kind = S.deco[y][x], v = Math.floor(hash2(x, y, 8) * (kind === 'tree' ? 3 : 2));
+        const kind = S.deco[y][x], v = Math.floor(hash2(x, y, 8) * (kind === 'tree' ? 10 : 2));   // ten tree looks; the built-in art only has 3 so it repeats
         const amt = kind === 'rock' ? rockAmt(S, x, y) : 1;
         if (kind === 'rock' && rockLevel(S, x, y) !== 1) { const ps = rockSprites(S, x, y, vx, vy); ctx.drawImage(ps, ox, oy + 48 - ps.height); }
-        else ctx.drawImage(ovrSprite(kind + '_' + v, ROT) || SPR[kind][v], ox, oy);
+        else ctx.drawImage(ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], ox, oy);
       }
     }
   }
@@ -837,8 +846,8 @@ $('sp0').onclick = () => setSpeed(0); $('sp1').onclick = () => setSpeed(1); $('s
 $('draft').onclick = () => { S.drafting = !S.drafting; updateHUD(); };
 $('rotl').onclick = () => setRot(ROT - 1);
 $('rotr').onclick = () => setRot(ROT + 1);
-$('zin').onclick = () => setScale(scale + 1, stage.clientWidth / 2, stage.clientHeight / 2);
-$('zout').onclick = () => setScale(scale - 1, stage.clientWidth / 2, stage.clientHeight / 2);
+$('zin').onclick = () => setScale(zoomStep(1), stage.clientWidth / 2, stage.clientHeight / 2);
+$('zout').onclick = () => setScale(zoomStep(-1), stage.clientWidth / 2, stage.clientHeight / 2);
 setSpeed(1);
 // ---------- Menu dropdown (banner, textures, drafting, save, new) ----------
 function setMenu(on) { $('menu').hidden = !on; $('menubtn').classList.toggle('on', on); $('menubtn').setAttribute('aria-expanded', on); }
@@ -862,7 +871,7 @@ const SAVE_KEY = 'thornwick-save-1';
 function doSave(quiet) { try { localStorage.setItem(SAVE_KEY, saveWorld(S)); if (!quiet) toast('Game saved'); } catch (e) { if (!quiet) toast('Saving is blocked in this browser'); } }
 function loadSaved() { try { const t = localStorage.getItem(SAVE_KEY); if (t) { const w = loadWorld(t); if (w) { S = w; return true; } } } catch (e) { } return false; }
 $('savebtn').onclick = () => doSave(false);
-$('newbtn').onclick = () => { if (!confirm('Start a new village? Your saved game will be replaced.')) return; S = createWorld(Math.floor(Math.random() * 9000) + 1); setBanner(null); pinned = null; roadAnchor = null; try { localStorage.removeItem(SAVE_KEY); } catch (e) { } centerOn(20, 24); updateHUD(); updateInfo(); toast('A new village'); };
+$('newbtn').onclick = () => { if (!confirm('Start a new village? Your saved game will be replaced.')) return; S = createWorld(Math.floor(Math.random() * 9000) + 1); setBanner(null); pinned = null; roadAnchor = null; try { localStorage.removeItem(SAVE_KEY); } catch (e) { } centerOn(START, START + 4); updateHUD(); updateInfo(); toast('A new village'); };
 setInterval(() => doSave(true), 30000);
 window.addEventListener('beforeunload', () => doSave(true));
 
@@ -876,6 +885,6 @@ function frame(now) {
   if (speed > 0) { acc += dt * speed; while (acc >= 1) { acc -= 1; tick(S); updateHUD(); } }
   updateHint(); draw(); requestAnimationFrame(frame);
 }
-const hadSave = loadSaved(); try { helpOpen = !hadSave && !localStorage.getItem('thornwick-help-seen'); } catch (e) { } setBanner(S.banner || null); resize(); centerOn(20, 24); updateHUD(); updateInfo();
+const hadSave = loadSaved(); try { helpOpen = !hadSave && !localStorage.getItem('thornwick-help-seen'); } catch (e) { } setBanner(S.banner || null); resize(); centerOn(START, START + 4); updateHUD(); updateInfo();
 requestAnimationFrame(frame);
 window.__game = { zone: (k, x, y) => setZone(S, k, x, y), get S() { return S; }, setTool, place: (t, x, y) => place(S, t, x, y), tick: () => { tick(S); updateHUD(); } };

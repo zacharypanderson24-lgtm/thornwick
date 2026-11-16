@@ -1,6 +1,7 @@
 'use strict';
 // ---------- Simulation (no DOM) ----------
-const N = 40;
+const N = 64;                     // map is N x N tiles (old saves were 40 and are centred into this on load)
+const OLD_N = 40, START = (N >> 1);   // START: the tile column/row the Town Hall is centred on
 const COST = {
   road: { wood: 1 }, house: { wood: 10 }, farm: { wood: 8 }, wood: { wood: 6 }, quarry: { wood: 10 }, mine: { wood: 12 },
   market: { wood: 12 }, sawmill: { wood: 15 }, well: { wood: 5, stone: 5 }, barracks: { wood: 20, stone: 15, gold: 20 }
@@ -16,7 +17,6 @@ const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2, sawmill: 3 };
 const HOUSE_CAP = [0, 4, 6];
 // Lumber chain: woodcutters fell designated trees into logs; a sawmill turns 1 log into 1 plank (wood). The Town Hall can pit-saw 1 log/tick at half yield.
 const SAW_RATE = 4, HALL_SAW = 1, HALL_YIELD = 0.5, STUMP_DAYS = 8;
-const MOUNT_T = 0.70, HILL_T = 0.62;
 const BUNKS = 6, HALL_CAP = 6, WELL_R = 4, WORK_R = 3, MARKET_R = 5, STORAGE = 400;
 const NB = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const COST2 = { house: { wood: 30 }, farm: { wood: 24 }, market: { wood: 32 } };
@@ -45,45 +45,109 @@ const ctr = o => (o.sz || 1) > 1 ? ((o.sz || 1) - 1) / 2 : 0;
 const cheb = (a, b) => Math.max(Math.abs(a.x + ctr(a) - b.x - ctr(b)), Math.abs(a.y + ctr(a) - b.y - ctr(b)));
 const clamp1 = v => Math.max(-1, Math.min(1, v));
 
+// ---- Mountains and hills as landforms ----
+// Every mountain is its own landform: a core of MOUNT_H+ elevation (the solid part, about 3x3 on average, at most about 7x7) that rises to a
+// peak, standing on a skirt of hills that climbs toward it. Bigger mountains are taller and have a wider skirt, so no two start at the
+// same height. Elevation is in sprite pixels: 14+ is mountain, 4..14 is hill.
+const MOUNT_H = 14, HILL_MIN = 4;
+const SIDE_W = [[2, 0.2], [3, 0.4], [4, 0.17], [5, 0.11], [6, 0.07], [7, 0.05]];
+function mountainSites(seed) {
+  const list = []; let n = 0; const rnd = () => hash2(n++, 17, seed + 300);
+  const pick = r => { let a = 0; for (const [side, w] of SIDE_W) { a += w; if (r < a) return side; } return 3; };
+  const want = Math.round((15 + Math.floor(rnd() * 4)) * (N * N) / 1600);
+  for (let tries = 0; tries < 2500 && list.length < want; tries++) {
+    const side = pick(rnd()), R = side / 2 * 0.9, Hp = 22 + 6 * side + rnd() * 5, skirt = 1.0 + 0.3 * side;
+    const cx = 3 + rnd() * (N - 6), cy = 3 + rnd() * (N - 6);
+    if (Math.max(Math.abs(cx - START), Math.abs(cy - (START + 2))) < R + skirt * 0.6 + 6) continue;       // keep the start area open
+    if (list.some(m => Math.hypot(m.cx - cx, m.cy - cy) < m.R + R + 2.0)) continue;           // cores stay separate; skirts may overlap
+    list.push({ cx, cy, R, Hp, skirt, ph: rnd() * 90 });
+  }
+  // a few plain hill clusters with no mountain in them
+  for (let k = 0, kn = Math.round(5 * (N * N) / 1600); k < kn; k++) {
+    const R = 0, Hp = 7 + rnd() * 6, skirt = 2.2 + rnd() * 2.2, cx = 3 + rnd() * (N - 6), cy = 3 + rnd() * (N - 6);
+    if (Math.max(Math.abs(cx - START), Math.abs(cy - (START + 2))) < skirt + 6) continue;
+    list.push({ cx, cy, R, Hp, skirt, ph: rnd() * 90, plain: true });
+  }
+  return list;
+}
+function elevAt(sites, seed, x, y) {
+  let e = 0;
+  for (const m of sites) {
+    const dx = Math.abs(x - m.cx), dy = Math.abs(y - m.cy);
+    if (dx > m.R + m.skirt + 1 || dy > m.R + m.skirt + 1) continue;
+    const nz = 0.9 + vnoise(x * 0.55 + m.ph, y * 0.55 + m.ph, seed + 2) * 0.22;        // ragged outline, never bigger than ~12%
+    const d = Math.cbrt(dx * dx * dx + dy * dy * dy) / nz;                                // rounded square, so a "7x7" mountain fills a 7x7 box
+    let v = 0;
+    if (m.plain) v = d < m.skirt ? m.Hp * Math.pow(1 - d / m.skirt, 1.2) : 0;
+    else if (d <= m.R) v = MOUNT_H + (m.Hp - MOUNT_H) * Math.pow(1 - d / m.R, 1.15);
+    else if (d < m.R + m.skirt) v = MOUNT_H * Math.pow(1 - (d - m.R) / m.skirt, 1.3);
+    if (v > e) e = v;
+  }
+  return e;
+}
+// One tile of terrain: fertility, then mountain / hill / ore / tree from the landform field and noise.
+function genTile(S, sites, seed, x, y) {
+  const dist = Math.max(Math.abs(x - START), Math.abs(y - START));
+  S.fert[y][x] = Math.max(Math.abs(x - START), Math.abs(y - (START + 3))) <= 7 || vnoise(x * 0.11 + 10, y * 0.11 + 10, seed + 20) > 0.55;
+  if (dist < 6) return;
+  const f = vnoise(x * 0.16, y * 0.16, seed) * 0.65 + vnoise(x * 0.4, y * 0.4, seed + 3) * 0.35;
+  const o = vnoise(x * 0.3 + 90, y * 0.3 + 90, seed + 13);
+  const e = elevAt(sites, seed, x, y);
+  if (e >= MOUNT_H) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 3; S.elev[y * N + x] = Math.round(e); }
+  else if (e >= HILL_MIN && hash2(x, y, seed + 6) > 0.05) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 2; S.elev[y * N + x] = Math.round(e); }
+  else if (o > 0.72 && hash2(x, y, seed + 7) > 0.35) S.deco[y][x] = 'ore';
+  else if (f > 0.56 && hash2(x, y, seed + 5) > 0.22) S.deco[y][x] = 'tree';
+}
+function lonelyMountains(S) {
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (isMountain(S, x, y)) {
+    let n = 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (inb(x + dx, y + dy) && isMountain(S, x + dx, y + dy)) n++;
+    if (n < 1) S.rockAmt[y * N + x] = 2;
+  }
+}
 function createWorld(seed) {
   seed = seed || 7;
   const S = {
     seed, grid: [], deco: [], zone: [], fert: [], blds: [], hall: null,
-    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, gold: 0 }, rockAmt: {}, stumpT: {}, dig: {}, oreLeft: {}, v2: true,
+    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, gold: 0 }, rockAmt: {}, elev: {}, stumpT: {}, dig: {}, oreLeft: {}, v2: true,
     dem: { res: 0, farm: 0, comm: 0, wood: 0, mine: 0 }, note: { res: '', farm: '', comm: '', wood: '', mine: '' }, flags: {},
     peasants: 6, popAcc: 0, soldiers: 0, day: 1, drafting: true, starving: false, trained: 0, d: null
   };
   for (let y = 0; y < N; y++) { S.grid.push(Array(N).fill(null)); S.deco.push(Array(N).fill(null)); S.zone.push(Array(N).fill(null)); S.fert.push(Array(N).fill(false)); }
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    const dist = Math.max(Math.abs(x - 20), Math.abs(y - 20));
-    S.fert[y][x] = Math.max(Math.abs(x - 20), Math.abs(y - 23)) <= 7 || vnoise(x * 0.11 + 10, y * 0.11 + 10, seed + 20) > 0.55;
-    if (dist < 6) continue;
-    const f = vnoise(x * 0.16, y * 0.16, seed) * 0.65 + vnoise(x * 0.4, y * 0.4, seed + 3) * 0.35;
-    // Mountain ranges: big smooth noise, so cores (3) are surrounded by foothill rings of hills (2).
-    const m = vnoise(x * 0.075 + 40, y * 0.075 + 40, seed + 9) * 0.72 + vnoise(x * 0.19 + 70, y * 0.19 + 70, seed + 11) * 0.28;
-    const o = vnoise(x * 0.3 + 90, y * 0.3 + 90, seed + 13);
-    if (m > MOUNT_T) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 3; }
-    else if (m > HILL_T && hash2(x, y, seed + 6) > 0.12) { S.deco[y][x] = 'rock'; S.rockAmt[y * N + x] = 2; }
-    else if (o > 0.72 && hash2(x, y, seed + 7) > 0.35) S.deco[y][x] = 'ore';
-    else if (f > 0.56 && hash2(x, y, seed + 5) > 0.22) S.deco[y][x] = 'tree';
-  }
-  // No lonely one-tile mountains: they become hills.
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (isMountain(S, x, y)) {
-    let n = 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (inb(x + dx, y + dy) && isMountain(S, x + dx, y + dy)) n++;
-    if (n < 2) S.rockAmt[y * N + x] = 2;
-  }
+  const sites = mountainSites(seed);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) genTile(S, sites, seed, x, y);
+  lonelyMountains(S);   // a one-tile mountain becomes a hill
   // The 3x3 Town Hall is anchored at (19,19), centered on the original (20,20).
   // All nine cells are reserved before roads and zones are placed.
-  addBld(S, 'hall', 19, 19, 3);
-  for (let y = 22; y <= 26; y++) addBld(S, 'road', 20, y);
-  addBld(S, 'house', 19, 23).zoned = true; addBld(S, 'house', 21, 23).zoned = true; addBld(S, 'farm', 19, 25).zoned = true;
-  S.zone[23][19] = 'res'; S.zone[23][21] = 'res'; S.zone[25][19] = 'farm';
+  const C = START;
+  addBld(S, 'hall', C - 1, C - 1, 3);
+  for (let y = C + 2; y <= C + 6; y++) addBld(S, 'road', C, y);
+  addBld(S, 'house', C - 1, C + 3).zoned = true; addBld(S, 'house', C + 1, C + 3).zoned = true; addBld(S, 'farm', C - 1, C + 5).zoned = true;
+  S.zone[C + 3][C - 1] = 'res'; S.zone[C + 3][C + 1] = 'res'; S.zone[C + 5][C - 1] = 'farm';
   recalc(S); computeDemand(S);
   return S;
 }
 function saveWorld(S) { return JSON.stringify(Object.assign({}, S, { grid: undefined, hall: undefined, d: undefined, v: 1 })); }
+// Old saves are a 40x40 map. Centre them in the bigger map (everything shifts by the same offset) and generate fresh land around them.
+function growSave(o) {
+  const oldN = o.deco.length; if (oldN >= N) return o;
+  const off = (N - oldN) >> 1, seed = o.seed || 7;
+  const S = Object.assign({}, o), sites = mountainSites(seed);
+  S.deco = []; S.zone = []; S.fert = []; S.rockAmt = {}; S.elev = {}; S.stumpT = {}; S.dig = {}; S.oreLeft = {};
+  for (let y = 0; y < N; y++) { S.deco.push(Array(N).fill(null)); S.zone.push(Array(N).fill(null)); S.fert.push(Array(N).fill(false)); }
+  const inOld = (x, y) => x >= off && y >= off && x < off + oldN && y < off + oldN;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    if (inOld(x, y)) { const ox = x - off, oy = y - off; S.deco[y][x] = o.deco[oy][ox]; S.zone[y][x] = o.zone[oy][ox]; S.fert[y][x] = o.fert[oy][ox]; }
+    else genTile(S, sites, seed, x, y);
+  }
+  for (const key of ['rockAmt', 'elev', 'stumpT', 'dig', 'oreLeft']) for (const k in (o[key] || {})) {
+    const ox = k % oldN, oy = Math.floor(k / oldN); S[key][(oy + off) * N + ox + off] = o[key][k];
+  }
+  S.blds = o.blds.map(b => Object.assign({}, b, { x: b.x + off, y: b.y + off }));
+  return S;
+}
 function loadWorld(str) {
-  const o = JSON.parse(str); if (!o || !o.blds || !o.deco) return null;
+  let o = JSON.parse(str); if (!o || !o.blds || !o.deco) return null;
+  o = growSave(o);
   const S = Object.assign({}, o); S.grid = []; S.hall = null; S.d = null;
   for (let y = 0; y < N; y++) S.grid.push(Array(N).fill(null));
   // Upgrade legacy one-tile barracks only when their 2x2 footprint is clear.
@@ -132,7 +196,7 @@ function addBld(S, t, x, y, sz) {
   const b = { t, x, y, sz: sz || (t === 'hall' ? 3 : t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
   if (t === 'house') b.var = pickHutVar(S, x, y);
   S.blds.push(b);
-  for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (S.dig) delete S.dig[j * N + i]; if (S.oreLeft) delete S.oreLeft[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
+  for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (S.dig) delete S.dig[j * N + i]; if (S.elev) delete S.elev[j * N + i]; if (S.oreLeft) delete S.oreLeft[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
   if (t === 'hall') S.hall = b;
   return b;
 }
@@ -254,11 +318,13 @@ function rockAmt(S, x, y) { return (S.rockAmt && S.rockAmt[tk(x, y)]) || 1; }
 // Ore tiles hold ORE_CAP each (S.oreLeft). A mined-out ore tile is gone.
 const DIG_U = 10, MOUNT_CAP = 120, ORE_CAP = 30;
 function digDone(S, x, y) { return (S.dig && S.dig[tk(x, y)]) || 0; }
-function rockCap(S, x, y) { const a = rockAmt(S, x, y); return a >= 3 ? MOUNT_CAP : (a + 3) * DIG_U; }
+// A mountain tile holds more stone the taller it is (peaks hold the most); a plain 40 px tile holds MOUNT_CAP.
+function elevOf(S, x, y) { return (S.elev && S.elev[tk(x, y)]) || 40; }
+function rockCap(S, x, y) { const a = rockAmt(S, x, y); return a >= 3 ? Math.round(MOUNT_CAP * elevOf(S, x, y) / 40) : (a + 3) * DIG_U; }
 function rockLeft(S, x, y) { return S.deco[y][x] === 'rock' ? Math.max(0, rockCap(S, x, y) - digDone(S, x, y)) : 0; }
 // 3 = mountain, 2 = hill, 1 = rubble, 0 = flat, -1..-3 = pit depth
 function rockLevel(S, x, y) { const a = rockAmt(S, x, y); return a >= 3 ? 3 : Math.max(-3, a - Math.floor(digDone(S, x, y) / DIG_U)); }
-function rockHollow(S, x, y) { return Math.min(1, digDone(S, x, y) / MOUNT_CAP); }
+function rockHollow(S, x, y) { return Math.min(1, digDone(S, x, y) / rockCap(S, x, y)); }
 function oreLeft(S, x, y) { return S.deco[y][x] === 'ore' ? ((S.oreLeft && S.oreLeft[tk(x, y)]) ?? ORE_CAP) : 0; }
 function isMountain(S, x, y) { return S.deco[y][x] === 'rock' && rockAmt(S, x, y) >= 3; }
 function pitDepth(S, x, y) { return (inb(x, y) && S.deco[y][x] === 'rock' && rockAmt(S, x, y) < 3) ? Math.max(0, -rockLevel(S, x, y)) : 0; }
@@ -525,4 +591,4 @@ function tick(S) {
   recalc(S);
   develop(S);
 }
-if (typeof module !== 'undefined') module.exports = { digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
+if (typeof module !== 'undefined') module.exports = { loadWorld, growSave, START, elevOf, mountainSites, elevAt, MOUNT_H, digDone, rockCap, rockLeft, rockLevel, rockHollow, oreLeft, pitDepth, mineRock, mineOre, rockWorkable, DIG_U, MOUNT_CAP, ORE_CAP, isMountain, isSolid, rockOpen, rockAmt, countZoned, capOf, jobsOf, foodOf, nameOf, roadPathCheck, placeRoadPath, N, COST, NAMES, JOBS, createWorld, canPlace, place, remove, tick, recalc, countDeco, addBld, setZone, zoneCheck, computeDemand };
