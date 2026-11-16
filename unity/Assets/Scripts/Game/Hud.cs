@@ -18,7 +18,7 @@ namespace CrownAndHearth.Game
         static readonly Color Ink = new Color(0.96f, 0.91f, 0.78f, 1f);
 
         Font _font;
-        Text _resText, _infoText, _toastText, _workText;
+        Text _resText, _infoText, _toastText, _workText, _demandText;
         GameObject _infoPanel, _workPanel;
         float _toastUntil;
         readonly Dictionary<string, Image> _toolButtons = new Dictionary<string, Image>();
@@ -69,6 +69,11 @@ namespace CrownAndHearth.Game
             }
             MakeButton(bottom, "Workers", new Vector2(1, 0.5f), new Vector2(-60, 0), new Vector2(100, 34), ToggleWorkforce);
 
+            // demand strip above the tool bar
+            var dp = MakePanel(root, "Demand", new Vector2(0, 0), new Vector2(0, 0), new Vector2(8, 52), new Vector2(620, 80));
+            _demandText = MakeText(dp, "DemandText", 15, TextAnchor.MiddleLeft);
+            Stretch(_demandText.rectTransform, new Vector2(10, 0), new Vector2(-10, 0));
+
             // left info panel
             _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -330), new Vector2(330, -48)).gameObject;
             _infoText = MakeText((RectTransform)_infoPanel.transform, "InfoText", 15, TextAnchor.UpperLeft);
@@ -96,6 +101,7 @@ namespace CrownAndHearth.Game
         public void SetTool(string id) { foreach (var kv in _toolButtons) kv.Value.color = kv.Key == id ? BtnOn : Btn; }
         public void SetSpeed(int s) { foreach (var kv in _speedButtons) kv.Value.color = kv.Key == s ? BtnOn : Btn; }
         public void SetResources(string text) => _resText.text = text;
+        public void SetDemand(string text) => _demandText.text = text;
         public void SetInfo(string text) { _infoPanel.SetActive(!string.IsNullOrEmpty(text)); _infoText.text = text; }
         public void Toast(string text, float secs = 3.5f) { _toastText.text = text; _toastUntil = Time.unscaledTime + secs; }
 

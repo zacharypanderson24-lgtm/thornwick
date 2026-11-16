@@ -19,7 +19,9 @@ namespace CrownAndHearth.Tests
             public int seed; public int[] hv; public string deco, fert, amt, variants, groves;
             public ElevCase[] elev; public BldCase[] blds; public int civ, jobs, idle, employed;
         }
-        [Serializable] class Reference { public int N; public HashCase[] hash; public SeedCase[] seeds; }
+        [Serializable] class DevStep { public int day; public double wood; public double[] dem; public BldCase[] added; }
+        [Serializable] class DevCase { public int seed, R; public DevStep[] steps; }
+        [Serializable] class Reference { public int N; public HashCase[] hash; public SeedCase[] seeds; public DevCase develop; }
 
         static Reference _ref;
         static Reference Ref
@@ -136,6 +138,68 @@ namespace CrownAndHearth.Tests
             int trees = CountTrees(w);
             for (int d = 0; d < 60; d++) { w.ResAmt[Res.Food] = 200; w.Tick(); }
             Assert.Less(CountTrees(w), trees, "no tree was felled");
+        }
+
+        /// <summary>tests/lib.js layout(): a comb of roads around the Town Hall with zones painted beside them.</summary>
+        static void Layout(World w, int R)
+        {
+            int N = Defs.N, C = Defs.Start, gap = 4;
+            bool Free(int x, int y) => World.Inb(x, y) && w.Grid[y, x] == null && !w.HasTree(x, y) && !w.IsSolid(x, y);
+            void Road(int x, int y)
+            {
+                if (World.Inb(x, y) && w.Grid[y, x] == null && (w.DecoMap[y, x] == Deco.Tree || w.DecoMap[y, x] == Deco.Stump || w.DecoMap[y, x] == Deco.Sapling)) w.Remove(x, y);
+                if (Free(x, y)) w.AddBld("road", x, y);
+            }
+            for (int y = C - R; y <= C + R; y += gap) for (int x = C - R; x <= C + R; x++) Road(x, y);
+            for (int x = C - R; x <= C + R; x += gap) for (int y = C - R; y <= C + R; y++) Road(x, y);
+            w.Recalc();
+            for (int y = C - R; y <= C + R; y++)
+                for (int x = C - R; x <= C + R; x++)
+                {
+                    if (x < 0 || y < 0 || x >= N || y >= N || w.Grid[y, x] != null) continue;
+                    var dc = w.DecoMap[y, x]; double r = Noise.Hash2(x, y, 4242);
+                    if (dc == Deco.Tree) { if (r < 0.7) w.SetZone(Zone.Wood, x, y); continue; }
+                    if (dc == Deco.Rock || dc == Deco.Ore) { w.SetZone(Zone.Mine, x, y); continue; }
+                    if (w.Fert[y, x] && r < 0.35) { w.SetZone(Zone.Farm, x, y); continue; }
+                    if (r < 0.5) w.SetZone(Zone.Res, x, y); else if (r < 0.58) w.SetZone(Zone.Comm, x, y);
+                }
+        }
+
+        [Test]
+        public void ZoneDevelopmentMatchesJavaScript()
+        {
+            var dev = Ref.develop;
+            var w = new World(dev.seed);
+            Layout(w, dev.R);
+            int total = 0;
+            for (int i = 0; i < dev.steps.Length; i++)
+            {
+                var step = dev.steps[i];
+                w.Recalc();
+                w.ResAmt[Res.Food] = 5 + (i * 37) % 260; w.ResAmt[Res.Wood] = 20 + (i * 53) % 170; w.ResAmt[Res.Logs] = (i * 11) % 30;
+                w.ResAmt[Res.Stone] = (i * 13) % 80; w.ResAmt[Res.Ore] = (i * 7) % 40; w.ResAmt[Res.Gold] = 100;
+                w.Peasants = Math.Max(1, Noise.JsRound(w.D.Civ * (0.55 + 0.05 * ((i * 17) % 10))));
+                w.Rate[Res.Food] = ((i % 5) - 2) * 0.2; w.Starving = i % 23 == 0;
+                w.Recalc();
+                Assert.AreEqual(step.day, w.Day, "day");
+                int before = w.Blds.Count;
+                w.Develop();
+                for (int k = 0; k < World.ZoneKinds.Length; k++)
+                    Assert.AreEqual(step.dem[k], w.Dem[World.ZoneKinds[k]], 1e-9, $"step {i}: demand for {World.ZoneKinds[k]}");
+                var added = w.Blds.Skip(before).ToList();
+                Assert.AreEqual(step.added.Length, added.Count, $"step {i}: buildings grown, js: " + string.Join(", ", step.added.Select(b => $"{b.t}@{b.x},{b.y}x{b.sz}")) +
+                                                                " c#: " + string.Join(", ", added.Select(b => $"{b.T}@{b.X},{b.Y}x{b.Sz}")));
+                for (int k = 0; k < added.Count; k++)
+                {
+                    var e = step.added[k]; var b = added[k];
+                    Assert.AreEqual($"{e.t}@{e.x},{e.y}x{e.sz}", $"{b.T}@{b.X},{b.Y}x{b.Sz}", $"step {i}: building {k}");
+                    Assert.AreEqual(e.hut, b.Var, $"step {i}: hut look");
+                }
+                Assert.AreEqual(step.wood, w.ResAmt[Res.Wood], 1e-9, $"step {i}: wood left");
+                total += added.Count;
+                w.Day++;
+            }
+            Assert.Greater(total, 20, "the scenario should grow plenty of buildings");
         }
 
         static int CountTrees(World w) { int n = 0; foreach (var d in w.DecoMap) if (d == Deco.Tree) n++; return n; }

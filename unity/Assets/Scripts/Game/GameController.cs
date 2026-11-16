@@ -1,8 +1,8 @@
 // Runs the settlement: owns the World, ticks it (1 day = 1 second at 1x, like the browser), redraws on change,
 // and turns mouse/keyboard into tools. Hotkeys follow the browser where it has them (1 Look, 2 Road, 8 Well, X Sawmill,
-// F Forester, 9 Barracks, 6 Lumber zone, 7 Mining zone, 0 Clear, Q/E rotate).
-// Port note: in the browser, houses, farms and markets grow by themselves on painted zones (sim_develop.js). Until that
-// is ported, keys 3/4/5 place them directly instead of painting zones.
+// F Forester, 9 Barracks, 3 Housing, 4 Farmland, 5 Commerce, 6 Lumber, 7 Mining zones, 0 Clear, Q/E rotate).
+// As in the browser, homes, farms, markets, woodcutter lodges, quarries and mines are not placed by hand: they grow on
+// painted zones beside roads when there is demand (World.Develop).
 using System.Collections.Generic;
 using System.Linq;
 using CrownAndHearth.Sim;
@@ -24,16 +24,13 @@ namespace CrownAndHearth.Game
         {
             new ToolDef { Id = "look", Label = "Look", Key = "1", Hotkey = Key.Digit1 },
             new ToolDef { Id = "road", Label = "Road", Key = "2", Hotkey = Key.Digit2, Road = true },
-            new ToolDef { Id = "house", Label = "House", Key = "3", Hotkey = Key.Digit3, Build = "house" },
-            new ToolDef { Id = "farm", Label = "Farm", Key = "4", Hotkey = Key.Digit4, Build = "farm" },
-            new ToolDef { Id = "market", Label = "Market", Key = "5", Hotkey = Key.Digit5, Build = "market" },
+            new ToolDef { Id = "zoneRes", Label = "Housing", Key = "3", Hotkey = Key.Digit3, Zone = Zone.Res },
+            new ToolDef { Id = "zoneFarm", Label = "Farmland", Key = "4", Hotkey = Key.Digit4, Zone = Zone.Farm },
+            new ToolDef { Id = "zoneComm", Label = "Commerce", Key = "5", Hotkey = Key.Digit5, Zone = Zone.Comm },
             new ToolDef { Id = "zoneWood", Label = "Lumber", Key = "6", Hotkey = Key.Digit6, Zone = Zone.Wood },
             new ToolDef { Id = "zoneMine", Label = "Mining", Key = "7", Hotkey = Key.Digit7, Zone = Zone.Mine },
-            new ToolDef { Id = "lodge", Label = "Lodge", Key = "L", Hotkey = Key.L, Build = "wood" },
             new ToolDef { Id = "forester", Label = "Forester", Key = "F", Hotkey = Key.F, Build = "forester" },
             new ToolDef { Id = "sawmill", Label = "Sawmill", Key = "X", Hotkey = Key.X, Build = "sawmill" },
-            new ToolDef { Id = "quarry", Label = "Quarry", Key = "Y", Hotkey = Key.Y, Build = "quarry" },
-            new ToolDef { Id = "mine", Label = "Mine", Key = "M", Hotkey = Key.M, Build = "mine" },
             new ToolDef { Id = "well", Label = "Well", Key = "8", Hotkey = Key.Digit8, Build = "well" },
             new ToolDef { Id = "barracks", Label = "Barracks", Key = "9", Hotkey = Key.Digit9, Build = "barracks" },
             new ToolDef { Id = "clear", Label = "Clear", Key = "0", Hotkey = Key.Digit0, Clear = true },
@@ -100,6 +97,7 @@ namespace CrownAndHearth.Game
             }
             DrawOverlay();
             _hud.SetResources(ResourceLine());
+            _hud.SetDemand(DemandLine());
             _hud.SetInfo(_hover.HasValue ? TileInfo(_hover.Value.x, _hover.Value.y) : "");
             _hud.RefreshWorkforce(World);
         }
@@ -118,6 +116,7 @@ namespace CrownAndHearth.Game
         {
             _tool = t; _roadAnchor = null; _hud.SetTool(t.Id);
             if (t.Build != null) _hud.Toast($"{Defs.Names[t.Build]}: {CostText(t.Build)}");
+            if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + " " + World.Note[t.Zone], 6);
         }
 
         void Rotate(int dir)
@@ -210,6 +209,22 @@ namespace CrownAndHearth.Game
                    R(Res.Ore, "Ore") + "   " + R(Res.Gold, "Gold") + $"     Peasants {w.Peasants}/{d.Civ}   Idle {d.Idle}   Jobs {d.Employed}/{d.Jobs}" +
                    (w.Soldiers > 0 ? $"   Soldiers {w.Soldiers}" : "") + (w.Starving ? "   STARVING" : "");
         }
+
+        static string ZoneHelp(Zone z) => z switch
+        {
+            Zone.Res => "Housing zone: homes grow on it beside a road when houses are nearly full.",
+            Zone.Farm => "Farmland zone (fertile soil only): farms grow when food runs low.",
+            Zone.Comm => "Commerce zone: markets grow near homes that have no market.",
+            Zone.Wood => "Lumber zone: paint forest; a woodcutter lodge grows beside a road and fells it.",
+            _ => "Mining zone: paint rock or ore; quarries and mines grow beside a road.",
+        };
+
+        string DemandLine()
+        {
+            string D(Zone z, string name) { double v = World.Dem[z]; return $"{name} {(v > DemandThresholdShown ? "+" : v < -0.05 ? "-" : " ")}{System.Math.Abs(v) * 100:0}%"; }
+            return "Demand   " + D(Zone.Res, "Homes") + "   " + D(Zone.Farm, "Farms") + "   " + D(Zone.Comm, "Markets") + "   " + D(Zone.Wood, "Lumber") + "   " + D(Zone.Mine, "Mining");
+        }
+        const double DemandThresholdShown = World.DemandThreshold;
 
         static string CostText(string type) => string.Join(", ", CostOf(type, 1).Select(kv => $"{kv.Value} {kv.Key.ToString().ToLower()}"));
 

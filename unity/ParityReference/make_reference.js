@@ -29,5 +29,32 @@ for (const seed of [7, 1234]) {
     civ: S.d.civ, jobs: S.d.jobs, idle: S.d.idle, employed: S.d.employed
   });
 }
+// Zone development: the deterministic test town from tests/lib.js (roads in a comb, zones painted beside them), then
+// develop() runs on scripted stockpiles and population so every zone kind sees demand. Crews and townsfolk are left out
+// (they are approximated in the port), so only the development rules are compared.
+{
+  const { layout } = require('../../tests/lib.js');
+  const S = sim.createWorld(7);
+  layout(sim, S, 10);
+  const steps = [];
+  for (let i = 0; i < 150; i++) {
+    sim.recalc(S);
+    S.res.food = 5 + (i * 37) % 260; S.res.wood = 20 + (i * 53) % 170; S.res.logs = (i * 11) % 30;
+    S.res.stone = (i * 13) % 80; S.res.ore = (i * 7) % 40; S.res.gold = 100;
+    S.peasants = Math.max(1, Math.round(S.d.civ * (0.55 + 0.05 * ((i * 17) % 10))));
+    S.rate.food = ((i % 5) - 2) * 0.2; S.starving = i % 23 === 0;
+    sim.recalc(S);
+    const before = S.blds.length;
+    sim.__i.develop(S);
+    steps.push({
+      day: S.day, wood: S.res.wood,
+      dem: ['res', 'farm', 'comm', 'wood', 'mine'].map(k => S.dem[k]),
+      added: S.blds.slice(before).map(b => ({ t: b.t, x: b.x, y: b.y, sz: b.sz, hut: b.var || 0, served: !!b.served, face: -1, lvl: b.lvl }))
+    });
+    S.day++;
+  }
+  out.develop = { seed: 7, R: 10, steps };
+  console.log('develop scenario grew', S.blds.length, 'buildings');
+}
 fs.writeFileSync(path.join(__dirname, 'reference.json'), JSON.stringify(out));
 console.log('wrote reference.json for seeds', out.seeds.map(s => s.seed).join(', '));

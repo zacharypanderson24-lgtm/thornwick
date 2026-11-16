@@ -190,14 +190,22 @@ namespace CrownAndHearth.EditorTools
                 { "stump", new[] { new Block { Inset = 12, H = 3, L = "#8A5A34", R = "#6E4526", Top = "#C9A04A" } } },
                 { "sapling", new[] { new Block { Inset = 13, H = 7, L = "#4F8C3B", R = "#3F7430", Top = "#79B65B" } } },
             };
-            foreach (var kv in defs)
+            // 2x2 buildings that grow on zones (64 x 88 canvas)
+            var big = new Dictionary<string, Block[]>
             {
-                const int W = 32, H = 48;
-                var px = new Color32[W * H];
-                foreach (var blk in kv.Value) DrawBlock(px, W, H, blk);
-                WritePng(Path.Combine(OutDir, "ph_" + kv.Key + ".png"), px, W, H);
-            }
-            return defs.Count;
+                { "manor_1", new[] { new Block { Inset = 4, H = 12, L = "#E8D9B0", R = "#CDBB8C", Top = "#E8D9B0" }, new Block { Inset = 2, Lift = 12, H = 9, L = "#C9A04A", R = "#A8802F", Top = "#C9A04A" } } },
+                { "manor_2", new[] { new Block { Inset = 4, H = 9, L = "#858A9C", R = "#666B7C", Top = "#858A9C" }, new Block { Inset = 4, Lift = 9, H = 9, L = "#E8D9B0", R = "#CDBB8C", Top = "#E8D9B0" }, new Block { Inset = 2, Lift = 18, H = 9, L = "#B5533C", R = "#8F3F2E", Top = "#B5533C" } } },
+                { "farm2", new[] { new Block { Inset = 0, H = 1, L = "#7C5A22", R = "#6E4526", Top = "#C9A04A", Stripes = true }, new Block { Inset = 34, Lift = 1, H = 10, L = "#8F3F2E", R = "#7A3526", Top = "#6E4526" } } },
+                { "market2", new[] { new Block { Inset = 0, H = 1, L = "#858A9C", R = "#666B7C", Top = "#9DA2B2" }, new Block { Inset = 20, Lift = 1, H = 7, L = "#E8D9B0", R = "#CDBB8C", Top = "#B5533C" } } },
+            };
+            foreach (var (set, W, H) in new[] { (defs, 32, 48), (big, 64, 88) })
+                foreach (var kv in set)
+                {
+                    var px = new Color32[W * H];
+                    foreach (var blk in kv.Value) DrawBlock(px, W, H, blk);
+                    WritePng(Path.Combine(OutDir, "ph_" + kv.Key + ".png"), px, W, H);
+                }
+            return defs.Count + big.Count;
         }
 
         /// <summary>An iso box standing on a (possibly inset) footprint diamond whose bottom corner is the image's bottom centre.</summary>

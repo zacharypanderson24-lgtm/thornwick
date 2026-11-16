@@ -1,7 +1,6 @@
 // The daily tick, ported from src/sim_tick.js in the same task order:
-//   sync -> farms + foresters -> crews -> deliver logs -> sawing -> nature -> economy (food, gold, population, barracks)
-// Not ported yet (next steps of the migration): walking work-crew and townsfolk agents (sim_crews.js) and automatic
-// zone development (sim_develop.js). Crews are approximated by an output rate per worker (see StepCrews).
+//   sync -> farms + foresters -> crews -> deliver logs -> sawing -> nature -> economy (food, gold, population, barracks) -> develop
+// Not ported yet: walking work-crew and townsfolk agents (sim_crews.js). Crews are approximated by an output rate per worker (see StepCrews).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -78,7 +77,10 @@ namespace CrownAndHearth.Sim
             foreach (var k in ResAmt.Keys.ToList())
                 Rate[k] = (k == Res.Logs || k == Res.Stone || k == Res.Ore) ? 0.85 * Rate[k] + 0.15 * (ResAmt[k] - before[k]) : ResAmt[k] - before[k];
             Day++;
+
+            // develop: zones grow buildings
             Recalc();
+            Develop();
         }
 
         // ---------- Work crews (approximation) ----------
