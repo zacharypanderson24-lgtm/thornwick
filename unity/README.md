@@ -10,8 +10,9 @@ everything Unity lives in this folder.
 
 Pan: WASD / arrows / right- or middle-drag. Zoom: mouse wheel (0.25x to 5x pixel ladder). Rotate: Q / E.
 Space pauses; the top bar sets 1x / 2x / 4x (1 day = 1 second at 1x, as in the browser).
-Tools: 1 Look, 2 Road (drag), 3 House, 4 Farm, 5 Market, 6 Lumber zone, 7 Mining zone, L Woodcutter lodge,
-F Forester, X Sawmill, Y Quarry, M Iron mine, 8 Well, 9 Barracks, 0 Clear. Workers (bottom right) sets trade priorities.
+Tools: 1 Look, 2 Road (drag), 3 Housing, 4 Farmland, 5 Commerce, 6 Lumber, 7 Mining zones (drag to paint),
+F Forester, X Sawmill, 8 Well, 9 Barracks, 0 Clear. Homes, farms, markets, woodcutter lodges, quarries and mines grow
+by themselves on zones beside a road when there is demand (strip above the tool bar). Workers (bottom right) sets trade priorities.
 
 ## Layout
 
@@ -27,7 +28,8 @@ F Forester, X Sawmill, Y Quarry, M Iron mine, 8 Well, 9 Barracks, 0 Clear. Worke
 ## Parity with the browser game
 
 The C# terrain is checked tile for tile against the JavaScript prototype (heights, forests and species, groves, rock, ore,
-fertility, mountain elevations, starting settlement, housing and jobs) for two seeds:
+fertility, mountain elevations, starting settlement, housing and jobs) for two seeds, and zone development
+(demand, every building grown, wood spent) over a 150-day scripted town:
 
 ```
 node unity/ParityReference/make_reference.js     # from the repo root, after changing src/sim.js
@@ -38,9 +40,10 @@ unity test unity --mode EditMode                 # project must be closed in the
 
 - Walking work crews and townsfolk (`sim_crews.js`): crews are approximated by the same output per worker
   (0.8 logs, 0.7 stone, 0.55 ore a day), working the same marked tiles.
-- Automatic zone development (`sim_develop.js`): houses, farms and markets are placed directly for now.
-- Saves, the texture lab, banner tint, the info overlay (V), large 2x2 house/farm/market variants.
-- Art without files yet uses `ph_*` placeholders (farm, lodge, sawmill, forester, quarry, mine, market, well, rocks, ore, stump, sapling).
+- Saves, the texture lab, banner tint, the info overlay (V).
+- Art without files yet uses `ph_*` placeholders (farm, lodge, sawmill, forester, quarry, mine, market, well, rocks, ore, stump,
+  sapling, and the 2x2 large house `manor_1`/`manor_2`, large farm `farm2` and bazaar `market2`). Drop real art into `../assets`
+  with the slot name and re-run the importer; it takes precedence over the placeholder.
 - Hills do not hide objects behind them yet (all ground draws before all objects).
 
 ## Working together
