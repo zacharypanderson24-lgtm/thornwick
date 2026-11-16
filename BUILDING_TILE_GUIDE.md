@@ -14,7 +14,7 @@ A building texture is a picture of the object standing on a flat ground diamond.
 | 2 x 2 tiles (barracks, large house, bazaar, large farm) | 64 x 88 px | 64 x 32 px | `templates/footprint_2x2_guide.png` |
 | 3 x 3 tiles (Town Hall, planned) | 96 x 128 px | 96 x 48 px | `templates/footprint_3x3_guide.png` |
 
-The guide images are 1024 x 1536 with a magenta background. The black diamond is the ground the building covers. The green box marks the footprint's width: nothing may cross its left, right or bottom edge. The top of the box is only the usual height; a taller building may rise above it as long as it stays inside the picture. Ask ChatGPT to remove all guide lines from the final image.
+The guide images are 1024 x 1536 with a magenta background (that is only the guide; your finished texture must have a transparent background). The black diamond is the ground the building covers. The green box marks the footprint's width: nothing may cross its left, right or bottom edge. The top of the box is only the usual height; a taller building may rise above it as long as it stays inside the picture. Ask ChatGPT to remove all guide lines from the final image.
 
 The bottom corner of the diamond is at the bottom centre of the picture. Everything is measured from there.
 
@@ -93,7 +93,7 @@ For reference only: huts 32 to 36 px, barracks about 54, Town Hall about 84 to 9
 ## 3. Pixel clean-up rules
 
 - **No pink, magenta or purple pixels on the building.** They are leftover background colour on the edge. Recolour them to the nearest wall, thatch or stone colour.
-- **Hard edges only.** Every pixel is fully the building or fully background. No soft, blurred or semi-transparent edge.
+- **Hard edges only.** Every pixel is fully the building or fully transparent background (alpha 0 or 255 only). No soft, blurred or semi-transparent edge.
 - **Simple door sides.** The door, lantern and weapon rack should read as separate shapes at game size. Use bigger, simpler shapes and fewer tiny details; the picture is shrunk by 8 to 32 times.
 - **No ground, no shadow, no text, no border.** The ground is drawn by the game.
 
@@ -101,7 +101,7 @@ For reference only: huts 32 to 36 px, barracks about 54, Town Hall about 84 to 9
 
 | Mistake | What it looked like | Fix |
 |---|---|---|
-| Pink fringe | Purple-pink pixels along the thatch and stone base | Rule 3 pixel clean-up. If it keeps happening, switch the background to flat green #00FF00 and tell us, and we'll remove that colour in the game |
+| Pink fringe | Purple-pink pixels along the thatch and stone base | Export with a transparent background (no background colour to leak). If you can only make a flat background, tell us; we can remove other colours in the game |
 | Door side too busy | Door, rack and lantern blurred together | Fewer, bigger shapes (section 3) |
 | Reads like a barn | Barracks had only a small banner | Add the military cues: big banner, stone base, weapon rack, lantern |
 | Town Hall smaller than the huts | The Hall sprite is still a small placeholder | The Hall must be taller and grander than a hut: see rule 8 |
@@ -112,7 +112,7 @@ For reference only: huts 32 to 36 px, barracks about 54, Town Hall about 84 to 9
 
 1. Upload `CHATGPT_START_HERE.md` to a new chat.
 2. Attach the right guide image from `templates/` and one existing finished building as a style reference.
-3. Ask for view 1 of the building, and say: "Fit it inside the black diamond and the green box, remove the guides, flat magenta background."
+3. Ask for view 1 of the building, and say: "Fit it inside the black diamond and the green box, remove the guides, transparent background (real PNG alpha)."
 4. Check view 1 against the checklist below. Then make views 2, 3 and 4 as quarter-turns of the same building.
 5. Save as `name_1.png` to `name_4.png` and add them to `assets/`.
 
@@ -123,7 +123,7 @@ For reference only: huts 32 to 36 px, barracks about 54, Town Hall about 84 to 9
 - [ ] Props and steps are inside the green box (they may be outside the diamond).
 - [ ] Footprint width is right (32, 64 or 96 game px) and the height is whatever the building needs. All four views have the same height.
 - [ ] Roof eaves do not touch the left or right edge of the green box; nothing is cut off at the top of the picture.
-- [ ] No pink, magenta or purple pixels on the building.
+- [ ] Background is transparent (real alpha), and there are no pink, magenta or purple pixels on the building.
 - [ ] Hard edges, no soft pixels.
 - [ ] One door only; on the lower-left wall in `_1`, upper-left in `_2`, upper-right in `_3`, lower-right in `_4` (visible in 1 and 4, hidden in 2 and 3).
 - [ ] Files are numbered in this exact order, so the same number means the same door side as every other building.

@@ -7,7 +7,7 @@ Everything below is what each thing should look like in the first era: a poor, e
 ## How to use this
 
 1. Open the game, press Textures, pick a slot, press Copy prompt, paste it into ChatGPT.
-2. Ask for a square image, 1024 x 1024 or larger. Keep the flat magenta background; the game removes it.
+2. Ask for a square image, 1024 x 1024 or larger. Use a transparent background (real PNG alpha); a flat magenta background is still accepted as a fallback and the game removes it.
 3. Drop the picture on the matching view in the lab. Turn the camera with Q and E to check it.
 4. When you are happy, press Save PNG and keep the files. Putting them in the assets folder next to index.html (named like `house_1_1.png`) makes them load for everyone, with no lab needed.
 
@@ -17,7 +17,7 @@ Buildings with four views: `name_1.png` to `name_4.png`. Everything else: `name.
 
 ## Style bible (goes in every prompt)
 
-Isometric pixel art for a medieval city-builder game in the spirit of TheoTown. True 2:1 isometric: a ground tile is a diamond exactly twice as wide as it is tall. Hard pixel edges, no anti-aliasing, no gradients, no blur, no outline thicker than 1 pixel, about 24 colours at most. Warm, earthy early-medieval palette: weathered timber, straw thatch, packed dirt, grey fieldstone, muted greens. Light comes from the top-left: left-facing walls are mid-tone, right-facing walls are darker, roofs are lightest on their left slope. No cast shadow on the ground and nothing drawn on the ground except the object itself. One object per image, centred, completely visible, viewed from a fixed camera about 30 degrees above the horizon. Background: one flat solid pure magenta (#FF00FF) so it can be removed.
+Isometric pixel art for a medieval city-builder game in the spirit of TheoTown. True 2:1 isometric: a ground tile is a diamond exactly twice as wide as it is tall. Hard pixel edges, no anti-aliasing, no gradients, no blur, no outline thicker than 1 pixel, about 24 colours at most. Warm, earthy early-medieval palette: weathered timber, straw thatch, packed dirt, grey fieldstone, muted greens. Light comes from the top-left: left-facing walls are mid-tone, right-facing walls are darker, roofs are lightest on their left slope. No cast shadow on the ground and nothing drawn on the ground except the object itself. One object per image, centred, completely visible, viewed from a fixed camera about 30 degrees above the horizon. Background: fully transparent (real PNG alpha). If you truly cannot produce transparency, flat solid pure magenta (#FF00FF) is still accepted as a fallback and the game removes it.
 
 ## The four views
 

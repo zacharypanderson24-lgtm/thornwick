@@ -34,11 +34,11 @@ ChatGPT cannot make an exact 32 x 48 image, and it does not need to. Ask for lar
 
 Pixel size: aim for each game pixel to be about **8 to 32 real pixels** wide in ChatGPT's picture, with visible square blocks and no soft edges. If ChatGPT gives smooth or blurry art, tell it: "redo with large, clearly visible square pixels, hard edges, no anti-aliasing".
 
-Background: **flat pure magenta #FF00FF**, nothing else. No floor, no shadow, no border, no text.
+Background: **fully transparent** (real PNG alpha, hard edges: every pixel is alpha 0 or 255), nothing else. Flat pure magenta #FF00FF is still accepted as a fallback; the game keys it out. No floor, no shadow, no border, no text.
 
 ### Ground tiles (grass, fertile soil)
 
-- Canvas exactly **2048 x 1024**. The diamond's four corners touch the midpoints of the four edges; everything outside the diamond is flat magenta #FF00FF.
+- Canvas exactly **2048 x 1024**. The diamond's four corners touch the midpoints of the four edges; everything outside the diamond is transparent (flat magenta #FF00FF is still accepted as a fallback).
 - **Pixel size for ground tiles:** the tile is only 32 game pixels wide, so at 2048 px wide one game pixel is **64 real pixels**. Draw every tuft, flower and soil patch as solid square blocks of 64 to 128 real pixels, or they shrink to nothing in the game. The game shrinks ground tiles with hard-edged sampling (no blending) so palette colours stay exact.
 - The game crops to the diamond and scales it to 32 px wide, so a 3:2 diamond would come out 21 px tall instead of 16 and overlap its neighbours.
 - Ground tiles repeat across the whole map: keep contrast low, keep the outer band along the diamond edges (about 2 game pixels) plain base colour, and draw no outline, rim or shading at the edge.
@@ -98,7 +98,7 @@ Buildings: `name_1.png` to `name_4.png`, for example `house_1_1.png` (hut, view 
 
 - The base is a clean 2:1 diamond, lowest point at the bottom centre.
 - Light on the left in all four views.
-- Nothing cropped; one object only; flat magenta background.
+- Nothing cropped; one object only; transparent background.
 - Palette matches the other assets.
 - Pixels are large and square, with no soft edges.
 - For buildings: the four views have the same footprint and height.
