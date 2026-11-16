@@ -10,17 +10,17 @@ _Last updated: 2026-11-16 (Claude Code)._
 | Branch | Purpose | Head |
 |---|---|---|
 | `main` | Browser prototype (JavaScript). Untouched by the migration. | `4d99fca` |
-| `unity-migration` | Integration branch for the Unity port. Merge feature branches here through pull requests. | `5dccc00` |
-| `claude/settlement-port` | Claude Code's working branch. Open as [PR #1](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) into `unity-migration` (not merged yet). | see the milestone log below |
+| `unity-migration` | Integration branch for the Unity port. Merge feature branches here through pull requests. Contains the playable port since PR #1. | `2ae2883` (merge of PR #1) + this update |
+| `claude/settlement-port` | Claude Code's working branch. [PR #1](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) merged into `unity-migration`; new work continues here and goes in through new PRs. | same as `unity-migration` |
 
 ChatGPT and Claude Code each work on their own branch and merge into `unity-migration` through pull requests.
-`claude/settlement-port` is **ahead of `unity-migration`**: until PR #1 is merged, branches cut from `unity-migration` will not have the port.
+`unity-migration` now has everything from PR #1, so new branches (ChatGPT's included) should be cut from `unity-migration`.
 
-## Open pull requests
+## Pull requests
 
 | PR | From → into | Status |
 |---|---|---|
-| [#1 Unity port: playable settlement with zone growth](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) | `claude/settlement-port` → `unity-migration` | open, awaiting review and merge |
+| [#1 Unity port: playable settlement with zone growth](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) | `claude/settlement-port` → `unity-migration` | merged 2026-11-16 as `2ae2883` |
 
 ## Milestone log
 
@@ -31,7 +31,9 @@ ChatGPT and Claude Code each work on their own branch and merge into `unity-migr
 | `a8de069` | `claude/settlement-port` | Zone development ported (`sim_develop.js`): homes, farms, markets, lodges, quarries and mines grow on zones; 2x2 lots; demand HUD; development parity test (11 tests). |
 | `13e9157` | `claude/settlement-port` | `unity/README.md` updated for the zone tools and 2x2 placeholders. |
 | `c739d7b` | `claude/settlement-port` | Adds this progress file. |
-| _this commit_ | `claude/settlement-port` | Records PR #1 in this file. |
+| `c9870e4` | `claude/settlement-port` | Records PR #1 in this file. |
+| `2ae2883` | `unity-migration` | Merge of PR #1: the playable port is now on the integration branch. |
+| _this commit_ | both | Records the merge in this file. |
 
 ## Implemented and tested
 
