@@ -1,0 +1,22 @@
+name: Texture check
+# Fails if any texture has pink, magenta or purple left over once the game's background removal is applied (tools/check_no_pink.py).
+on:
+  push:
+    branches: [main]
+    paths: ['assets/**', 'tools/**', '.github/workflows/textures.yml']
+  pull_request:
+    paths: ['assets/**', 'tools/**', '.github/workflows/textures.yml']
+  workflow_dispatch:
+jobs:
+  no-pink:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install pillow numpy
+      - name: No pink or purple in any texture
+        run: python3 tools/check_no_pink.py
+      - name: Sprite sizes, margins and ground tiles (informational)
+        run: python3 tools/check_textures.py
+        continue-on-error: true
