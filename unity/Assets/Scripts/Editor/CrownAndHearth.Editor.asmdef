@@ -1,0 +1,21 @@
+{
+    "name": "CrownAndHearth.Editor",
+    "rootNamespace": "CrownAndHearth.EditorTools",
+    "references": [
+        "CrownAndHearth.Sim",
+        "CrownAndHearth.Game",
+        "Unity.InputSystem",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
