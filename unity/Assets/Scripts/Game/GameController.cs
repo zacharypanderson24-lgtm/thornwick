@@ -5,6 +5,7 @@
 // painted zones beside roads when there is demand (World.Develop).
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using CrownAndHearth.Sim;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -71,8 +72,59 @@ namespace CrownAndHearth.Game
             _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); };
             _hud.RotatePicked += Rotate;
             _hud.PrioMoved += MovePrio;
+            _hud.SavePicked += SaveSettlement;
+            _hud.LoadPicked += LoadSettlement;
             _hud.SetTool(_tool.Id); _hud.SetSpeed(_speed);
             _hud.Toast("Welcome to Crown & Hearth. Right-drag or WASD to pan, scroll to zoom, Q/E to rotate.", 6);
+        }
+
+        static string SavePath => Path.Combine(Application.persistentDataPath, "thornwick-save-1.json");
+
+        void SaveSettlement()
+        {
+            string temporary = SavePath + ".tmp";
+            try
+            {
+                Directory.CreateDirectory(Application.persistentDataPath);
+                File.WriteAllText(temporary, World.SaveJson());
+                if (File.Exists(SavePath)) File.Replace(temporary, SavePath, null);
+                else File.Move(temporary, SavePath);
+                _hud.Toast("Settlement saved.");
+            }
+            catch (System.Exception error)
+            {
+                _hud.Toast("Could not save: " + error.Message, 6);
+            }
+        }
+
+        void LoadSettlement()
+        {
+            if (!File.Exists(SavePath))
+            {
+                _hud.Toast("No saved settlement found.");
+                return;
+            }
+
+            World loaded;
+            try
+            {
+                loaded = World.LoadJson(File.ReadAllText(SavePath));
+            }
+            catch (System.Exception error)
+            {
+                _hud.Toast("Could not load: " + error.Message, 6);
+                return;
+            }
+
+            World = loaded;
+            _dayAcc = 0;
+            _speed = 0;
+            _drawnVersion = -1;
+            _hover = _lastPaint = null;
+            SetTool(Tools[0]);
+            _hud.SetSpeed(_speed);
+            _cam.CenterOn(IsoView.TileCenter(World, loaded.Hall.X + 1, loaded.Hall.Y + 1, _rot));
+            _hud.Toast("Settlement loaded and paused.");
         }
 
         void Update()

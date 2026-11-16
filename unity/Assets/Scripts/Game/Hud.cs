@@ -25,6 +25,7 @@ namespace CrownAndHearth.Game
         readonly Dictionary<int, Image> _speedButtons = new Dictionary<int, Image>();
         RectTransform _workRows;
 
+        public event Action SavePicked, LoadPicked;
         public event Action<string> ToolPicked;
         public event Action<int> SpeedPicked;
         public event Action<int> RotatePicked;
@@ -46,8 +47,8 @@ namespace CrownAndHearth.Game
             // top bar
             var top = MakePanel(root, "TopBar", new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -40), Vector2.zero);
             _resText = MakeText(top, "Resources", 17, TextAnchor.MiddleLeft);
-            Stretch(_resText.rectTransform, new Vector2(12, 0), new Vector2(-470, 0));
-            float x = -460;
+            Stretch(_resText.rectTransform, new Vector2(12, 0), new Vector2(-590, 0));
+            float x = -560;
             foreach (var (label, sp) in new[] { ("Pause", 0), ("1x", 1), ("2x", 2), ("4x", 4) })
             {
                 int s = sp;
@@ -56,6 +57,9 @@ namespace CrownAndHearth.Game
             }
             MakeButton(top, "Rotate Q", new Vector2(1, 0.5f), new Vector2(x + 6, 0), new Vector2(84, 30), () => RotatePicked?.Invoke(-1));
             MakeButton(top, "E Rotate", new Vector2(1, 0.5f), new Vector2(x + 96, 0), new Vector2(84, 30), () => RotatePicked?.Invoke(1));
+
+            MakeButton(top, "Save", new Vector2(1, 0.5f), new Vector2(-73, 0), new Vector2(48, 30), () => SavePicked?.Invoke());
+            MakeButton(top, "Load", new Vector2(1, 0.5f), new Vector2(-23, 0), new Vector2(44, 30), () => LoadPicked?.Invoke());
 
             // bottom tool bar
             var bottom = MakePanel(root, "ToolBar", new Vector2(0, 0), new Vector2(1, 0), Vector2.zero, new Vector2(0, 46));

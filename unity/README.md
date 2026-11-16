@@ -51,3 +51,15 @@ unity test unity --mode EditMode                 # project must be closed in the
 ChatGPT and Claude Code work on separate branches and merge into `unity-migration` through pull requests.
 Scenes are tiny on purpose (everything is built in code), so they rarely conflict; avoid editing the same scene on two branches.
 Art rules are unchanged: see `TEXTURE_SPEC.md` and `CHATGPT_START_HERE.md` at the repo root.
+
+## Saving a settlement
+
+**Save** writes one local slot. **Load** restores that slot and pauses the
+settlement. On Windows the file is
+`%USERPROFILE%/AppData/LocalLow/DefaultCompany/CrownAndHearth/thornwick-save-1.json`.
+
+To import a browser settlement, back up any existing Unity slot. In the browser
+where you played Thornwick, copy the raw value of `thornwick-save-1` from the
+site's Local Storage in Developer Tools. Save that JSON to the path above, then
+click **Load** in Unity. Old 40×40 and 64×64 settlements are centered on the
+current 128×128 map.

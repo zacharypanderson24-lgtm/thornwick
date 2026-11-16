@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CrownAndHearth.Sim
 {
-    public class Building
+    public partial class Building
     {
         public string T;          // type: road, house, farm, wood, quarry, mine, market, sawmill, forester, well, barracks, hall
         public int X, Y;          // top-left (lowest x, lowest y) footprint tile
@@ -17,7 +17,6 @@ namespace CrownAndHearth.Sim
         public bool Zoned;
         public int Workers;       // derived each recalc
         public double Eff;        // workers / jobs, derived each recalc
-        public double CrewAcc;    // work-crew progress towards the next delivered load (port approximation)
 
         public int Jobs => Defs.Jobs.TryGetValue(T, out var j) ? Noise.JsRound(j * (Sz == 2 ? 2.5 : 1)) : 0;
         public double Food => 3 * (Sz == 2 ? 2.6 : 1);

@@ -62,7 +62,7 @@ the Editor (no console errors or warnings). Parity tests compare against the rea
 
 1. Walking work crews and townsfolk (`sim_crews.js`). Crews are approximated today by the same output per worker
    (0.8 logs, 0.7 stone, 0.55 ore a day) from the same marked tiles.
-2. Saves (the browser uses localStorage `thornwick-save-1`; must load old saves).
+2. Saves are implemented on `codex/unity-saves` and pending integration. Unity can save and load a local slot and import browser settlements, including 40x40 and 64x64 maps. See [the Unity README](unity/README.md#saving-a-settlement).
 3. Hills hiding objects behind them (all ground currently draws before all objects).
 4. Info overlay (V: fertility and deposits), banner tint, texture lab.
 5. Art: ChatGPT art for the placeholder slots `farm`, `wood`, `sawmill`, `forester`, `quarry`, `mine`, `market`, `well`,
