@@ -168,7 +168,7 @@ function deriveHeights(S) {
 // Forests: each tree belongs to a species, and neighbouring trees are mostly the same species (patches of oak, stands of conifer...), but which variation
 // of that species a tile gets is random. Derived from position and seed, so nothing extra is saved.
 // Variants are the tree_N slots: 0/1 broadleaf, 6 old oak | 2 pine, 3 spruce, 7 fir | 4 birch, 9 aspen | 5 willow | 8 maple.
-const TREE_SPECIES = [{ v: [0, 1, 6], w: 0.30 }, { v: [2, 3, 7], w: 0.30 }, { v: [4, 9], w: 0.18 }, { v: [5], w: 0.08 }, { v: [8], w: 0.14 }];
+const TREE_SPECIES = [{ v: [0, 6], w: 0.30 }, { v: [2, 3, 7], w: 0.30 }, { v: [4, 9], w: 0.18 }, { v: [5], w: 0.08 }, { v: [8], w: 0.14 }];
 function treeSpecies(S, x, y) {
   const seed = S.seed || 7;
   // an odd tree out now and then: about one in eight picks its species at random, so patches are mixed at their edges
@@ -180,7 +180,7 @@ function treeSpecies(S, x, y) {
 function treeVariant(S, x, y) { const sp = TREE_SPECIES[treeSpecies(S, x, y)].v; return sp[Math.floor(hash2(x, y, (S.seed || 7) + 813) * sp.length) % sp.length]; }
 // Groves: oak and pine tiles in thick forest are drawn as a stand of 2-4 trees (tree_oak_N / tree_pine_N art). The denser the surrounding forest, the bigger the stand.
 // Which grove art (tree_<kind>_N) goes with each single-tree variant. Every variant has grove art; a missing file falls back to the single tree.
-const TREE_GROVE_ART = { 0: 'oak', 1: 'oak', 2: 'pine', 3: 'spruce', 4: 'birch', 5: 'willow', 6: 'old_oak', 7: 'fir', 8: 'maple', 9: 'aspen' };
+const TREE_GROVE_ART = { 0: 'oak', 2: 'pine', 3: 'spruce', 4: 'birch', 5: 'willow', 6: 'old_oak', 7: 'fir', 8: 'maple', 9: 'aspen' };
 function treeGrove(S, x, y) {
   const kind = TREE_GROVE_ART[treeVariant(S, x, y)]; if (!kind) return { n: 1 };   // the stand matches this tile's own tree, so oaks group with oaks and firs with firs
   let d = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) if ((i || j) && inb(x + i, y + j) && S.deco[y + j][x + i] === 'tree') d++;
