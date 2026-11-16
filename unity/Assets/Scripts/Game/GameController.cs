@@ -46,7 +46,7 @@ namespace CrownAndHearth.Game
         ToolDef _tool = Tools[0];
         Vector2Int? _hover, _roadAnchor, _lastPaint;
         ArtLibrary _art;
-        GroundRenderer _ground; ObjectRenderer _objects; OverlayRenderer _overlay;
+        GroundRenderer _ground; ObjectRenderer _objects; OverlayRenderer _overlay; AgentRenderer _agents;
         CameraRig _cam; Hud _hud;
 
         void Start()
@@ -60,6 +60,8 @@ namespace CrownAndHearth.Game
             _overlay.transform.SetParent(transform, false); _overlay.Init(SpriteMaterial, _art.GroundAtlas);
             _objects = new GameObject("Objects", typeof(ObjectRenderer)).GetComponent<ObjectRenderer>();
             _objects.transform.SetParent(transform, false); _objects.Init(_art, SpriteMaterial);
+            _agents = new GameObject("Agents", typeof(AgentRenderer)).GetComponent<AgentRenderer>();
+            _agents.transform.SetParent(transform, false); _agents.Init(SpriteMaterial);
 
             _cam = Camera.main.GetComponent<CameraRig>();
             if (_cam == null) _cam = Camera.main.gameObject.AddComponent<CameraRig>();
@@ -95,6 +97,7 @@ namespace CrownAndHearth.Game
                 _ground.Build(World, _rot); _objects.Build(World, _rot);
                 _drawnVersion = World.Version; _drawnRot = _rot;
             }
+            _agents.Draw(World, _rot, Mathf.Clamp01(_dayAcc), _cam.Zoom <= 0.5f);
             DrawOverlay();
             _hud.SetResources(ResourceLine());
             _hud.SetDemand(DemandLine());
@@ -228,6 +231,15 @@ namespace CrownAndHearth.Game
 
         static string CostText(string type) => string.Join(", ", CostOf(type, 1).Select(kv => $"{kv.Value} {kv.Key.ToString().ToLower()}"));
 
+        /// <summary>JS crewLine: what the building's crew is doing.</summary>
+        static string CrewLine(Building b)
+        {
+            if (b.Crew.Count == 0) return "No crew yet (needs villagers and a road link)";
+            int home = 0, outw = 0, at = 0, back = 0;
+            foreach (var a in b.Crew) switch (a.St) { case CrewState.Home: home++; break; case CrewState.Out: outw++; break; case CrewState.Work: at++; break; default: back++; break; }
+            return $"Crew: {home} resting here, {outw} walking out, {at} working, {back} carrying home";
+        }
+
         string TileInfo(int x, int y)
         {
             var w = World; var lines = new List<string>();
@@ -238,6 +250,7 @@ namespace CrownAndHearth.Game
                 lines.Add(b.Served ? "Connected to the Town Hall" : "Not connected: needs a road to the Town Hall");
                 if (b.T == "house") lines.Add($"Homes {b.Capacity} villagers. Level {b.Lvl}" + (b.Lvl < 2 ? " (a well within 4 tiles raises it)" : "") + (b.Covered ? ". Market nearby" : ""));
                 if (b.Jobs > 0) lines.Add($"Workers {b.Workers}/{b.Jobs} ({b.Eff * 100:0}%)");
+                if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
             }
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");

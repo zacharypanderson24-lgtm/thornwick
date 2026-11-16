@@ -17,7 +17,8 @@ namespace CrownAndHearth.Sim
         public bool Zoned;
         public int Workers;       // derived each recalc
         public double Eff;        // workers / jobs, derived each recalc
-        public double CrewAcc;    // work-crew progress towards the next delivered load (port approximation)
+        public readonly List<Worker> Crew = new List<Worker>();   // work crew (wood, quarry, mine); runtime only, never saved
+        internal CrewReach Reach;  // cached walkable area around the building (World.Crews.cs)
 
         public int Jobs => Defs.Jobs.TryGetValue(T, out var j) ? Noise.JsRound(j * (Sz == 2 ? 2.5 : 1)) : 0;
         public double Food => 3 * (Sz == 2 ? 2.6 : 1);

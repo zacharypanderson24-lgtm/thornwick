@@ -74,7 +74,7 @@ namespace CrownAndHearth.Sim
             return false;
         }
 
-        int CountZoned(int x, int y, int r, Deco kind, Zone zone)
+        public int CountZoned(int x, int y, int r, Deco kind, Zone zone)
         {
             int n = 0;
             for (int j = y - r; j <= y + r; j++) for (int i = x - r; i <= x + r; i++)

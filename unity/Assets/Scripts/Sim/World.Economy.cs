@@ -1,6 +1,6 @@
 // The daily tick, ported from src/sim_tick.js in the same task order:
-//   sync -> farms + foresters -> crews -> deliver logs -> sawing -> nature -> economy (food, gold, population, barracks) -> develop
-// Not ported yet: walking work-crew and townsfolk agents (sim_crews.js). Crews are approximated by an output rate per worker (see StepCrews).
+//   sync -> farms + foresters -> crews -> townsfolk -> deliver logs -> sawing -> nature -> economy (food, gold, population, barracks) -> develop
+// The walking work crews and townsfolk live in World.Crews.cs.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,6 +30,7 @@ namespace CrownAndHearth.Sim
 
             // crews, then deliver logs
             StepCrews(got);
+            StepFolk();
             ResAmt[Res.Logs] += got[Res.Logs];
 
             // sawing: sawmills at full yield, then the Town Hall pit-saw at half yield
@@ -81,45 +82,6 @@ namespace CrownAndHearth.Sim
             // develop: zones grow buildings
             Recalc();
             Develop();
-        }
-
-        // ---------- Work crews (approximation) ----------
-        // The prototype walks one agent per worker out to a marked tile and back; output only counts when a load is delivered,
-        // which works out at about 0.8 logs, 0.7 stone and 0.55 ore per worker per day near the building. Here each building
-        // accumulates that rate and delivers a whole load (6 logs / 5 stone / 4 ore) when it has earned one, working the same
-        // marked tiles with the same rules (4 chops fell a tree, finite stone and ore, full stockpile pauses quarries and mines).
-        void StepCrews(Dictionary<Res, double> got)
-        {
-            foreach (var b in Blds.ToList())
-            {
-                if (!b.Served || b.Workers <= 0 || !CrewRate.TryGetValue(b.T, out double rate)) continue;
-                int load = Load[b.T];
-                if (b.T == "wood")
-                {
-                    var t = NearestZoned(b.X, b.Y, WorkR, Deco.Tree, Zone.Wood);
-                    if (t == null) { b.CrewAcc = 0; continue; }
-                    b.CrewAcc += b.Workers * rate;
-                    while (b.CrewAcc >= load && t != null)
-                    {
-                        b.CrewAcc -= load; got[Res.Logs] += load;
-                        int k = Tk(t.Value.x, t.Value.y);
-                        Chop[k] = (Chop.TryGetValue(k, out var c) ? c : 0) + 1;
-                        if (Chop[k] >= ChopsPerTree) { FellAt(t.Value.x, t.Value.y); t = NearestZoned(b.X, b.Y, WorkR, Deco.Tree, Zone.Wood); }
-                    }
-                }
-                else if (b.T == "quarry")
-                {
-                    if (ResAmt[Res.Stone] >= Storage || NearestZoned(b.X, b.Y, WorkR, Deco.Rock, Zone.Mine) == null) { b.CrewAcc = 0; continue; }
-                    b.CrewAcc += b.Workers * rate;
-                    while (b.CrewAcc >= load) { b.CrewAcc -= load; double g = MineRock(b.X, b.Y, WorkR, load); got[Res.Stone] += g; if (g <= 0) { b.CrewAcc = 0; break; } }
-                }
-                else if (b.T == "mine")
-                {
-                    if (ResAmt[Res.Ore] >= Storage || NearestZoned(b.X, b.Y, WorkR, Deco.Ore, Zone.Mine) == null) { b.CrewAcc = 0; continue; }
-                    b.CrewAcc += b.Workers * rate;
-                    while (b.CrewAcc >= load) { b.CrewAcc -= load; double g = MineOre(b.X, b.Y, WorkR, load); got[Res.Ore] += g; if (g <= 0) { b.CrewAcc = 0; break; } }
-                }
-            }
         }
 
         public (int x, int y)? NearestZoned(int x, int y, int r, Deco kind, Zone zone)
@@ -181,7 +143,7 @@ namespace CrownAndHearth.Sim
             {
                 (int x, int y)? best = null; int bd = int.MaxValue;
                 for (int j = y - r; j <= y + r; j++) for (int i = x - r; i <= x + r; i++)
-                    if (Inb(i, j) && DecoMap[j, i] == Deco.Ore && ZoneMap[j, i] == Zone.Mine) { int dd = (i - x) * (i - x) + (j - y) * (j - y); if (dd < bd) { bd = dd; best = (i, j); } }
+                    if (Inb(i, j) && DecoMap[j, i] == Deco.Ore) { int dd = (i - x) * (i - x) + (j - y) * (j - y); if (dd < bd) { bd = dd; best = (i, j); } }
                 if (best == null) break;
                 var (bx, by) = best.Value; int k = Tk(bx, by);
                 double e = Math.Min(amount, OreLeft(bx, by));
