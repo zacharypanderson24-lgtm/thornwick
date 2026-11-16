@@ -1,6 +1,6 @@
 'use strict';
 // ---------- Simulation (no DOM) ----------
-const N = 64;                     // map is N x N tiles (old saves were 40 and are centred into this on load)
+const N = 128;                    // a city map is N x N tiles (older 40x40 and 64x64 saves are centred into this on load)
 const OLD_N = 40, START = (N >> 1);   // START: the tile column/row the Town Hall is centred on
 const COST = {
   road: { wood: 1 }, house: { wood: 10 }, farm: { wood: 8 }, wood: { wood: 6 }, quarry: { wood: 10 }, mine: { wood: 12 },
@@ -64,21 +64,24 @@ function tileLevel(S, x, y) { const c = tileCorners(S, x, y); return (c[0] + c[1
 function tileSpread(S, x, y) { const c = tileCorners(S, x, y); return Math.max(...c) - Math.min(...c); }
 const tileFlat = (S, x, y) => tileSpread(S, x, y) === 0;
 // Mountain layout: rare. Usually one range (a ridge with several summits and saddles) and maybe one lone massif.
+let MTN_AVOID = null;   // [x0, y0, x1, y1]: while upgrading a save, keep new mountain ranges clear of the old square so they do not get cut off at its border
 function mountainLayout(seed) {
+  const A = (N / 64) * (N / 64);   // the layout was tuned on 64x64: bigger maps get proportionally more ranges
+  const clear = (x, y, m) => !MTN_AVOID || x < MTN_AVOID[0] - m || y < MTN_AVOID[1] - m || x > MTN_AVOID[2] + m || y > MTN_AVOID[3] + m;
   let n = 0; const rnd = () => hash2(n++, 23, seed + 900);
   const ranges = [], lone = [];
   const far = (x, y, r) => Math.max(Math.abs(x - START), Math.abs(y - START)) > r;
-  for (let r = 0, want = 1 + (rnd() < 0.3 ? 1 : 0); r < want; r++) for (let t = 0; t < 400; t++) {
+  for (let r = 0, want = Math.round(A * (rnd() < 0.3 ? 1.5 : 1)); r < want; r++) for (let t = 0; t < 400; t++) {
     const len = 14 + rnd() * 9, ang = rnd() * Math.PI * 2, sx = 6 + rnd() * (N - 12), sy = 6 + rnd() * (N - 12);
     const bend = (rnd() - 0.5) * 1.1, pts = [];
     for (let i = 0; i <= 4; i++) { const a = ang + bend * (i / 4 - 0.5) * 2, f = (i / 4 - 0.5) * len; pts.push([sx + Math.cos(a + bend * i * 0.25) * f, sy + Math.sin(a + bend * i * 0.25) * f]); }
-    if (!pts.every(p => p[0] > 4 && p[1] > 4 && p[0] < N - 4 && p[1] < N - 4 && far(p[0], p[1], 15))) continue;
+    if (!pts.every(p => p[0] > 4 && p[1] > 4 && p[0] < N - 4 && p[1] < N - 4 && far(p[0], p[1], 15) && clear(p[0], p[1], 8))) continue;
     if (ranges.some(o => o.pts.some(q => pts.some(p => Math.hypot(p[0] - q[0], p[1] - q[1]) < 14)))) continue;
     ranges.push({ pts, ph: rnd() * 90 }); break;
   }
-  for (let t = 0, want = rnd() < 0.7 ? 1 : 0; t < 400 && lone.length < want; t++) {
+  for (let t = 0, want = rnd() < 0.7 ? Math.round(A * 0.6) : 0; t < 400 && lone.length < want; t++) {
     const cx = 6 + rnd() * (N - 12), cy = 6 + rnd() * (N - 12), side = 2 + Math.floor(rnd() * 3), Hp = 5.2 + side * 0.5 + rnd() * 1.2;
-    if (!far(cx, cy, 15) || ranges.some(o => o.pts.some(q => Math.hypot(q[0] - cx, q[1] - cy) < 14))) continue;
+    if (!far(cx, cy, 15) || !clear(cx, cy, 10) || ranges.some(o => o.pts.some(q => Math.hypot(q[0] - cx, q[1] - cy) < 14))) continue;
     lone.push({ cx, cy, side, Hp });
   }
   return { ranges, lone };
@@ -244,9 +247,10 @@ function growSave(o) {
   const oldN = o.deco.length; if (oldN >= N) return o;
   const off = (N - oldN) >> 1, seed = o.seed || 7;
   const S = Object.assign({}, o);
-  S.deco = []; S.zone = []; S.fert = []; S.rockAmt = {}; S.elev = {}; S.stumpT = {}; S.sapT = {}; S.dig = {}; S.oreLeft = {};
+  S.deco = []; S.zone = []; S.fert = []; S.rockAmt = {}; S.elev = {}; S.stumpT = {}; S.sapT = {}; S.chop = {}; S.dig = {}; S.oreLeft = {};
   for (let y = 0; y < N; y++) { S.deco.push(Array(N).fill(null)); S.zone.push(Array(N).fill(null)); S.fert.push(Array(N).fill(false)); }
-  S.hv = genHeights(seed);
+  MTN_AVOID = [off, off, off + oldN, off + oldN];
+  try { S.hv = genHeights(seed); } finally { MTN_AVOID = null; }
   const inOld = (x, y) => x >= off && y >= off && x < off + oldN && y < off + oldN;
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     if (inOld(x, y)) { const ox = x - off, oy = y - off; S.deco[y][x] = o.deco[oy][ox]; S.zone[y][x] = o.zone[oy][ox]; S.fert[y][x] = o.fert[oy][ox]; }
@@ -256,8 +260,12 @@ function growSave(o) {
     const ox = k % oldN, oy = Math.floor(k / oldN); S[key][(oy + off) * N + ox + off] = o[key][k];
   }
   S.blds = o.blds.map(b => Object.assign({}, b, { x: b.x + off, y: b.y + off }));
-  // heights inside the old square come from the old tiles (flat, mountains lifted); outside stays as generated
-  const gen = S.hv; deriveHeights(S); const old = S.hv; S.hv = gen;
+  // heights inside the old square: the save's own height grid when it has one (64x64 saves), otherwise derived from the old tiles (flat, mountains lifted); outside stays as generated
+  let old = null;
+  if (o.hv && o.hv.length === (oldN + 1) * (oldN + 1)) {
+    old = new Array((N + 1) * (N + 1)).fill(0);
+    for (let b = 0; b <= oldN; b++) for (let a = 0; a <= oldN; a++) old[(b + off) * (N + 1) + a + off] = o.hv[b * (oldN + 1) + a];
+  } else { const gen = S.hv; deriveHeights(S); old = S.hv; S.hv = gen; }
   const pinned = new Set();
   for (let b = off; b <= off + oldN; b++) for (let a = off; a <= off + oldN; a++) { S.hv[b * (N + 1) + a] = old[b * (N + 1) + a]; }
   for (const bl of S.blds) for (const [i, j] of tilesOf(bl)) for (const [da, db] of [[0, 0], [1, 0], [0, 1], [1, 1]]) pinned.add((j + db) * (N + 1) + i + da);

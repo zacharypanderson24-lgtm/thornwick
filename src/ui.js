@@ -489,11 +489,11 @@ function screenToTile(mx, my) {
   }
   return null;
 }
-// zoom ladder: 0.5 shows most of the big map, then whole-number steps keep the pixel art crisp
-const ZOOMS = [0.5, 1, 2, 3, 4, 5];
+// zoom ladder: 0.25 shows the whole 128x128 map, 0.5 most of it, then whole-number steps keep the pixel art crisp
+const ZOOMS = [0.25, 0.5, 1, 2, 3, 4, 5];
 function zoomStep(dir) { const i = ZOOMS.findIndex(z => z >= scale - 1e-6); return ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, (i < 0 ? ZOOMS.length - 1 : i) + dir))]; }
 function setScale(ns, mx, my) {
-  ns = Math.max(0.5, Math.min(5, ns)); if (ns === scale) return;
+  ns = Math.max(0.25, Math.min(5, ns)); if (ns === scale) return;
   const wx = mx / scale + cam.x, wy = my / scale + cam.y;
   scale = ns; resize(); cam.x = wx - mx / scale; cam.y = wy - my / scale;
 }
@@ -755,6 +755,28 @@ function groundLayer() {
   }
   GL.sig = sig; return GL;
 }
+// Zoomed-out layer for trees, ore, stumps and saplings (thousands of tiny sprites on a 128x128 map). Rebuilt only when one of them changes or the view rotates.
+// Baked flat, so at LOD zoom buildings are drawn on top of all of it (a tree in front of a house is a few pixels, not worth 6000 drawImage calls a frame).
+const BAKED = { tree: 1, ore: 1, stump: 1, sapling: 1 };
+const DL = { cv: null, sig: null };
+function decoSig() {
+  let h = ROT | 0;
+  for (let y = 0; y < N; y++) { const dr = S.deco[y]; for (let x = 0; x < N; x++) { const k = dr[x]; if (k && BAKED[k]) h = (Math.imul(h, 31) + k.charCodeAt(0) * 3 + k.length + ((y * N + x) & 255)) | 0; } }
+  return h;
+}
+function decoLayer() {
+  const G0 = groundLayer(), sig = decoSig(); if (DL.cv && DL.sig === sig && DL.cv.width === G0.cv.width && DL.cv.height === G0.cv.height) return G0 && DL;
+  if (!DL.cv) DL.cv = document.createElement('canvas');
+  DL.cv.width = G0.cv.width; DL.cv.height = G0.cv.height; DL.OX = G0.OX; DL.OY = G0.OY;
+  const g = DL.cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  for (let s2 = 0; s2 <= 2 * N - 2; s2++) for (let vx = Math.max(0, s2 - N + 1); vx <= Math.min(N - 1, s2); vx++) {
+    const vy = s2 - vx, [x, y] = fromView(vx, vy), kind = S.deco[y][x];
+    if (!kind || !BAKED[kind]) continue;
+    const v = kind === 'tree' ? treeVariant(S, x, y) : Math.floor(hash2(x, y, 8) * 2), G = geo(x, y);
+    g.drawImage(ovrSprite(kind + '_' + v, ROT) || SPR[kind][v % SPR[kind].length], (vx - vy) * 16 - 16 + DL.OX, (vx + vy) * 8 - 32 - G.base + DL.OY);
+  }
+  DL.sig = sig; return DL;
+}
 // ---- Mountains: one continuous rock surface ----
 const ROCK_COL = ['#3c4054', '#5a5f75', '#7d8196', '#a3a7b8'], SNOW_COL = ['#b3bdd6', '#c6cee2', '#dfe5f2', '#f2f5fb'];
 function terrainSprite(S, x, y, vx, vy) {
@@ -846,7 +868,7 @@ function draw() {
   const cx = Math.round(cam.x), cy = Math.round(cam.y);
   ctx.setTransform(k, 0, 0, k, -cx * k, -cy * k);
   const vw = cv.width / k, vh = cv.height / k;
-  if (layered) { const L = groundLayer(); ctx.imageSmoothingEnabled = true; ctx.drawImage(L.cv, -L.OX, -L.OY); ctx.imageSmoothingEnabled = false; }
+  if (layered) { const L = groundLayer(), D = decoLayer(); ctx.imageSmoothingEnabled = true; ctx.drawImage(L.cv, -L.OX, -L.OY); ctx.drawImage(D.cv, -D.OX, -D.OY); ctx.imageSmoothingEnabled = false; }
   // Workers on the move, bucketed by the tile they are nearest to so they are drawn in the right depth order.
   const crewAt = new Map();
   if (!LOD) for (const b of S.blds) if (CREW_KIND[b.t]) for (const a of crewOf(b)) {
@@ -891,7 +913,7 @@ function draw() {
           if (b.t === 'road') groundDraw(spr, sx - spr.width / 2, sy + 16, G); else ctx.drawImage(spr, sx - spr.width / 2, sy + 16 - spr.height + ly);
           if (!b.served && b.t !== 'road' && !LOD) ctx.drawImage(SPR.warn, ox, oy - 8 + ly);
         }
-      } else if (S.deco[y][x]) {
+      } else if (S.deco[y][x] && !(layered && BAKED[S.deco[y][x]])) {
         const kind = S.deco[y][x], v = kind === 'tree' ? treeVariant(S, x, y) : Math.floor(hash2(x, y, 8) * 2);   // ten tree looks; the built-in art only has 3 so it repeats
         const amt = kind === 'rock' ? rockAmt(S, x, y) : 1;
         if (kind === 'rock' && rockLevel(S, x, y) !== 1) { const ps = rockSprites(S, x, y, vx, vy); ctx.drawImage(ps, ox, oy + 48 - ps.height + (mtn ? 0 : ly)); }
