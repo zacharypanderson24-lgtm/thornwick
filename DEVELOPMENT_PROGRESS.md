@@ -10,9 +10,9 @@ _Last updated: 2026-11-16 (Claude Code, work crews)._
 | Branch | Purpose | Head |
 |---|---|---|
 | `main` | Browser prototype (JavaScript). Untouched by the migration. | `4d99fca` |
-| `unity-migration` | Integration branch for the Unity port, shared by Claude Code and ChatGPT/Codex. Contains the playable port (PR #1) and the walking work crews. | merge of `claude/port-work-crews` |
+| `unity-migration` | Integration branch for the Unity port, shared by Claude Code and ChatGPT/Codex. Contains the playable port (PR #1), the walking work crews and underground mining. | merge of `claude/underground-mining` |
 | `claude/port-work-crews` | Walking work crews and townsfolk (`sim_crews.js`). Merged into `unity-migration` 2026-11-16. | `unity-migration` |
-| `claude/underground-mining` | Underground mining (Unity-only new mechanic): hidden deposits, surveying, shaft levels, timber supports, cave-ins, underground view. Cut from `unity-migration` `bb2df72`. Not merged yet. | see milestone log |
+| `claude/underground-mining` | Underground mining (Unity-only new mechanic): hidden deposits, surveying, shaft levels, timber supports, cave-ins, underground view. Cut from `unity-migration` `bb2df72`. Merged into `unity-migration` 2026-11-16. | `unity-migration` |
 | `claude/settlement-port` | Claude Code's first working branch. [PR #1](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) merged into `unity-migration`. | `22058e9` |
 | `codex/unity-saves` | ChatGPT/Codex: Unity saves and browser save migration. Not merged yet. | `0d1552c` |
 | `codex/terrain-occlusion` | ChatGPT/Codex: terrain drawn in depth order, resource view. Not merged yet. | `6490fe9` |
@@ -35,7 +35,12 @@ When `codex/unity-saves` (and `codex/settlement-art-tools`, which contains it) t
 
 `codex/terrain-occlusion` and `chatgpt/game-vision-old-world` merge cleanly (checked with a trial merge).
 
-### Note for ChatGPT/Codex: saves and underground mining (`claude/underground-mining`)
+### Note for ChatGPT/Codex: saves, art and underground mining (now in `unity-migration`)
+
+Mining changed the world generator: `World.GenDeposits` removes the browser's lowland ore tiles and places new showings on hill
+flanks, and `SimParityTests.TilesMatch` now treats ore tiles as open ground. The `mine_1..4` and `ore_0/1` art on `codex/mine-art` suits
+the new mines (an adit mouth in a rock mound). Art note: the ore heap beside the mine sits on wall 2 in view 1 but on wall 4 in view 4,
+and views 2 and 3 show neither; per the directional-coherence rule it should stay on one wall in every view that shows that wall.
 
 Mining state that saves must carry once both branches are in: `World.Surveyed` (bool per tile), `World.OreTaken`
 (band * N * N + y * N + x -> ore taken), `World.MinerDeaths`, `World.CaveIns`, and per mine `Building.Adit`, `AditShored`, `AditProg`,
@@ -68,7 +73,8 @@ the resource view (V) from `codex/terrain-occlusion` without conflict beyond `Ga
 | `aad0ca9` | `claude/port-work-crews` | Branch map and merge notes for ChatGPT/Codex. |
 | `bb2df72` | `unity-migration` | Merge of `claude/port-work-crews` (12/12 EditMode tests in batch mode on the merge). |
 | `6d3bfd3` | `claude/underground-mining` | Underground mining (`World.Mining.cs`), underground view (U), 10 mining tests; ore removed from the two day-by-day parity scenarios (22 tests). |
-| _this commit_ | `claude/underground-mining` | Mining rework: ore in hills and mountains, adits from the foot of high ground, showings on hill flanks, 3x3 surveys; terrain parity ignores ore tiles (24 tests). |
+| `5d7c3ce` | `claude/underground-mining` | Mining rework: ore in hills and mountains, adits from the foot of high ground, showings on hill flanks, 3x3 surveys; terrain parity ignores ore tiles (24 tests). |
+| _this commit_ | `claude/underground-mining` | Records the mining merge; then merged into `unity-migration`. |
 
 ## Implemented and tested
 
@@ -96,7 +102,7 @@ showing before laying out the town, and the terrain test treats ore tiles as ope
 | HUD (uGUI): resources and rates, speed, rotation, tools, tile info, demand strip, zone notes, Workforce priorities | n/a | yes |
 | Art pipeline: `../assets` imported (magenta keyed out, ground tiles shrunk to 32x16), placeholders for missing art | n/a | yes |
 
-### Underground mining (Unity-only, branch `claude/underground-mining`, not merged)
+### Underground mining (Unity-only, merged into `unity-migration` 2026-11-16)
 
 A new mechanic, not a port: the browser still mines surface ore tiles. Design: `DESIGN_TERRAIN.md` section 3 and Zach's mining
 decisions, plus choices made on 2026-11-16: miners survey Mining zones (no prospector building), a cave-in closes the mine and can
