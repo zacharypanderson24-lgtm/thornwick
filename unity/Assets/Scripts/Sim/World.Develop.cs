@@ -189,6 +189,7 @@ namespace CrownAndHearth.Sim
                         if (ok > 0 && (rk < 2 || needOre >= needStone)) { type = "mine"; cnt = ok; }
                         else if (rk >= 2) { type = "quarry"; cnt = rk; }
                         if (type == null || (type == "mine" ? mines : quarries).Any(b => ChebPt(b, x, y) <= 2)) continue;
+                        if (type == "mine") { int mf = MineFaceAt(x, y); if (mf >= 0 && !EntranceServed(x, y, mf, D.Conn)) continue; }   // its road must reach the entrance
                     }
                     double score = -cnt * 2 + Dist(x, y) * 0.1;
                     int a = Tk(x, y);
@@ -213,7 +214,7 @@ namespace CrownAndHearth.Sim
             { Zone.Farm, "Needs empty fertile zone tiles right beside a road that leads to the Town Hall." },
             { Zone.Comm, "Needs a road-linked commerce lot near homes that lack a market." },
             { Zone.Wood, "Needs a road-linked lumber tile with 3+ trees in range, and space from other woodcutters." },
-            { Zone.Mine, "Needs a road-linked mining tile with 2+ rock tiles (quarry), or an ore showing, known ore or 3+ unsurveyed hill or mountain tiles (mine) in range." },
+            { Zone.Mine, "Needs a road-linked mining tile with 2+ rock tiles (quarry), or an ore showing, known ore or 3+ unsurveyed hill or mountain tiles (mine) in range. A mine's entrance faces away from the high ground and needs the road there." },
         };
 
         /// <summary>Grow at most one building per zone kind. JS: develop. Call after Recalc.</summary>

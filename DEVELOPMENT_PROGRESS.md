@@ -78,7 +78,7 @@ the resource view (V) from `codex/terrain-occlusion` without conflict beyond `Ga
 | `bf69c74` | `claude/underground-mining` | Records the mining merge. |
 | `96dc7cc` | `unity-migration` | Merge of `claude/underground-mining` (24/24 EditMode tests in the Editor on the merge). |
 | `575caa4` | `claude/mine-ore-art` | ChatGPT's mine art (`mine_1..4`), cherry-picked from `codex/mine-art` `19bfe75` with its authorship. |
-| _next commits_ | `claude/mine-ore-art` | ChatGPT's ore showing art (`ore_0/1` from `b6b1505`) and its `NatureSprite` lookup; merged into `unity-migration`. |
+| `90ae791`, `f0bf19a` and next | `claude/mine-ore-art` | ChatGPT's ore showing art (`ore_0/1` from `b6b1505`, exact files) and its `NatureSprite` lookup; mine entrances face away from the hill and need their road (26 tests); merged into `unity-migration`. |
 
 ## Implemented and tested
 
@@ -115,7 +115,7 @@ kill a miner; and in the rework the same day: ore lies in hills and mountains (n
 an adit into it, quarries and mines share a mountain, and surface showings sit on hill flanks over real ore. All numbers are first
 guesses for tuning (top of `World.Mining.cs`).
 
-| Feature | Tested (`MiningTests.cs`, 12 tests) | Play-tested |
+| Feature | Tested (`MiningTests.cs`, 14 tests) | Play-tested |
 |---|---|---|
 | Hidden ore in 3 bands counted down from each tile's surface, from the seed; none in lowland, hills about 33 and mountains about 149 ore a tile (seed 7); band 3 richest | yes | yes (underground view) |
 | Surface showings only on hill tiles over a strong top band (329 on seed 7; the browser's lowland ones are gone) | yes | yes |
@@ -123,6 +123,7 @@ guesses for tuning (top of `World.Mining.cs`).
 | Mines grow on a zone with a showing or known ore, or as a gamble on 3+ unsurveyed hill or mountain tiles | indirectly | yes |
 | Miners survey zone tiles (each trip reveals all bands of a 3x3 patch); a barren zone is reported | yes | yes |
 | Adit: a band whose tile rises above the mine's floor is reached through the mine's adit (10 worker-days, 6 wood, half the shaft-1 risk); bands below the floor need the shaft (12 / 24 / 40 worker-days, 6 / 10 / 16 wood) | yes | yes: a mine at a mountain's foot drove its adit and brought up 72 ore from band 3 in 90 days with no shaft |
+| Mine entrance: faces straight away from the high ground in reach (the adit runs into the hill), and the mine works and grows only with a Hall-connected road on the tile in front of it; with no high ground near, the door faces the road like any building | yes (`AMineOpensAwayFromTheHighGround`, `AMineNeedsItsRoadAtTheEntrance`, grown mines checked) | yes: mouth opens onto the road, hill behind, views 1, 3 and from the back |
 | Mining heights are frozen at generation, so quarrying a mountain's face does not move or destroy its ore | yes | n/a |
 | Loads by band 4 / 6 / 8; miners work the richest reachable band first | yes | yes |
 | Cave-ins: risk x (shaft level, or 0.5 in the adit) x crowding, x0.15 where shored; mine closed 20 days, supports there smashed, 60% (unshored) / 25% (shored) chance a miner dies | yes | yes (before the rework: an unshored cave-in killed a miner while wood was short) |

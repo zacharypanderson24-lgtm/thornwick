@@ -19,14 +19,14 @@ namespace CrownAndHearth.Tests
         }
         static bool OreUnder(World w, int x, int y) => Enumerable.Range(1, World.Bands).Any(l => w.OreAt(x, y, l) > 0);
 
-        /// <summary>Lay a road along World.LPath from the start settlement's street to the tile beside (x, y), clearing trees on the way.
-        /// False when the path is blocked by a building or solid ground.</summary>
-        static bool RoadTo(World w, int x, int y)
+        /// <summary>Lay a road along World.LPath from the start settlement's street to (x, y), clearing trees on the way, never over
+        /// (avoidX, avoidY). False when the path is blocked by a building, solid ground or the avoided tile.</summary>
+        static bool RoadTo(World w, int x, int y, int avoidX, int avoidY)
         {
-            var path = World.LPath(Defs.Start, Defs.Start + 2, x, y + 1);
+            var path = World.LPath(Defs.Start, Defs.Start + 2, x, y);
             foreach (var (i, j) in path)
             {
-                if (!World.Inb(i, j)) return false;
+                if (!World.Inb(i, j) || (i == avoidX && j == avoidY)) return false;
                 var g = w.Grid[j, i];
                 if (g != null) { if (g.T == "road") continue; return false; }
                 if (w.DecoMap[j, i] == Deco.Tree || w.DecoMap[j, i] == Deco.Stump || w.DecoMap[j, i] == Deco.Sapling) w.Remove(i, j);
@@ -59,11 +59,13 @@ namespace CrownAndHearth.Tests
                     var probe = new Building { T = "mine", X = x, Y = y };
                     int aditOre = reach.Count(t => Enumerable.Range(1, World.Bands).Any(l => w.OreAt(t.x, t.y, l) > 0 && w.NeedShaft(probe, t.x, t.y, l) == 0));
                     if (aditOre < 4) continue;
-                    if (!RoadNext(x, y) && !RoadTo(w, x, y)) continue;
+                    int face = w.MineFaceAt(x, y); if (face < 0) continue;
+                    var (ex, ey) = World.EntranceTile(x, y, face);   // the road must reach the entrance
+                    if (!World.Inb(ex, ey) || (w.Grid[ey, ex]?.T != "road" && !RoadTo(w, ex, ey, x, y))) continue;
                 }
                 else
                 {
-                    if (!RoadNext(x, y) || reach.Any(t => OreUnder(w, t.x, t.y)) || reach.Count(t => w.Grid[t.y, t.x] == null && w.ZoneCheck(Zone.Mine, t.x, t.y).Ok) < 6) continue;
+                    if (!RoadNext(x, y) || w.MineFaceAt(x, y) >= 0 || reach.Any(t => OreUnder(w, t.x, t.y)) || reach.Count(t => w.Grid[t.y, t.x] == null && w.ZoneCheck(Zone.Mine, t.x, t.y).Ok) < 6) continue;
                 }
                 var b = w.AddBld("mine", x, y);
                 foreach (var (i, j) in reach) if (w.Grid[j, i] == null) w.SetZone(Zone.Mine, i, j);
@@ -215,6 +217,51 @@ namespace CrownAndHearth.Tests
                 if (w.Grid[mine.Y, mine.X] == mine) Assert.IsTrue(need == 0 ? mine.Adit : need <= mine.Depth, $"ore at {x},{y} band {band} was out of the mine's reach");
             }
             foreach (var (x, y) in showings) Assert.IsTrue(w.DecoMap[y, x] == Deco.Ore || w.Grid[y, x] != null, $"the showing at {x},{y} was mined away (only a building on top may cover it)");
+            // every mine the town grew by itself opens onto its road
+            foreach (var m in w.Blds.Where(b => b.T == "mine" && b != mine))
+            {
+                int f = w.MineFaceAt(m.X, m.Y); if (f < 0) continue;
+                var (ex, ey) = World.EntranceTile(m.X, m.Y, f);
+                Assert.AreEqual("road", w.Grid[ey, ex]?.T, $"the mine grown at {m.X},{m.Y} has no road at its entrance {ex},{ey}");
+            }
+        }
+
+        [Test]
+        public void AMineOpensAwayFromTheHighGround()
+        {
+            var (w, mine) = MineTown(wantOre: true);
+            Assume.That(mine != null, "no mine site in the test world");
+            int f = w.MineFaceAt(mine.X, mine.Y);
+            Assert.AreEqual(f, mine.Face, "the mine's door is its entrance");
+            var (ex, ey) = World.EntranceTile(mine.X, mine.Y, f);
+            var (bx, by) = World.EntranceTile(mine.X, mine.Y, (f + 2) % 4);   // the tile behind it
+            Assert.Less(w.GenLevel(ex, ey), w.GenLevel(bx, by), "the entrance faces downhill, the back faces the hill");
+            // the uphill side holds more high ground than the entrance side
+            double Side(int dx, int dy) { double s = 0; for (int k = 1; k <= Defs.WorkR; k++) if (World.Inb(mine.X + dx * k, mine.Y + dy * k)) s += w.GenLevel(mine.X + dx * k, mine.Y + dy * k); return s; }
+            Assert.Greater(Side(-Defs.FaceDirs[f, 0], -Defs.FaceDirs[f, 1]), Side(Defs.FaceDirs[f, 0], Defs.FaceDirs[f, 1]));
+        }
+
+        [Test]
+        public void AMineNeedsItsRoadAtTheEntrance()
+        {
+            var (w, mine) = MineTown(wantOre: true);
+            Assume.That(mine != null, "no mine site in the test world");
+            int f = w.MineFaceAt(mine.X, mine.Y);
+            var (ex, ey) = World.EntranceTile(mine.X, mine.Y, f);
+            Assert.IsTrue(mine.Served, "served with its road at the entrance");
+            // a connected road on another side does not count
+            for (int g = 0; g < 4; g++)
+            {
+                if (g == f) continue;
+                var (sx, sy) = World.EntranceTile(mine.X, mine.Y, g);
+                if (World.Inb(sx, sy) && w.Grid[sy, sx] == null && !w.IsSolid(sx, sy) && !w.HasTree(sx, sy) && w.DecoMap[sy, sx] == Deco.None) { w.AddBld("road", sx, sy); break; }
+            }
+            w.Remove(ex, ey);
+            w.Recalc();
+            Assert.IsFalse(mine.Served, "without a road at the entrance the mine does not work");
+            StringAssert.Contains("Needs a road", w.MineStatus(mine));
+            w.ResAmt[Res.Wood] = 400; w.AddBld("road", ex, ey); w.Recalc();
+            Assert.IsTrue(mine.Served, "the road back at the entrance reconnects it");
         }
 
         [Test]

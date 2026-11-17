@@ -119,6 +119,39 @@ namespace CrownAndHearth.Sim
             return CaveBase * (need == 0 ? AditRisk : need) * crowd * (ShoredFor(b, need) ? ShoredFactor : 1) * CaveInRiskScale;
         }
 
+        // ---------- The mine's entrance ----------
+        /// <summary>
+        /// Which way a mine at (x, y) opens (world face 0 = +y, 1 = -x, 2 = -y, 3 = +x): straight away from the high ground in its reach,
+        /// so the adit runs into the hill and the mouth opens downhill. -1 when there is no high ground nearby (the door then faces
+        /// the road like any building's).
+        /// </summary>
+        public int MineFaceAt(int x, int y)
+        {
+            double ux = 0, uy = 0, h0 = _genLevel[Tk(x, y)];
+            for (int j = y - WorkR; j <= y + WorkR; j++)
+                for (int i = x - WorkR; i <= x + WorkR; i++)
+                {
+                    if (!Inb(i, j) || (i == x && j == y)) continue;
+                    double rise = _genLevel[Tk(i, j)] - h0; if (rise <= 0) continue;
+                    double d = Math.Sqrt((i - x) * (i - x) + (j - y) * (j - y));
+                    ux += rise * (i - x) / d; uy += rise * (j - y) / d;   // points uphill
+                }
+            if (ux * ux + uy * uy < 0.25) return -1;
+            int best = -1; double bd = double.MinValue;
+            for (int f = 0; f < 4; f++) { double dot = -(FaceDirs[f, 0] * ux + FaceDirs[f, 1] * uy); if (dot > bd + 1e-9) { bd = dot; best = f; } }
+            return best;
+        }
+
+        /// <summary>The tile in front of a mine's entrance.</summary>
+        public static (int x, int y) EntranceTile(int x, int y, int face) => (x + FaceDirs[face, 0], y + FaceDirs[face, 1]);
+
+        /// <summary>A mine works only with a Hall-connected road (or the Hall) right in front of its entrance.</summary>
+        bool EntranceServed(int x, int y, int face, bool[] conn)
+        {
+            var (ex, ey) = EntranceTile(x, y, face);
+            return Inb(ex, ey) && (Grid[ey, ex] == Hall || (Grid[ey, ex] != null && Grid[ey, ex].T == "road" && conn[Tk(ex, ey)]));
+        }
+
         // ---------- The mine's reach ----------
         bool InMineReach(int x, int y) => Inb(x, y) && ZoneMap[y, x] == Zone.Mine && Claimed(x, y);
 
@@ -323,8 +356,15 @@ namespace CrownAndHearth.Sim
         /// <summary>What a mine is doing, for the info panel.</summary>
         public string MineStatus(Building b)
         {
-            string s = b.Adit ? "Adit: driven into the high ground" + (b.AditShored ? ", shored" : $", UNSHORED (needs {AditWood} wood)")
-                     : b.AditProg > 0 ? $"Adit: {100 * b.AditProg / AditWork}% driven" : "Adit: none";
+            string pre = "";
+            int mf = MineFaceAt(b.X, b.Y);
+            if (mf >= 0 && !b.Served)
+            {
+                var (ex, ey) = EntranceTile(b.X, b.Y, mf);
+                pre = $"Needs a road to the Town Hall at its entrance (tile {ex},{ey}, on the side away from the hill)\n";
+            }
+            string s = pre + (b.Adit ? "Adit: driven into the high ground" + (b.AditShored ? ", shored" : $", UNSHORED (needs {AditWood} wood)")
+                     : b.AditProg > 0 ? $"Adit: {100 * b.AditProg / AditWork}% driven" : "Adit: none");
             s += b.Depth > 0 ? $"\nShaft: level {b.Depth} of {MaxDepth}, {b.Shored} shored" + (b.Shored < b.Depth ? $" (level {b.Shored + 1} needs {SupportWood[b.Shored + 1]} wood)" : "")
                              : "\nShaft: none";
             if (b.Depth < MaxDepth && b.DigProg > 0) s += $". Sinking to level {b.Depth + 1}: {100 * b.DigProg / DigWork[b.Depth + 1]}%";
