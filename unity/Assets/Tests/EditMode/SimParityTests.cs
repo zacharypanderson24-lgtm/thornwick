@@ -69,7 +69,7 @@ namespace CrownAndHearth.Tests
                     int i = y * N + x;
                     char deco = w.DecoMap[y, x] switch { Deco.Tree => 'T', Deco.Rock => 'R', Deco.Ore => 'O', Deco.Stump => 'S', Deco.Sapling => 's', _ => '.' };
                     Assert.AreEqual(r.deco[i], deco, $"deco at {x},{y}");
-                    Assert.AreEqual(r.fert[i] == '1', w.Fert[y, x], $"fertility at {x},{y}");
+                    Assert.AreEqual(r.fert[i] == '1' || w.ZoneMap[y, x] == Zone.Farm && w.Grid[y, x] == null, w.Fert[y, x], $"fertility at {x},{y}");
                     Assert.AreEqual(r.amt[i], deco == 'R' ? (char)('0' + w.RockAmt(x, y)) : '0', $"rock amount at {x},{y}");
                     if (deco == 'T')
                     {
@@ -166,6 +166,7 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
+        [Ignore("Unity now models farmland separately. The browser's mixed-zone development trace uses the old farm model.")]
         public void ZoneDevelopmentMatchesJavaScript()
         {
             var dev = Ref.develop;
@@ -200,6 +201,25 @@ namespace CrownAndHearth.Tests
                 w.Day++;
             }
             Assert.Greater(total, 20, "the scenario should grow plenty of buildings");
+        }
+
+        [Test]
+        public void FarmWorkersAndEmptyZonedTilesBothLimitFood()
+        {
+            var world = new World(7);
+            var farm = world.FarmFields().Values.First();
+            var starterFields = world.FarmFields().Keys.ToArray();
+            Assert.That(starterFields, Has.Length.EqualTo(2));
+            Assert.That(world.FarmFood(), Is.EqualTo(3));
+            farm.Workers = 0;
+            Assert.That(world.FarmFood(), Is.Zero);
+            farm.Workers = 1;
+            Assert.That(world.FarmFood(), Is.EqualTo(3));
+            int removed = starterFields[0];
+            world.ZoneMap[removed / Defs.N, removed % Defs.N] = Zone.None;
+            Assert.That(world.FarmFood(), Is.EqualTo(1.5));
+            Assert.That(world.FarmFields().ContainsKey(removed), Is.False);
+            Assert.That(world.Blds.Count(building => building.T == "farm"), Is.EqualTo(1));
         }
 
         static int CountTrees(World w) { int n = 0; foreach (var d in w.DecoMap) if (d == Deco.Tree) n++; return n; }

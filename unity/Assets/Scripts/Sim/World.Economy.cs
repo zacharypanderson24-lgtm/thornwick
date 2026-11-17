@@ -20,7 +20,7 @@ namespace CrownAndHearth.Sim
             var got = new Dictionary<Res, double> { { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 } };
 
             // farms + foresters
-            foreach (var b in Blds.Where(b => b.T == "farm" && b.Served)) food += b.Food * b.Eff;
+            food += FarmFood();
             foreach (var b in Blds.Where(b => b.T == "forester" && b.Served).ToList())
             {
                 if (b.Eff <= 0) continue;

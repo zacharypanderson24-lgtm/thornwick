@@ -25,8 +25,7 @@ namespace CrownAndHearth.Sim
             var d = D;
             double occ = d.Civ > 0 ? Peasants / (double)d.Civ : 1;
             double eat = Math.Max(1, (Peasants + Soldiers * 1.5) * 0.2);
-            double prod = 0;
-            foreach (var b in Blds) if (b.T == "farm" && b.Served) prod += b.Food * b.Eff;
+            double prod = FarmFood();
             bool staffed = d.Jobs <= Peasants + 4;
             double food = ResAmt[Res.Food];
             double res = (Starving || food < 10) ? -0.3 : Clamp1((occ - 0.7) * 4);
@@ -108,6 +107,7 @@ namespace CrownAndHearth.Sim
                     if (cur == null || score < cur.Value.score || (score == cur.Value.score && a < cur.Value.a))
                     { if (sz == 2) bBest = (a, score); else sBest = (a, score); }
                 }
+                var fields = kind == Zone.Farm ? FarmFields() : null;
                 List<Building> unc = null;
                 if (kind == Zone.Comm) unc = Blds.Where(b => b.T == "house" && b.Served && !b.Covered).ToList();
                 if (kind != Zone.Comm || unc.Count > 0)
@@ -119,6 +119,9 @@ namespace CrownAndHearth.Sim
                             {
                                 if (sz == 2 && (x + 1 >= N || y + 1 >= N)) continue;
                                 if (!LotOk(kind, x, y, sz) || !LotServed(x, y, sz)) continue;
+                                if (fields != null && (!HasRoomForFarmField(x, y, sz, fields) ||
+                                    Enumerable.Range(0, sz).Any(dy => Enumerable.Range(0, sz).Any(dx => fields.ContainsKey(Tk(x + dx, y + dy))))))
+                                    continue;
                                 int a = Tk(x, y);
                                 if (kind != Zone.Comm)
                                 {
@@ -193,7 +196,7 @@ namespace CrownAndHearth.Sim
         static readonly Dictionary<Zone, string> NoSiteNote = new Dictionary<Zone, string>
         {
             { Zone.Res, "Needs empty zone tiles right beside a road that leads to the Town Hall." },
-            { Zone.Farm, "Needs empty fertile zone tiles right beside a road that leads to the Town Hall." },
+            { Zone.Farm, "Needs a road-linked farm lot and an unclaimed fertile crop tile nearby." },
             { Zone.Comm, "Needs a road-linked commerce lot near homes that lack a market." },
             { Zone.Wood, "Needs a road-linked lumber tile with 3+ trees in range, and space from other woodcutters." },
             { Zone.Mine, "Needs a road-linked mining tile with 2+ rock or ore tiles in range." },

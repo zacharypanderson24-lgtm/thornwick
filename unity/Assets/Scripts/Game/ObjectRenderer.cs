@@ -12,17 +12,20 @@ namespace CrownAndHearth.Game
         ArtLibrary _art;
         Material _mat;
         readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
-        int _used;
-        int _farmDay;
-        readonly List<(SpriteRenderer renderer, string slot, int view, int crop, int offset)> _farms = new();
+        int _used, _cropDay;
+        FarmCropArt _crops;
+        readonly List<(SpriteRenderer renderer, int crop, int offset)> _fields = new();
 
-        public void Init(ArtLibrary art, Material mat) { _art = art; _mat = mat; }
+        void OnDestroy() => _crops?.Dispose();
+
+        public void Init(ArtLibrary art, Material mat) { _art = art; _mat = mat; _crops = new FarmCropArt(); }
 
         public void Build(World w, int rot)
         {
             _used = 0;
-            _farms.Clear();
-            _farmDay = w.Day;
+            _fields.Clear();
+            _cropDay = w.Day;
+            var fields = w.FarmFields();
             for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
                 {
@@ -30,6 +33,20 @@ namespace CrownAndHearth.Game
                     if (b != null)
                     {
                         if (b.T != "road" && b.X == x && b.Y == y) PlaceBuilding(w, b, rot);
+                        continue;
+                    }
+                    if (fields.ContainsKey(World.Tk(x, y)))
+                    {
+                        var (crop, offset) = FarmCropArt.Look(x, y, w.Seed);
+                        var plant = _crops.Tile(crop, w.Day, offset);
+                        var tile = IsoView.ToView(x, y, rot);
+                        if (plant != null)
+                        {
+                            int baseHeight = IsoView.VhView(w, tile.x + 1, tile.y + 1, rot);
+                            var renderer = Put(plant, IsoView.VertexPos(tile.x + 1, tile.y + 1, baseHeight),
+                                IsoView.SortOrder(tile.x, tile.y));
+                            _fields.Add((renderer, crop, offset));
+                        }
                         continue;
                     }
                     var d = w.DecoMap[y, x];
@@ -72,13 +89,7 @@ namespace CrownAndHearth.Game
             var sprite = _art.Building(SlotName(b), view);
             if (sprite == null) return;
             int lvl = IsoView.VhView(w, front.x + 1, front.y + 1, rot);
-            var renderer = Put(sprite, IsoView.VertexPos(front.x + 1, front.y + 1, lvl), IsoView.SortOrder(front.x, front.y));
-            if (b.T != "farm") return;
-            int crop = (int)(Noise.Hash2(b.X, b.Y, w.Seed) * FarmCropArt.CropCount);
-            int offset = (int)(Noise.Hash2(b.X, b.Y, w.Seed + 17) * FarmCropArt.StageCount * FarmCropArt.DaysPerStage);
-            string slot = SlotName(b);
-            _farms.Add((renderer, slot, view, crop, offset));
-            renderer.sprite = _art.Farm(slot, view, crop, GrowthStage(w.Day, offset));
+            Put(sprite, IsoView.VertexPos(front.x + 1, front.y + 1, lvl), IsoView.SortOrder(front.x, front.y));
         }
 
         /// <summary>The art slot for a building (JS slotName + the hut-variant rule).</summary>
@@ -98,19 +109,12 @@ namespace CrownAndHearth.Game
             return b.T;
         }
 
-        static int GrowthStage(int day, int offset) =>
-            ((day - 1 + offset) / FarmCropArt.DaysPerStage) % FarmCropArt.StageCount;
-
-        public void RefreshFarmStages(int day)
+        public void RefreshCropStages(int day)
         {
-            if (day == _farmDay) return;
-            foreach (var farm in _farms)
-            {
-                int stage = GrowthStage(day, farm.offset);
-                if (stage != GrowthStage(_farmDay, farm.offset))
-                    farm.renderer.sprite = _art.Farm(farm.slot, farm.view, farm.crop, stage);
-            }
-            _farmDay = day;
+            if (day == _cropDay) return;
+            foreach (var field in _fields)
+                field.renderer.sprite = _crops.Tile(field.crop, day, field.offset);
+            _cropDay = day;
         }
 
         SpriteRenderer Put(Sprite s, Vector3 pos, int order)

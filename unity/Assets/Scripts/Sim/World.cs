@@ -75,6 +75,7 @@ namespace CrownAndHearth.Sim
             AddBld("house", c + 1, c + 3).Zoned = true;
             AddBld("farm", c - 1, c + 5).Zoned = true;
             ZoneMap[c + 3, c - 1] = Zone.Res; ZoneMap[c + 3, c + 1] = Zone.Res; ZoneMap[c + 5, c - 1] = Zone.Farm;
+            AddStarterFarmFields();
             Recalc();
             ComputeDemand();
         }
