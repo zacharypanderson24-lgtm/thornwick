@@ -18,7 +18,7 @@ namespace CrownAndHearth.Game
         public class ToolDef
         {
             public string Id, Label, Key; public Key Hotkey;
-            public string Build; public Zone Zone; public bool Road, Clear;
+            public string Build; public Zone Zone; public bool Road, Clear, Flax;
         }
 
         public static readonly ToolDef[] Tools =
@@ -26,7 +26,8 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "look", Label = "Look", Key = "1", Hotkey = Key.Digit1 },
             new ToolDef { Id = "road", Label = "Road", Key = "2", Hotkey = Key.Digit2, Road = true },
             new ToolDef { Id = "zoneRes", Label = "Housing", Key = "3", Hotkey = Key.Digit3, Zone = Zone.Res },
-            new ToolDef { Id = "zoneFarm", Label = "Farmland", Key = "4", Hotkey = Key.Digit4, Zone = Zone.Farm },
+            new ToolDef { Id = "zoneFarm", Label = "Wheat", Key = "4", Hotkey = Key.Digit4, Zone = Zone.Farm },
+            new ToolDef { Id = "zoneFlax", Label = "Flax", Key = "G", Hotkey = Key.G, Zone = Zone.Farm, Flax = true },
             new ToolDef { Id = "zoneComm", Label = "Commerce", Key = "5", Hotkey = Key.Digit5, Zone = Zone.Comm },
             new ToolDef { Id = "zoneWood", Label = "Lumber", Key = "6", Hotkey = Key.Digit6, Zone = Zone.Wood },
             new ToolDef { Id = "zoneMine", Label = "Mining", Key = "7", Hotkey = Key.Digit7, Zone = Zone.Mine },
@@ -231,7 +232,7 @@ namespace CrownAndHearth.Game
         {
             _tool = t; _roadAnchor = null; _zoneAnchor = null; _hud.SetTool(t.Id);
             if (t.Build != null) _hud.Toast($"{Defs.Names[t.Build]}: {CostText(t.Build)}");
-            if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + " " + World.Note[t.Zone], 6);
+            if (t.Flax) _hud.Toast("Flax needs fertile soil and farm workers. Staffed markets sell it for gold.", 6); else if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + " " + World.Note[t.Zone], 6);
         }
 
         void Rotate(int dir)
@@ -282,14 +283,14 @@ namespace CrownAndHearth.Game
                 if (!mouse.leftButton.wasPressedThisFrame) return;
                 if (!_zoneAnchor.HasValue) { _zoneAnchor = h; _hud.Toast("Click the opposite corner to zone the rectangle (Esc cancels)."); return; }
                 var a = _zoneAnchor.Value; _zoneAnchor = null;
-                var (zoned, skipped, why) = World.ZoneRect(_tool.Zone, a.x, a.y, h.x, h.y);
+                var (zoned, skipped, why) = World.ZoneRect(_tool.Zone, a.x, a.y, h.x, h.y, _tool.Flax);
                 _hud.Toast(zoned == 0 && skipped > 0 ? why : $"Zoned {zoned} tile{(zoned == 1 ? "" : "s")}." + (skipped > 0 ? $" {skipped} skipped: {why}" : ""), 5);
             }
             else if (_tool.Clear)
             {
                 if (_lastPaint == h) return;
                 _lastPaint = h;
-                var r = _tool.Clear ? World.Remove(h.x, h.y) : World.SetZone(_tool.Zone, h.x, h.y);
+                var r = _tool.Clear ? World.Remove(h.x, h.y) : World.SetZone(_tool.Zone, h.x, h.y, _tool.Flax);
                 if (!r.Ok && mouse.leftButton.wasPressedThisFrame) _hud.Toast(r.Reason);
             }
         }
@@ -361,7 +362,7 @@ namespace CrownAndHearth.Game
                 return $"{name} {Mathf.FloorToInt((float)w.ResAmt[r])}" + (System.Math.Abs(rate) >= 0.05 ? $" ({(rate > 0 ? "+" : "")}{rate:0.0})" : "");
             }
             return $"Day {w.Day}   " + R(Res.Food, "Food") + "   " + R(Res.Wood, "Wood") + "   " + R(Res.Logs, "Logs") + "   " + R(Res.Stone, "Stone") + "   " +
-                   R(Res.Ore, "Ore") + "   " + R(Res.Gold, "Gold") + $"     Peasants {w.Peasants}/{d.Civ}   Idle {d.Idle}   Jobs {d.Employed}/{d.Jobs}" +
+                   R(Res.Ore, "Ore") + "   " + R(Res.Flax, "Flax") + "   " + R(Res.Gold, "Gold") + $"     Peasants {w.Peasants}/{d.Civ}   Idle {d.Idle}   Jobs {d.Employed}/{d.Jobs}" +
                    (w.Soldiers > 0 ? $"   Soldiers {w.Soldiers}" : "") + (w.Starving ? "   STARVING" : "");
         }
 
@@ -425,7 +426,9 @@ namespace CrownAndHearth.Game
             lines.Add(UndergroundLine(x, y));
             if (d == Deco.Stump) lines.Add("Stump. It rots away into open ground.");
             if (d == Deco.Sapling) lines.Add("Sapling. It grows into a tree in three years.");
-            if (w.ZoneMap[y, x] != Zone.None) lines.Add(w.ZoneMap[y, x] + " zone");
+            if (w.ZoneMap[y, x] == Zone.Farm)
+                lines.Add(w.IsFlaxField(x, y) ? "Flax field. Markets sell flax for gold." : "Wheat field. Produces food.");
+            else if (w.ZoneMap[y, x] != Zone.None) lines.Add(w.ZoneMap[y, x] + " zone");
             lines.Add($"Tile {x},{y}   level {w.TileLevel(x, y):0.##}" + (w.Fert[y, x] ? "   fertile soil" : "") + (w.TileSpread(x, y) >= 3 ? "   too steep" : ""));
             return string.Join("\n", lines);
         }

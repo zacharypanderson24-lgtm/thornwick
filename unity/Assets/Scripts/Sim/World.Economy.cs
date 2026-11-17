@@ -20,7 +20,9 @@ namespace CrownAndHearth.Sim
             var got = new Dictionary<Res, double> { { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 } };
 
             // farms + foresters
-            food += FarmFood();
+            var crops = FarmOutput();
+            food += crops.food;
+            ResAmt[Res.Flax] += crops.flax;
             foreach (var b in Blds.Where(b => b.T == "forester" && b.Served).ToList())
             {
                 if (b.Eff <= 0) continue;
@@ -46,6 +48,10 @@ namespace CrownAndHearth.Sim
 
             // economy
             double trade = d.Markets > 0 ? 0.04 * Peasants * d.Cov * d.MkEff : 0;
+            // Staffed markets sell up to one flax per market per day.
+            double flaxSold = Math.Min(ResAmt[Res.Flax], d.Markets * d.MkEff);
+            ResAmt[Res.Flax] -= flaxSold;
+            trade += flaxSold * 2;
             double eat = (Peasants + Soldiers * 1.5) * 0.2;
             ResAmt[Res.Food] += food - eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
             ResAmt[Res.Gold] += employed * 0.12 + trade - Soldiers * 0.1;

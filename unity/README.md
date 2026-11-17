@@ -19,6 +19,10 @@ New to the game? The Tutorial button (bottom right) walks through every mechanic
 U cycles the underground view (ore bands 1-3, off). Iron lies hidden in hills and mountains: paint a Mining zone over the high ground and a
 lot at its foot; a mine's miners survey the zone, drive an adit into the high ground and sink a shaft only for ore below the mine's floor.
 
+Wheat (4) produces food. Flax (G) uses the same fertile fields and farm workers.
+A staffed market sells up to one unit of flax per day at full staffing for two
+gold per unit. New housing uses one tile. Existing 2×2 houses can still load.
+
 ## Banner and textures
 
 Open **Banner** in the settlement HUD to choose a preset, enter a hex color, or
