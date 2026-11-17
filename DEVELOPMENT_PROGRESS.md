@@ -39,7 +39,8 @@ When `codex/unity-saves` (and `codex/settlement-art-tools`, which contains it) t
 
 Mining changed the world generator: `World.GenDeposits` removes the browser's lowland ore tiles and places new showings on hill
 flanks, and `SimParityTests.TilesMatch` now treats ore tiles as open ground. The `mine_1..4` and `ore_0/1` art on `codex/mine-art` suits
-the new mines (an adit mouth in a rock mound). Art note: the ore heap beside the mine sits on wall 2 in view 1 but on wall 4 in view 4,
+the new mines (an adit mouth in a rock mound); it and `ore_0/1` are now in `unity-migration` (identical files, so `codex/mine-art` and the
+branches after it merge them without conflict). Art note: the ore heap beside the mine sits on wall 2 in view 1 but on wall 4 in view 4,
 and views 2 and 3 show neither; per the directional-coherence rule it should stay on one wall in every view that shows that wall.
 
 Mining state that saves must carry once both branches are in: `World.Surveyed` (bool per tile), `World.OreTaken`
@@ -74,7 +75,10 @@ the resource view (V) from `codex/terrain-occlusion` without conflict beyond `Ga
 | `bb2df72` | `unity-migration` | Merge of `claude/port-work-crews` (12/12 EditMode tests in batch mode on the merge). |
 | `6d3bfd3` | `claude/underground-mining` | Underground mining (`World.Mining.cs`), underground view (U), 10 mining tests; ore removed from the two day-by-day parity scenarios (22 tests). |
 | `5d7c3ce` | `claude/underground-mining` | Mining rework: ore in hills and mountains, adits from the foot of high ground, showings on hill flanks, 3x3 surveys; terrain parity ignores ore tiles (24 tests). |
-| _this commit_ | `claude/underground-mining` | Records the mining merge; then merged into `unity-migration`. |
+| `bf69c74` | `claude/underground-mining` | Records the mining merge. |
+| `96dc7cc` | `unity-migration` | Merge of `claude/underground-mining` (24/24 EditMode tests in the Editor on the merge). |
+| `575caa4` | `claude/mine-ore-art` | ChatGPT's mine art (`mine_1..4`), cherry-picked from `codex/mine-art` `19bfe75` with its authorship. |
+| _next commits_ | `claude/mine-ore-art` | ChatGPT's ore showing art (`ore_0/1` from `b6b1505`) and its `NatureSprite` lookup; merged into `unity-migration`. |
 
 ## Implemented and tested
 
@@ -101,6 +105,7 @@ showing before laying out the town, and the terrain test treats ore tiles as ope
 | 4-way camera rotation (Q/E) with per-view building art, zoom ladder 0.25x-5x, pan, height-aware tile picking | n/a | yes |
 | HUD (uGUI): resources and rates, speed, rotation, tools, tile info, demand strip, zone notes, Workforce priorities | n/a | yes |
 | Art pipeline: `../assets` imported (magenta keyed out, ground tiles shrunk to 32x16), placeholders for missing art | n/a | yes |
+| ChatGPT art in use: iron mine `mine_1..4` (4 views) and ore showings `ore_0/1` | n/a | yes: mine checked in views 1 and 2, all 329 showings drawn with the new art |
 
 ### Underground mining (Unity-only, merged into `unity-migration` 2026-11-16)
 
@@ -133,8 +138,8 @@ note for ChatGPT/Codex above). Smelting (ore + charcoal) and other ores (gold, g
 1. Saves (the browser uses localStorage `thornwick-save-1`; must load old saves).
 2. Hills hiding objects behind them (all ground currently draws before all objects).
 3. Info overlay (V: fertility and deposits), banner tint, texture lab.
-4. Art: ChatGPT art for the placeholder slots `farm`, `wood`, `sawmill`, `forester`, `quarry`, `mine`, `market`, `well`,
-   `manor_1`, `manor_2`, `farm2`, `market2`, rocks, ore, stump, sapling (rules: `TEXTURE_SPEC.md`, `CHATGPT_START_HERE.md`).
+4. Art: ChatGPT art for the placeholder slots `farm`, `wood`, `sawmill`, `forester`, `quarry`, `market`, `well`,
+   `manor_1`, `manor_2`, `farm2`, `market2`, rocks, stump, sapling (several are drawn on ChatGPT's unmerged `codex/*` branches) (rules: `TEXTURE_SPEC.md`, `CHATGPT_START_HERE.md`).
    Crew workers and villagers are code-drawn like in the browser (ChatGPT villager sprites are a browser idea too).
 5. Later milestones from the design: tech tree, fortified cities, armies, conquest map.
 
