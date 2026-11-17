@@ -26,7 +26,7 @@ namespace CrownAndHearth.Game
         public class ToolDef
         {
             public string Id, Label, Desc; public Cat Cat;
-            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Flax;
+            public string Build; public Zone Zone; public bool Road, Clear, Unzone;
         }
 
         public static readonly CatDef[] Cats =
@@ -51,10 +51,8 @@ namespace CrownAndHearth.Game
                 Desc = "Drag over land to mark it for homes. Villagers build houses here by themselves, on tiles touching a connected road, when the town needs room." },
             new ToolDef { Id = "farmhouse", Cat = Cat.Farming, Label = "Farmhouse", Build = "farm",
                 Desc = "Its farmers work the wheat and flax fields within 3 tiles. Each farmer tends 2 fields. Needs a road to the Town Hall." },
-            new ToolDef { Id = "zoneFarm", Cat = Cat.Farming, Label = "Wheat Fields", Zone = Zone.Farm,
-                Desc = "Drag over fertile soil (the darker, olive ground) within 3 tiles of a farmhouse; the shaded area shows each farmhouse's reach. Wheat feeds the town." },
-            new ToolDef { Id = "zoneFlax", Cat = Cat.Farming, Label = "Flax Fields", Zone = Zone.Farm, Flax = true,
-                Desc = "Like wheat fields, but they grow flax instead of food. Fertile soil within 3 tiles of a farmhouse." },
+            new ToolDef { Id = "zoneFarm", Cat = Cat.Farming, Label = "Farmland", Zone = Zone.Farm,
+                Desc = "Drag over fertile land near a farmhouse. Set the wheat and flax percentages in the Farming menu above the build bar." },
             new ToolDef { Id = "silo", Cat = Cat.Farming, Label = "Silo", Build = "silo",
                 Desc = "Stores 180 more wheat and 60 more flax. Needs a road to the Town Hall." },
             new ToolDef { Id = "lodge", Cat = Cat.Forestry, Label = "Woodcutter Lodge", Build = "wood",
@@ -247,6 +245,7 @@ namespace CrownAndHearth.Game
             var tip = CursorTip(); _hud.SetCursorTip(tip.text, tip.bad, Mouse.current?.position.ReadValue() ?? Vector2.zero);
             _hud.SetInfo(_hover.HasValue ? TileInfo(_hover.Value.x, _hover.Value.y) : "");
             _hud.RefreshWorkforce(World);
+            _hud.RefreshTownMenus(World);
             if (World.Events.Count > 0) { _hud.Toast(World.Events[World.Events.Count - 1], 8); World.Events.Clear(); }   // cave-ins, new levels, empty surveys
             var done = _tutorial.Check(World);
             if (done != null)
@@ -380,7 +379,7 @@ namespace CrownAndHearth.Game
                 _hud.Toast(n == 0 ? "No zoned open land there." : $"Removed the zone from {n} tile{(n == 1 ? "" : "s")}.");
                 return;
             }
-            var (zoned, skipped, why) = World.ZoneRect(_tool.Zone, a.x, a.y, b.x, b.y, _tool.Flax);
+            var (zoned, skipped, why) = World.ZoneRect(_tool.Zone, a.x, a.y, b.x, b.y);
             _hud.Toast(zoned == 0 && skipped > 0 ? why : $"Zoned {zoned} tile{(zoned == 1 ? "" : "s")}." + (skipped > 0 ? $" {skipped} skipped: {why}" : ""), 5);
         }
 

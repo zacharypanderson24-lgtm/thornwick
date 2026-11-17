@@ -43,6 +43,8 @@ namespace CrownAndHearth.Sim
                 ["deco"] = EncodeGrid(DecoMap, value => value == Deco.None ? JValue.CreateNull() : new JValue(SaveKey(value))),
                 ["zone"] = EncodeGrid(ZoneMap, value => value == Zone.None ? JValue.CreateNull() : new JValue(SaveKey(value))),
                 ["fert"] = EncodeGrid(Fert, value => new JValue(value)),
+                ["statistics"] = new JArray(_statistics.Select(EncodeStatistics)),
+                ["flaxPercent"] = FlaxPercent, ["shaftDepthLimit"] = ShaftDepthLimit, ["requireMineSupports"] = RequireMineSupports,
                 ["flaxFields"] = JObject.FromObject(FlaxFields), ["rockAmt"] = JObject.FromObject(RockAmtMap), ["elev"] = JObject.FromObject(Elev),
                 ["stumpT"] = JObject.FromObject(StumpT), ["sapT"] = JObject.FromObject(SapT),
                 ["chop"] = JObject.FromObject(Chop), ["dig"] = JObject.FromObject(Dig),
@@ -182,6 +184,10 @@ namespace CrownAndHearth.Sim
             }
             world.Recalc();
             if (save.Value<bool?>("farmFields") != true) world.AddStarterFarmFields();
+            if (save.Value<int?>("flaxPercent") is int mix) world.SetFlaxPercent(mix);
+            world.SetShaftDepthLimit(save.Value<int?>("shaftDepthLimit") ?? MaxDepth);
+            world.SetMineSupportsRequired(save.Value<bool?>("requireMineSupports") ?? false);
+            world.LoadStatistics(save["statistics"] as JArray);
             world.ComputeDemand();
             return world;
         }

@@ -204,7 +204,7 @@ namespace CrownAndHearth.Sim
             for (int y = Math.Min(ay, by); y <= Math.Max(ay, by); y++)
                 for (int x = Math.Min(ax, bx); x <= Math.Max(ax, bx); x++)
                 {
-                    if (Inb(x, y) && Grid[y, x] == null && ZoneMap[y, x] == kind && IsFlaxField(x, y) == (kind == Zone.Farm && flax)) continue;   // already that zone
+                    if (Inb(x, y) && Grid[y, x] == null && ZoneMap[y, x] == kind && (FlaxPercent.HasValue || IsFlaxField(x, y) == (kind == Zone.Farm && flax))) continue;   // already that zone
                     var r = SetZone(kind, x, y, flax);
                     if (r.Ok) { if (Grid[y, x] == null) zoned++; continue; }
                     skipped++; reasons[r.Reason] = (reasons.TryGetValue(r.Reason, out var n) ? n : 0) + 1;
@@ -234,7 +234,7 @@ namespace CrownAndHearth.Sim
             if (!c.Ok || Grid[y, x] != null) return c;
             flax = kind == Zone.Farm && flax;
             int key = Tk(x, y);
-            if (ZoneMap[y, x] == kind && FlaxFields.ContainsKey(key) == flax) return c;
+            if (ZoneMap[y, x] == kind && (FlaxPercent.HasValue || FlaxFields.ContainsKey(key) == flax)) return c;
 
             ZoneMap[y, x] = kind;
             if (flax) FlaxFields[key] = true;

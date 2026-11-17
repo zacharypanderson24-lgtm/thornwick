@@ -48,6 +48,22 @@ namespace CrownAndHearth.Sim
         /// <summary>Multiplies every cave-in chance (1 in play; tests raise it to force a cave-in).</summary>
         public double CaveInRiskScale = 1;
 
+        public int ShaftDepthLimit { get; private set; } = MaxDepth;
+        public bool RequireMineSupports { get; private set; }
+
+        public void SetShaftDepthLimit(int depth) => ShaftDepthLimit = Math.Clamp(depth, 0, MaxDepth);
+
+        public void SetMineSupportsRequired(bool required) => RequireMineSupports = required;
+
+        bool MineCanStart(Building mine, int depth, bool digging)
+        {
+            if (depth > ShaftDepthLimit) return false;
+            // Creating a passage cannot require supports in that passage before it exists.
+            return !RequireMineSupports || (digging
+                ? depth <= 1 || ShoredFor(mine, depth - 1)
+                : ShoredFor(mine, depth));
+        }
+
         readonly short[][] _oreCap = new short[Bands + 1][];
         float[] _genLevel;                    // tile heights when the deposits were laid down (mining geometry never changes)
         public readonly Dictionary<int, double> OreTaken = new Dictionary<int, double>();   // key: band * N * N + y * N + x
@@ -177,7 +193,7 @@ namespace CrownAndHearth.Sim
                     for (int l = Bands; l >= 1; l--)
                     {
                         double o = KnownOre(i, j, l); if (o <= 1e-9) continue;
-                        int nd = NeedShaft(b, i, j, l); if (!Reachable(b, nd)) continue;
+                        int nd = NeedShaft(b, i, j, l); if (!Reachable(b, nd) || !MineCanStart(b, nd, false)) continue;
                         double score = l * 1000 + o;
                         if (score > best) { best = score; tx = i; ty = j; band = l; need = nd; }
                     }
@@ -198,10 +214,10 @@ namespace CrownAndHearth.Sim
                         if (KnownOre(i, j, l) <= 1e-9) continue;
                         int nd = NeedShaft(b, i, j, l);
                         if (nd == 0) { if (!b.Adit) adit = true; }
-                        else if (nd > b.Depth && nd <= MaxDepth) shaft = Math.Min(shaft, nd);
+                        else if (nd > b.Depth && nd <= ShaftDepthLimit) shaft = Math.Min(shaft, nd);
                     }
                 }
-            return adit ? 0 : shaft != int.MaxValue ? b.Depth + 1 : -1;
+            return adit ? 0 : shaft != int.MaxValue && MineCanStart(b, b.Depth + 1, true) ? b.Depth + 1 : -1;
         }
 
         int UnsurveyedInReach(Building b)
@@ -282,6 +298,7 @@ namespace CrownAndHearth.Sim
                     }
                     case CrewState.Down:
                     {
+                        if (!MineCanStart(b, a.Need, a.Dig)) { a.St = CrewState.Home; break; }
                         // diggers driving the adit work its face (adit risk); shaft diggers work the level being sunk
                         if (Noise.Hash2(Tk(b.X, b.Y), Day * 16 + ai, Seed + 4001) < CaveInChance(b, a.Need, down))
                         {
@@ -376,9 +393,10 @@ namespace CrownAndHearth.Sim
             }
             string s = pre + (b.Adit ? "Adit: driven into the high ground" + (b.AditShored ? ", shored" : $", UNSHORED (needs {AditWood} wood)")
                      : b.AditProg > 0 ? $"Adit: {100 * b.AditProg / AditWork}% driven" : "Adit: none");
-            s += b.Depth > 0 ? $"\nShaft: level {b.Depth} of {MaxDepth}, {b.Shored} shored" + (b.Shored < b.Depth ? $" (level {b.Shored + 1} needs {SupportWood[b.Shored + 1]} wood)" : "")
+            s += b.Depth > 0 ? $"\nShaft: level {b.Depth}, {b.Shored} shored" + (b.Shored < b.Depth ? $" (level {b.Shored + 1} needs {SupportWood[b.Shored + 1]} wood)" : "")
                              : "\nShaft: none";
-            if (b.Depth < MaxDepth && b.DigProg > 0) s += $". Sinking to level {b.Depth + 1}: {100 * b.DigProg / DigWork[b.Depth + 1]}%";
+            s += $"\nTown shaft limit: {ShaftDepthLimit}";
+            if (b.Depth < ShaftDepthLimit && b.DigProg > 0) s += $". Sinking to level {b.Depth + 1}: {100 * b.DigProg / DigWork[b.Depth + 1]}%";
             if (b.Closed > 0) s += $"\nClosed for repairs after a cave-in: {b.Closed} days left";
             int unsurveyed = UnsurveyedInReach(b);
             if (unsurveyed > 0) s += $"\n{unsurveyed} zone tiles still to survey";

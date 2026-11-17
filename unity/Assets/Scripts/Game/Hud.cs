@@ -16,7 +16,7 @@ using UnityEngine.UI;
 
 namespace CrownAndHearth.Game
 {
-    public class Hud : MonoBehaviour
+    public partial class Hud : MonoBehaviour
     {
         static readonly Color Panel = new Color(0.11f, 0.09f, 0.07f, 0.92f);
         static readonly Color Btn = new Color(0.29f, 0.22f, 0.15f, 1f);
@@ -112,6 +112,9 @@ namespace CrownAndHearth.Game
             MakeButton(top, "Load", new Vector2(1, 0.5f), new Vector2(-23, 0), new Vector2(44, 30), () => LoadPicked?.Invoke());
 
             BuildBar(root);
+            var townMenuBar = MakePanel(root, "TownMenuBar", Vector2.right, Vector2.right,
+                new Vector2(-333, BarH + 8), new Vector2(-8, BarH + 50));
+            BuildTownMenus(root, townMenuBar);
 
             // left info panel
             _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -417), new Vector2(330, -68)).gameObject;
@@ -126,7 +129,7 @@ namespace CrownAndHearth.Game
             _toastText.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
 
             // workforce panel
-            var wp = MakePanel(root, "Workforce", new Vector2(1, 0), new Vector2(1, 0), new Vector2(-440, BarH + 8), new Vector2(-8, BarH + 332));
+            var wp = MakePanel(root, "Workforce", Vector2.right, Vector2.right, new Vector2(-440, BarH + 58), new Vector2(-8, BarH + 382));
             _workPanel = wp.gameObject;
             var title = MakeText(wp, "Title", 17, TextAnchor.UpperLeft); title.text = "Workforce: villagers fill trades top to bottom";
             Stretch(title.rectTransform, new Vector2(10, 290), new Vector2(-10, -8));
@@ -485,7 +488,13 @@ namespace CrownAndHearth.Game
             }
         }
 
-        void ToggleWorkforce() { _workPanel.SetActive(!_workPanel.activeSelf); WorkforceToggled?.Invoke(_workPanel.activeSelf); }
+        void ToggleWorkforce()
+        {
+            bool opening = !_workPanel.activeSelf;
+            if (opening) ShowTownMenu(TownMenu.Closed);
+            _workPanel.SetActive(opening);
+            WorkforceToggled?.Invoke(opening);
+        }
 
         public void RefreshWorkforce(World w)
         {
@@ -520,7 +529,7 @@ namespace CrownAndHearth.Game
         Sprite ToolIcon(GameController.ToolDef t)
         {
             if (t.Build != null) return _art?.Building(ArtSlot(t.Build), 0) ?? Glyph("box", Dim);
-            if (t.Zone != Zone.None) return Glyph("zone", ZoneColor(t.Zone, t.Flax));
+            if (t.Zone != Zone.None) return Glyph("zone", ZoneColor(t.Zone));
             if (t.Road) return Glyph("road", new Color(0.55f, 0.42f, 0.28f));
             if (t.Unzone) return Glyph("unzone", new Color(0.85f, 0.85f, 0.85f));
             if (t.Clear) return Glyph("cross", new Color(0.85f, 0.30f, 0.25f));
