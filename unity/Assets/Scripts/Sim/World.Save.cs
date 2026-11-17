@@ -43,7 +43,7 @@ namespace CrownAndHearth.Sim
                 ["deco"] = EncodeGrid(DecoMap, value => value == Deco.None ? JValue.CreateNull() : new JValue(SaveKey(value))),
                 ["zone"] = EncodeGrid(ZoneMap, value => value == Zone.None ? JValue.CreateNull() : new JValue(SaveKey(value))),
                 ["fert"] = EncodeGrid(Fert, value => new JValue(value)),
-                ["rockAmt"] = JObject.FromObject(RockAmtMap), ["elev"] = JObject.FromObject(Elev),
+                ["flaxFields"] = JObject.FromObject(FlaxFields), ["rockAmt"] = JObject.FromObject(RockAmtMap), ["elev"] = JObject.FromObject(Elev),
                 ["stumpT"] = JObject.FromObject(StumpT), ["sapT"] = JObject.FromObject(SapT),
                 ["chop"] = JObject.FromObject(Chop), ["dig"] = JObject.FromObject(Dig),
                 ["oreLeft"] = JObject.FromObject(OreLeftMap),
@@ -98,6 +98,7 @@ namespace CrownAndHearth.Sim
             ReadGrid(deco, world.DecoMap, size, offset, ReadEnum<Deco>);
             ReadGrid(save["zone"] as JArray, world.ZoneMap, size, offset, ReadEnum<Zone>);
             ReadGrid(save["fert"] as JArray, world.Fert, size, offset, token => token.Value<bool>());
+            ReadTiles(save["flaxFields"], world.FlaxFields, size, offset);
             ReadTiles(save["rockAmt"], world.RockAmtMap, size, offset);
             ReadTiles(save["elev"], world.Elev, size, offset);
             ReadTiles(save["stumpT"], world.StumpT, size, offset);

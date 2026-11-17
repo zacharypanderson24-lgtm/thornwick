@@ -53,7 +53,7 @@ namespace CrownAndHearth.Sim
             foreach (var (i, j) in b.Tiles())
             {
                 int k = Tk(i, j);
-                Grid[j, i] = b; DecoMap[j, i] = Deco.None;
+                Grid[j, i] = b; DecoMap[j, i] = Deco.None; FlaxFields.Remove(k);
                 RockAmtMap.Remove(k); Dig.Remove(k); Elev.Remove(k); OreLeftMap.Remove(k); SapT.Remove(k);
                 if (t == "road") ZoneMap[j, i] = Zone.None;
             }
@@ -112,7 +112,7 @@ namespace CrownAndHearth.Sim
                 Touch(); Recalc();
                 return Result.Yes();
             }
-            if (ZoneMap[y, x] != Zone.None) { ZoneMap[y, x] = Zone.None; Touch(); return Result.Yes(); }
+            if (ZoneMap[y, x] != Zone.None) { ZoneMap[y, x] = Zone.None; FlaxFields.Remove(k); Touch(); return Result.Yes(); }
             var d = DecoMap[y, x];
             if (d == Deco.None) return Result.No("Nothing to clear here");
             if (d == Deco.Tree) ResAmt[Res.Logs] = Math.Min(Storage, ResAmt[Res.Logs] + 2);
@@ -195,14 +195,14 @@ namespace CrownAndHearth.Sim
 
         /// <summary>Zone every tile of the rectangle between two corners (either order). Returns how many tiles were zoned, how many
         /// could not be, and the most common reason they could not.</summary>
-        public (int zoned, int skipped, string why) ZoneRect(Zone kind, int ax, int ay, int bx, int by)
+        public (int zoned, int skipped, string why) ZoneRect(Zone kind, int ax, int ay, int bx, int by, bool flax = false)
         {
             int zoned = 0, skipped = 0; var reasons = new Dictionary<string, int>();
             for (int y = Math.Min(ay, by); y <= Math.Max(ay, by); y++)
                 for (int x = Math.Min(ax, bx); x <= Math.Max(ax, bx); x++)
                 {
-                    if (Inb(x, y) && Grid[y, x] == null && ZoneMap[y, x] == kind) continue;   // already that zone
-                    var r = SetZone(kind, x, y);
+                    if (Inb(x, y) && Grid[y, x] == null && ZoneMap[y, x] == kind && IsFlaxField(x, y) == (kind == Zone.Farm && flax)) continue;   // already that zone
+                    var r = SetZone(kind, x, y, flax);
                     if (r.Ok) { if (Grid[y, x] == null) zoned++; continue; }
                     skipped++; reasons[r.Reason] = (reasons.TryGetValue(r.Reason, out var n) ? n : 0) + 1;
                 }
@@ -210,10 +210,18 @@ namespace CrownAndHearth.Sim
             return (zoned, skipped, why);
         }
 
-        public Result SetZone(Zone kind, int x, int y)
+        public Result SetZone(Zone kind, int x, int y, bool flax = false)
         {
             var c = ZoneCheck(kind, x, y);
-            if (c.Ok && Grid[y, x] == null && ZoneMap[y, x] != kind) { ZoneMap[y, x] = kind; Touch(); }
+            if (!c.Ok || Grid[y, x] != null) return c;
+            flax = kind == Zone.Farm && flax;
+            int key = Tk(x, y);
+            if (ZoneMap[y, x] == kind && FlaxFields.ContainsKey(key) == flax) return c;
+
+            ZoneMap[y, x] = kind;
+            if (flax) FlaxFields[key] = true;
+            else FlaxFields.Remove(key);
+            Touch();
             return c;
         }
 

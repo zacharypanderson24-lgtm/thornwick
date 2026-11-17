@@ -125,6 +125,7 @@ namespace CrownAndHearth.Sim
                     { if (sz == 2) bBest = (a, score); else sBest = (a, score); }
                 }
                 var fields = kind == Zone.Farm ? FarmFields() : null;
+                int maxLotSize = kind == Zone.Res ? 1 : 2;
                 List<Building> unc = null;
                 if (kind == Zone.Comm) unc = Blds.Where(b => b.T == "house" && b.Served && !b.Covered).ToList();
                 if (kind != Zone.Comm || unc.Count > 0)
@@ -132,7 +133,7 @@ namespace CrownAndHearth.Sim
                         for (int x = 0; x < N; x++)
                         {
                             if (ZoneMap[y, x] != kind || Grid[y, x] != null) continue;
-                            for (int sz = kind == Zone.Farm ? 2 : 1; sz <= 2; sz++)   // farmhouses are always 2x2; their plots are the 1x1 zone tiles around them
+                            for (int sz = kind == Zone.Farm ? 2 : 1; sz <= maxLotSize; sz++)
                             {
                                 if (sz == 2 && (x + 1 >= N || y + 1 >= N)) continue;
                                 if (!LotOk(kind, x, y, sz) || !LotServed(x, y, sz)) continue;

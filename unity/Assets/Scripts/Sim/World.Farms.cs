@@ -11,6 +11,9 @@ namespace CrownAndHearth.Sim
         const int FieldsPerWorker = 2;
         const double FoodPerField = 0.4;   // two plots a farmer: about 0.8 food a farmer a day, as the old farms gave
         const int StarterFields = 8;
+        internal readonly Dictionary<int, bool> FlaxFields = new Dictionary<int, bool>();
+
+        public bool IsFlaxField(int x, int y) => FlaxFields.ContainsKey(Tk(x, y));
 
         bool IsFarmField(int x, int y) => Inb(x, y) && Grid[y, x] == null &&
             ZoneMap[y, x] == Zone.Farm && Fert[y, x] && DecoMap[y, x] == Deco.None &&
@@ -36,16 +39,28 @@ namespace CrownAndHearth.Sim
             return fields;
         }
 
-        public double FarmFood()
-        {
-            var counts = new Dictionary<Building, int>();
-            foreach (var farm in FarmFields().Values)
-                counts[farm] = counts.TryGetValue(farm, out int count) ? count + 1 : 1;
+        public double FarmFood() => FarmOutput().food;
 
-            double food = 0;
+        public (double food, double flax) FarmOutput()
+        {
+            var counts = new Dictionary<Building, (int wheat, int flax)>();
+            foreach (var field in FarmFields())
+            {
+                counts.TryGetValue(field.Value, out var count);
+                if (FlaxFields.ContainsKey(field.Key)) count.flax++;
+                else count.wheat++;
+                counts[field.Value] = count;
+            }
+
+            double food = 0, flax = 0;
             foreach (var pair in counts)
-                food += Math.Min(pair.Value, pair.Key.Workers * FieldsPerWorker) * FoodPerField;
-            return food;
+            {
+                var (wheat, linenCrop) = pair.Value;
+                double worked = Math.Min(1.0, pair.Key.Workers * FieldsPerWorker / (double)(wheat + linenCrop));
+                food += wheat * worked * FoodPerField;
+                flax += linenCrop * worked;
+            }
+            return (food, flax);
         }
 
         bool HasRoomForFarmField(int left, int top, int size, Dictionary<int, Building> fields)
