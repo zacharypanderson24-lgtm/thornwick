@@ -13,7 +13,53 @@ namespace CrownAndHearth.Sim
         const int StarterFields = 8;
         internal readonly Dictionary<int, bool> FlaxFields = new Dictionary<int, bool>();
 
-        public bool IsFlaxField(int x, int y) => FlaxFields.ContainsKey(Tk(x, y));
+        public int? FlaxPercent { get; private set; }
+        readonly HashSet<int> _managedFlax = new HashSet<int>();
+        int _cropPlanVersion = -1, _plannedFields;
+
+        public void SetFlaxPercent(int percent)
+        {
+            int next = Math.Clamp(percent, 0, 100);
+            if (FlaxPercent == next) return;
+            FlaxPercent = next;
+            Touch();
+        }
+
+        public bool IsFlaxField(int x, int y)
+        {
+            int key = Tk(x, y);
+            if (!FlaxPercent.HasValue) return FlaxFields.ContainsKey(key);
+            RefreshCropPlan();
+            return _managedFlax.Contains(key);
+        }
+
+        public (int flax, int total) PlannedCrops()
+        {
+            RefreshCropPlan();
+            return (_managedFlax.Count, _plannedFields);
+        }
+
+        void RefreshCropPlan()
+        {
+            if (_cropPlanVersion == Version) return;
+            _cropPlanVersion = Version;
+            _managedFlax.Clear();
+            var fields = new List<int>();
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                    if (IsFarmField(x, y)) fields.Add(Tk(x, y));
+            _plannedFields = fields.Count;
+
+            if (FlaxPercent is int percent)
+            {
+                int flaxCount = (fields.Count * percent + 50) / 100;
+                foreach (int key in fields.OrderBy(key => Noise.Hash2(key, 79, Seed)).ThenBy(key => key).Take(flaxCount))
+                    _managedFlax.Add(key);
+            }
+            else
+                foreach (int key in fields)
+                    if (FlaxFields.ContainsKey(key)) _managedFlax.Add(key);
+        }
 
         bool IsFarmField(int x, int y) => Inb(x, y) && Grid[y, x] == null &&
             ZoneMap[y, x] == Zone.Farm && Fert[y, x] && DecoMap[y, x] == Deco.None &&
@@ -47,7 +93,7 @@ namespace CrownAndHearth.Sim
             foreach (var field in FarmFields())
             {
                 counts.TryGetValue(field.Value, out var count);
-                if (FlaxFields.ContainsKey(field.Key)) count.flax++;
+                if (IsFlaxField(field.Key % N, field.Key / N)) count.flax++;
                 else count.wheat++;
                 counts[field.Value] = count;
             }

@@ -89,6 +89,7 @@ namespace CrownAndHearth.Sim
             // develop: zones grow buildings
             Recalc();
             Develop();
+            _statistics.Add(CaptureStatistics(Day - 1));
         }
 
         public (int x, int y)? NearestZoned(int x, int y, int r, Deco kind, Zone zone)

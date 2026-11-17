@@ -18,7 +18,7 @@ namespace CrownAndHearth.Game
         public class ToolDef
         {
             public string Id, Label, Key; public Key Hotkey;
-            public string Build; public Zone Zone; public bool Road, Clear, Flax;
+            public string Build; public Zone Zone; public bool Road, Clear;
         }
 
         public static readonly ToolDef[] Tools =
@@ -26,8 +26,7 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "look", Label = "Look", Key = "1", Hotkey = Key.Digit1 },
             new ToolDef { Id = "road", Label = "Road", Key = "2", Hotkey = Key.Digit2, Road = true },
             new ToolDef { Id = "zoneRes", Label = "Housing", Key = "3", Hotkey = Key.Digit3, Zone = Zone.Res },
-            new ToolDef { Id = "zoneFarm", Label = "Wheat", Key = "4", Hotkey = Key.Digit4, Zone = Zone.Farm },
-            new ToolDef { Id = "zoneFlax", Label = "Flax", Key = "G", Hotkey = Key.G, Zone = Zone.Farm, Flax = true },
+            new ToolDef { Id = "zoneFarm", Label = "Farmland", Key = "4", Hotkey = Key.Digit4, Zone = Zone.Farm },
             new ToolDef { Id = "market", Label = "Market", Key = "5", Hotkey = Key.Digit5, Build = "market" },
             new ToolDef { Id = "zoneWood", Label = "Lumber", Key = "6", Hotkey = Key.Digit6, Zone = Zone.Wood },
             new ToolDef { Id = "zoneMine", Label = "Mining", Key = "7", Hotkey = Key.Digit7, Zone = Zone.Mine },
@@ -205,6 +204,7 @@ namespace CrownAndHearth.Game
             _hud.SetDemand(DemandLine());
             _hud.SetInfo(_hover.HasValue ? TileInfo(_hover.Value.x, _hover.Value.y) : "");
             _hud.RefreshWorkforce(World);
+            _hud.RefreshTownMenus(World);
             if (World.Events.Count > 0) { _hud.Toast(World.Events[World.Events.Count - 1], 8); World.Events.Clear(); }   // cave-ins, new levels, empty surveys
             var done = _tutorial.Check(World);
             if (done != null)
@@ -240,7 +240,7 @@ namespace CrownAndHearth.Game
                 : t.Clear ? "Clear  ·  Click or drag over tiles to remove them" : "Look  ·  Hover a tile to inspect it");
             _tool = t; _roadAnchor = null; _zoneAnchor = null; _hud.SetTool(t.Id);
             if (t.Build != null) _hud.Toast($"{Defs.Names[t.Build]}: {CostText(t.Build)}");
-            if (t.Flax) _hud.Toast("Flax needs fertile soil and farm workers.", 6); else if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + (t.Zone == Zone.Res ? " " + World.Note[Zone.Res] : ""), 6);
+            if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + (t.Zone == Zone.Res ? " " + World.Note[Zone.Res] : ""), 6);
         }
 
         void Rotate(int dir)
@@ -291,14 +291,14 @@ namespace CrownAndHearth.Game
                 if (!mouse.leftButton.wasPressedThisFrame) return;
                 if (!_zoneAnchor.HasValue) { _zoneAnchor = h; _hud.Toast("Click the opposite corner to zone the rectangle (Esc cancels)."); return; }
                 var a = _zoneAnchor.Value; _zoneAnchor = null;
-                var (zoned, skipped, why) = World.ZoneRect(_tool.Zone, a.x, a.y, h.x, h.y, _tool.Flax);
+                var (zoned, skipped, why) = World.ZoneRect(_tool.Zone, a.x, a.y, h.x, h.y);
                 _hud.Toast(zoned == 0 && skipped > 0 ? why : $"Zoned {zoned} tile{(zoned == 1 ? "" : "s")}." + (skipped > 0 ? $" {skipped} skipped: {why}" : ""), 5);
             }
             else if (_tool.Clear)
             {
                 if (_lastPaint == h) return;
                 _lastPaint = h;
-                var r = _tool.Clear ? World.Remove(h.x, h.y) : World.SetZone(_tool.Zone, h.x, h.y, _tool.Flax);
+                var r = _tool.Clear ? World.Remove(h.x, h.y) : World.SetZone(_tool.Zone, h.x, h.y);
                 if (!r.Ok && mouse.leftButton.wasPressedThisFrame) _hud.Toast(r.Reason);
             }
         }
@@ -364,7 +364,7 @@ namespace CrownAndHearth.Game
         static string ZoneHelp(Zone z) => z switch
         {
             Zone.Res => "Housing zone: homes grow on it beside a road when houses are nearly full.",
-            Zone.Farm => "Wheat: mark fertile tiles within 3 tiles of a farmhouse.",
+            Zone.Farm => "Farmland: mark fertile tiles within 3 tiles of a farmhouse. Set the crop mix in Farming.",
             Zone.Wood => "Lumber: mark forest for crews from a nearby woodcutter lodge.",
             _ => "Mining: mark deposits for a nearby quarry or iron mine.",
         };
