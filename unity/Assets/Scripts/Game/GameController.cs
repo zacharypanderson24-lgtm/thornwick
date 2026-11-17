@@ -240,7 +240,7 @@ namespace CrownAndHearth.Game
                 : t.Clear ? "Clear  ·  Click or drag over tiles to remove them" : "Look  ·  Hover a tile to inspect it");
             _tool = t; _roadAnchor = null; _zoneAnchor = null; _hud.SetTool(t.Id);
             if (t.Build != null) _hud.Toast($"{Defs.Names[t.Build]}: {CostText(t.Build)}");
-            if (t.Flax) _hud.Toast("Flax needs fertile soil and farm workers. Staffed markets sell it for gold.", 6); else if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + (t.Zone == Zone.Res ? " " + World.Note[Zone.Res] : ""), 6);
+            if (t.Flax) _hud.Toast("Flax needs fertile soil and farm workers.", 6); else if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + (t.Zone == Zone.Res ? " " + World.Note[Zone.Res] : ""), 6);
         }
 
         void Rotate(int dir)
@@ -345,7 +345,7 @@ namespace CrownAndHearth.Game
                 else if (_tool.Build != null)
                 {
                     bool ok = World.CanPlace(_tool.Build, h.x, h.y).Ok;
-                    int sz = DefaultSize(_tool.Build);
+                    int sz = PlacementSize(_tool.Build);
                     for (int j = 0; j < sz; j++) for (int i = 0; i < sz; i++) _overlay.AddTile(World, h.x + i, h.y + j, _rot, ok ? Ok : Bad);
                 }
                 else if (_tool.Zone != Zone.None)
@@ -376,7 +376,7 @@ namespace CrownAndHearth.Game
         }
         const double DemandThresholdShown = World.DemandThreshold;
 
-        static string CostText(string type) => string.Join(", ", CostOf(type, DefaultSize(type)).Select(kv => $"{kv.Value} {kv.Key.ToString().ToLower()}"));
+        static string CostText(string type) => string.Join(", ", CostOf(type, PlacementSize(type)).Select(kv => $"{kv.Value} {kv.Key.ToString().ToLower()}"));
 
         /// <summary>JS crewLine: what the building's crew is doing.</summary>
         static string CrewLine(Building b)
@@ -406,18 +406,14 @@ namespace CrownAndHearth.Game
             {
                 lines.Add(b.Name.ToUpper());
                 lines.Add(b.Served ? "Connected to the Town Hall" : "Not connected: needs a road to the Town Hall");
-                if (b.T == "house") lines.Add($"Homes {b.Capacity} villagers. Level {b.Lvl}" + (b.Covered ? ". Market nearby" : ""));
+                if (b.T == "house") lines.Add($"Homes {b.Capacity} villagers. Level {b.Lvl}");
                 if (b.Jobs > 0) lines.Add($"Workers {b.Workers}/{b.Jobs} ({b.Eff * 100:0}%)");
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "mine") lines.Add(w.MineStatus(b));
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
                 if (b.T == "silo")
                     lines.Add(b.Served ? $"+{World.SiloFood} wheat and +{World.SiloFlax} flax storage" : "Connect to the Town Hall to use its crop storage.");
-                if (b.T == "market")
-                {
-                    lines.Add($"Can sell {b.Workers} crops a day. Flax {World.FlaxPrice:0.##} gold, surplus wheat {World.FoodPrice:0.##} gold.");
-                    lines.Add($"Last day: {b.FlaxSold:0.##} flax, {b.FoodSold:0.##} wheat sold. Wheat reserve: {w.FoodReserve:0.##}.");
-                }
+                if (b.T == "market") lines.Add("Trading is paused.");
             }
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");
             var d = w.DecoMap[y, x];
@@ -428,7 +424,7 @@ namespace CrownAndHearth.Game
             if (d == Deco.Stump) lines.Add("Stump. It rots away into open ground.");
             if (d == Deco.Sapling) lines.Add("Sapling. It grows into a tree in three years.");
             if (w.ZoneMap[y, x] == Zone.Farm)
-                lines.Add(w.IsFlaxField(x, y) ? "Flax field. Markets sell flax for gold." : "Wheat field. Produces food.");
+                lines.Add(w.IsFlaxField(x, y) ? "Flax field. Produces flax." : "Wheat field. Produces food.");
             else if (w.ZoneMap[y, x] != Zone.None) lines.Add(w.ZoneMap[y, x] + " zone");
             lines.Add($"Tile {x},{y}   level {w.TileLevel(x, y):0.##}" + (w.Fert[y, x] ? "   fertile soil" : "") + (w.TileSpread(x, y) >= 3 ? "   too steep" : ""));
             return string.Join("\n", lines);

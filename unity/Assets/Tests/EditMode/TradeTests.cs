@@ -1,4 +1,4 @@
-﻿using CrownAndHearth.Sim;
+using CrownAndHearth.Sim;
 using NUnit.Framework;
 
 namespace CrownAndHearth.Tests
@@ -6,7 +6,7 @@ namespace CrownAndHearth.Tests
     public class TradeTests
     {
         [Test]
-        public void MarketIsPlacedOnFourTilesAndOnlySellsSurplus()
+        public void MarketIsPlaceableButDoesNotHireOrTrade()
         {
             var world = new World(7);
             int c = Defs.Start;
@@ -21,11 +21,9 @@ namespace CrownAndHearth.Tests
             world.ResAmt[Res.Food] = 120;
             world.ResAmt[Res.Flax] = 1;
             world.Tick();
-            Assert.That(market.FlaxSold, Is.EqualTo(1));
-            Assert.That(market.FoodSold, Is.EqualTo(4));
-            world.ResAmt[Res.Food] = 45;
-            world.Tick();
-            Assert.That(market.FoodSold, Is.Zero);
+            Assert.That(market.Workers, Is.Zero);
+            Assert.That(market.Jobs, Is.Zero);
+            Assert.That(world.ResAmt[Res.Flax], Is.EqualTo(1));
         }
 
         [Test]

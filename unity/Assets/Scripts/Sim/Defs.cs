@@ -25,7 +25,7 @@ namespace CrownAndHearth.Sim
         public const double SnowLevel = 12;
 
         // Economy
-        public const int HallCap = 6, Bunks = 6, WellR = 4, WorkR = 3, MarketR = 5, Storage = 400;
+        public const int HallCap = 6, Bunks = 6, WellR = 4, WorkR = 3, Storage = 400;
         public const double SawRate = 4, HallSaw = 1, HallYield = 0.5;
         public const int StumpDays = 8;
         public const int PlantEvery = 4, SaplingDays = 3 * 365, ForesterR = 4;
@@ -77,17 +77,17 @@ namespace CrownAndHearth.Sim
 
         public static readonly Dictionary<string, int> Jobs = new Dictionary<string, int>
         {
-            { "farm", 4 }, { "wood", 3 }, { "quarry", 3 }, { "mine", 3 }, { "market", 2 }, { "sawmill", 3 }, { "forester", 2 },
+            { "farm", 4 }, { "wood", 3 }, { "quarry", 3 }, { "mine", 3 }, { "sawmill", 3 }, { "forester", 2 },
         };
 
         public static readonly Dictionary<string, string> TradeOf = new Dictionary<string, string>
         {
-            { "farm", "farming" }, { "wood", "timber" }, { "forester", "timber" }, { "sawmill", "woodwork" }, { "quarry", "quarrying" }, { "mine", "mining" }, { "market", "trade" },
+            { "farm", "farming" }, { "wood", "timber" }, { "forester", "timber" }, { "sawmill", "woodwork" }, { "quarry", "quarrying" }, { "mine", "mining" },
         };
-        public static readonly string[] Trades = { "farming", "timber", "woodwork", "quarrying", "mining", "trade" };
+        public static readonly string[] Trades = { "farming", "timber", "woodwork", "quarrying", "mining" };
         public static readonly Dictionary<string, string> TradeNames = new Dictionary<string, string>
         {
-            { "farming", "Farming" }, { "timber", "Timber" }, { "woodwork", "Woodworking" }, { "quarrying", "Quarrying" }, { "mining", "Mining" }, { "trade", "Trade" },
+            { "farming", "Farming" }, { "timber", "Timber" }, { "woodwork", "Woodworking" }, { "quarrying", "Quarrying" }, { "mining", "Mining" },
         };
 
         /// <summary>Tree species: which tree_N variants each species uses, and its share of forests. tree_1 is retired (6 old oak takes its share).</summary>
@@ -106,6 +106,7 @@ namespace CrownAndHearth.Sim
         public static readonly int[,] FaceDirs = { { 0, 1 }, { -1, 0 }, { 0, -1 }, { 1, 0 } };
         public static readonly int[,] Nb = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
+        public static int PlacementSize(string type) => type == "wood" || type == "mine" || type == "quarry" ? 2 : DefaultSize(type);
         public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "market" || type == "farm") ? 2 : 1;
     }
 }

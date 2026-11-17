@@ -130,16 +130,17 @@ namespace CrownAndHearth.Sim
         /// so the adit runs into the hill and the mouth opens downhill. -1 when there is no high ground nearby (the door then faces
         /// the road like any building's).
         /// </summary>
-        public int MineFaceAt(int x, int y)
+        public int MineFaceAt(int x, int y, int size = 1)
         {
             double ux = 0, uy = 0, h0 = _genLevel[Tk(x, y)];
-            for (int j = y - WorkR; j <= y + WorkR; j++)
-                for (int i = x - WorkR; i <= x + WorkR; i++)
+            double cx = x + (size - 1) * 0.5, cy = y + (size - 1) * 0.5;
+            for (int j = y - WorkR; j <= y + size - 1 + WorkR; j++)
+                for (int i = x - WorkR; i <= x + size - 1 + WorkR; i++)
                 {
-                    if (!Inb(i, j) || (i == x && j == y)) continue;
+                    if (!Inb(i, j) || (i >= x && i < x + size && j >= y && j < y + size)) continue;
                     double rise = _genLevel[Tk(i, j)] - h0; if (rise <= 0) continue;
-                    double d = Math.Sqrt((i - x) * (i - x) + (j - y) * (j - y));
-                    ux += rise * (i - x) / d; uy += rise * (j - y) / d;   // points uphill
+                    double d = Noise.Hypot(i - cx, j - cy);
+                    ux += rise * (i - cx) / d; uy += rise * (j - cy) / d;   // points uphill
                 }
             if (ux * ux + uy * uy < 0.25) return -1;
             int best = -1; double bd = double.MinValue;
@@ -151,10 +152,15 @@ namespace CrownAndHearth.Sim
         public static (int x, int y) EntranceTile(int x, int y, int face) => (x + FaceDirs[face, 0], y + FaceDirs[face, 1]);
 
         /// <summary>A mine works only with a Hall-connected road (or the Hall) right in front of its entrance.</summary>
-        bool EntranceServed(int x, int y, int face, bool[] conn)
+        bool EntranceServed(Building mine, int face, bool[] conn)
         {
-            var (ex, ey) = EntranceTile(x, y, face);
-            return Inb(ex, ey) && (Grid[ey, ex] == Hall || (Grid[ey, ex] != null && Grid[ey, ex].T == "road" && conn[Tk(ex, ey)]));
+            foreach (var (x, y) in mine.Tiles())
+            {
+                var (ex, ey) = EntranceTile(x, y, face);
+                if (!Inb(ex, ey) || Grid[ey, ex] == mine) continue;
+                if (Grid[ey, ex] == Hall || (Grid[ey, ex]?.T == "road" && conn[Tk(ex, ey)])) return true;
+            }
+            return false;
         }
 
         // ---------- The mine's reach ----------
@@ -164,8 +170,8 @@ namespace CrownAndHearth.Sim
         bool PickOre(Building b, out int tx, out int ty, out int band, out int need)
         {
             tx = ty = band = need = -1; double best = 0;
-            for (int j = b.Y - WorkR; j <= b.Y + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + WorkR; i++)
+            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
+                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
                 {
                     if (!InMineReach(i, j)) continue;
                     for (int l = Bands; l >= 1; l--)
@@ -183,8 +189,8 @@ namespace CrownAndHearth.Sim
         int NextDig(Building b)
         {
             bool adit = false; int shaft = int.MaxValue;
-            for (int j = b.Y - WorkR; j <= b.Y + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + WorkR; i++)
+            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
+                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
                 {
                     if (!InMineReach(i, j)) continue;
                     for (int l = 1; l <= Bands; l++)
@@ -201,22 +207,22 @@ namespace CrownAndHearth.Sim
         int UnsurveyedInReach(Building b)
         {
             int n = 0;
-            for (int j = b.Y - WorkR; j <= b.Y + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + WorkR; i++)
+            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
+                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
                     if (InMineReach(i, j) && !Surveyed[Tk(i, j)]) n++;
             return n;
         }
         bool HasOreInReach(Building b)
         {
-            for (int j = b.Y - WorkR; j <= b.Y + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + WorkR; i++)
+            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
+                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
                     if (InMineReach(i, j) && HasKnownOre(i, j)) return true;
             return false;
         }
         bool TookOreInReach(Building b)
         {
-            for (int j = b.Y - WorkR; j <= b.Y + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + WorkR; i++)
+            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
+                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
                     if (InMineReach(i, j)) for (int l = 1; l <= Bands; l++) if (OreTaken.ContainsKey(OreKey(l, Tk(i, j)))) return true;
             return false;
         }
@@ -362,11 +368,11 @@ namespace CrownAndHearth.Sim
         public string MineStatus(Building b)
         {
             string pre = "";
-            int mf = MineFaceAt(b.X, b.Y);
+            int mf = MineFaceAt(b.X, b.Y, b.Sz);
             if (mf >= 0 && !b.Served)
             {
-                var (ex, ey) = EntranceTile(b.X, b.Y, mf);
-                pre = $"Needs a road to the Town Hall at its entrance (tile {ex},{ey}, on the side away from the hill)\n";
+                var (ex, ey) = EntranceTile(b.X + (mf == 3 ? b.Sz - 1 : 0), b.Y + (mf == 0 ? b.Sz - 1 : 0), mf);
+                pre = $"Needs a road to the Town Hall along its entrance edge (at {ex},{ey}, facing away from the hill)\n";
             }
             string s = pre + (b.Adit ? "Adit: driven into the high ground" + (b.AditShored ? ", shored" : $", UNSHORED (needs {AditWood} wood)")
                      : b.AditProg > 0 ? $"Adit: {100 * b.AditProg / AditWork}% driven" : "Adit: none");

@@ -17,7 +17,7 @@ namespace CrownAndHearth.Sim
         }
 
         // what the world looked like when the current step began
-        public struct Snapshot { public int Roads, ResByRoad, Houses, Farmland, Lumber, Lodges, Sawmills, Wells, Comm, Markets, Mining; }
+        public struct Snapshot { public int Roads, ResByRoad, Houses, Farmland, Lumber, Lodges, Sawmills, Wells, Comm, Silos, Mining; }
 
         // actions the world cannot show, reported by the game
         public bool Panned, Zoomed, Rotated, SpeedChanged, WorkersOpened, UndergroundViewed;
@@ -59,7 +59,7 @@ namespace CrownAndHearth.Sim
                 else if (b.T == "wood") n.Lodges++;
                 else if (b.T == "sawmill") n.Sawmills++;
                 else if (b.T == "well") n.Wells++;
-                else if (b.T == "market") n.Markets++;
+                else if (b.T == "silo" && b.Served) n.Silos++;
             }
             for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
@@ -136,9 +136,9 @@ namespace CrownAndHearth.Sim
                 Body = "Logs must be sawn into wood. The Town Hall saws 1 log a day at half yield; a Sawmill (X, 15 wood) saws 4 a day at full yield. " +
                        "Build one beside a road.",
                 Goal = "Build a Sawmill", Done = Grew(s => s.Sawmills, 1) },
-            new Step { Id = "services", Title = "Trade", Tool = "market",
-                Body = "Place a 2x2 market (5) beside a connected road. Staffed markets sell flax and surplus wheat for gold. Use a silo (J) to store more crops.",
-                Goal = "Build a Market", Done = Grew(s => s.Markets, 1) },
+            new Step { Id = "services", Title = "Crop storage", Tool = "silo",
+                Body = "Build a Silo (J) beside a connected road to store 180 more wheat and 60 more flax.",
+                Goal = "Build and connect a Silo", Done = Grew(s => s.Silos, 1) },
             new Step { Id = "stone", Title = "Stone and iron", Tool = "zoneMine",
                 Body = "Mining (7) zones go on rock and on hills and mountains.\n\n" +
                        "Stone: zone rock outcrops or a mountain's edge inside reach of a Quarry you place with Build (K); quarries dig hills down and cut into mountains.\n\n" +
