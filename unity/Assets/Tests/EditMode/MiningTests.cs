@@ -186,11 +186,13 @@ namespace CrownAndHearth.Tests
             CollectionAssert.AreEqual(before, after);
         }
 
-        [Test]
-        public void AMineAtTheFootSurveysDrivesAnAditAndBringsUpOre()
+        [TestCase(0)]
+        [TestCase(World.MaxDepth)]
+        public void AMineAtTheFootSurveysDrivesAnAditAndBringsUpOre(int depthLimit)
         {
             var (w, mine) = MineTown(wantOre: true);
             Assume.That(mine != null, "no lot at the foot of ore-bearing high ground that a road can reach");
+            w.SetShaftDepthLimit(depthLimit);
             w.CaveInRiskScale = 0;
             var showings = AllTiles().Where(t => w.DecoMap[t.y, t.x] == Deco.Ore).ToList();
             int zoned = Reach(mine.X, mine.Y).Count(t => w.ZoneMap[t.y, t.x] == Zone.Mine);
@@ -206,6 +208,7 @@ namespace CrownAndHearth.Tests
             Assert.IsTrue(sawDown, "nobody went underground");
             Assert.IsTrue(mine.Adit, "the adit was never driven");
             Assert.IsTrue(mine.AditShored, "with wood in store the adit is shored");
+            Assert.LessOrEqual(mine.Depth, depthLimit, "the mine stays within the town shaft limit");
             Assert.AreEqual(mine.Depth, mine.Shored, "with wood in store every shaft level is shored");
             var mineTaken = w.OreTaken.Where(kv => { int k = kv.Key % (N * N); return Math.Max(Math.Abs(k % N - mine.X), Math.Abs(k / N - mine.Y)) <= Defs.WorkR; }).ToList();
             Assert.Greater(mineTaken.Sum(kv => kv.Value), 0, "no ore was brought up");

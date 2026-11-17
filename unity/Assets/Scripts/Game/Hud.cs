@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 namespace CrownAndHearth.Game
 {
-    public class Hud : MonoBehaviour
+    public partial class Hud : MonoBehaviour
     {
         static readonly Color Panel = new Color(0.11f, 0.09f, 0.07f, 0.88f);
         static readonly Color Btn = new Color(0.29f, 0.22f, 0.15f, 1f);
@@ -115,6 +115,8 @@ namespace CrownAndHearth.Game
             ShowShelf(Shelf.Closed);
             MakeButton(bottom, "Workers", new Vector2(1, 0.5f), new Vector2(-60, 0), new Vector2(100, 34), ToggleWorkforce);
             MakeButton(bottom, "Tutorial", new Vector2(1, 0.5f), new Vector2(-170, 0), new Vector2(110, 34), () => TutorialOpen?.Invoke());
+
+            BuildTownMenus(root, bottom);
 
             // demand strip above the tool bar
             var dp = MakePanel(root, "Demand", new Vector2(0, 0), new Vector2(0, 0), new Vector2(8, 102), new Vector2(260, 129));
@@ -315,7 +317,13 @@ namespace CrownAndHearth.Game
                 hb.color = Color.Lerp(Btn, new Color(0.95f, 0.72f, 0.2f, 1f), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f));
         }
 
-        void ToggleWorkforce() { _workPanel.SetActive(!_workPanel.activeSelf); WorkforceToggled?.Invoke(_workPanel.activeSelf); }
+        void ToggleWorkforce()
+        {
+            bool opening = !_workPanel.activeSelf;
+            if (opening) ShowTownMenu(TownMenu.Closed);
+            _workPanel.SetActive(opening);
+            WorkforceToggled?.Invoke(opening);
+        }
 
         public void RefreshWorkforce(World w)
         {
