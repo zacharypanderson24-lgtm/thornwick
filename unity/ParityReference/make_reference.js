@@ -14,6 +14,13 @@ function stripOre(S) {
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (S.deco[y][x] === "ore") { S.deco[y][x] = null; S.zone[y][x] = null; }
   sim.invalidateCaches(S); sim.recalc(S, true);
 }
+// Farming is Unity's own too (farmhouses with zoned crop plots), so the scenarios also remove the starting farm and every Farmland
+// zone after laying out the town; food is topped up or scripted, so housing, markets, wood, stone, crews and development stay compared.
+function stripFarms(S) {
+  for (const b of S.blds.filter(b => b.t === "farm")) sim.remove(S, b.x, b.y);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (S.zone[y][x] === "farm") S.zone[y][x] = null;
+  sim.invalidateCaches(S); sim.recalc(S, true);
+}
 
 // Shape kept flat (arrays of plain objects) so Unity's JsonUtility can read it.
 const out = { N, hash: [], seeds: [] };
@@ -42,7 +49,7 @@ for (const seed of [7, 1234]) {
 {
   const { layout } = require('../../tests/lib.js');
   const S = sim.createWorld(7);
-  stripOre(S); layout(sim, S, 10);
+  stripOre(S); layout(sim, S, 10); stripFarms(S);
   const steps = [];
   for (let i = 0; i < 150; i++) {
     sim.recalc(S);
@@ -69,7 +76,7 @@ for (const seed of [7, 1234]) {
 {
   const { layout } = require('../../tests/lib.js');
   const S = sim.createWorld(7);
-  stripOre(S); layout(sim, S, 10);
+  stripOre(S); layout(sim, S, 10); stripFarms(S);
   // Layout towns never grow woodcutters on their own, so put two lodges on the first sites (scan order) that touch a road and have
   // 3+ marked trees in reach, at least 5 tiles apart. SimParityTests.PlaceLodges does the same.
   const C = sim.START, lodges = [];

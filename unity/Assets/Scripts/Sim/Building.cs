@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CrownAndHearth.Sim
 {
-    public class Building
+    public partial class Building
     {
         public string T;          // type: road, house, farm, wood, quarry, mine, market, sawmill, forester, well, barracks, hall
         public int X, Y;          // top-left (lowest x, lowest y) footprint tile

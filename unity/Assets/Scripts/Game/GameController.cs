@@ -5,6 +5,7 @@
 // painted zones beside roads when there is demand (World.Develop).
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using CrownAndHearth.Sim;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -47,7 +48,7 @@ namespace CrownAndHearth.Game
         int _ugLevel;   // underground view: 0 off, else the level shown (U cycles)
         float _dayAcc;
         ToolDef _tool = Tools[0];
-        Vector2Int? _hover, _roadAnchor, _lastPaint;
+        Vector2Int? _hover, _roadAnchor, _lastPaint, _zoneAnchor;   // _zoneAnchor: first corner of a zone rectangle
         ArtLibrary _art;
         GroundRenderer _ground; ObjectRenderer _objects; OverlayRenderer _overlay; AgentRenderer _agents;
         CameraRig _cam; Hud _hud;
@@ -72,19 +73,92 @@ namespace CrownAndHearth.Game
 
             _hud = new GameObject("HudRoot", typeof(Hud)).GetComponent<Hud>();
             _hud.Build(Tools);
+            _hud.BannerPicked += SetBanner;
             _hud.ToolPicked += id => SetTool(Tools.First(t => t.Id == id));
             _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); };
             _hud.RotatePicked += Rotate;
             _hud.PrioMoved += MovePrio;
+            _hud.SavePicked += SaveSettlement;
+            _hud.LoadPicked += LoadSettlement;
             _hud.SetTool(_tool.Id); _hud.SetSpeed(_speed);
             _hud.Toast("Welcome to Crown & Hearth. Right-drag or WASD to pan, scroll to zoom, Q/E to rotate.", 6);
         }
+
+        static string SavePath => Path.Combine(Application.persistentDataPath, "thornwick-save-1.json");
+
+        void SaveSettlement()
+        {
+            string temporary = SavePath + ".tmp";
+            try
+            {
+                Directory.CreateDirectory(Application.persistentDataPath);
+                File.WriteAllText(temporary, World.SaveJson());
+                if (File.Exists(SavePath)) File.Replace(temporary, SavePath, null);
+                else File.Move(temporary, SavePath);
+                _hud.Toast("Settlement saved.");
+            }
+            catch (System.Exception error)
+            {
+                _hud.Toast("Could not save: " + error.Message, 6);
+            }
+        }
+
+        void LoadSettlement()
+        {
+            if (!File.Exists(SavePath))
+            {
+                _hud.Toast("No saved settlement found.");
+                return;
+            }
+
+            World loaded;
+            try
+            {
+                loaded = World.LoadJson(File.ReadAllText(SavePath));
+            }
+            catch (System.Exception error)
+            {
+                _hud.Toast("Could not load: " + error.Message, 6);
+                return;
+            }
+
+            World = loaded;
+            SetBanner(ColorUtility.TryParseHtmlString(loaded.BannerColor ?? "", out _) ? loaded.BannerColor : null);
+            _dayAcc = 0;
+            _speed = 0;
+            _drawnVersion = -1;
+            _hover = _lastPaint = null;
+            SetTool(Tools[0]);
+            _hud.SetSpeed(_speed);
+            _cam.CenterOn(IsoView.TileCenter(World, loaded.Hall.X + 1, loaded.Hall.Y + 1, _rot));
+            _hud.Toast("Settlement loaded and paused.");
+        }
+
+        void SetBanner(string hex)
+        {
+            if (!string.IsNullOrEmpty(hex))
+            {
+                hex = hex.Trim();
+                if (!hex.StartsWith("#")) hex = "#" + hex;
+                if (hex.Length != 7 || !ColorUtility.TryParseHtmlString(hex, out _))
+                {
+                    _hud.Toast("Enter a six-digit hex color, such as #2A56C4.");
+                    return;
+                }
+            }
+            World.BannerColor = string.IsNullOrEmpty(hex) ? null : hex;
+            _art.SetBanner(World.BannerColor);
+            _hud.ShowBannerColor(World.BannerColor);
+            _drawnVersion = -1;
+        }
+
+        void OnDestroy() => _art?.SetBanner(null);
 
         void Update()
         {
             HandleKeys();
             bool overUi = _hud.PointerOverUi;
-            _cam.Tick(!overUi);
+            _cam.Tick(!overUi, !_hud.EditingBanner);
             HandleMouse(overUi);
 
             if (_speed > 0)
@@ -101,6 +175,7 @@ namespace CrownAndHearth.Game
                 _drawnVersion = World.Version; _drawnRot = _rot;
             }
             _agents.Draw(World, _rot, Mathf.Clamp01(_dayAcc), _cam.Zoom <= 0.5f);
+            _objects.RefreshCropStages(World.Day);
             DrawOverlay();
             _hud.SetResources(ResourceLine());
             _hud.SetDemand(DemandLine());
@@ -111,7 +186,7 @@ namespace CrownAndHearth.Game
 
         void HandleKeys()
         {
-            var kb = Keyboard.current; if (kb == null) return;
+            var kb = Keyboard.current; if (kb == null || _hud.EditingBanner) return;
             foreach (var t in Tools) if (kb[t.Hotkey].wasPressedThisFrame) SetTool(t);
             if (kb.escapeKey.wasPressedThisFrame) SetTool(Tools[0]);
             if (kb.qKey.wasPressedThisFrame) Rotate(-1);
@@ -127,7 +202,7 @@ namespace CrownAndHearth.Game
 
         void SetTool(ToolDef t)
         {
-            _tool = t; _roadAnchor = null; _hud.SetTool(t.Id);
+            _tool = t; _roadAnchor = null; _zoneAnchor = null; _hud.SetTool(t.Id);
             if (t.Build != null) _hud.Toast($"{Defs.Names[t.Build]}: {CostText(t.Build)}");
             if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + " " + World.Note[t.Zone], 6);
         }
@@ -173,7 +248,16 @@ namespace CrownAndHearth.Game
                 var r = World.Place(_tool.Build, h.x, h.y);
                 _hud.Toast(r.Ok ? $"Built a {Defs.Names[_tool.Build]}." : r.Reason);
             }
-            else if (_tool.Zone != Zone.None || _tool.Clear)
+            else if (_tool.Zone != Zone.None)
+            {
+                // zoning: the first click sets a corner, the second zones the whole rectangle
+                if (!mouse.leftButton.wasPressedThisFrame) return;
+                if (!_zoneAnchor.HasValue) { _zoneAnchor = h; _hud.Toast("Click the opposite corner to zone the rectangle (Esc cancels)."); return; }
+                var a = _zoneAnchor.Value; _zoneAnchor = null;
+                var (zoned, skipped, why) = World.ZoneRect(_tool.Zone, a.x, a.y, h.x, h.y);
+                _hud.Toast(zoned == 0 && skipped > 0 ? why : $"Zoned {zoned} tile{(zoned == 1 ? "" : "s")}." + (skipped > 0 ? $" {skipped} skipped: {why}" : ""), 5);
+            }
+            else if (_tool.Clear)
             {
                 if (_lastPaint == h) return;
                 _lastPaint = h;
@@ -227,7 +311,13 @@ namespace CrownAndHearth.Game
                     int sz = DefaultSize(_tool.Build);
                     for (int j = 0; j < sz; j++) for (int i = 0; i < sz; i++) _overlay.AddTile(World, h.x + i, h.y + j, _rot, ok ? Ok : Bad);
                 }
-                else if (_tool.Zone != Zone.None) _overlay.AddTile(World, h.x, h.y, _rot, World.ZoneCheck(_tool.Zone, h.x, h.y).Ok ? Ok : Bad);
+                else if (_tool.Zone != Zone.None)
+                {
+                    // the rectangle from the first corner to the cursor (or just the hovered tile before the first click)
+                    var a = _zoneAnchor ?? h;
+                    int x0 = Mathf.Min(a.x, h.x), x1 = Mathf.Max(a.x, h.x), y0 = Mathf.Min(a.y, h.y), y1 = Mathf.Max(a.y, h.y);
+                    for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) _overlay.AddTile(World, x, y, _rot, World.ZoneCheck(_tool.Zone, x, y).Ok ? Ok : Bad);
+                }
                 else _overlay.AddTile(World, h.x, h.y, _rot, Hover);
             }
             _overlay.Apply();

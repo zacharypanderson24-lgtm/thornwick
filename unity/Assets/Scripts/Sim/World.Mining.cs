@@ -57,17 +57,22 @@ namespace CrownAndHearth.Sim
         public readonly List<string> Events = new List<string>();
 
         // ---------- Geology ----------
-        void GenDeposits()
+        /// <summary>Lay down the deposits from vertex heights hv (the freshly generated terrain; a loaded save passes the seed's
+        /// regenerated terrain). placeShowings: also move the surface showings onto the hills (new worlds only, never on load).</summary>
+        void GenDeposits(int[] hv = null, bool placeShowings = true)
         {
+            hv = hv ?? Hv; int M = N + 1;
             _genLevel = new float[N * N];
             for (int b = 1; b <= Bands; b++) _oreCap[b] = new short[N * N];
             for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
                 {
-                    int k = Tk(x, y); double lvl = TileLevel(x, y); _genLevel[k] = (float)lvl;
-                    if (DecoMap[y, x] == Deco.Ore) DecoMap[y, x] = Deco.None;   // the browser's lowland showings; new ones are placed below
+                    int k = Tk(x, y);
+                    double lvl = (hv[y * M + x] + hv[y * M + x + 1] + hv[(y + 1) * M + x] + hv[(y + 1) * M + x + 1]) / 4.0;
+                    _genLevel[k] = (float)lvl;
+                    if (placeShowings && DecoMap[y, x] == Deco.Ore) DecoMap[y, x] = Deco.None;   // the browser's lowland showings; new ones are placed below
                     // ore needs high ground: none below level 0.75, rising to full strength on high hills, more again in mountains
-                    double high = Math.Max(0, Math.Min(1, (lvl - 0.75) / 2.25)) + (IsMountain(x, y) ? 0.35 : 0);
+                    double high = Math.Max(0, Math.Min(1, (lvl - 0.75) / 2.25)) + (lvl >= MountLevel ? 0.35 : 0);
                     if (high <= 0) continue;
                     double vein = Noise.VNoise(x * 0.3 + 90, y * 0.3 + 90, Seed + 13);
                     double f1 = high * (0.55 + vein * 0.6) - 0.55;
@@ -76,7 +81,7 @@ namespace CrownAndHearth.Sim
                     _oreCap[1][k] = Cap(f1, 0.6, 1); _oreCap[2][k] = Cap(f2, 0.6, 2); _oreCap[3][k] = Cap(f3, 0.65, 3);
                 }
             // surface showings: open hill tiles over a strong top band, thinned so they are hints, not a carpet
-            for (int y = 0; y < N; y++)
+            if (placeShowings) for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
                 {
                     int k = Tk(x, y);

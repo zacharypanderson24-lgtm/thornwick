@@ -15,10 +15,12 @@ _Last updated: 2026-11-16 (Claude Code, work crews)._
 | `claude/underground-mining` | Underground mining (Unity-only new mechanic): hidden deposits, surveying, shaft levels, timber supports, cave-ins, underground view. Cut from `unity-migration` `bb2df72`. Merged into `unity-migration` 2026-11-16. | `unity-migration` |
 | `claude/mine-ore-art` | ChatGPT's mine and ore art, mine entrances. Merged into `unity-migration` 2026-11-16 (`bf2968f`). | `unity-migration` |
 | `claude/mountain-ranges` | Mountain ranges: long, tall ranges across the map, relief by region. Cut from `unity-migration` `bf2968f`. Merged into `unity-migration` 2026-11-16. | `unity-migration` |
+| `claude/farming` | Farming: ChatGPT's farm stack merged in (saves, Texture Lab, banner colours, nature/woodcutter/mine/farm art, crop fields, barns, wheat), made to work with crews, mining and mountains, then 2x2 farmhouses with zoned 1x1 plots and click-click rectangle zoning. Not merged yet. | see milestone log |
 | `claude/settlement-port` | Claude Code's first working branch. [PR #1](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) merged into `unity-migration`. | `22058e9` |
-| `codex/unity-saves` | ChatGPT/Codex: Unity saves and browser save migration. Not merged yet. | `0d1552c` |
+| `codex/unity-saves` | ChatGPT/Codex: Unity saves and browser save migration. In `claude/farming` (via `codex/distinct-crop-textures`). | `0d1552c` |
 | `codex/terrain-occlusion` | ChatGPT/Codex: terrain drawn in depth order, resource view. Not merged yet. | `6490fe9` |
-| `codex/settlement-art-tools` | ChatGPT/Codex: banner colours, Texture Lab, nature sprites (contains `codex/unity-saves`). Not merged yet. | `b6b1505` |
+| `codex/settlement-art-tools` | ChatGPT/Codex: banner colours, Texture Lab, nature sprites (contains `codex/unity-saves`). In `claude/farming`. | `b6b1505` |
+| `codex/distinct-crop-textures` | ChatGPT/Codex: the farm stack (woodcutter, mine and farm art, crop growth, crop fields, detailed barns, wheat). In `claude/farming`. | `a41c20d` |
 | `chatgpt/game-vision-old-world` | ChatGPT: game vision and art direction docs. Not merged yet. | `a4ea49d` |
 
 ChatGPT and Claude Code each work on their own branch and merge into `unity-migration`. All branches above were cut from `22058e9`.
@@ -163,10 +165,27 @@ Upland unless the Inspector field is changed); rivers and valleys shaped by the 
 new test that compares with the browser must too. `GroundRenderer` picks snow with `TileLevel >= Defs.SnowLevel` (was `* LvlPx >= 44`);
 `codex/terrain-occlusion` rewrites that file, so keep the snow test when merging. Taller terrain means more ground can hide what is
 behind it, which makes the occlusion work more important.
+### Farming (branch `claude/farming`, not merged)
+
+Built on ChatGPT's crop fields (`codex/working-farm-fields`, `World.Farms.cs`), changed to Zach's design of 2026-11-16: farmhouses are
+2x2 and grow on Farmland zones; the 1x1 Farmland tiles on fertile soil around a farmhouse are its plots; zoning is click-click.
+
+| Feature | Tested (`FarmTests.cs`, 4 tests) | Play-tested |
+|---|---|---|
+| Farmhouses always 2x2 (ChatGPT's barn art); a Farmland lot needs room for unclaimed plots nearby | yes | yes |
+| Plots: open fertile Farmland tiles within 3 of a served farmhouse, owned by the nearest; each farmer tends 2 plots at 0.4 food a day (about 0.8 a farmer, as the old farms; ChatGPT's 1.5 a plot gave 4x) | yes | yes (starting farm: 8 plots, 3.2 food a day) |
+| New games start with a 2x2 farmhouse and 8 plots; the browser-compatible Classic world keeps the 1x1 farm | yes | yes |
+| Click-click zoning for every zone: first click sets a corner, the second zones the rectangle (`World.ZoneRect`), with a green/red preview of the rectangle and a toast of what was zoned and why tiles were skipped; Esc or a tool change cancels | rectangle rules yes | preview and toasts not clicked through in the Editor (no mouse automation); please try it |
+| Crop art: ChatGPT's wheat growth stages on plots | n/a | yes |
+
+Merged with it from ChatGPT: saves (fixed here: `crewAcc` dropped; terrain style, relief and all mining state saved; deposits regenerated
+on load from the seed, never moving saved showings; browser saves load as Classic terrain), Texture Lab, banner colours, nature,
+woodcutter, mine and farm art. Parity: the two day-by-day browser scenarios now also remove the starting farm and every Farmland zone
+(farming is Unity's own), which put ChatGPT's switched-off zone-development comparison back on.
 
 ## Not done yet (next candidates)
 
-1. Saves (the browser uses localStorage `thornwick-save-1`; must load old saves).
+1. Saves: built by ChatGPT, in `claude/farming` (see above).
 2. Hills hiding objects behind them (all ground currently draws before all objects).
 3. Info overlay (V: fertility and deposits), banner tint, texture lab.
 4. Art: ChatGPT art for the placeholder slots `farm`, `wood`, `sawmill`, `forester`, `quarry`, `market`, `well`,
