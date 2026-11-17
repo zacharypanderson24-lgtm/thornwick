@@ -143,7 +143,7 @@ namespace CrownAndHearth.Tests
         }
 
         /// <summary>tests/lib.js layout(): a comb of roads around the Town Hall with zones painted beside them.</summary>
-        static void Layout(World w, int R)
+        internal static void Layout(World w, int R)
         {
             int N = Defs.N, C = Defs.Start, gap = 4;
             bool Free(int x, int y) => World.Inb(x, y) && w.Grid[y, x] == null && !w.HasTree(x, y) && !w.IsSolid(x, y);
@@ -172,7 +172,7 @@ namespace CrownAndHearth.Tests
         {
             var dev = Ref.develop;
             var w = new World(dev.seed);
-            Layout(w, dev.R);
+            Layout(w, dev.R); StripOre(w);
             int total = 0;
             for (int i = 0; i < dev.steps.Length; i++)
             {
@@ -236,7 +236,7 @@ namespace CrownAndHearth.Tests
             var tc = Ref.ticks;
             Assert.IsNotNull(tc, "reference.json has no tick scenario. Run node unity/ParityReference/make_reference.js from the repo root.");
             var w = new World(tc.seed);
-            Layout(w, tc.R);
+            Layout(w, tc.R); StripOre(w);
             Assert.AreEqual(tc.lodges, PlaceLodges(w), "woodcutter lodge sites");
             var keys = new[] { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Gold };
             bool sawWork = false, sawFolkOut = false;
@@ -259,6 +259,18 @@ namespace CrownAndHearth.Tests
                 sawFolkOut |= System.Text.RegularExpressions.Regex.IsMatch(e.folk, @"\dk\d");
             }
             Assert.IsTrue(sawWork && sawFolkOut, "the scenario should have crews at work and villagers walking");
+        }
+
+        /// <summary>
+        /// Mining is underground in Unity but still surface ore in the browser, so the day-by-day scenarios remove every ore showing and its
+        /// zone first (make_reference.js stripOre does the same). Mining itself is covered by MiningTests.
+        /// </summary>
+        static void StripOre(World w)
+        {
+            for (int y = 0; y < Defs.N; y++)
+                for (int x = 0; x < Defs.N; x++)
+                    if (w.DecoMap[y, x] == Deco.Ore) { w.DecoMap[y, x] = Deco.None; w.ZoneMap[y, x] = Zone.None; }
+            w.Touch(); w.Recalc();
         }
 
         static int CountTrees(World w) { int n = 0; foreach (var d in w.DecoMap) if (d == Deco.Tree) n++; return n; }

@@ -7,6 +7,13 @@ const { loadSim } = require('../../tests/lib.js');
 const sim = loadSim(path.join(__dirname, '../../src/sim.js'));
 const h = sim.__i.hash2;
 const N = sim.N;
+// Underground mining is Unity-only (unity/Assets/Scripts/Sim/World.Mining.cs): the browser still mines surface ore tiles, so the
+// scenarios below remove every ore showing (and its zone) before they run. Wood, stone, development, crews, townsfolk and the
+// economy stay compared day by day; SimParityTests.StripOre does the same on the C# side.
+function stripOre(S) {
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (S.deco[y][x] === "ore") { S.deco[y][x] = null; S.zone[y][x] = null; }
+  sim.invalidateCaches(S); sim.recalc(S, true);
+}
 
 // Shape kept flat (arrays of plain objects) so Unity's JsonUtility can read it.
 const out = { N, hash: [], seeds: [] };
@@ -35,7 +42,7 @@ for (const seed of [7, 1234]) {
 {
   const { layout } = require('../../tests/lib.js');
   const S = sim.createWorld(7);
-  layout(sim, S, 10);
+  layout(sim, S, 10); stripOre(S);
   const steps = [];
   for (let i = 0; i < 150; i++) {
     sim.recalc(S);
@@ -62,7 +69,7 @@ for (const seed of [7, 1234]) {
 {
   const { layout } = require('../../tests/lib.js');
   const S = sim.createWorld(7);
-  layout(sim, S, 10);
+  layout(sim, S, 10); stripOre(S);
   // Layout towns never grow woodcutters on their own, so put two lodges on the first sites (scan order) that touch a road and have
   // 3+ marked trees in reach, at least 5 tiles apart. SimParityTests.PlaceLodges does the same.
   const C = sim.START, lodges = [];

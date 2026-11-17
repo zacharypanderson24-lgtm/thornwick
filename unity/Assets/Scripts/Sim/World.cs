@@ -81,6 +81,7 @@ namespace CrownAndHearth.Sim
             var hv = GenHeights(Seed);
             Array.Copy(hv, Hv, hv.Length);
             for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) GenTile(x, y);
+            GenDeposits();   // underground ore, World.Mining.cs
         }
 
         // ---------- Mountains ----------

@@ -135,23 +135,5 @@ namespace CrownAndHearth.Sim
             }
             return got;
         }
-
-        double MineOre(int x, int y, int r, double amount)
-        {
-            double got = 0;
-            for (int n = 0; n < 4 && amount > 1e-9; n++)
-            {
-                (int x, int y)? best = null; int bd = int.MaxValue;
-                for (int j = y - r; j <= y + r; j++) for (int i = x - r; i <= x + r; i++)
-                    if (Inb(i, j) && DecoMap[j, i] == Deco.Ore) { int dd = (i - x) * (i - x) + (j - y) * (j - y); if (dd < bd) { bd = dd; best = (i, j); } }
-                if (best == null) break;
-                var (bx, by) = best.Value; int k = Tk(bx, by);
-                double e = Math.Min(amount, OreLeft(bx, by));
-                OreLeftMap[k] = OreLeft(bx, by) - e; got += e; amount -= e;
-                if (OreLeftMap[k] <= 1e-9) { DecoMap[by, bx] = Deco.None; ZoneMap[by, bx] = Zone.None; OreLeftMap.Remove(k); }
-                Touch();
-            }
-            return got;
-        }
     }
 }

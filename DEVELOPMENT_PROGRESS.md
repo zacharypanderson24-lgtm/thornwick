@@ -12,6 +12,7 @@ _Last updated: 2026-11-16 (Claude Code, work crews)._
 | `main` | Browser prototype (JavaScript). Untouched by the migration. | `4d99fca` |
 | `unity-migration` | Integration branch for the Unity port, shared by Claude Code and ChatGPT/Codex. Contains the playable port (PR #1) and the walking work crews. | merge of `claude/port-work-crews` |
 | `claude/port-work-crews` | Walking work crews and townsfolk (`sim_crews.js`). Merged into `unity-migration` 2026-11-16. | `unity-migration` |
+| `claude/underground-mining` | Underground mining (Unity-only new mechanic): hidden deposits, surveying, shaft levels, timber supports, cave-ins, underground view. Cut from `unity-migration` `bb2df72`. Not merged yet. | see milestone log |
 | `claude/settlement-port` | Claude Code's first working branch. [PR #1](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) merged into `unity-migration`. | `22058e9` |
 | `codex/unity-saves` | ChatGPT/Codex: Unity saves and browser save migration. Not merged yet. | `0d1552c` |
 | `codex/terrain-occlusion` | ChatGPT/Codex: terrain drawn in depth order, resource view. Not merged yet. | `6490fe9` |
@@ -34,6 +35,15 @@ When `codex/unity-saves` (and `codex/settlement-art-tools`, which contains it) t
 
 `codex/terrain-occlusion` and `chatgpt/game-vision-old-world` merge cleanly (checked with a trial merge).
 
+### Note for ChatGPT/Codex: saves and underground mining (`claude/underground-mining`)
+
+Mining state that saves must carry once both branches are in: `World.Surveyed` (bool per tile), `World.OreTaken`
+(level * N * N + y * N + x -> ore taken), `World.MinerDeaths`, `World.CaveIns`, and per mine `Building.Depth`, `Shored`, `DigProg`,
+`Closed`, `CaveIns`. Deposit sizes are NOT saved: `GenDeposits` regenerates them from the seed and the starting terrain heights.
+Browser saves have none of this; importing one should leave everything unsurveyed with shafts at level 0.
+The underground view only adds tiles to `OverlayRenderer` from `GameController.DrawUnderground`, so it should sit beside
+the resource view (V) from `codex/terrain-occlusion` without conflict beyond `GameController.cs` merge lines.
+
 ## Pull requests
 
 | PR | From → into | Status |
@@ -53,13 +63,16 @@ When `codex/unity-saves` (and `codex/settlement-art-tools`, which contains it) t
 | `2ae2883` | `unity-migration` | Merge of PR #1: the playable port is now on the integration branch. |
 | `22058e9` | both | Records the merge in this file. |
 | `0a2b378` | `claude/port-work-crews` | Walking work crews and townsfolk ported (`World.Crews.cs`), drawn in Unity (`AgentRenderer.cs`); 300-day tick parity test (12 tests). |
-| _this commit_ | `claude/port-work-crews` | Branch map and merge notes for ChatGPT/Codex; then merged into `unity-migration`. |
+| `aad0ca9` | `claude/port-work-crews` | Branch map and merge notes for ChatGPT/Codex. |
+| `bb2df72` | `unity-migration` | Merge of `claude/port-work-crews` (12/12 EditMode tests in batch mode on the merge). |
+| _this commit_ | `claude/underground-mining` | Underground mining (`World.Mining.cs`), underground view (U), 10 mining tests; ore removed from the two day-by-day parity scenarios (22 tests). |
 
 ## Implemented and tested
 
-Tested means covered by `unity/Assets/Tests/EditMode/SimParityTests.cs` (12 tests, all passing on 2026-11-16 on `unity-migration` after the crews merge) and play-tested in
+Tested means covered by `unity/Assets/Tests/EditMode/SimParityTests.cs` (12 tests, all passing on 2026-11-16 on `unity-migration` after the crews merge, and on `claude/underground-mining`) and play-tested in
 the Editor (no console errors or warnings). Parity tests compare against the real browser code through
-`unity/ParityReference/make_reference.js`.
+`unity/ParityReference/make_reference.js`. On `claude/underground-mining` the two day-by-day scenarios remove every ore
+showing first (mining no longer matches the browser on purpose); terrain tests still compare ore tiles.
 
 | Feature | Parity-tested against the JS | Play-tested |
 |---|---|---|
@@ -79,6 +92,28 @@ the Editor (no console errors or warnings). Parity tests compare against the rea
 | 4-way camera rotation (Q/E) with per-view building art, zoom ladder 0.25x-5x, pan, height-aware tile picking | n/a | yes |
 | HUD (uGUI): resources and rates, speed, rotation, tools, tile info, demand strip, zone notes, Workforce priorities | n/a | yes |
 | Art pipeline: `../assets` imported (magenta keyed out, ground tiles shrunk to 32x16), placeholders for missing art | n/a | yes |
+
+### Underground mining (Unity-only, branch `claude/underground-mining`, not merged)
+
+A new mechanic, not a port: the browser still mines surface ore tiles. Design: `DESIGN_TERRAIN.md` section 3 and Zach's mining
+decisions, plus choices made on 2026-11-16: miners survey Mining zones (no prospector building), a cave-in closes the mine and can
+kill a miner, and the old ore tiles stay as surface showings. All numbers are first guesses for tuning (`World.Mining.cs` top).
+
+| Feature | Tested (`MiningTests.cs`, 10 tests) | Play-tested |
+|---|---|---|
+| Hidden deposits at 3 levels, from the seed; clustered round the showings; richer deeper and under hills and mountains | yes | yes (underground view) |
+| Mining zones on rock (quarries), showings and open ground; not on forest | yes | yes |
+| Mines grow on a zone with a showing or known ore, or as a gamble on 3+ unsurveyed open tiles | indirectly (mines grow in the test towns) | yes |
+| Miners walk out and survey zone tiles (reveals all levels); a barren zone is reported | yes | yes |
+| Shaft dug level by level (12 / 24 / 40 worker-days); ore brought up from the deepest worked level, loads 4 / 6 / 8 | yes | yes (levels 1-3 reached) |
+| Timber supports (6 / 10 / 16 wood a level) taken from the store as soon as there is wood | yes | yes |
+| Cave-ins: risk x level x crowding, x0.15 when shored; mine closed 20 days, supports smashed, 60% (unshored) / 25% (shored) chance a miner dies | yes | yes (an unshored level-3 cave-in killed a miner while wood was short) |
+| Underground view: U cycles levels 1-3 / off (orange = known ore, grey = surveyed empty, blue = zone not surveyed, yellow = shaft) | n/a | yes |
+| Mine info: shaft depth, shored levels, digging progress, repairs, unsurveyed tiles, worked out / no ore found | n/a | yes |
+
+Seen in play: supports compete with building for wood (the test town sat at 2-9 wood while mines shored levels), which made an
+unshored cave-in happen. Intended pressure, but worth tuning (a wood reserve for supports, or a player toggle). Not saved yet (see the
+note for ChatGPT/Codex above). Smelting (ore + charcoal) and other ores (gold, gems) are not built.
 
 ## Not done yet (next candidates)
 

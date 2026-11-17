@@ -19,6 +19,12 @@ namespace CrownAndHearth.Sim
         public double Eff;        // workers / jobs, derived each recalc
         public readonly List<Worker> Crew = new List<Worker>();   // work crew (wood, quarry, mine); runtime only, never saved
         internal CrewReach Reach;  // cached walkable area around the building (World.Crews.cs)
+        // mines (World.Mining.cs); saved state once saves land
+        public int Depth;          // shaft levels dug, 0..World.MaxDepth
+        public int Shored;         // levels shored with timber, 0..Depth
+        public int DigProg;        // worker-days dug towards the next level
+        public int Closed;         // days of repairs left after a cave-in
+        public int CaveIns;
 
         public int Jobs => Defs.Jobs.TryGetValue(T, out var j) ? Noise.JsRound(j * (Sz == 2 ? 2.5 : 1)) : 0;
         public double Food => 3 * (Sz == 2 ? 2.6 : 1);
