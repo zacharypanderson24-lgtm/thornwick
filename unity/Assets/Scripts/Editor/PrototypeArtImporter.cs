@@ -259,6 +259,7 @@ namespace CrownAndHearth.EditorTools
             ti.alphaIsTransparency = true;
             string slot = Path.GetFileNameWithoutExtension(assetPath);
             ti.isReadable = slot == "hall" || slot == "barracks" ||
+                slot.StartsWith("farm_", StringComparison.Ordinal) || slot.StartsWith("farm2_", StringComparison.Ordinal) ||
                 slot.StartsWith("hall_", StringComparison.Ordinal) || slot.StartsWith("barracks_", StringComparison.Ordinal);
             ti.wrapMode = TextureWrapMode.Clamp;
             ti.npotScale = TextureImporterNPOTScale.None;

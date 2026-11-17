@@ -8,6 +8,7 @@ namespace CrownAndHearth.Game
     {
         readonly Dictionary<string, Sprite> _sprites = new Dictionary<string, Sprite>();
         readonly Dictionary<Sprite, Sprite> _banners = new Dictionary<Sprite, Sprite>();
+        readonly Dictionary<(Sprite, int, int), Sprite> _farmStages = new Dictionary<(Sprite, int, int), Sprite>();
         Color32? _bannerColor;
 
         public Texture2D GroundAtlas { get; }
@@ -31,11 +32,29 @@ namespace CrownAndHearth.Game
                 return source;
             if (_banners.TryGetValue(source, out var tinted)) return tinted;
 
+            tinted = CreateVariant(source, pixels => BannerTint.Apply(pixels, (int)source.rect.width, _bannerColor.Value));
+            _banners[source] = tinted;
+            return tinted;
+        }
+
+        public Sprite Farm(string slot, int view, int crop, int stage)
+        {
+            var source = Building(slot, view);
+            if (source == null || !source.texture.isReadable) return source;
+            var key = (source, crop, stage);
+            if (_farmStages.TryGetValue(key, out var sprite)) return sprite;
+            sprite = CreateVariant(source, pixels => FarmCropArt.Apply(pixels, crop, stage));
+            _farmStages[key] = sprite;
+            return sprite;
+        }
+
+        static Sprite CreateVariant(Sprite source, System.Action<Color32[]> recolor)
+        {
             var rect = source.rect;
             int width = (int)rect.width, height = (int)rect.height;
             var original = source.texture.GetPixels((int)rect.x, (int)rect.y, width, height);
             var pixels = System.Array.ConvertAll(original, pixel => (Color32)pixel);
-            BannerTint.Apply(pixels, width, _bannerColor.Value);
+            recolor(pixels);
             var texture = new Texture2D(width, height, TextureFormat.RGBA32, false)
             {
                 filterMode = FilterMode.Point,
@@ -44,10 +63,8 @@ namespace CrownAndHearth.Game
             texture.SetPixels32(pixels);
             texture.Apply(false, true);
             var pivot = new Vector2(source.pivot.x / width, source.pivot.y / height);
-            tinted = Sprite.Create(texture, new Rect(0, 0, width, height), pivot,
+            return Sprite.Create(texture, new Rect(0, 0, width, height), pivot,
                 source.pixelsPerUnit, 0, SpriteMeshType.FullRect);
-            _banners[source] = tinted;
-            return tinted;
         }
 
         public void SetBanner(string hex)
@@ -61,6 +78,17 @@ namespace CrownAndHearth.Game
             }
             _banners.Clear();
             _bannerColor = next;
+        }
+
+        public void Dispose()
+        {
+            SetBanner(null);
+            foreach (var sprite in _farmStages.Values)
+            {
+                Object.Destroy(sprite.texture);
+                Object.Destroy(sprite);
+            }
+            _farmStages.Clear();
         }
     }
 }

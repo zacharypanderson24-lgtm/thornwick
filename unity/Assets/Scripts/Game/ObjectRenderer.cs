@@ -13,12 +13,16 @@ namespace CrownAndHearth.Game
         Material _mat;
         readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
         int _used;
+        int _farmDay;
+        readonly List<(SpriteRenderer renderer, string slot, int view, int crop, int offset)> _farms = new();
 
         public void Init(ArtLibrary art, Material mat) { _art = art; _mat = mat; }
 
         public void Build(World w, int rot)
         {
             _used = 0;
+            _farms.Clear();
+            _farmDay = w.Day;
             for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
                 {
@@ -68,7 +72,13 @@ namespace CrownAndHearth.Game
             var sprite = _art.Building(SlotName(b), view);
             if (sprite == null) return;
             int lvl = IsoView.VhView(w, front.x + 1, front.y + 1, rot);
-            Put(sprite, IsoView.VertexPos(front.x + 1, front.y + 1, lvl), IsoView.SortOrder(front.x, front.y));
+            var renderer = Put(sprite, IsoView.VertexPos(front.x + 1, front.y + 1, lvl), IsoView.SortOrder(front.x, front.y));
+            if (b.T != "farm") return;
+            int crop = (int)(Noise.Hash2(b.X, b.Y, w.Seed) * FarmCropArt.CropCount);
+            int offset = (int)(Noise.Hash2(b.X, b.Y, w.Seed + 17) * FarmCropArt.StageCount * FarmCropArt.DaysPerStage);
+            string slot = SlotName(b);
+            _farms.Add((renderer, slot, view, crop, offset));
+            renderer.sprite = _art.Farm(slot, view, crop, GrowthStage(w.Day, offset));
         }
 
         /// <summary>The art slot for a building (JS slotName + the hut-variant rule).</summary>
@@ -88,7 +98,22 @@ namespace CrownAndHearth.Game
             return b.T;
         }
 
-        void Put(Sprite s, Vector3 pos, int order)
+        static int GrowthStage(int day, int offset) =>
+            ((day - 1 + offset) / FarmCropArt.DaysPerStage) % FarmCropArt.StageCount;
+
+        public void RefreshFarmStages(int day)
+        {
+            if (day == _farmDay) return;
+            foreach (var farm in _farms)
+            {
+                int stage = GrowthStage(day, farm.offset);
+                if (stage != GrowthStage(_farmDay, farm.offset))
+                    farm.renderer.sprite = _art.Farm(farm.slot, farm.view, farm.crop, stage);
+            }
+            _farmDay = day;
+        }
+
+        SpriteRenderer Put(Sprite s, Vector3 pos, int order)
         {
             SpriteRenderer r;
             if (_used < _pool.Count) r = _pool[_used];
@@ -103,6 +128,7 @@ namespace CrownAndHearth.Game
             _used++;
             r.sprite = s; r.sortingOrder = order; r.enabled = true;
             r.transform.localPosition = pos;
+            return r;
         }
     }
 }
