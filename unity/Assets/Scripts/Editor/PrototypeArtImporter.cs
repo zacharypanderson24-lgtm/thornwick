@@ -152,7 +152,7 @@ namespace CrownAndHearth.EditorTools
             switch (name)
             {
                 case "grassfert_0": case "grassfert_1": b = Hex("#6B9A3E"); d = Hex("#5A4A2E"); l = Hex("#86B055"); break;
-                case "rock": b = Hex("#858A9C"); d = Hex("#666B7C"); l = Hex("#9DA2B2"); break;
+                case "rock": b = Hex("#828783"); d = Hex("#565C5C"); l = Hex("#A6A59A"); break;
                 case "snow": b = Hex("#E6EBF2"); d = Hex("#C9D2DF"); l = Hex("#FFFFFF"); break;
                 case "road": b = Hex("#9C7A4E"); d = Hex("#7E6040"); l = Hex("#B08F60"); break;
                 case "white": b = d = l = new Color32(255, 255, 255, 255); break;
@@ -162,6 +162,14 @@ namespace CrownAndHearth.EditorTools
             for (int y = 0; y < 16; y++) for (int x = 0; x < 32; x++)
             {
                 double r = Sim.Noise.Hash2(x, y, 900 + salt);
+                if (name == "rock" || name == "snow")
+                {
+                    double grain = Sim.Noise.VNoise(x * 0.31, y * 0.43, 730 + salt);
+                    double strata = (y + x * 0.29 + grain * 2.5) % 4;
+                    cell[y * 32 + x] = strata < 0.85 && grain < 0.63 ? d :
+                        strata < 1.65 || r > 0.94 ? l : b;
+                    continue;
+                }
                 cell[y * 32 + x] = r < 0.08 ? d : r > 0.95 ? l : b;
             }
             return cell;

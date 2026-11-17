@@ -13,7 +13,6 @@ namespace CrownAndHearth.Sim
         public int Lvl = 1;       // house level (2 with a well in range)
         public int Var;           // hut look 1..8, sticky
         public int Face = -1;     // door direction (-1 = not decided yet)
-        public bool Covered;      // house within a served market's reach
         public bool Zoned;
         public int Workers;       // derived each recalc
         public double Eff;        // workers / jobs, derived each recalc
@@ -28,13 +27,11 @@ namespace CrownAndHearth.Sim
         public int Closed;         // days of repairs left after a cave-in
         public int CaveIns;
 
-        public double FlaxSold, FoodSold;
 
-        public int Jobs => Defs.Jobs.TryGetValue(T, out var j) ? Noise.JsRound(j * (Sz == 2 ? 2.5 : 1)) : 0;
+        public int Jobs => Defs.Jobs.TryGetValue(T, out var j) ? Noise.JsRound(j * (Sz == 2 && T == "farm" ? 2.5 : 1)) : 0;
         public double Food => 3 * (Sz == 2 ? 2.6 : 1);
-        public int MarketRange => Sz == 2 ? 7 : 5;
         public int Capacity => Sz == 2 ? Defs.HouseCap2[Lvl] : Defs.HouseCap[Lvl];
-        public string Name => Sz == 2 && T == "house" ? "Large House" : Sz == 2 && T == "farm" ? "Large Farm" : Sz == 2 && T == "market" ? "Bazaar"
+        public string Name => Sz == 2 && T == "house" ? "Large House" : Sz == 2 && T == "farm" ? "Large Farm"
             : (Defs.Names.TryGetValue(T, out var n) ? n : T);
 
         /// <summary>Footprint tiles (JS: tilesOf).</summary>

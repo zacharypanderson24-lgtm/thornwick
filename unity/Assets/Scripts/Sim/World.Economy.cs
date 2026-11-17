@@ -49,7 +49,7 @@ namespace CrownAndHearth.Sim
             // economy
             double eat = (Peasants + Soldiers * 1.5) * 0.2;
             ResAmt[Res.Food] += food - eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
-            ResAmt[Res.Gold] += employed * 0.12 + SellCrops() - Soldiers * 0.1;
+            ResAmt[Res.Gold] += employed * 0.12 - Soldiers * 0.1;
             Starving = false;
             if (ResAmt[Res.Food] <= 0)
             {

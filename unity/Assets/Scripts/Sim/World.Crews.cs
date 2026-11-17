@@ -103,17 +103,17 @@ namespace CrownAndHearth.Sim
         /// <summary>Nearest-by-walking marked tile within WorkR of the building (JS crewTarget). Fills path (building -> standing tile).</summary>
         bool CrewTarget(Building b, Deco kind, int salt, List<int> used, List<int> path, out int tx, out int ty, bool survey = false)
         {
-            var R = Reach(b); var dist = R.Dist; int ox = R.Ox, oy = R.Oy, s0 = b.Y * N + b.X;
+            var R = Reach(b); var dist = R.Dist; int ox = R.Ox, oy = R.Oy;
             int bi = -1, bj = -1, bn = -1; double bs = 1e9;
-            for (int j = b.Y - WorkR; j <= b.Y + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + WorkR; i++)
+            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
+                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
                 {
                     if (!Inb(i, j) || !(survey ? ZoneMap[j, i] == Zone.Mine && !Surveyed[Tk(i, j)] && Claimed(i, j) : CrewMatch(kind, i, j))) continue;
                     for (int k = 0; k < 4; k++)
                     {
                         int nx = i + Nb[k, 0], ny = j + Nb[k, 1]; if (!Inb(nx, ny)) continue;
                         int ni = ny * N + nx, dd = dist[(ny - oy) * ReachW + (nx - ox)];
-                        if (dd < 0 || ni == s0) continue;   // workers step out of the building, never work on its roof
+                        if (dd < 0 || Grid[ny, nx] == b) continue;   // workers step out of the building, never work on its roof
                         double sc = dd + Noise.Hash2(i, j, 31 + salt) * 0.9 + (used.Contains(ni) ? 2.5 : 0);   // spread over equally near tiles
                         if (sc < bs) { bs = sc; bi = i; bj = j; bn = ni; }
                     }
@@ -236,7 +236,7 @@ namespace CrownAndHearth.Sim
             foreach (var b in Blds)
             {
                 if (b.T == "house" && b.Served && RoadBeside(b) >= 0) { _folkHouses.Add(b); _folkHouseSet.Add(b); }
-                if (b.T == "market" || b.T == "well" || b.T == "hall" || b.T == "sawmill" || b.T == "barracks") _folkPois.Add(b);
+                if (b.T == "well" || b.T == "hall" || b.T == "sawmill" || b.T == "barracks") _folkPois.Add(b);
             }
         }
 

@@ -18,8 +18,8 @@ namespace CrownAndHearth.Sim
     /// <summary>Derived totals (JS: S.d).</summary>
     public class Derived
     {
-        public int Civ, Bunks, Jobs, Idle, Employed, Markets, HouseCap, CovCap;
-        public double MkEff, Cov, Ratio;
+        public int Civ, Bunks, Jobs, Idle, Employed;
+        public double Ratio;
         public Dictionary<string, (int workers, int jobs, int blds, int shortCount)> Work = new Dictionary<string, (int, int, int, int)>();
         public bool[] Conn = new bool[N * N];
     }
@@ -65,14 +65,14 @@ namespace CrownAndHearth.Sim
 
         public Result CanAfford(string type)
         {
-            foreach (var kv in CostOf(type, DefaultSize(type))) if (ResAmt[kv.Key] < kv.Value) return Result.No($"Not enough {kv.Key.ToString().ToLower()} (need {kv.Value})");
+            foreach (var kv in CostOf(type, PlacementSize(type))) if (ResAmt[kv.Key] < kv.Value) return Result.No($"Not enough {kv.Key.ToString().ToLower()} (need {kv.Value})");
             return Result.Yes();
         }
 
         public Result CanPlace(string type, int x, int y)
         {
             if (type == "well") return Result.No("Wells are unavailable for new construction.");
-            var fp = new Building { T = type, X = x, Y = y, Sz = DefaultSize(type) };
+            var fp = new Building { T = type, X = x, Y = y, Sz = PlacementSize(type) };
             foreach (var (tx, ty) in fp.Tiles())
             {
                 if (!Inb(tx, ty)) return Result.No("Outside the map");
@@ -93,8 +93,8 @@ namespace CrownAndHearth.Sim
         {
             var c = CanPlace(type, x, y);
             if (!c.Ok) return c;
-            foreach (var kv in CostOf(type, DefaultSize(type))) ResAmt[kv.Key] -= kv.Value;
-            AddBld(type, x, y);
+            foreach (var kv in CostOf(type, PlacementSize(type))) ResAmt[kv.Key] -= kv.Value;
+            AddBld(type, x, y, PlacementSize(type));
             Recalc();
             return Result.Yes();
         }
@@ -282,14 +282,13 @@ namespace CrownAndHearth.Sim
             {
                 if (b.T == "road") { b.Served = conn[Tk(b.X, b.Y)]; continue; }
                 // a mine's entrance faces away from the high ground it tunnels into, and needs its road right there (World.Mining.cs)
-                int mf = b.T == "mine" ? MineFaceAt(b.X, b.Y) : -1;
-                if (mf >= 0) { b.Face = mf; b.Served = EntranceServed(b.X, b.Y, mf, conn); continue; }
+                int mf = b.T == "mine" ? MineFaceAt(b.X, b.Y, b.Sz) : -1;
+                if (mf >= 0) { b.Face = mf; b.Served = EntranceServed(b, mf, conn); continue; }
                 b.Face = FaceOf(b);
                 b.Served = b.T == "hall" || ServedAt(b, conn);
             }
             var wells = Blds.Where(b => b.T == "well").ToList();
-            var markets = Blds.Where(b => b.T == "market" && b.Served).ToList();
-            int civ = HallCap, bunks = 0, jobs = 0, nMarkets = 0, houseCap = 0, covCap = 0;
+            int civ = HallCap, bunks = 0, jobs = 0;
             foreach (var b in Blds)
             {
                 if (b.T == "house")
@@ -297,12 +296,11 @@ namespace CrownAndHearth.Sim
                     b.Lvl = b.Served && wells.Any(w => Building.Cheb(w, b) <= WellR) ? 2 : 1;
                     if (b.Served)
                     {
-                        b.Covered = markets.Any(m => Building.Cheb(m, b) <= m.MarketRange);
-                        civ += b.Capacity; houseCap += b.Capacity; if (b.Covered) covCap += b.Capacity;
+                        civ += b.Capacity;
                     }
                 }
                 else if (b.T == "barracks") { if (b.Served) bunks += Bunks; }
-                else if (Defs.Jobs.ContainsKey(b.T) && b.Served) { jobs += b.Jobs; if (b.T == "market") nMarkets++; }
+                else if (Defs.Jobs.ContainsKey(b.T) && b.Served) jobs += b.Jobs;
             }
 
             // Fill the jobs: villagers go to trades in priority order, and within a trade to the oldest buildings first.
@@ -320,11 +318,8 @@ namespace CrownAndHearth.Sim
                 }
                 d.Work[t] = (w, j, n, sh);
             }
-            int mkW = 0, mkJ = 0;
-            foreach (var b in Blds) if (b.T == "market" && b.Served) { mkW += b.Workers; mkJ += b.Jobs; }
             d.Civ = civ; d.Bunks = bunks; d.Jobs = jobs; d.Idle = avail; d.Employed = Peasants - avail;
-            d.MkEff = mkJ > 0 ? (double)mkW / mkJ : 0; d.Markets = nMarkets; d.HouseCap = houseCap; d.CovCap = covCap;
-            d.Cov = houseCap > 0 ? (double)covCap / houseCap : 1; d.Ratio = jobs > 0 ? Math.Min(1, (double)Peasants / jobs) : 0;
+            d.Ratio = jobs > 0 ? Math.Min(1, (double)Peasants / jobs) : 0;
             D = d;
             return d;
         }
