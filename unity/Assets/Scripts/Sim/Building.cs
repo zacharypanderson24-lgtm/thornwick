@@ -28,6 +28,8 @@ namespace CrownAndHearth.Sim
         public int Closed;         // days of repairs left after a cave-in
         public int CaveIns;
 
+        public double FlaxSold, FoodSold;
+
         public int Jobs => Defs.Jobs.TryGetValue(T, out var j) ? Noise.JsRound(j * (Sz == 2 ? 2.5 : 1)) : 0;
         public double Food => 3 * (Sz == 2 ? 2.6 : 1);
         public int MarketRange => Sz == 2 ? 7 : 5;

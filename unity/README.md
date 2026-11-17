@@ -10,18 +10,18 @@ everything Unity lives in this folder.
 
 Pan: WASD / arrows / right- or middle-drag. Zoom: mouse wheel (0.25x to 5x pixel ladder). Rotate: Q / E.
 Space pauses; the top bar sets 1x / 2x / 4x (1 day = 1 second at 1x, as in the browser).
-Tools: 1 Look, 2 Road (drag), 3 Housing, 4 Farmland, 5 Commerce, 6 Lumber, 7 Mining zones (drag to paint),
-F Forester, X Sawmill, 8 Well, 9 Barracks, 0 Clear. Homes, farms, markets, woodcutter lodges, quarries and mines grow
-by themselves on zones beside a road when there is demand (strip above the tool bar). Workers (bottom right) sets trade priorities.
-Terrain: long mountain ranges cross the map with passes; how many depends on the region's relief (Lowland, Upland (default), Highland,
-Alpine), set on the GameController in the Inspector until the conquest map exists.
-New to the game? The Tutorial button (bottom right) walks through every mechanic; it opens by itself the first time.
-U cycles the underground view (ore bands 1-3, off). Iron lies hidden in hills and mountains: paint a Mining zone over the high ground and a
-lot at its foot; a mine's miners survey the zone, drive an adit into the high ground and sink a shaft only for ore below the mine's floor.
+- **Build** places roads, buildings, and industry sites. Place a 2×2 farmhouse
+  (B) or market (5), a lumber lodge (L), a quarry (K), or an iron mine (M).
+  A mine's road must reach its downhill entrance.
+- **Zone** marks land. Housing (3) grows one-tile homes. Wheat (4) and flax (G)
+  mark fertile fields, Lumber (6) marks trees, and Mining (7) marks deposits for
+  nearby buildings to work. Click two corners to set a zone.
+- **Workers** sets staffing priorities. **Tutorial** explains the controls.
 
-Wheat (4) produces food. Flax (G) uses the same fertile fields and farm workers.
-A staffed market sells up to one unit of flax per day at full staffing for two
-gold per unit. New housing uses one tile. Existing 2×2 houses can still load.
+A staffed market sells one unit per worker per day. Flax earns two gold and
+surplus wheat earns half a gold. Markets preserve at least ten days of food,
+with a minimum reserve of 40. The road-linked 1×1 silo (J) adds 180 wheat and
+60 flax storage. Disconnecting storage leaves existing stock available.
 
 ## Banner and textures
 

@@ -64,17 +64,78 @@ namespace CrownAndHearth.Game
                     if (z != Zone.None && w.Grid[y, x] == null) tint = ZoneTint[z];
                     var col = new Color32((byte)(tint.r * f), (byte)(tint.g * f), (byte)(tint.b * f), 255);
                     _c.Add(col); _c.Add(col); _c.Add(col); _c.Add(col);
-                    _t.Add(i0); _t.Add(i0 + 1); _t.Add(i0 + 2); _t.Add(i0); _t.Add(i0 + 2); _t.Add(i0 + 3);
+                    AddQuad(i0);
+                    if (w.Grid[y, x]?.T == "road") AddRoad(w, x, y, vx, vy, rot, i0, f);
                 }
             _mesh.Clear();
             _mesh.SetVertices(_v); _mesh.SetUVs(0, _uv); _mesh.SetColors(_c); _mesh.SetTriangles(_t, 0);
             _mesh.RecalculateBounds();
         }
 
+        void AddQuad(int index)
+        {
+            _t.Add(index); _t.Add(index + 1); _t.Add(index + 2);
+            _t.Add(index); _t.Add(index + 2); _t.Add(index + 3);
+        }
+
+        void AddRoad(World w, int x, int y, int vx, int vy, int rot, int ground, float shade)
+        {
+            bool HasExit(int nx, int ny)
+            {
+                if (!World.Inb(nx, ny)) return false;
+                var neighbor = w.Grid[ny, nx];
+                if (neighbor == null) return false;
+                if (neighbor.T == "road") return true;
+                int face = neighbor.Face;
+                return face >= 0 && face < 4 && nx + FaceDirs[face, 0] == x && ny + FaceDirs[face, 1] == y;
+            }
+
+            bool ExitInView(int a, int b)
+            {
+                if (!World.Inb(a, b)) return false;
+                var neighbor = IsoView.FromView(a, b, rot);
+                return HasExit(neighbor.x, neighbor.y);
+            }
+
+            bool left = ExitInView(vx - 1, vy), right = ExitInView(vx + 1, vy);
+            bool up = ExitInView(vx, vy - 1), down = ExitInView(vx, vy + 1);
+            var top = _v[ground]; var east = _v[ground + 1]; var bottom = _v[ground + 2]; var west = _v[ground + 3];
+
+            void Vertex(float u, float v, Color32 tint)
+            {
+                // Match the ground mesh's two triangles so the road follows sloped tile edges.
+                var point = u >= v ? top + (east - top) * u + (bottom - east) * v :
+                    top + (west - top) * v + (bottom - west) * u;
+                _v.Add(point);
+                const float uvInset = 0.969f;
+                float atlasU = (ArtLibrary.CellRoad + 0.5f + (u - v) * 0.5f * uvInset) / ArtLibrary.CellCount;
+                _uv.Add(new Vector2(atlasU, 0.5f + (1 - u - v) * 0.46875f));
+                _c.Add(tint);
+            }
+
+            void Rect(float u0, float v0, float u1, float v1, Color32 color)
+            {
+                int index = _v.Count;
+                Vertex(u0, v0, color); Vertex(u1, v0, color); Vertex(u1, v1, color); Vertex(u0, v1, color);
+                AddQuad(index);
+            }
+
+            void Strip(float inner, float outer, byte light)
+            {
+                byte intensity = (byte)(light * shade);
+                var color = new Color32(intensity, intensity, intensity, 255);
+                Rect(inner, inner, outer, outer, color);
+                if (left) Rect(0, inner, inner, outer, color);
+                if (right) Rect(outer, inner, 1, outer, color);
+                if (up) Rect(inner, 0, outer, inner, color);
+                if (down) Rect(inner, outer, outer, 1, color);
+            }
+
+            Strip(0.25f, 0.75f, 200);
+            Strip(0.30f, 0.70f, 255);
+        }
         static int CellFor(World w, int x, int y)
         {
-            var g = w.Grid[y, x];
-            if (g != null && g.T == "road") return ArtLibrary.CellRoad;
             if (w.IsMountain(x, y)) return w.TileLevel(x, y) >= SnowLevel ? ArtLibrary.CellSnow : ArtLibrary.CellRock;
             if (w.DecoMap[y, x] == Deco.Rock && w.PitDepth(x, y) > 0) return ArtLibrary.CellRock;
             double h = Noise.Hash2(x, y, 5);

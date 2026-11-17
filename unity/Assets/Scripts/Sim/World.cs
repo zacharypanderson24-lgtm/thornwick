@@ -82,7 +82,7 @@ namespace CrownAndHearth.Sim
             AddBld("house", c + 1, c + 3).Zoned = true;
             // the starting farm: a 2x2 farmhouse (its plots come from AddStarterFarmFields); the browser-compatible Classic world
             // keeps the browser's 1x1 farm so the parity tests start from the same settlement
-            if (Style == TerrainStyle.Classic) { AddBld("farm", c - 1, c + 5).Zoned = true; ZoneMap[c + 5, c - 1] = Zone.Farm; }
+            if (Style == TerrainStyle.Classic) { AddBld("farm", c - 1, c + 5, 1).Zoned = true; ZoneMap[c + 5, c - 1] = Zone.Farm; }
             else { AddBld("farm", c - 2, c + 5, 2).Zoned = true; for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) ZoneMap[c + 5 + j, c - 2 + i] = Zone.Farm; }
             ZoneMap[c + 3, c - 1] = Zone.Res; ZoneMap[c + 3, c + 1] = Zone.Res;
             AddStarterFarmFields();

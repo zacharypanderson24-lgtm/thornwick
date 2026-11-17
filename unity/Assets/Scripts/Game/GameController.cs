@@ -28,11 +28,16 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "zoneRes", Label = "Housing", Key = "3", Hotkey = Key.Digit3, Zone = Zone.Res },
             new ToolDef { Id = "zoneFarm", Label = "Wheat", Key = "4", Hotkey = Key.Digit4, Zone = Zone.Farm },
             new ToolDef { Id = "zoneFlax", Label = "Flax", Key = "G", Hotkey = Key.G, Zone = Zone.Farm, Flax = true },
-            new ToolDef { Id = "zoneComm", Label = "Commerce", Key = "5", Hotkey = Key.Digit5, Zone = Zone.Comm },
+            new ToolDef { Id = "market", Label = "Market", Key = "5", Hotkey = Key.Digit5, Build = "market" },
             new ToolDef { Id = "zoneWood", Label = "Lumber", Key = "6", Hotkey = Key.Digit6, Zone = Zone.Wood },
             new ToolDef { Id = "zoneMine", Label = "Mining", Key = "7", Hotkey = Key.Digit7, Zone = Zone.Mine },
+            new ToolDef { Id = "farmhouse", Label = "Farmhouse", Key = "B", Hotkey = Key.B, Build = "farm" },
+            new ToolDef { Id = "lodge", Label = "Lodge", Key = "L", Hotkey = Key.L, Build = "wood" },
+            new ToolDef { Id = "quarry", Label = "Quarry", Key = "K", Hotkey = Key.K, Build = "quarry" },
+            new ToolDef { Id = "mine", Label = "Iron Mine", Key = "M", Hotkey = Key.M, Build = "mine" },
             new ToolDef { Id = "forester", Label = "Forester", Key = "F", Hotkey = Key.F, Build = "forester" },
             new ToolDef { Id = "sawmill", Label = "Sawmill", Key = "X", Hotkey = Key.X, Build = "sawmill" },
+            new ToolDef { Id = "silo", Label = "Silo", Key = "J", Hotkey = Key.J, Build = "silo" },
             new ToolDef { Id = "well", Label = "Well", Key = "8", Hotkey = Key.Digit8, Build = "well" },
             new ToolDef { Id = "barracks", Label = "Barracks", Key = "9", Hotkey = Key.Digit9, Build = "barracks" },
             new ToolDef { Id = "clear", Label = "Clear", Key = "0", Hotkey = Key.Digit0, Clear = true },
@@ -232,7 +237,7 @@ namespace CrownAndHearth.Game
         {
             _tool = t; _roadAnchor = null; _zoneAnchor = null; _hud.SetTool(t.Id);
             if (t.Build != null) _hud.Toast($"{Defs.Names[t.Build]}: {CostText(t.Build)}");
-            if (t.Flax) _hud.Toast("Flax needs fertile soil and farm workers. Staffed markets sell it for gold.", 6); else if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + " " + World.Note[t.Zone], 6);
+            if (t.Flax) _hud.Toast("Flax needs fertile soil and farm workers. Staffed markets sell it for gold.", 6); else if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + (t.Zone == Zone.Res ? " " + World.Note[Zone.Res] : ""), 6);
         }
 
         void Rotate(int dir)
@@ -369,20 +374,19 @@ namespace CrownAndHearth.Game
         static string ZoneHelp(Zone z) => z switch
         {
             Zone.Res => "Housing zone: homes grow on it beside a road when houses are nearly full.",
-            Zone.Farm => "Farmland zone (fertile soil only): farms grow when food runs low.",
-            Zone.Comm => "Commerce zone: markets grow near homes that have no market.",
-            Zone.Wood => "Lumber zone: paint forest; a woodcutter lodge grows beside a road and fells it.",
-            _ => "Mining zone: paint rock or ore; quarries and mines grow beside a road.",
+            Zone.Farm => "Wheat: mark fertile tiles within 3 tiles of a farmhouse.",
+            Zone.Wood => "Lumber: mark forest for crews from a nearby woodcutter lodge.",
+            _ => "Mining: mark deposits for a nearby quarry or iron mine.",
         };
 
         string DemandLine()
         {
             string D(Zone z, string name) { double v = World.Dem[z]; return $"{name} {(v > DemandThresholdShown ? "+" : v < -0.05 ? "-" : " ")}{System.Math.Abs(v) * 100:0}%"; }
-            return "Demand   " + D(Zone.Res, "Homes") + "   " + D(Zone.Farm, "Farms") + "   " + D(Zone.Comm, "Markets") + "   " + D(Zone.Wood, "Lumber") + "   " + D(Zone.Mine, "Mining");
+            return "Demand   " + D(Zone.Res, "Homes");
         }
         const double DemandThresholdShown = World.DemandThreshold;
 
-        static string CostText(string type) => string.Join(", ", CostOf(type, 1).Select(kv => $"{kv.Value} {kv.Key.ToString().ToLower()}"));
+        static string CostText(string type) => string.Join(", ", CostOf(type, DefaultSize(type)).Select(kv => $"{kv.Value} {kv.Key.ToString().ToLower()}"));
 
         /// <summary>JS crewLine: what the building's crew is doing.</summary>
         static string CrewLine(Building b)
@@ -417,6 +421,13 @@ namespace CrownAndHearth.Game
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "mine") lines.Add(w.MineStatus(b));
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
+                if (b.T == "silo")
+                    lines.Add(b.Served ? $"+{World.SiloFood} wheat and +{World.SiloFlax} flax storage" : "Connect to the Town Hall to use its crop storage.");
+                if (b.T == "market")
+                {
+                    lines.Add($"Can sell {b.Workers} crops a day. Flax {World.FlaxPrice:0.##} gold, surplus wheat {World.FoodPrice:0.##} gold.");
+                    lines.Add($"Last day: {b.FlaxSold:0.##} flax, {b.FoodSold:0.##} wheat sold. Wheat reserve: {w.FoodReserve:0.##}.");
+                }
             }
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");
             var d = w.DecoMap[y, x];

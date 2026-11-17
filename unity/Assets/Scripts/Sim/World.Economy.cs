@@ -47,14 +47,9 @@ namespace CrownAndHearth.Sim
                 if (--SapT[k] <= 0) { SapT.Remove(k); int y = k / N, x = k % N; if (DecoMap[y, x] == Deco.Sapling) { DecoMap[y, x] = Deco.Tree; Touch(); } }
 
             // economy
-            double trade = d.Markets > 0 ? 0.04 * Peasants * d.Cov * d.MkEff : 0;
-            // Staffed markets sell up to one flax per market per day.
-            double flaxSold = Math.Min(ResAmt[Res.Flax], d.Markets * d.MkEff);
-            ResAmt[Res.Flax] -= flaxSold;
-            trade += flaxSold * 2;
             double eat = (Peasants + Soldiers * 1.5) * 0.2;
             ResAmt[Res.Food] += food - eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
-            ResAmt[Res.Gold] += employed * 0.12 + trade - Soldiers * 0.1;
+            ResAmt[Res.Gold] += employed * 0.12 + SellCrops() - Soldiers * 0.1;
             Starving = false;
             if (ResAmt[Res.Food] <= 0)
             {
@@ -80,7 +75,13 @@ namespace CrownAndHearth.Sim
                     Soldiers++; Peasants--; Trained++; ResAmt[Res.Wood] -= 2; ResAmt[Res.Gold] -= 1; ResAmt[Res.Ore] -= 1; b.Prog = 0;
                 }
             }
-            foreach (var k in ResAmt.Keys.ToList()) ResAmt[k] = Math.Max(0, Math.Min(Storage, ResAmt[k]));
+            foreach (var k in ResAmt.Keys.ToList())
+            {
+                int limit = CropStorage(k);
+                // Disconnecting storage prevents additions until the excess is used or sold.
+                double available = k == Res.Food || k == Res.Flax ? Math.Max(limit, before[k]) : limit;
+                ResAmt[k] = Math.Max(0, Math.Min(available, ResAmt[k]));
+            }
             foreach (var k in ResAmt.Keys.ToList())
                 Rate[k] = (k == Res.Logs || k == Res.Stone || k == Res.Ore) ? 0.85 * Rate[k] + 0.15 * (ResAmt[k] - before[k]) : ResAmt[k] - before[k];
             Day++;

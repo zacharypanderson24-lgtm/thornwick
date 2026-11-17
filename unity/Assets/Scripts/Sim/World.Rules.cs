@@ -65,7 +65,7 @@ namespace CrownAndHearth.Sim
 
         public Result CanAfford(string type)
         {
-            foreach (var kv in CostOf(type, 1)) if (ResAmt[kv.Key] < kv.Value) return Result.No($"Not enough {kv.Key.ToString().ToLower()} (need {kv.Value})");
+            foreach (var kv in CostOf(type, DefaultSize(type))) if (ResAmt[kv.Key] < kv.Value) return Result.No($"Not enough {kv.Key.ToString().ToLower()} (need {kv.Value})");
             return Result.Yes();
         }
 
@@ -83,6 +83,7 @@ namespace CrownAndHearth.Sim
                         : DecoMap[ty, tx] == Deco.Ore ? "Ore blocks this tile. Zone it for mining to clear it"
                         : "Too steep to build on");
             }
+            if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
             if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");
             return CanAfford(type);
         }
@@ -91,7 +92,7 @@ namespace CrownAndHearth.Sim
         {
             var c = CanPlace(type, x, y);
             if (!c.Ok) return c;
-            foreach (var kv in CostOf(type, 1)) ResAmt[kv.Key] -= kv.Value;
+            foreach (var kv in CostOf(type, DefaultSize(type))) ResAmt[kv.Key] -= kv.Value;
             AddBld(type, x, y);
             Recalc();
             return Result.Yes();
@@ -169,6 +170,7 @@ namespace CrownAndHearth.Sim
         // ---------- Zones ----------
         public Result ZoneCheck(Zone kind, int x, int y)
         {
+            if (kind == Zone.Comm) return Result.No("Place a market with the build tool.");
             if (!Inb(x, y)) return Result.No("Outside the map");
             if (Grid[y, x] != null) return ZoneMap[y, x] == kind ? Result.Yes() : Result.No("That tile is already built on");
             var dc = DecoMap[y, x];
