@@ -52,7 +52,7 @@ namespace CrownAndHearth.Tests
         [TestCase(1234)]
         public void HeightsMatch(int seed)
         {
-            var w = new World(seed); var r = SeedOf(seed);
+            var w = new World(seed, TerrainStyle.Classic); var r = SeedOf(seed);
             Assert.AreEqual(r.hv.Length, w.Hv.Length);
             int bad = 0; string first = null;
             for (int i = 0; i < r.hv.Length; i++) if (r.hv[i] != w.Hv[i]) { bad++; first ??= $"vertex {i % (Defs.N + 1)},{i / (Defs.N + 1)}: js {r.hv[i]} c# {w.Hv[i]}"; }
@@ -63,7 +63,7 @@ namespace CrownAndHearth.Tests
         [TestCase(1234)]
         public void TilesMatch(int seed)
         {
-            var w = new World(seed); var r = SeedOf(seed);
+            var w = new World(seed, TerrainStyle.Classic); var r = SeedOf(seed);
             int N = Defs.N;
             for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
@@ -89,7 +89,7 @@ namespace CrownAndHearth.Tests
         [TestCase(1234)]
         public void StartingSettlementMatches(int seed)
         {
-            var w = new World(seed); var r = SeedOf(seed);
+            var w = new World(seed, TerrainStyle.Classic); var r = SeedOf(seed);
             Assert.AreEqual(r.blds.Length, w.Blds.Count);
             for (int i = 0; i < r.blds.Length; i++)
             {
@@ -105,7 +105,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void TownSurvivesAThousandDays()
         {
-            var w = new World(7);
+            var w = new World(7, TerrainStyle.Classic);
             for (int d = 0; d < 1000; d++) { w.ResAmt[Res.Food] = Math.Max(w.ResAmt[Res.Food], 100); w.Tick(); }
             Assert.Greater(w.Peasants, 0);
             Assert.AreEqual(1001, w.Day);
@@ -115,7 +115,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void WoodcutterFellsMarkedTreesIntoLogs()
         {
-            var w = new World(7);
+            var w = new World(7, TerrainStyle.Classic);
             // find a tree near the road end and put a woodcutter lodge on open ground next to a road
             int c = Defs.Start;
             bool TreeNear(int x, int y)
@@ -173,7 +173,7 @@ namespace CrownAndHearth.Tests
         public void ZoneDevelopmentMatchesJavaScript()
         {
             var dev = Ref.develop;
-            var w = new World(dev.seed);
+            var w = new World(dev.seed, TerrainStyle.Classic);
             StripOre(w); Layout(w, dev.R);
             int total = 0;
             for (int i = 0; i < dev.steps.Length; i++)
@@ -237,7 +237,7 @@ namespace CrownAndHearth.Tests
         {
             var tc = Ref.ticks;
             Assert.IsNotNull(tc, "reference.json has no tick scenario. Run node unity/ParityReference/make_reference.js from the repo root.");
-            var w = new World(tc.seed);
+            var w = new World(tc.seed, TerrainStyle.Classic);
             StripOre(w); Layout(w, tc.R);
             Assert.AreEqual(tc.lodges, PlaceLodges(w), "woodcutter lodge sites");
             var keys = new[] { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Gold };

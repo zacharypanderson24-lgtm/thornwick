@@ -61,9 +61,15 @@ namespace CrownAndHearth.Sim
         public bool TileFlat(int x, int y) => TileSpread(x, y) == 0;
 
         // ---------- Creation ----------
-        public World(int seed = 7)
+        public readonly TerrainStyle Style;
+        public readonly Relief Relief;
+
+        /// <param name="style">Ranges (the game) or Classic (the browser prototype's terrain, used by the parity tests).</param>
+        /// <param name="relief">How mountainous the region is (Ranges only).</param>
+        public World(int seed = 7, TerrainStyle style = TerrainStyle.Ranges, Relief relief = Relief.Upland)
         {
             Seed = seed == 0 ? 7 : seed;
+            Style = style; Relief = relief;
             GenTerrain();
             int c = Start;
             AddBld("hall", c - 1, c - 1, 3);
@@ -78,7 +84,7 @@ namespace CrownAndHearth.Sim
 
         void GenTerrain()
         {
-            var hv = GenHeights(Seed);
+            var hv = Style == TerrainStyle.Classic ? GenHeights(Seed) : GenRangeHeights(Seed, Relief);
             Array.Copy(hv, Hv, hv.Length);
             for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) GenTile(x, y);
             GenDeposits();   // underground ore, World.Mining.cs
@@ -171,7 +177,7 @@ namespace CrownAndHearth.Sim
                     v = Math.Max(v, MountainField(L, seed, a, b));
                     int dist = Math.Max(Math.Abs(a - Start), Math.Abs(b - Start));
                     v *= Math.Min(1, Math.Max(0, (dist - 7) / 7.0));
-                    hv[b * M + a] = Math.Max(HMin, Math.Min(HMax, Noise.JsRound(v)));
+                    hv[b * M + a] = Math.Max(HMin, Math.Min(ClassicHMax, Noise.JsRound(v)));
                 }
             RelaxHeights(hv, null, null, null);
             return hv;

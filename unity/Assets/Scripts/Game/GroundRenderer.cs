@@ -75,7 +75,7 @@ namespace CrownAndHearth.Game
         {
             var g = w.Grid[y, x];
             if (g != null && g.T == "road") return ArtLibrary.CellRoad;
-            if (w.IsMountain(x, y)) return w.TileLevel(x, y) * LvlPx >= 44 ? ArtLibrary.CellSnow : ArtLibrary.CellRock;
+            if (w.IsMountain(x, y)) return w.TileLevel(x, y) >= SnowLevel ? ArtLibrary.CellSnow : ArtLibrary.CellRock;
             if (w.DecoMap[y, x] == Deco.Rock && w.PitDepth(x, y) > 0) return ArtLibrary.CellRock;
             double h = Noise.Hash2(x, y, 5);
             return w.Fert[y, x] ? ArtLibrary.CellFert + (h < 0.5 ? 0 : 1) : ArtLibrary.CellGrass + (int)(h * 4);
