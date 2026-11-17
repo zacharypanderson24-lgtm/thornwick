@@ -31,7 +31,7 @@ namespace CrownAndHearth.Game
                     int k = kind == Deco.Tree ? 0 : kind == Deco.Rock ? 1 : 2;
                     for (int i = 0; i < b.Crew.Count; i++)
                     {
-                        var a = b.Crew[i]; if (a.St == CrewState.Home) continue;
+                        var a = b.Crew[i]; if (a.St == CrewState.Home || a.St == CrewState.Down) continue;   // underground miners are not drawn
                         int jit = (i * 3) % 5 - 2;
                         Put(w, rot, _worker[k, a.St == CrewState.Back && a.Carry > 0 ? 1 : 0], a.Px, a.Py, a.X, a.Y, frac, jit, 0);
                     }

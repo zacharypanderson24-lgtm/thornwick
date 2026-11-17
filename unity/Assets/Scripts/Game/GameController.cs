@@ -42,6 +42,7 @@ namespace CrownAndHearth.Game
 
         public World World { get; private set; }
         int _rot, _drawnVersion = -1, _drawnRot = -1, _speed = 1;
+        int _ugLevel;   // underground view: 0 off, else the level shown (U cycles)
         float _dayAcc;
         ToolDef _tool = Tools[0];
         Vector2Int? _hover, _roadAnchor, _lastPaint;
@@ -103,6 +104,7 @@ namespace CrownAndHearth.Game
             _hud.SetDemand(DemandLine());
             _hud.SetInfo(_hover.HasValue ? TileInfo(_hover.Value.x, _hover.Value.y) : "");
             _hud.RefreshWorkforce(World);
+            if (World.Events.Count > 0) { _hud.Toast(World.Events[World.Events.Count - 1], 8); World.Events.Clear(); }   // cave-ins, new levels, empty surveys
         }
 
         void HandleKeys()
@@ -113,6 +115,12 @@ namespace CrownAndHearth.Game
             if (kb.qKey.wasPressedThisFrame) Rotate(-1);
             if (kb.eKey.wasPressedThisFrame) Rotate(1);
             if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
+            if (kb.uKey.wasPressedThisFrame)
+            {
+                _ugLevel = (_ugLevel + 1) % (World.Bands + 1);
+                _hud.Toast(_ugLevel == 0 ? "Underground view off." : $"Underground view: ore band {_ugLevel} of {World.Bands}" +
+                    (_ugLevel == 1 ? " (just under the surface). Ore lies in hills and mountains. Orange = surveyed ore, brighter = richer; grey = surveyed, nothing here; blue = Mining zone not surveyed yet. U for deeper." : _ugLevel < World.Bands ? ". U for deeper." : " (deepest, richest). U to turn off."), 6);
+            }
         }
 
         void SetTool(ToolDef t)
@@ -174,9 +182,33 @@ namespace CrownAndHearth.Game
 
         static readonly Color32 Ok = new Color32(120, 255, 120, 110), Bad = new Color32(255, 90, 80, 120), Hover = new Color32(255, 255, 255, 70);
 
+        static readonly Color32 UgNone = new Color32(40, 40, 48, 150), UgUnknown = new Color32(70, 110, 200, 110), UgShaft = new Color32(255, 240, 120, 200);
+
+        /// <summary>Underground view of ore band _ugLevel (1 = just under each tile's surface, 3 = deepest): surveyed ore (orange, brighter =
+        /// richer), surveyed nothing (grey), Mining zone not yet surveyed (blue), mines with an adit or shaft (yellow).</summary>
+        void DrawUnderground()
+        {
+            var w = World; int L = _ugLevel; double cap = World.LevelCapMax[L];
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    var b = w.Grid[y, x];
+                    if (b != null && b.T == "mine") { if (b.Adit || b.Depth > 0) _overlay.AddTile(w, x, y, _rot, UgShaft); continue; }
+                    if (w.IsSurveyed(x, y))
+                    {
+                        double o = w.KnownOre(x, y, L);
+                        if (o <= 1e-9) { _overlay.AddTile(w, x, y, _rot, UgNone); continue; }
+                        float t = Mathf.Clamp01((float)(o / cap));
+                        _overlay.AddTile(w, x, y, _rot, new Color32(255, (byte)(150 - 70 * t), (byte)(40 - 30 * t), (byte)(110 + 120 * t)));
+                    }
+                    else if (w.ZoneMap[y, x] == Zone.Mine) _overlay.AddTile(w, x, y, _rot, UgUnknown);
+                }
+        }
+
         void DrawOverlay()
         {
             _overlay.Clear();
+            if (_ugLevel > 0) DrawUnderground();
             if (_hover.HasValue)
             {
                 var h = _hover.Value;
@@ -235,9 +267,20 @@ namespace CrownAndHearth.Game
         static string CrewLine(Building b)
         {
             if (b.Crew.Count == 0) return "No crew yet (needs villagers and a road link)";
-            int home = 0, outw = 0, at = 0, back = 0;
-            foreach (var a in b.Crew) switch (a.St) { case CrewState.Home: home++; break; case CrewState.Out: outw++; break; case CrewState.Work: at++; break; default: back++; break; }
+            int home = 0, outw = 0, at = 0, back = 0, down = 0;
+            foreach (var a in b.Crew) switch (a.St) { case CrewState.Home: home++; break; case CrewState.Out: outw++; break; case CrewState.Work: at++; break; case CrewState.Down: down++; break; default: back++; break; }
+            if (b.T == "mine") return $"Crew: {home} resting here, {down} underground, {outw + at + back} out surveying";
             return $"Crew: {home} resting here, {outw} walking out, {at} working, {back} carrying home";
+        }
+
+        string UndergroundLine(int x, int y)
+        {
+            var w = World;
+            if (!w.IsSurveyed(x, y))
+                return w.ZoneMap[y, x] == Zone.Mine ? "Underground: not surveyed yet (a mine's miners will survey it)" : "Underground: unknown. Paint a Mining zone (7) to have it surveyed";
+            var parts = new List<string>();
+            for (int l = 1; l <= World.MaxDepth; l++) { double o = w.KnownOre(x, y, l); parts.Add($"band {l} " + (o > 1e-9 ? $"{o:0} ore" : "none")); }
+            return "Underground (surveyed): " + string.Join(", ", parts);
         }
 
         string TileInfo(int x, int y)
@@ -251,13 +294,15 @@ namespace CrownAndHearth.Game
                 if (b.T == "house") lines.Add($"Homes {b.Capacity} villagers. Level {b.Lvl}" + (b.Lvl < 2 ? " (a well within 4 tiles raises it)" : "") + (b.Covered ? ". Market nearby" : ""));
                 if (b.Jobs > 0) lines.Add($"Workers {b.Workers}/{b.Jobs} ({b.Eff * 100:0}%)");
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
+                if (b.T == "mine") lines.Add(w.MineStatus(b));
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
             }
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");
             var d = w.DecoMap[y, x];
             if (d == Deco.Tree) lines.Add("FOREST. Paint a Lumber zone (6) so a woodcutter lodge fells it.");
             if (d == Deco.Rock) lines.Add(w.IsMountain(x, y) ? $"MOUNTAIN. Stone left {w.RockLeft(x, y):0}. Quarry it from the edge." : $"STONE OUTCROP. Stone left {w.RockLeft(x, y):0}.");
-            if (d == Deco.Ore) lines.Add($"IRON ORE. Ore left {w.OreLeft(x, y):0}. Zone for mining (7) beside an iron mine.");
+            if (d == Deco.Ore) lines.Add(w.IsSurveyed(x, y) ? "IRON SHOWING. Ore shows at the surface here." : "IRON SHOWING. Ore shows at the surface here; more lies inside the hill. Paint a Mining zone (7) over it and the high ground, with a lot at the foot for the mine");
+            lines.Add(UndergroundLine(x, y));
             if (d == Deco.Stump) lines.Add("Stump. It rots away into open ground.");
             if (d == Deco.Sapling) lines.Add("Sapling. It grows into a tree in three years.");
             if (w.ZoneMap[y, x] != Zone.None) lines.Add(w.ZoneMap[y, x] + " zone");

@@ -7,7 +7,8 @@ using static CrownAndHearth.Sim.Defs;
 
 namespace CrownAndHearth.Sim
 {
-    public enum CrewState : byte { Home, Out, Work, Back }
+    /// <summary>Down: a miner underground in the mine's shaft (Unity-only, World.Mining.cs); not drawn.</summary>
+    public enum CrewState : byte { Home, Out, Work, Back, Down }
     public enum FolkState : byte { Home, Walk, Stay, Back }
 
     /// <summary>One worker of a crew (JS: the objects in crewOf(b)).</summary>
@@ -18,6 +19,9 @@ namespace CrownAndHearth.Sim
         public readonly List<int> Path = new List<int>();   // tile indices y * N + x, building -> standing tile (reversed for the way back)
         public int I, T, Tx, Ty, Stand = -1;
         public double Carry;
+        public bool Survey, Dig;            // miners: out surveying a zone tile / underground digging the shaft
+        public int Level;                   // miners: the ore band they are working (0 while digging)
+        public int Need;                    // miners: where they work, 0 = the adit, else that shaft level
     }
 
     /// <summary>One ambient villager (JS: the objects in folkOf(S)).</summary>
@@ -97,14 +101,14 @@ namespace CrownAndHearth.Sim
         }
 
         /// <summary>Nearest-by-walking marked tile within WorkR of the building (JS crewTarget). Fills path (building -> standing tile).</summary>
-        bool CrewTarget(Building b, Deco kind, int salt, List<int> used, List<int> path, out int tx, out int ty)
+        bool CrewTarget(Building b, Deco kind, int salt, List<int> used, List<int> path, out int tx, out int ty, bool survey = false)
         {
             var R = Reach(b); var dist = R.Dist; int ox = R.Ox, oy = R.Oy, s0 = b.Y * N + b.X;
             int bi = -1, bj = -1, bn = -1; double bs = 1e9;
             for (int j = b.Y - WorkR; j <= b.Y + WorkR; j++)
                 for (int i = b.X - WorkR; i <= b.X + WorkR; i++)
                 {
-                    if (!Inb(i, j) || !CrewMatch(kind, i, j)) continue;
+                    if (!Inb(i, j) || !(survey ? ZoneMap[j, i] == Zone.Mine && !Surveyed[Tk(i, j)] && Claimed(i, j) : CrewMatch(kind, i, j))) continue;
                     for (int k = 0; k < 4; k++)
                     {
                         int nx = i + Nb[k, 0], ny = j + Nb[k, 1]; if (!Inb(nx, ny)) continue;
@@ -132,8 +136,7 @@ namespace CrownAndHearth.Sim
                 if (Chop[k] >= ChopsPerTree) FellAt(tx, ty);
                 return Load["wood"];
             }
-            if (kind == Deco.Rock) return MineRock(tx, ty, 0, Load["quarry"]);
-            return MineOre(tx, ty, 0, Load["mine"]);
+            return MineRock(tx, ty, 0, Load["quarry"]);   // mines work underground (World.Mining.cs)
         }
 
         readonly List<int> _used = new List<int>(8);
@@ -147,6 +150,7 @@ namespace CrownAndHearth.Sim
                 var crew = b.Crew; int want = b.Workers; var res = CrewRes(kind);
                 for (int i = crew.Count - 1; i >= 0 && crew.Count > want; i--) if (crew[i].St == CrewState.Home) crew.RemoveAt(i);   // resting surplus leaves; those out finish first
                 while (crew.Count < want) crew.Add(new Worker { St = CrewState.Home, X = b.X, Y = b.Y, Px = b.X, Py = b.Y });
+                if (b.T == "mine") { StepMine(b, crew, got); continue; }   // underground mining, World.Mining.cs
                 for (int ai = 0; ai < crew.Count; ai++)
                 {
                     var a = crew[ai];

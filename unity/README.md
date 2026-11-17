@@ -13,6 +13,8 @@ Space pauses; the top bar sets 1x / 2x / 4x (1 day = 1 second at 1x, as in the b
 Tools: 1 Look, 2 Road (drag), 3 Housing, 4 Farmland, 5 Commerce, 6 Lumber, 7 Mining zones (drag to paint),
 F Forester, X Sawmill, 8 Well, 9 Barracks, 0 Clear. Homes, farms, markets, woodcutter lodges, quarries and mines grow
 by themselves on zones beside a road when there is demand (strip above the tool bar). Workers (bottom right) sets trade priorities.
+U cycles the underground view (ore bands 1-3, off). Iron lies hidden in hills and mountains: paint a Mining zone over the high ground and a
+lot at its foot; a mine's miners survey the zone, drive an adit into the high ground and sink a shaft only for ore below the mine's floor.
 
 ## Layout
 
@@ -30,7 +32,8 @@ by themselves on zones beside a road when there is demand (strip above the tool 
 The C# terrain is checked tile for tile against the JavaScript prototype (heights, forests and species, groves, rock, ore,
 fertility, mountain elevations, starting settlement, housing and jobs) for two seeds, zone development
 (demand, every building grown, wood spent) over a 150-day scripted town, and 300 whole days through the daily tick
-(every work-crew worker and villager, resources, population, buildings) in the same town:
+(every work-crew worker and villager, resources, population, buildings) in the same town. Underground mining is
+Unity-only, so those two scenarios remove ore showings first; `MiningTests.cs` covers mining:
 
 ```
 node unity/ParityReference/make_reference.js     # from the repo root, after changing src/sim.js

@@ -182,7 +182,10 @@ namespace CrownAndHearth.Sim
             if (kind == Zone.Mine)
             {
                 if (dc == Deco.Rock) return RockLeft(x, y) > 0 ? Result.Yes() : Result.No("This rock is worked out. Stone does not grow back");
-                return dc == Deco.Ore ? Result.Yes() : Result.No("Mining zones go on rock or ore");
+                if (dc == Deco.Ore) return Result.Yes();
+                // open ground: miners survey it for underground ore (World.Mining.cs)
+                if (dc == Deco.Tree || dc == Deco.Sapling) return Result.No("Clear the forest first. Mining zones go on rock, ore showings or open ground");
+                return IsSolid(x, y) ? Result.No("Too steep or broken to mine here") : Result.Yes();
             }
             if (HasTree(x, y)) return Result.No(TreeMsg);
             if (IsSolid(x, y)) return Result.No(IsMountain(x, y) ? "Mountains cannot be built on. Hills and flat ground can" : PitDepth(x, y) > 0 ? "A quarry pit is in the way" : "Ore blocks this zone. Mine it first");
