@@ -73,7 +73,8 @@ namespace CrownAndHearth.Tests
                     // so an ore tile on either side counts as open ground here; MiningTests covers where they go
                     char deco = w.DecoMap[y, x] switch { Deco.Tree => 'T', Deco.Rock => 'R', Deco.Stump => 'S', Deco.Sapling => 's', _ => '.' };
                     Assert.AreEqual(r.deco[i] == 'O' ? '.' : r.deco[i], deco, $"deco at {x},{y}");
-                    Assert.AreEqual(r.fert[i] == '1', w.Fert[y, x], $"fertility at {x},{y}");
+                    // the starting farm's fields are made fertile (World.AddStarterFarmFields)
+                    Assert.AreEqual(r.fert[i] == '1' || w.ZoneMap[y, x] == Zone.Farm && w.Grid[y, x] == null, w.Fert[y, x], $"fertility at {x},{y}");
                     Assert.AreEqual(r.amt[i], deco == 'R' ? (char)('0' + w.RockAmt(x, y)) : '0', $"rock amount at {x},{y}");
                     if (deco == 'T')
                     {
@@ -174,7 +175,7 @@ namespace CrownAndHearth.Tests
         {
             var dev = Ref.develop;
             var w = new World(dev.seed, TerrainStyle.Classic);
-            StripOre(w); Layout(w, dev.R);
+            StripOre(w); Layout(w, dev.R); StripFarms(w);
             int total = 0;
             for (int i = 0; i < dev.steps.Length; i++)
             {
@@ -238,7 +239,7 @@ namespace CrownAndHearth.Tests
             var tc = Ref.ticks;
             Assert.IsNotNull(tc, "reference.json has no tick scenario. Run node unity/ParityReference/make_reference.js from the repo root.");
             var w = new World(tc.seed, TerrainStyle.Classic);
-            StripOre(w); Layout(w, tc.R);
+            StripOre(w); Layout(w, tc.R); StripFarms(w);
             Assert.AreEqual(tc.lodges, PlaceLodges(w), "woodcutter lodge sites");
             var keys = new[] { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Gold };
             bool sawWork = false, sawFolkOut = false;
@@ -267,6 +268,15 @@ namespace CrownAndHearth.Tests
         /// Mining is underground in Unity but still surface ore in the browser, so the day-by-day scenarios remove every ore showing and its
         /// zone first (make_reference.js stripOre does the same). Mining itself is covered by MiningTests.
         /// </summary>
+        /// <summary>Farming is Unity's own (farmhouses with zoned crop plots), so the scenarios remove the starting farm and every Farmland
+        /// zone after laying out the town (make_reference.js stripFarms does the same). Farming is covered by FarmTests.</summary>
+        static void StripFarms(World w)
+        {
+            foreach (var f in w.Blds.Where(b => b.T == "farm").ToList()) w.Remove(f.X, f.Y);
+            for (int y = 0; y < Defs.N; y++) for (int x = 0; x < Defs.N; x++) if (w.ZoneMap[y, x] == Zone.Farm) w.ZoneMap[y, x] = Zone.None;
+            w.Touch(); w.Recalc();
+        }
+
         static void StripOre(World w)
         {
             for (int y = 0; y < Defs.N; y++)

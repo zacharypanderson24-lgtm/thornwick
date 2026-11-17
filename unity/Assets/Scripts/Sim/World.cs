@@ -66,25 +66,34 @@ namespace CrownAndHearth.Sim
 
         /// <param name="style">Ranges (the game) or Classic (the browser prototype's terrain, used by the parity tests).</param>
         /// <param name="relief">How mountainous the region is (Ranges only).</param>
-        public World(int seed = 7, TerrainStyle style = TerrainStyle.Ranges, Relief relief = Relief.Upland)
+        public World(int seed = 7, TerrainStyle style = TerrainStyle.Ranges, Relief relief = Relief.Upland) : this(seed, true, style, relief) { }
+
+        /// <summary>createSettlement false: an empty world for World.LoadJson to fill in (terrain comes from the save).</summary>
+        World(int seed, bool createSettlement, TerrainStyle style = TerrainStyle.Ranges, Relief relief = Relief.Upland)
         {
             Seed = seed == 0 ? 7 : seed;
             Style = style; Relief = relief;
+            if (!createSettlement) return;
             GenTerrain();
             int c = Start;
             AddBld("hall", c - 1, c - 1, 3);
             for (int y = c + 2; y <= c + 6; y++) AddBld("road", c, y);
             AddBld("house", c - 1, c + 3).Zoned = true;
             AddBld("house", c + 1, c + 3).Zoned = true;
-            AddBld("farm", c - 1, c + 5).Zoned = true;
-            ZoneMap[c + 3, c - 1] = Zone.Res; ZoneMap[c + 3, c + 1] = Zone.Res; ZoneMap[c + 5, c - 1] = Zone.Farm;
+            // the starting farm: a 2x2 farmhouse (its plots come from AddStarterFarmFields); the browser-compatible Classic world
+            // keeps the browser's 1x1 farm so the parity tests start from the same settlement
+            if (Style == TerrainStyle.Classic) { AddBld("farm", c - 1, c + 5).Zoned = true; ZoneMap[c + 5, c - 1] = Zone.Farm; }
+            else { AddBld("farm", c - 2, c + 5, 2).Zoned = true; for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) ZoneMap[c + 5 + j, c - 2 + i] = Zone.Farm; }
+            ZoneMap[c + 3, c - 1] = Zone.Res; ZoneMap[c + 3, c + 1] = Zone.Res;
+            AddStarterFarmFields();
             Recalc();
             ComputeDemand();
         }
 
-        void GenTerrain()
+        void GenTerrain((int min, int max)? avoid = null)
         {
-            var hv = Style == TerrainStyle.Classic ? GenHeights(Seed) : GenRangeHeights(Seed, Relief);
+            // Classic (the browser's) can keep a loaded smaller map's square clear of new mountains; Ranges always keep the town valley open
+            var hv = Style == TerrainStyle.Classic ? GenHeights(Seed, avoid) : GenRangeHeights(Seed, Relief);
             Array.Copy(hv, Hv, hv.Length);
             for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) GenTile(x, y);
             GenDeposits();   // underground ore, World.Mining.cs
@@ -94,13 +103,16 @@ namespace CrownAndHearth.Sim
         class Range { public double[][] Pts; public double Ph; }
         class Lone { public double Cx, Cy, Hp; public int Side; }
 
-        static (List<Range>, List<Lone>) MountainLayout(int seed)
+        static (List<Range>, List<Lone>) MountainLayout(int seed, (int min, int max)? avoid)
         {
             double A = (N / 64.0) * (N / 64.0);
             int n = 0;
             double Rnd() => Noise.Hash2(n++, 23, seed + 900);
             var ranges = new List<Range>(); var lone = new List<Lone>();
             bool Far(double x, double y, double r) => Math.Max(Math.Abs(x - Start), Math.Abs(y - Start)) > r;
+            bool Clear(double x, double y, int margin) => !avoid.HasValue ||
+                x < avoid.Value.min - margin || y < avoid.Value.min - margin ||
+                x > avoid.Value.max + margin || y > avoid.Value.max + margin;
             int want = Noise.JsRound(A * (Rnd() < 0.3 ? 1.5 : 1));
             for (int r = 0; r < want; r++)
                 for (int t = 0; t < 400; t++)
@@ -114,7 +126,7 @@ namespace CrownAndHearth.Sim
                         pts[i] = new[] { sx + Math.Cos(a + bend * i * 0.25) * f, sy + Math.Sin(a + bend * i * 0.25) * f };
                     }
                     bool ok = true;
-                    foreach (var p in pts) if (!(p[0] > 4 && p[1] > 4 && p[0] < N - 4 && p[1] < N - 4 && Far(p[0], p[1], 15))) { ok = false; break; }
+                    foreach (var p in pts) if (!(p[0] > 4 && p[1] > 4 && p[0] < N - 4 && p[1] < N - 4 && Far(p[0], p[1], 15) && Clear(p[0], p[1], 8))) { ok = false; break; }
                     if (!ok) continue;
                     bool near = false;
                     foreach (var o in ranges) foreach (var q in o.Pts) foreach (var p in pts) if (Noise.Hypot(p[0] - q[0], p[1] - q[1]) < 14) near = true;
@@ -128,7 +140,7 @@ namespace CrownAndHearth.Sim
                 double cx = 6 + Rnd() * (N - 12), cy = 6 + Rnd() * (N - 12);
                 int side = 2 + (int)Math.Floor(Rnd() * 3);
                 double hp = 5.2 + side * 0.5 + Rnd() * 1.2;
-                if (!Far(cx, cy, 15)) continue;
+                if (!Far(cx, cy, 15) || !Clear(cx, cy, 10)) continue;
                 bool near = false;
                 foreach (var o in ranges) foreach (var q in o.Pts) if (Noise.Hypot(q[0] - cx, q[1] - cy) < 14) near = true;
                 if (near) continue;
@@ -164,9 +176,11 @@ namespace CrownAndHearth.Sim
             return v;
         }
 
-        public static int[] GenHeights(int seed)
+        public static int[] GenHeights(int seed) => GenHeights(seed, null);
+
+        static int[] GenHeights(int seed, (int min, int max)? avoid)
         {
-            int M = N + 1; var hv = new int[M * M]; var L = MountainLayout(seed);
+            int M = N + 1; var hv = new int[M * M]; var L = MountainLayout(seed, avoid);
             for (int b = 0; b < M; b++)
                 for (int a = 0; a < M; a++)
                 {

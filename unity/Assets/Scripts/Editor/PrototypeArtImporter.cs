@@ -19,7 +19,7 @@ namespace CrownAndHearth.EditorTools
         public const string OutDir = "Assets/Resources/Art";
         public static readonly string[] AtlasCells = { "grass_0", "grass_1", "grass_2", "grass_3", "grassfert_0", "grassfert_1", "rock", "snow", "road", "white" };
 
-        static string SourceDir => Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "assets"));
+        internal static string SourceDir => Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "assets"));
 
         [MenuItem("Crown & Hearth/Import Prototype Art")]
         public static void ImportAll()
@@ -55,7 +55,7 @@ namespace CrownAndHearth.EditorTools
         // ---------- Background removal (textures.js keyOut) ----------
         static bool IsMagenta(Color32 c) => c.r > 200 && c.b > 200 && c.g < 110;
 
-        static void KeyOut(Color32[] px, int w, int h)
+        internal static void KeyOut(Color32[] px, int w, int h)
         {
             int[] corners = { 0, w - 1, (h - 1) * w, h * w - 1 };
             bool transparent = true;
@@ -85,7 +85,7 @@ namespace CrownAndHearth.EditorTools
         }
 
         // ---------- Ground tiles (textures.js fitToSlot + validGround) ----------
-        static Color32[] FitGround(Color32[] px, int w, int h)
+        internal static Color32[] FitGround(Color32[] px, int w, int h)
         {
             int x0 = w, y0 = h, x1 = -1, y1 = -1;
             for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) if (px[y * w + x].a > 40) { x0 = Math.Min(x0, x); x1 = Math.Max(x1, x); y0 = Math.Min(y0, y); y1 = Math.Max(y1, y); }
@@ -257,6 +257,9 @@ namespace CrownAndHearth.EditorTools
             ti.mipmapEnabled = false;
             ti.textureCompression = TextureImporterCompression.Uncompressed;
             ti.alphaIsTransparency = true;
+            string slot = Path.GetFileNameWithoutExtension(assetPath);
+            ti.isReadable = slot == "hall" || slot == "barracks" ||
+                slot.StartsWith("hall_", StringComparison.Ordinal) || slot.StartsWith("barracks_", StringComparison.Ordinal);
             ti.wrapMode = TextureWrapMode.Clamp;
             ti.npotScale = TextureImporterNPOTScale.None;
             var s = new TextureImporterSettings();

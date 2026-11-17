@@ -12,13 +12,20 @@ namespace CrownAndHearth.Game
         ArtLibrary _art;
         Material _mat;
         readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
-        int _used;
+        int _used, _cropDay;
+        FarmCropArt _crops;
+        readonly List<(SpriteRenderer renderer, int offset)> _fields = new();
 
-        public void Init(ArtLibrary art, Material mat) { _art = art; _mat = mat; }
+        void OnDestroy() => _crops?.Dispose();
+
+        public void Init(ArtLibrary art, Material mat) { _art = art; _mat = mat; _crops = new FarmCropArt(); }
 
         public void Build(World w, int rot)
         {
             _used = 0;
+            _fields.Clear();
+            _cropDay = w.Day;
+            var fields = w.FarmFields();
             for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
                 {
@@ -26,6 +33,20 @@ namespace CrownAndHearth.Game
                     if (b != null)
                     {
                         if (b.T != "road" && b.X == x && b.Y == y) PlaceBuilding(w, b, rot);
+                        continue;
+                    }
+                    if (fields.ContainsKey(World.Tk(x, y)))
+                    {
+                        int offset = FarmCropArt.GrowthOffset(x, y, w.Seed);
+                        var plant = _crops.Tile(w.Day, offset);
+                        var tile = IsoView.ToView(x, y, rot);
+                        if (plant != null)
+                        {
+                            int baseHeight = IsoView.VhView(w, tile.x + 1, tile.y + 1, rot);
+                            var renderer = Put(plant, IsoView.VertexPos(tile.x + 1, tile.y + 1, baseHeight),
+                                IsoView.SortOrder(tile.x, tile.y));
+                            _fields.Add((renderer, offset));
+                        }
                         continue;
                     }
                     var d = w.DecoMap[y, x];
@@ -88,7 +109,15 @@ namespace CrownAndHearth.Game
             return b.T;
         }
 
-        void Put(Sprite s, Vector3 pos, int order)
+        public void RefreshCropStages(int day)
+        {
+            if (day == _cropDay) return;
+            foreach (var field in _fields)
+                field.renderer.sprite = _crops.Tile(day, field.offset);
+            _cropDay = day;
+        }
+
+        SpriteRenderer Put(Sprite s, Vector3 pos, int order)
         {
             SpriteRenderer r;
             if (_used < _pool.Count) r = _pool[_used];
@@ -103,6 +132,7 @@ namespace CrownAndHearth.Game
             _used++;
             r.sprite = s; r.sortingOrder = order; r.enabled = true;
             r.transform.localPosition = pos;
+            return r;
         }
     }
 }

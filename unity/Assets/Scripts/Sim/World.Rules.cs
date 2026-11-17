@@ -193,6 +193,23 @@ namespace CrownAndHearth.Sim
             return Result.Yes();
         }
 
+        /// <summary>Zone every tile of the rectangle between two corners (either order). Returns how many tiles were zoned, how many
+        /// could not be, and the most common reason they could not.</summary>
+        public (int zoned, int skipped, string why) ZoneRect(Zone kind, int ax, int ay, int bx, int by)
+        {
+            int zoned = 0, skipped = 0; var reasons = new Dictionary<string, int>();
+            for (int y = Math.Min(ay, by); y <= Math.Max(ay, by); y++)
+                for (int x = Math.Min(ax, bx); x <= Math.Max(ax, bx); x++)
+                {
+                    if (Inb(x, y) && Grid[y, x] == null && ZoneMap[y, x] == kind) continue;   // already that zone
+                    var r = SetZone(kind, x, y);
+                    if (r.Ok) { if (Grid[y, x] == null) zoned++; continue; }
+                    skipped++; reasons[r.Reason] = (reasons.TryGetValue(r.Reason, out var n) ? n : 0) + 1;
+                }
+            string why = reasons.Count == 0 ? "" : reasons.OrderByDescending(p => p.Value).ThenBy(p => p.Key, StringComparer.Ordinal).First().Key;
+            return (zoned, skipped, why);
+        }
+
         public Result SetZone(Zone kind, int x, int y)
         {
             var c = ZoneCheck(kind, x, y);
