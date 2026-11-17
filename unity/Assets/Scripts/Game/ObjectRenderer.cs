@@ -14,7 +14,7 @@ namespace CrownAndHearth.Game
         readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
         int _used, _cropDay;
         FarmCropArt _crops;
-        readonly List<(SpriteRenderer renderer, int crop, int offset)> _fields = new();
+        readonly List<(SpriteRenderer renderer, int offset)> _fields = new();
 
         void OnDestroy() => _crops?.Dispose();
 
@@ -37,15 +37,15 @@ namespace CrownAndHearth.Game
                     }
                     if (fields.ContainsKey(World.Tk(x, y)))
                     {
-                        var (crop, offset) = FarmCropArt.Look(x, y, w.Seed);
-                        var plant = _crops.Tile(crop, w.Day, offset);
+                        int offset = FarmCropArt.GrowthOffset(x, y, w.Seed);
+                        var plant = _crops.Tile(w.Day, offset);
                         var tile = IsoView.ToView(x, y, rot);
                         if (plant != null)
                         {
                             int baseHeight = IsoView.VhView(w, tile.x + 1, tile.y + 1, rot);
                             var renderer = Put(plant, IsoView.VertexPos(tile.x + 1, tile.y + 1, baseHeight),
                                 IsoView.SortOrder(tile.x, tile.y));
-                            _fields.Add((renderer, crop, offset));
+                            _fields.Add((renderer, offset));
                         }
                         continue;
                     }
@@ -113,7 +113,7 @@ namespace CrownAndHearth.Game
         {
             if (day == _cropDay) return;
             foreach (var field in _fields)
-                field.renderer.sprite = _crops.Tile(field.crop, day, field.offset);
+                field.renderer.sprite = _crops.Tile(day, field.offset);
             _cropDay = day;
         }
 
