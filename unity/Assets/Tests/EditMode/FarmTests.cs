@@ -1,5 +1,5 @@
 // Farming (Unity-only; ChatGPT's crop fields from codex/working-farm-fields, reworked 2026-11-16 to Zach's design): farmhouses are 2x2
-// and grow on Farmland zones; the 1x1 Farmland tiles on fertile soil around a farmhouse are its plots; each farmer tends 2 plots.
+// and are manually placed; the 1x1 Farmland tiles on fertile soil around a farmhouse are its plots; each farmer tends 2 plots.
 // Zoning is click-click: one corner, then the opposite corner zones the whole rectangle (World.ZoneRect).
 using System;
 using System.Linq;
@@ -44,34 +44,21 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void FarmlandZonesGrowOnly2x2FarmhousesWithPlotsAroundThem()
+        public void CropZonesRemainFieldsUntilAFarmhouseIsPlaced()
         {
             var w = new World(7);
-            SimParityTests.Layout(w, 10);
-            // paint Farmland as a player would: blocks on the fertile ground south and east of the Town Hall, between the roads
-            int C = Defs.Start;
-            w.ZoneRect(Zone.Farm, C + 3, C + 3, C + 9, C + 9);
-            w.ZoneRect(Zone.Farm, C - 9, C + 7, C - 3, C + 9);
-            var starter = w.Blds.Single(b => b.T == "farm"); w.Remove(starter.X, starter.Y);   // no food coming in: the town wants farms
-            w.Recalc();
-            w.Prio = new[] { "farming", "timber", "woodwork", "quarrying", "mining", "trade" };
-            int grown = 0;
-            for (int d = 0; d < 250; d++)
-            {
-                w.ResAmt[Res.Food] = 15; w.ResAmt[Res.Wood] = Math.Max(w.ResAmt[Res.Wood], 200); w.ResAmt[Res.Gold] = 100;   // short of food: farms are wanted
-                int before = w.Blds.Count(b => b.T == "farm");
-                w.Tick();
-                grown += w.Blds.Count(b => b.T == "farm") - before;
-            }
-            Assert.Greater(grown, 0, "Farmland zones grew farmhouses");
-            var fields = w.FarmFields();
-            foreach (var f in w.Blds.Where(b => b.T == "farm"))
-            {
-                Assert.AreEqual(2, f.Sz, $"farmhouse at {f.X},{f.Y} is 2x2");
-                Assert.Greater(fields.Values.Count(o => o == f), 0, $"farmhouse at {f.X},{f.Y} has plots");
-            }
-            foreach (var k in fields.Keys)
-                Assert.That(Math.Max(Math.Abs(k % N - fields[k].X - 0.5), Math.Abs(k / N - fields[k].Y - 0.5)), Is.LessThanOrEqualTo(World.FarmFieldRange + 0.5), "plots lie around their farmhouse");
+            int c = Defs.Start;
+            var starter = w.Blds.Single(b => b.T == "farm");
+            var field = w.FarmFields().Keys.First();
+            Assert.IsTrue(w.Remove(starter.X, starter.Y).Ok);
+            Assert.AreEqual(Zone.Farm, w.ZoneMap[field / N, field % N]);
+            w.Develop();
+            Assert.IsFalse(w.Blds.Any(b => b.T == "farm"), "crop zones do not place buildings");
+            Assert.IsTrue(w.Place("farm", c - 2, c + 5).Ok);
+            var farm = w.Grid[c + 5, c - 2];
+            Assert.AreEqual(2, farm.Sz);
+            Assert.AreSame(farm, w.FarmFields()[field], "the surviving field belongs to the manually placed farmhouse");
+            Assert.IsNull(w.Grid[field / N, field % N], "a field is not a building");
         }
 
         [Test]

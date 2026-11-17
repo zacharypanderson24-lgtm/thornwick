@@ -83,14 +83,7 @@ namespace CrownAndHearth.Sim
                         : DecoMap[ty, tx] == Deco.Ore ? "Ore blocks this tile. Zone it for mining to clear it"
                         : "Too steep to build on");
             }
-            if ((type == "market" || type == "farm" || type == "wood" || type == "quarry" || type == "mine") && !NextToRoad(fp))
-                return Result.No("Must touch a road");
-            if (type == "mine")
-            {
-                int face = MineFaceAt(x, y);
-                if (face >= 0 && !EntranceServed(x, y, face, D.Conn))
-                    return Result.No("Connect a road at the downhill entrance");
-            }
+            if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
             if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");
             return CanAfford(type);
         }
