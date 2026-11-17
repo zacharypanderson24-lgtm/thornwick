@@ -20,7 +20,8 @@ namespace CrownAndHearth.Sim
         public int I, T, Tx, Ty, Stand = -1;
         public double Carry;
         public bool Survey, Dig;            // miners: out surveying a zone tile / underground digging the shaft
-        public int Level;                   // miners: the level they are working underground
+        public int Level;                   // miners: the ore band they are working (0 while digging)
+        public int Need;                    // miners: where they work, 0 = the adit, else that shaft level
     }
 
     /// <summary>One ambient villager (JS: the objects in folkOf(S)).</summary>

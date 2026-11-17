@@ -69,8 +69,10 @@ namespace CrownAndHearth.Tests
                 for (int x = 0; x < N; x++)
                 {
                     int i = y * N + x;
-                    char deco = w.DecoMap[y, x] switch { Deco.Tree => 'T', Deco.Rock => 'R', Deco.Ore => 'O', Deco.Stump => 'S', Deco.Sapling => 's', _ => '.' };
-                    Assert.AreEqual(r.deco[i], deco, $"deco at {x},{y}");
+                    // ore showings are Unity's own since the mining rework (World.GenDeposits puts them on hill flanks over real ore),
+                    // so an ore tile on either side counts as open ground here; MiningTests covers where they go
+                    char deco = w.DecoMap[y, x] switch { Deco.Tree => 'T', Deco.Rock => 'R', Deco.Stump => 'S', Deco.Sapling => 's', _ => '.' };
+                    Assert.AreEqual(r.deco[i] == 'O' ? '.' : r.deco[i], deco, $"deco at {x},{y}");
                     Assert.AreEqual(r.fert[i] == '1', w.Fert[y, x], $"fertility at {x},{y}");
                     Assert.AreEqual(r.amt[i], deco == 'R' ? (char)('0' + w.RockAmt(x, y)) : '0', $"rock amount at {x},{y}");
                     if (deco == 'T')
@@ -172,7 +174,7 @@ namespace CrownAndHearth.Tests
         {
             var dev = Ref.develop;
             var w = new World(dev.seed);
-            Layout(w, dev.R); StripOre(w);
+            StripOre(w); Layout(w, dev.R);
             int total = 0;
             for (int i = 0; i < dev.steps.Length; i++)
             {
@@ -236,7 +238,7 @@ namespace CrownAndHearth.Tests
             var tc = Ref.ticks;
             Assert.IsNotNull(tc, "reference.json has no tick scenario. Run node unity/ParityReference/make_reference.js from the repo root.");
             var w = new World(tc.seed);
-            Layout(w, tc.R); StripOre(w);
+            StripOre(w); Layout(w, tc.R);
             Assert.AreEqual(tc.lodges, PlaceLodges(w), "woodcutter lodge sites");
             var keys = new[] { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Gold };
             bool sawWork = false, sawFolkOut = false;

@@ -76,7 +76,7 @@ namespace CrownAndHearth.Sim
 
         /// <summary>
         /// How promising a mine site is (0 = not a site). Underground mining: a mine grows where its Mining zone shows ore at the surface
-        /// or surveyed ore below (3 points a tile), or as a gamble on 3+ unsurveyed open zone tiles (1 point each; rock is for quarries).
+        /// or holds surveyed ore (3 points a tile), or as a gamble on 3+ unsurveyed high-ground zone tiles (hills and mountains, where ore lies).
         /// </summary>
         int OreSite(int x, int y)
         {
@@ -86,7 +86,7 @@ namespace CrownAndHearth.Sim
                 {
                     if (!Inb(i, j) || ZoneMap[j, i] != Zone.Mine) continue;
                     if (DecoMap[j, i] == Deco.Ore && !Surveyed[Tk(i, j)] || HasKnownOre(i, j)) known++;
-                    else if (!Surveyed[Tk(i, j)] && DecoMap[j, i] != Deco.Rock) unknown++;
+                    else if (!Surveyed[Tk(i, j)] && GenLevel(i, j) >= 1) unknown++;
                 }
             return known > 0 ? known * 3 + unknown : unknown >= 3 ? unknown : 0;
         }
@@ -213,7 +213,7 @@ namespace CrownAndHearth.Sim
             { Zone.Farm, "Needs empty fertile zone tiles right beside a road that leads to the Town Hall." },
             { Zone.Comm, "Needs a road-linked commerce lot near homes that lack a market." },
             { Zone.Wood, "Needs a road-linked lumber tile with 3+ trees in range, and space from other woodcutters." },
-            { Zone.Mine, "Needs a road-linked mining tile with 2+ rock tiles (quarry), or an ore showing, known ore or 3+ unsurveyed tiles (mine) in range." },
+            { Zone.Mine, "Needs a road-linked mining tile with 2+ rock tiles (quarry), or an ore showing, known ore or 3+ unsurveyed hill or mountain tiles (mine) in range." },
         };
 
         /// <summary>Grow at most one building per zone kind. JS: develop. Call after Recalc.</summary>

@@ -117,9 +117,9 @@ namespace CrownAndHearth.Game
             if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
             if (kb.uKey.wasPressedThisFrame)
             {
-                _ugLevel = (_ugLevel + 1) % (World.MaxDepth + 1);
-                _hud.Toast(_ugLevel == 0 ? "Underground view off." : $"Underground view: level {_ugLevel} of {World.MaxDepth}" +
-                    (_ugLevel == 1 ? " (shallow). Orange = surveyed ore, brighter = richer; grey = surveyed, nothing here; blue = Mining zone not surveyed yet. U for deeper." : _ugLevel < World.MaxDepth ? ". U for deeper." : " (deepest). U to turn off."), 6);
+                _ugLevel = (_ugLevel + 1) % (World.Bands + 1);
+                _hud.Toast(_ugLevel == 0 ? "Underground view off." : $"Underground view: ore band {_ugLevel} of {World.Bands}" +
+                    (_ugLevel == 1 ? " (just under the surface). Ore lies in hills and mountains. Orange = surveyed ore, brighter = richer; grey = surveyed, nothing here; blue = Mining zone not surveyed yet. U for deeper." : _ugLevel < World.Bands ? ". U for deeper." : " (deepest, richest). U to turn off."), 6);
             }
         }
 
@@ -184,8 +184,8 @@ namespace CrownAndHearth.Game
 
         static readonly Color32 UgNone = new Color32(40, 40, 48, 150), UgUnknown = new Color32(70, 110, 200, 110), UgShaft = new Color32(255, 240, 120, 200);
 
-        /// <summary>Underground view at level _ugLevel: surveyed ore (orange, brighter = richer), surveyed nothing (grey),
-        /// Mining zone not yet surveyed (blue), mines whose shaft reaches this level (yellow). Unsurveyed ground stays as it is.</summary>
+        /// <summary>Underground view of ore band _ugLevel (1 = just under each tile's surface, 3 = deepest): surveyed ore (orange, brighter =
+        /// richer), surveyed nothing (grey), Mining zone not yet surveyed (blue), mines with an adit or shaft (yellow).</summary>
         void DrawUnderground()
         {
             var w = World; int L = _ugLevel; double cap = World.LevelCapMax[L];
@@ -193,7 +193,7 @@ namespace CrownAndHearth.Game
                 for (int x = 0; x < N; x++)
                 {
                     var b = w.Grid[y, x];
-                    if (b != null && b.T == "mine") { if (b.Depth >= L) _overlay.AddTile(w, x, y, _rot, UgShaft); continue; }
+                    if (b != null && b.T == "mine") { if (b.Adit || b.Depth > 0) _overlay.AddTile(w, x, y, _rot, UgShaft); continue; }
                     if (w.IsSurveyed(x, y))
                     {
                         double o = w.KnownOre(x, y, L);
@@ -279,7 +279,7 @@ namespace CrownAndHearth.Game
             if (!w.IsSurveyed(x, y))
                 return w.ZoneMap[y, x] == Zone.Mine ? "Underground: not surveyed yet (a mine's miners will survey it)" : "Underground: unknown. Paint a Mining zone (7) to have it surveyed";
             var parts = new List<string>();
-            for (int l = 1; l <= World.MaxDepth; l++) { double o = w.KnownOre(x, y, l); parts.Add($"L{l} " + (o > 1e-9 ? $"{o:0} ore" : "none")); }
+            for (int l = 1; l <= World.MaxDepth; l++) { double o = w.KnownOre(x, y, l); parts.Add($"band {l} " + (o > 1e-9 ? $"{o:0} ore" : "none")); }
             return "Underground (surveyed): " + string.Join(", ", parts);
         }
 
@@ -301,7 +301,7 @@ namespace CrownAndHearth.Game
             var d = w.DecoMap[y, x];
             if (d == Deco.Tree) lines.Add("FOREST. Paint a Lumber zone (6) so a woodcutter lodge fells it.");
             if (d == Deco.Rock) lines.Add(w.IsMountain(x, y) ? $"MOUNTAIN. Stone left {w.RockLeft(x, y):0}. Quarry it from the edge." : $"STONE OUTCROP. Stone left {w.RockLeft(x, y):0}.");
-            if (d == Deco.Ore) lines.Add(w.IsSurveyed(x, y) ? "IRON SHOWING. Ore shows at the surface here." : "IRON SHOWING. Ore shows at the surface here; more lies below. Paint a Mining zone (7) so miners survey it.");
+            if (d == Deco.Ore) lines.Add(w.IsSurveyed(x, y) ? "IRON SHOWING. Ore shows at the surface here." : "IRON SHOWING. Ore shows at the surface here; more lies inside the hill. Paint a Mining zone (7) over it and the high ground, with a lot at the foot for the mine");
             lines.Add(UndergroundLine(x, y));
             if (d == Deco.Stump) lines.Add("Stump. It rots away into open ground.");
             if (d == Deco.Sapling) lines.Add("Sapling. It grows into a tree in three years.");

@@ -38,8 +38,10 @@ When `codex/unity-saves` (and `codex/settlement-art-tools`, which contains it) t
 ### Note for ChatGPT/Codex: saves and underground mining (`claude/underground-mining`)
 
 Mining state that saves must carry once both branches are in: `World.Surveyed` (bool per tile), `World.OreTaken`
-(level * N * N + y * N + x -> ore taken), `World.MinerDeaths`, `World.CaveIns`, and per mine `Building.Depth`, `Shored`, `DigProg`,
-`Closed`, `CaveIns`. Deposit sizes are NOT saved: `GenDeposits` regenerates them from the seed and the starting terrain heights.
+(band * N * N + y * N + x -> ore taken), `World.MinerDeaths`, `World.CaveIns`, and per mine `Building.Adit`, `AditShored`, `AditProg`,
+`Depth`, `Shored`, `DigProg`, `Closed`, `CaveIns`. Deposit sizes and the frozen mining heights are NOT saved: `GenDeposits`
+regenerates them from the seed (it runs before any building levels the ground). It also moves the ore showings, so a save must
+store the deco map as it is (it already does) and loading must not re-run the showing placement over it.
 Browser saves have none of this; importing one should leave everything unsurveyed with shafts at level 0.
 The underground view only adds tiles to `OverlayRenderer` from `GameController.DrawUnderground`, so it should sit beside
 the resource view (V) from `codex/terrain-occlusion` without conflict beyond `GameController.cs` merge lines.
@@ -65,14 +67,15 @@ the resource view (V) from `codex/terrain-occlusion` without conflict beyond `Ga
 | `0a2b378` | `claude/port-work-crews` | Walking work crews and townsfolk ported (`World.Crews.cs`), drawn in Unity (`AgentRenderer.cs`); 300-day tick parity test (12 tests). |
 | `aad0ca9` | `claude/port-work-crews` | Branch map and merge notes for ChatGPT/Codex. |
 | `bb2df72` | `unity-migration` | Merge of `claude/port-work-crews` (12/12 EditMode tests in batch mode on the merge). |
-| _this commit_ | `claude/underground-mining` | Underground mining (`World.Mining.cs`), underground view (U), 10 mining tests; ore removed from the two day-by-day parity scenarios (22 tests). |
+| `6d3bfd3` | `claude/underground-mining` | Underground mining (`World.Mining.cs`), underground view (U), 10 mining tests; ore removed from the two day-by-day parity scenarios (22 tests). |
+| _this commit_ | `claude/underground-mining` | Mining rework: ore in hills and mountains, adits from the foot of high ground, showings on hill flanks, 3x3 surveys; terrain parity ignores ore tiles (24 tests). |
 
 ## Implemented and tested
 
 Tested means covered by `unity/Assets/Tests/EditMode/SimParityTests.cs` (12 tests, all passing on 2026-11-16 on `unity-migration` after the crews merge, and on `claude/underground-mining`) and play-tested in
 the Editor (no console errors or warnings). Parity tests compare against the real browser code through
 `unity/ParityReference/make_reference.js`. On `claude/underground-mining` the two day-by-day scenarios remove every ore
-showing first (mining no longer matches the browser on purpose); terrain tests still compare ore tiles.
+showing before laying out the town, and the terrain test treats ore tiles as open ground (showings are placed by Unity now).
 
 | Feature | Parity-tested against the JS | Play-tested |
 |---|---|---|
@@ -97,22 +100,26 @@ showing first (mining no longer matches the browser on purpose); terrain tests s
 
 A new mechanic, not a port: the browser still mines surface ore tiles. Design: `DESIGN_TERRAIN.md` section 3 and Zach's mining
 decisions, plus choices made on 2026-11-16: miners survey Mining zones (no prospector building), a cave-in closes the mine and can
-kill a miner, and the old ore tiles stay as surface showings. All numbers are first guesses for tuning (`World.Mining.cs` top).
+kill a miner; and in the rework the same day: ore lies in hills and mountains (not lowland), mines at the foot of high ground drive
+an adit into it, quarries and mines share a mountain, and surface showings sit on hill flanks over real ore. All numbers are first
+guesses for tuning (top of `World.Mining.cs`).
 
-| Feature | Tested (`MiningTests.cs`, 10 tests) | Play-tested |
+| Feature | Tested (`MiningTests.cs`, 12 tests) | Play-tested |
 |---|---|---|
-| Hidden deposits at 3 levels, from the seed; clustered round the showings; richer deeper and under hills and mountains | yes | yes (underground view) |
-| Mining zones on rock (quarries), showings and open ground; not on forest | yes | yes |
-| Mines grow on a zone with a showing or known ore, or as a gamble on 3+ unsurveyed open tiles | indirectly (mines grow in the test towns) | yes |
-| Miners walk out and survey zone tiles (reveals all levels); a barren zone is reported | yes | yes |
-| Shaft dug level by level (12 / 24 / 40 worker-days); ore brought up from the deepest worked level, loads 4 / 6 / 8 | yes | yes (levels 1-3 reached) |
-| Timber supports (6 / 10 / 16 wood a level) taken from the store as soon as there is wood | yes | yes |
-| Cave-ins: risk x level x crowding, x0.15 when shored; mine closed 20 days, supports smashed, 60% (unshored) / 25% (shored) chance a miner dies | yes | yes (an unshored level-3 cave-in killed a miner while wood was short) |
-| Underground view: U cycles levels 1-3 / off (orange = known ore, grey = surveyed empty, blue = zone not surveyed, yellow = shaft) | n/a | yes |
-| Mine info: shaft depth, shored levels, digging progress, repairs, unsurveyed tiles, worked out / no ore found | n/a | yes |
+| Hidden ore in 3 bands counted down from each tile's surface, from the seed; none in lowland, hills about 33 and mountains about 149 ore a tile (seed 7); band 3 richest | yes | yes (underground view) |
+| Surface showings only on hill tiles over a strong top band (329 on seed 7; the browser's lowland ones are gone) | yes | yes |
+| Mining zones on rock, mountains, showings and open ground; not on forest | yes | yes |
+| Mines grow on a zone with a showing or known ore, or as a gamble on 3+ unsurveyed hill or mountain tiles | indirectly | yes |
+| Miners survey zone tiles (each trip reveals all bands of a 3x3 patch); a barren zone is reported | yes | yes |
+| Adit: a band whose tile rises above the mine's floor is reached through the mine's adit (10 worker-days, 6 wood, half the shaft-1 risk); bands below the floor need the shaft (12 / 24 / 40 worker-days, 6 / 10 / 16 wood) | yes | yes: a mine at a mountain's foot drove its adit and brought up 72 ore from band 3 in 90 days with no shaft |
+| Mining heights are frozen at generation, so quarrying a mountain's face does not move or destroy its ore | yes | n/a |
+| Loads by band 4 / 6 / 8; miners work the richest reachable band first | yes | yes |
+| Cave-ins: risk x (shaft level, or 0.5 in the adit) x crowding, x0.15 where shored; mine closed 20 days, supports there smashed, 60% (unshored) / 25% (shored) chance a miner dies | yes | yes (before the rework: an unshored cave-in killed a miner while wood was short) |
+| Underground view: U cycles bands 1-3 / off (orange = known ore, grey = surveyed empty, blue = zone not surveyed, yellow = mine with an adit or shaft) | n/a | yes |
+| Mine info: adit, shaft depth, supports, digging progress, repairs, unsurveyed tiles, worked out / no ore found | n/a | yes |
 
-Seen in play: supports compete with building for wood (the test town sat at 2-9 wood while mines shored levels), which made an
-unshored cave-in happen. Intended pressure, but worth tuning (a wood reserve for supports, or a player toggle). Not saved yet (see the
+Seen in play: supports compete with building for wood (one test town sat at 2-9 wood while mines shored), which led to an
+unshored cave-in. Intended pressure, but worth tuning (a wood reserve for supports, or a player toggle). Not saved yet (see the
 note for ChatGPT/Codex above). Smelting (ore + charcoal) and other ores (gold, gems) are not built.
 
 ## Not done yet (next candidates)
