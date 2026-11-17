@@ -10,9 +10,11 @@ _Last updated: 2026-11-16 (Claude Code, work crews)._
 | Branch | Purpose | Head |
 |---|---|---|
 | `main` | Browser prototype (JavaScript). Untouched by the migration. | `4d99fca` |
-| `unity-migration` | Integration branch for the Unity port, shared by Claude Code and ChatGPT/Codex. Contains the playable port (PR #1), the walking work crews and underground mining. | merge of `claude/underground-mining` |
+| `unity-migration` | Integration branch for the Unity port, shared by Claude Code and ChatGPT/Codex. Contains the playable port (PR #1), walking work crews, underground mining, ChatGPT's mine and ore art, and mountain ranges. | merge of `claude/mountain-ranges` |
 | `claude/port-work-crews` | Walking work crews and townsfolk (`sim_crews.js`). Merged into `unity-migration` 2026-11-16. | `unity-migration` |
 | `claude/underground-mining` | Underground mining (Unity-only new mechanic): hidden deposits, surveying, shaft levels, timber supports, cave-ins, underground view. Cut from `unity-migration` `bb2df72`. Merged into `unity-migration` 2026-11-16. | `unity-migration` |
+| `claude/mine-ore-art` | ChatGPT's mine and ore art, mine entrances. Merged into `unity-migration` 2026-11-16 (`bf2968f`). | `unity-migration` |
+| `claude/mountain-ranges` | Mountain ranges: long, tall ranges across the map, relief by region. Cut from `unity-migration` `bf2968f`. Merged into `unity-migration` 2026-11-16. | `unity-migration` |
 | `claude/settlement-port` | Claude Code's first working branch. [PR #1](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) merged into `unity-migration`. | `22058e9` |
 | `codex/unity-saves` | ChatGPT/Codex: Unity saves and browser save migration. Not merged yet. | `0d1552c` |
 | `codex/terrain-occlusion` | ChatGPT/Codex: terrain drawn in depth order, resource view. Not merged yet. | `6490fe9` |
@@ -77,6 +79,9 @@ the resource view (V) from `codex/terrain-occlusion` without conflict beyond `Ga
 | `5d7c3ce` | `claude/underground-mining` | Mining rework: ore in hills and mountains, adits from the foot of high ground, showings on hill flanks, 3x3 surveys; terrain parity ignores ore tiles (24 tests). |
 | `bf69c74` | `claude/underground-mining` | Records the mining merge. |
 | `96dc7cc` | `unity-migration` | Merge of `claude/underground-mining` (24/24 EditMode tests in the Editor on the merge). |
+| `bf2968f` | `unity-migration` | Merge of `claude/mine-ore-art`. |
+| `6e3c8b6` | `claude/mountain-ranges` | Mountain ranges by relief, peaks to 16, passes, Classic style for parity (33 tests). |
+| _this commit_ | `claude/mountain-ranges` | Records the mountain merge; then merged into `unity-migration`. |
 | `575caa4` | `claude/mine-ore-art` | ChatGPT's mine art (`mine_1..4`), cherry-picked from `codex/mine-art` `19bfe75` with its authorship. |
 | `90ae791`, `f0bf19a` and next | `claude/mine-ore-art` | ChatGPT's ore showing art (`ore_0/1` from `b6b1505`, exact files) and its `NatureSprite` lookup; mine entrances face away from the hill and need their road (26 tests); merged into `unity-migration`. |
 
@@ -133,6 +138,31 @@ guesses for tuning (top of `World.Mining.cs`).
 Seen in play: supports compete with building for wood (one test town sat at 2-9 wood while mines shored), which led to an
 unshored cave-in. Intended pressure, but worth tuning (a wood reserve for supports, or a player toggle). Not saved yet (see the
 note for ChatGPT/Codex above). Smelting (ore + charcoal) and other ores (gold, gems) are not built.
+### Mountain ranges (Unity-only, merged into `unity-migration` 2026-11-16)
+
+Decided 2026-11-16 (Zach): mountains span the future conquest map, so on a city map they are long ranges that run off the map edges,
+much taller (up to level 16, was 8), and how mountainous a map is depends on its region. The browser's own generator stays as
+`TerrainStyle.Classic` (bit for bit; the parity tests use it), so all the day-by-day economy comparisons still hold.
+
+| Feature | Tested (`MountainTests.cs`, 7 tests) | Play-tested |
+|---|---|---|
+| `World(seed, style, relief)`: Ranges (the game) or Classic (browser); relief Lowland / Upland (default) / Highland / Alpine, also a `GameController` Inspector field | yes | yes |
+| Mountain share by relief, 12 seeds: about 3.7% / 8.4% / 17.6% / 26.1% (Classic was under 2%) | yes (ordering and ranges, 6 seeds) | yes (Highland seed 7: 16.2%) |
+| Peaks up to level 16 (`HMax` 16; Classic still clamps at 8); snow above level 12 | yes | yes |
+| Ranges cross the map and run off its edges, bent by noise; steep flanks to level 4, gentler foothills below (hill ground for adits) | yes | yes |
+| Saddle passes (crest down to level 2.2 over about 18 tiles, one per ~55 tiles of range); 100% of walkable land reachable from the Hall on all 48 probe maps | yes (97%+ and all four edges, 24 maps) | n/a |
+| A valley stays open round the town: no mountain within 15 tiles of the Hall, starting settlement intact | yes | yes |
+| Big lone massifs on upland and higher relief | indirectly | yes |
+
+Generation takes about 0.1-0.2 s a map. Not done: the conquest map does not exist yet to choose a city's relief (new games use
+Upland unless the Inspector field is changed); rivers and valleys shaped by the ranges; mountain art beyond the flat rock and snow surface.
+
+### Note for ChatGPT/Codex: mountain ranges
+
+`Defs.HMax` is now 16 (was 8) and `World` takes `(seed, style, relief)`. The parity tests construct `TerrainStyle.Classic` worlds; any
+new test that compares with the browser must too. `GroundRenderer` picks snow with `TileLevel >= Defs.SnowLevel` (was `* LvlPx >= 44`);
+`codex/terrain-occlusion` rewrites that file, so keep the snow test when merging. Taller terrain means more ground can hide what is
+behind it, which makes the occlusion work more important.
 
 ## Not done yet (next candidates)
 

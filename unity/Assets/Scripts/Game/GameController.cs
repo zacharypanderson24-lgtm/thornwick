@@ -39,6 +39,8 @@ namespace CrownAndHearth.Game
         [Tooltip("Sprite-Unlit material (URP 2D) so the palette shows exactly as drawn.")]
         public Material SpriteMaterial;
         public int Seed = 7;
+        [Tooltip("How mountainous the city's region is (the conquest map will set this later).")]
+        public Relief Relief = Relief.Upland;
 
         public World World { get; private set; }
         int _rot, _drawnVersion = -1, _drawnRot = -1, _speed = 1;
@@ -52,7 +54,7 @@ namespace CrownAndHearth.Game
 
         void Start()
         {
-            World = new World(Seed);
+            World = new World(Seed, TerrainStyle.Ranges, Relief);
             _art = new ArtLibrary();
             if (SpriteMaterial == null) Debug.LogError("GameController needs the Sprite-Unlit material. Run Crown & Hearth > Rebuild Settlement Scene.");
             _ground = new GameObject("Ground", typeof(MeshFilter), typeof(MeshRenderer), typeof(GroundRenderer)).GetComponent<GroundRenderer>();

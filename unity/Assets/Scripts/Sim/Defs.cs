@@ -18,7 +18,11 @@ namespace CrownAndHearth.Sim
         public const int Start = N >> 1;          // the Town Hall is centred here
 
         // Terrain heights
-        public const int HMin = -8, HMax = 8, MountLevel = 4, LvlPx = 7;
+        public const int HMin = -8, HMax = 16, MountLevel = 4, LvlPx = 7;
+        /// <summary>The browser's height ceiling: TerrainStyle.Classic clamps to it so it stays identical to the prototype.</summary>
+        public const int ClassicHMax = 8;
+        /// <summary>Mountain tiles at or above this level are drawn as snow.</summary>
+        public const double SnowLevel = 12;
 
         // Economy
         public const int HallCap = 6, Bunks = 6, WellR = 4, WorkR = 3, MarketR = 5, Storage = 400;
