@@ -105,7 +105,7 @@ namespace CrownAndHearth.Sim
                 Body = "One day passes every second. Space pauses; the 1x, 2x and 4x buttons speed things up while you wait for the town to grow.",
                 Goal = "Pause or change the speed", Done = (t, w) => t.SpeedChanged },
             new Step { Id = "road", Title = "Roads", Tool = "road",
-                Body = "Everything needs a road that leads back to the Town Hall: buildings only work, and zones only grow, beside one.\n\n" +
+                Body = "Use Build for buildings and roads, and Zone to mark land. Working buildings need a road back to the Town Hall.\n\n" +
                        "Pick Road (2), press on a tile next to the street and drag: an L-shaped road follows the mouse and is built when you let go. " +
                        "Each tile costs 1 wood. Roads climb hills but not mountains, and cannot go through forest.",
                 Goal = "Lay 3 more road tiles connected to the Town Hall", Done = Grew(s => s.Roads, 3) },
@@ -119,8 +119,8 @@ namespace CrownAndHearth.Sim
                        "and food is stocked. Hover a zone tile: the panel on the left says why nothing grows yet.\n\nTry 4x speed and wait for a new home.",
                 Goal = "A new home grows", Done = Grew(s => s.Houses, 1) },
             new Step { Id = "farmland", Title = "Food", Tool = "zoneFarm",
-                Body = "Villagers eat every day; with no food they starve and leave.\n\nPick Farmland (4) and zone fertile soil (the darker, olive ground) " +
-                       "near a road. When food runs low a 2x2 farmhouse grows there, and every Farmland tile within 3 tiles of it becomes one of its " +
+                Body = "Villagers eat every day; with no food they starve and leave.\n\nPick Wheat (4) and zone fertile soil (the darker, olive ground) " +
+                       "within 3 tiles of a 2x2 farmhouse. Place more farmhouses with Build > Farmhouse (B); each field becomes one of its " +
                        "1x1 plots. Each farmer tends 2 plots, so give farms room.",
                 Goal = "Zone 6 Farmland tiles", Done = Grew(s => s.Farmland, 6) },
             new Step { Id = "workers", Title = "Workers",
@@ -128,8 +128,8 @@ namespace CrownAndHearth.Sim
                        "farming first. Use Up and Dn to change who gets hands first; a row in red is short of workers.",
                 Goal = "Open the Workers panel", Done = (t, w) => t.WorkersOpened },
             new Step { Id = "lumber", Title = "Wood", Tool = "zoneWood",
-                Body = "Wood builds everything. Pick Lumber (6) and zone forest beside a road: when wood runs low a Woodcutter Lodge grows there and " +
-                       "its woodcutters walk out, fell the marked trees and carry logs home. Felled land turns to stumps, then open ground.\n\n" +
+                Body = "Wood builds everything. Build a Woodcutter Lodge (L) beside a road, then mark nearby forest with Lumber (6). " +
+                       "Woodcutters walk out, fell the marked trees and carry logs home. Felled land turns to stumps, then open ground.\n\n" +
                        "A Forester (F) replants saplings on Lumber-zoned open ground, so a forest can last.",
                 Goal = "Zone 6 Lumber tiles", Done = Grew(s => s.Lumber, 6) },
             new Step { Id = "sawmill", Title = "Logs into wood", Tool = "sawmill",
@@ -138,13 +138,13 @@ namespace CrownAndHearth.Sim
                 Goal = "Build a Sawmill", Done = Grew(s => s.Sawmills, 1) },
             new Step { Id = "services", Title = "Wells and markets", Tool = "well",
                 Body = "A Well (8, 5 wood and 5 stone) raises the homes within 4 tiles to level 2, so they hold more people.\n\n" +
-                       "Commerce zones (5) grow markets near homes that have none; markets trade, which brings in gold.",
+                       "Place a 2x2 market (5) beside a connected road. Staffed markets sell flax and surplus wheat for gold.",
                 Goal = "Build a Well", Done = Grew(s => s.Wells, 1) },
             new Step { Id = "stone", Title = "Stone and iron", Tool = "zoneMine",
                 Body = "Mining (7) zones go on rock and on hills and mountains.\n\n" +
-                       "Stone: zone rock outcrops or a mountain's edge beside a road and a Quarry grows; quarries dig hills down and cut into mountains.\n\n" +
+                       "Stone: zone rock outcrops or a mountain's edge inside reach of a Quarry you place with Build (K); quarries dig hills down and cut into mountains.\n\n" +
                        "Iron lies hidden inside hills and mountains (orange-veined stones on the slopes hint at it). Zone the high ground and a lot at its " +
-                       "foot: a Mine grows there, its entrance facing away from the hill, and it needs the road right at that entrance.",
+                       "foot, then place a Mine (M). Its entrance faces away from the hill and needs the road right at that entrance.",
                 Goal = "Zone 6 Mining tiles", Done = Grew(s => s.Mining, 6) },
             new Step { Id = "underground", Title = "Underground",
                 Body = "Press U for the underground view (U again for deeper bands). A mine's miners first survey its zone: orange shows the ore " +

@@ -96,7 +96,7 @@ namespace CrownAndHearth.Sim
             world.Prio = priority.Where(Trades.Contains).Concat(Trades).Distinct().ToArray();
             if (size < N) world.GenTerrain((offset, offset + size));
             ReadGrid(deco, world.DecoMap, size, offset, ReadEnum<Deco>);
-            ReadGrid(save["zone"] as JArray, world.ZoneMap, size, offset, ReadEnum<Zone>);
+            ReadGrid(save["zone"] as JArray, world.ZoneMap, size, offset, token => { var zone = ReadEnum<Zone>(token); return zone == Zone.Comm ? Zone.None : zone; });
             ReadGrid(save["fert"] as JArray, world.Fert, size, offset, token => token.Value<bool>());
             ReadTiles(save["flaxFields"], world.FlaxFields, size, offset);
             ReadTiles(save["rockAmt"], world.RockAmtMap, size, offset);

@@ -51,6 +51,7 @@ namespace CrownAndHearth.Sim
             { "market", new Dictionary<Res, int> { { Res.Wood, 12 } } },
             { "sawmill", new Dictionary<Res, int> { { Res.Wood, 15 } } },
             { "forester", new Dictionary<Res, int> { { Res.Wood, 8 } } },
+            { "silo", new Dictionary<Res, int> { { Res.Wood, 20 }, { Res.Stone, 5 } } },
             { "well", new Dictionary<Res, int> { { Res.Wood, 5 }, { Res.Stone, 5 } } },
             { "barracks", new Dictionary<Res, int> { { Res.Wood, 20 }, { Res.Stone, 15 }, { Res.Gold, 20 } } },
         };
@@ -71,7 +72,7 @@ namespace CrownAndHearth.Sim
         {
             { "road", "Dirt Road" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "quarry", "Quarry" },
             { "mine", "Iron Mine" }, { "market", "Market" }, { "sawmill", "Sawmill" }, { "forester", "Forester" }, { "well", "Well" },
-            { "barracks", "Barracks" }, { "hall", "Town Hall" },
+            { "barracks", "Barracks" }, { "hall", "Town Hall" }, { "silo", "Silo" },
         };
 
         public static readonly Dictionary<string, int> Jobs = new Dictionary<string, int>
@@ -105,6 +106,6 @@ namespace CrownAndHearth.Sim
         public static readonly int[,] FaceDirs = { { 0, 1 }, { -1, 0 }, { 0, -1 }, { 1, 0 } };
         public static readonly int[,] Nb = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
-        public static int DefaultSize(string type) => type == "hall" ? 3 : type == "barracks" ? 2 : 1;
+        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "market" || type == "farm") ? 2 : 1;
     }
 }

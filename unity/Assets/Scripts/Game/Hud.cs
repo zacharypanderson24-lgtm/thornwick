@@ -22,6 +22,11 @@ namespace CrownAndHearth.Game
         Text _resText, _infoText, _toastText, _workText, _demandText;
         GameObject _infoPanel, _workPanel;
         float _toastUntil;
+        enum Shelf { Closed, Build, Zone }
+        readonly Dictionary<string, Shelf> _toolShelves = new Dictionary<string, Shelf>();
+        RectTransform _buildShelf, _zoneShelf;
+        UnityEngine.UI.Image _buildTab, _zoneTab;
+        Shelf _openShelf;
         readonly Dictionary<string, Image> _toolButtons = new Dictionary<string, Image>();
         readonly Dictionary<int, Image> _speedButtons = new Dictionary<int, Image>();
         RectTransform _workRows;
@@ -72,19 +77,35 @@ namespace CrownAndHearth.Game
 
             // bottom tool bar
             var bottom = MakePanel(root, "ToolBar", new Vector2(0, 0), new Vector2(1, 0), Vector2.zero, new Vector2(0, 46));
-            float bx = 8;
-            foreach (var t in tools)
+            _buildTab = MakeButton(bottom, "Build", new Vector2(0, 0.5f),
+                new Vector2(146, 0), new Vector2(104, 34), () => ToggleShelf(Shelf.Build));
+            _zoneTab = MakeButton(bottom, "Zone", new Vector2(0, 0.5f),
+                new Vector2(258, 0), new Vector2(104, 34), () => ToggleShelf(Shelf.Zone));
+            _buildShelf = MakeToolShelf(root, "BuildTools");
+            _zoneShelf = MakeToolShelf(root, "ZoneTools");
+            foreach (var tool in tools)
             {
-                var id = t.Id;
-                float w = Mathf.Max(70, 9f * (t.Label.Length + t.Key.Length + 3));
-                _toolButtons[id] = MakeButton(bottom, $"{t.Label} ({t.Key})", new Vector2(0, 0.5f), new Vector2(bx + w / 2, 0), new Vector2(w, 34), () => ToolPicked?.Invoke(id));
-                bx += w + 4;
+                string id = tool.Id;
+                Shelf shelf = tool.Zone != Zone.None ? Shelf.Zone : tool.Build != null || tool.Road ? Shelf.Build : Shelf.Closed;
+                _toolShelves[id] = shelf;
+                var parent = shelf == Shelf.Build ? _buildShelf : shelf == Shelf.Zone ? _zoneShelf : bottom;
+                float center = id == "clear" ? 365 : 49;
+                var button = MakeButton(parent, $"{tool.Label} ({tool.Key})", new Vector2(0, 0.5f),
+                    new Vector2(center, 0), new Vector2(85, 34), () => ToolPicked?.Invoke(id));
+                if (shelf != Shelf.Closed)
+                {
+                    var layout = button.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+                    layout.flexibleWidth = 1;
+                    layout.preferredWidth = 9 * (tool.Label.Length + tool.Key.Length + 3);
+                }
+                _toolButtons[id] = button;
             }
+            ShowShelf(Shelf.Closed);
             MakeButton(bottom, "Workers", new Vector2(1, 0.5f), new Vector2(-60, 0), new Vector2(100, 34), ToggleWorkforce);
             MakeButton(bottom, "Tutorial", new Vector2(1, 0.5f), new Vector2(-170, 0), new Vector2(110, 34), () => TutorialOpen?.Invoke());
 
             // demand strip above the tool bar
-            var dp = MakePanel(root, "Demand", new Vector2(0, 0), new Vector2(0, 0), new Vector2(8, 52), new Vector2(620, 80));
+            var dp = MakePanel(root, "Demand", new Vector2(0, 0), new Vector2(0, 0), new Vector2(8, 102), new Vector2(260, 129));
             _demandText = MakeText(dp, "DemandText", 15, TextAnchor.MiddleLeft);
             Stretch(_demandText.rectTransform, new Vector2(10, 0), new Vector2(-10, 0));
 
@@ -95,7 +116,7 @@ namespace CrownAndHearth.Game
 
             // toast
             _toastText = MakeText(root, "Toast", 18, TextAnchor.MiddleCenter);
-            var tr = _toastText.rectTransform; tr.anchorMin = new Vector2(0.5f, 0); tr.anchorMax = new Vector2(0.5f, 0); tr.sizeDelta = new Vector2(1100, 40); tr.anchoredPosition = new Vector2(0, 70);
+            var tr = _toastText.rectTransform; tr.anchorMin = new Vector2(0.5f, 0); tr.anchorMax = new Vector2(0.5f, 0); tr.sizeDelta = new Vector2(1100, 40); tr.anchoredPosition = new Vector2(0, 147);
             _toastText.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
 
             // workforce panel
@@ -140,6 +161,8 @@ namespace CrownAndHearth.Game
             _highlight = on ? t.Current.Tool : null;
             if (!on) { RestoreToolColors(); return; }
             var s = t.Current;
+            if (s.Tool != null && _toolShelves.TryGetValue(s.Tool, out var shelf) && shelf != Shelf.Closed)
+                ShowShelf(shelf);
             _tutTitle.text = s.Title;
             _tutStep.text = $"{t.Index + 1} / {Tutorial.Steps.Count}";
             _tutBody.text = s.Body;
@@ -193,7 +216,41 @@ namespace CrownAndHearth.Game
 
         public bool PointerOverUi => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
-        public void SetTool(string id) { _currentTool = id; RestoreToolColors(); }
+        RectTransform MakeToolShelf(RectTransform root, string name)
+        {
+            var shelf = MakePanel(root, name, Vector2.zero, Vector2.right,
+                new Vector2(8, 48), new Vector2(-8, 96));
+            var row = shelf.gameObject.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+            row.padding = new RectOffset(6, 6, 6, 6);
+            row.spacing = 5;
+            row.childControlWidth = true;
+            row.childForceExpandWidth = true;
+            row.childControlHeight = true;
+            return shelf;
+        }
+
+        void ShowShelf(Shelf shelf)
+        {
+            _openShelf = shelf;
+            _buildShelf.gameObject.SetActive(shelf == Shelf.Build);
+            _zoneShelf.gameObject.SetActive(shelf == Shelf.Zone);
+            _buildTab.color = shelf == Shelf.Build ? BtnOn : Btn;
+            _zoneTab.color = shelf == Shelf.Zone ? BtnOn : Btn;
+        }
+
+        void ToggleShelf(Shelf shelf)
+        {
+            var target = _openShelf == shelf ? Shelf.Closed : shelf;
+            ToolPicked?.Invoke("look");
+            ShowShelf(target);
+        }
+
+        public void SetTool(string id)
+        {
+            _currentTool = id;
+            if (_toolShelves.TryGetValue(id, out var shelf)) ShowShelf(shelf);
+            RestoreToolColors();
+        }
         public void SetSpeed(int s) { foreach (var kv in _speedButtons) kv.Value.color = kv.Key == s ? BtnOn : Btn; }
         public void SetResources(string text) => _resText.text = text;
         public void SetDemand(string text) => _demandText.text = text;

@@ -63,17 +63,6 @@ namespace CrownAndHearth.Sim
             return (food, flax);
         }
 
-        bool HasRoomForFarmField(int left, int top, int size, Dictionary<int, Building> fields)
-        {
-            for (int y = top - FarmFieldRange; y < top + size + FarmFieldRange; y++)
-                for (int x = left - FarmFieldRange; x < left + size + FarmFieldRange; x++)
-                {
-                    if (x >= left && x < left + size && y >= top && y < top + size) continue;
-                    if (IsFarmField(x, y) && !fields.ContainsKey(Tk(x, y))) return true;
-                }
-            return false;
-        }
-
         void AddStarterFarmFields()
         {
             // Keep the starting farm productive even on seeds with sparse fertile ground.
