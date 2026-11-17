@@ -16,6 +16,7 @@ _Last updated: 2026-11-16 (Claude Code, work crews)._
 | `claude/mine-ore-art` | ChatGPT's mine and ore art, mine entrances. Merged into `unity-migration` 2026-11-16 (`bf2968f`). | `unity-migration` |
 | `claude/mountain-ranges` | Mountain ranges: long, tall ranges across the map, relief by region. Cut from `unity-migration` `bf2968f`. Merged into `unity-migration` 2026-11-16. | `unity-migration` |
 | `claude/farming` | Farming: ChatGPT's farm stack merged in (saves, Texture Lab, banner colours, nature/woodcutter/mine/farm art, crop fields, barns, wheat), made to work with crews, mining and mountains, then 2x2 farmhouses with zoned 1x1 plots and click-click rectangle zoning. Merged into `unity-migration` 2026-11-16. | `unity-migration` |
+| `claude/tutorial` | In-game tutorial for the existing mechanics. Cut from `unity-migration` `6d378d5`. Not merged yet. | see milestone log |
 | `claude/settlement-port` | Claude Code's first working branch. [PR #1](https://github.com/zacharypanderson24-lgtm/thornwick/pull/1) merged into `unity-migration`. | `22058e9` |
 | `codex/unity-saves` | ChatGPT/Codex: Unity saves and browser save migration. In `unity-migration` (via `claude/farming`). | `0d1552c` |
 | `codex/terrain-occlusion` | ChatGPT/Codex: terrain drawn in depth order, resource view. Not merged yet. | `6490fe9` |
@@ -182,6 +183,14 @@ Merged with it from ChatGPT: saves (fixed here: `crewAcc` dropped; terrain style
 on load from the seed, never moving saved showings; browser saves load as Classic terrain), Texture Lab, banner colours, nature,
 woodcutter, mine and farm art. Parity: the two day-by-day browser scenarios now also remove the starting farm and every Farmland zone
 (farming is Unity's own), which put ChatGPT's switched-off zone-development comparison back on.
+### Tutorial (branch `claude/tutorial`, not merged)
+
+A guided walk through the existing mechanics in a panel at the top centre (16 steps: welcome, camera, time, roads, housing zones and
+growth, farmland and farmhouses, workers, lumber, sawmill, wells and markets, stone and iron, the underground view, supports and
+cave-ins, soldiers, saving). Each step lights its toolbar button and finishes when the player has actually done it, counted from when
+the step began (`Sim/Tutorial.cs`, pure C#); explanations wait for Next; Back, Skip and Close work; it opens by itself on a fresh game
+until finished or closed once (PlayerPrefs), and the Tutorial button (bottom right) reopens it where it was left.
+Tested by `TutorialTests.cs` (5 tests). The text names today's buttons; a UI rework must update it.
 
 ## Not done yet (next candidates)
 

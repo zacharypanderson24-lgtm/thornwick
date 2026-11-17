@@ -52,6 +52,8 @@ namespace CrownAndHearth.Game
         ArtLibrary _art;
         GroundRenderer _ground; ObjectRenderer _objects; OverlayRenderer _overlay; AgentRenderer _agents;
         CameraRig _cam; Hud _hud;
+        readonly Tutorial _tutorial = new Tutorial();
+        const string TutorialSeenKey = "crown-hearth-tutorial-seen";
 
         void Start()
         {
@@ -75,13 +77,20 @@ namespace CrownAndHearth.Game
             _hud.Build(Tools);
             _hud.BannerPicked += SetBanner;
             _hud.ToolPicked += id => SetTool(Tools.First(t => t.Id == id));
-            _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); };
+            _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); _tutorial.SpeedChanged = true; };
             _hud.RotatePicked += Rotate;
             _hud.PrioMoved += MovePrio;
+            _hud.WorkforceToggled += open => { if (open) _tutorial.WorkersOpened = true; };
+            _hud.TutorialOpen += () => { _tutorial.Start(World, _tutorial.Finished ? 0 : _tutorial.Index); _hud.ShowTutorial(_tutorial); };
+            _hud.TutorialNext += () => { _tutorial.Next(World); if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); };
+            _hud.TutorialBack += () => { _tutorial.Back(World); _hud.ShowTutorial(_tutorial); };
+            _hud.TutorialClose += () => { _tutorial.Close(); PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); };
             _hud.SavePicked += SaveSettlement;
             _hud.LoadPicked += LoadSettlement;
             _hud.SetTool(_tool.Id); _hud.SetSpeed(_speed);
-            _hud.Toast("Welcome to Crown & Hearth. Right-drag or WASD to pan, scroll to zoom, Q/E to rotate.", 6);
+            // the tutorial opens by itself until the player has finished or closed it once (the Tutorial button brings it back)
+            if (PlayerPrefs.GetInt(TutorialSeenKey, 0) == 0) { _tutorial.Start(World); _hud.ShowTutorial(_tutorial); }
+            else _hud.Toast("Welcome back to Crown & Hearth. The Tutorial button (bottom right) walks through the game.", 6);
         }
 
         static string SavePath => Path.Combine(Application.persistentDataPath, "thornwick-save-1.json");
@@ -156,9 +165,19 @@ namespace CrownAndHearth.Game
 
         void Update()
         {
+            // a script reload during Play mode (recompiling while the game runs) drops the world; Unity does not call Start again
+            if (World == null)
+            {
+                Debug.LogWarning("Crown & Hearth: scripts were reloaded while playing, so the game state is gone. Stop and start Play mode again.");
+                enabled = false;
+                return;
+            }
             HandleKeys();
             bool overUi = _hud.PointerOverUi;
+            var camBefore = _cam.Center; int zoomBefore = _cam.ZoomIndex;
             _cam.Tick(!overUi, !_hud.EditingBanner);
+            if ((_cam.Center - camBefore).sqrMagnitude > 1e-6f) _tutorial.Panned = true;
+            if (_cam.ZoomIndex != zoomBefore) _tutorial.Zoomed = true;
             HandleMouse(overUi);
 
             if (_speed > 0)
@@ -182,6 +201,13 @@ namespace CrownAndHearth.Game
             _hud.SetInfo(_hover.HasValue ? TileInfo(_hover.Value.x, _hover.Value.y) : "");
             _hud.RefreshWorkforce(World);
             if (World.Events.Count > 0) { _hud.Toast(World.Events[World.Events.Count - 1], 8); World.Events.Clear(); }   // cave-ins, new levels, empty surveys
+            var done = _tutorial.Check(World);
+            if (done != null)
+            {
+                _hud.Toast($"Well done: {done.Title}." + (_tutorial.Finished ? " That's the whole tutorial." : ""), 4);
+                if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1);
+                _hud.ShowTutorial(_tutorial);
+            }
         }
 
         void HandleKeys()
@@ -191,9 +217,10 @@ namespace CrownAndHearth.Game
             if (kb.escapeKey.wasPressedThisFrame) SetTool(Tools[0]);
             if (kb.qKey.wasPressedThisFrame) Rotate(-1);
             if (kb.eKey.wasPressedThisFrame) Rotate(1);
-            if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
+            if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); _tutorial.SpeedChanged = true; }
             if (kb.uKey.wasPressedThisFrame)
             {
+                _tutorial.UndergroundViewed = true;
                 _ugLevel = (_ugLevel + 1) % (World.Bands + 1);
                 _hud.Toast(_ugLevel == 0 ? "Underground view off." : $"Underground view: ore band {_ugLevel} of {World.Bands}" +
                     (_ugLevel == 1 ? " (just under the surface). Ore lies in hills and mountains. Orange = surveyed ore, brighter = richer; grey = surveyed, nothing here; blue = Mining zone not surveyed yet. U for deeper." : _ugLevel < World.Bands ? ". U for deeper." : " (deepest, richest). U to turn off."), 6);
@@ -209,6 +236,7 @@ namespace CrownAndHearth.Game
 
         void Rotate(int dir)
         {
+            _tutorial.Rotated = true;
             var center = IsoView.PickTile(World, _cam.Center, _rot) ?? new Vector2Int(Defs.Start, Defs.Start);
             _rot = (_rot + dir + 4) % 4;
             _cam.CenterOn(IsoView.TileCenter(World, center.x, center.y, _rot));

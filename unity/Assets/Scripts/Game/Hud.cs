@@ -32,6 +32,12 @@ namespace CrownAndHearth.Game
         public event Action<int> RotatePicked;
         public event Action<string> BannerPicked;
         public event Action<string, int> PrioMoved;
+        public event Action<bool> WorkforceToggled;
+        public event Action TutorialOpen, TutorialNext, TutorialBack, TutorialClose;
+
+        GameObject _tutPanel;
+        Text _tutTitle, _tutBody, _tutGoal, _tutStep, _tutNextLabel;
+        string _highlight;   // toolbar button the tutorial points at
 
         public void Build(IList<GameController.ToolDef> tools)
         {
@@ -75,6 +81,7 @@ namespace CrownAndHearth.Game
                 bx += w + 4;
             }
             MakeButton(bottom, "Workers", new Vector2(1, 0.5f), new Vector2(-60, 0), new Vector2(100, 34), ToggleWorkforce);
+            MakeButton(bottom, "Tutorial", new Vector2(1, 0.5f), new Vector2(-170, 0), new Vector2(110, 34), () => TutorialOpen?.Invoke());
 
             // demand strip above the tool bar
             var dp = MakePanel(root, "Demand", new Vector2(0, 0), new Vector2(0, 0), new Vector2(8, 52), new Vector2(620, 80));
@@ -101,7 +108,47 @@ namespace CrownAndHearth.Game
             _workText = MakeText(wp, "Summary", 14, TextAnchor.LowerLeft);
             Stretch(_workText.rectTransform, new Vector2(10, 8), new Vector2(-10, -290));
             _workPanel.SetActive(false);
+
+            BuildTutorial(root);
         }
+
+        // ---------- Tutorial panel (top centre, clear of the info panel, banner, workforce and messages) ----------
+        void BuildTutorial(RectTransform root)
+        {
+            var tp = MakePanel(root, "Tutorial", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-330, -318), new Vector2(330, -48));
+            _tutPanel = tp.gameObject;
+            _tutTitle = MakeText(tp, "Title", 19, TextAnchor.UpperLeft); _tutTitle.fontStyle = FontStyle.Bold;
+            Stretch(_tutTitle.rectTransform, new Vector2(14, 230), new Vector2(-90, -10));
+            _tutStep = MakeText(tp, "Step", 14, TextAnchor.UpperRight);
+            Stretch(_tutStep.rectTransform, new Vector2(400, 230), new Vector2(-14, -12));
+            _tutBody = MakeText(tp, "Body", 16, TextAnchor.UpperLeft);
+            Stretch(_tutBody.rectTransform, new Vector2(14, 76), new Vector2(-14, -40));
+            _tutGoal = MakeText(tp, "Goal", 15, TextAnchor.MiddleLeft); _tutGoal.color = new Color(1f, 0.82f, 0.4f);
+            Stretch(_tutGoal.rectTransform, new Vector2(14, 44), new Vector2(-14, -196));
+            MakeButton(tp, "Back", new Vector2(0, 0), new Vector2(54, 24), new Vector2(84, 30), () => TutorialBack?.Invoke());
+            MakeButton(tp, "Close", new Vector2(1, 0), new Vector2(-54, 24), new Vector2(84, 30), () => TutorialClose?.Invoke());
+            var next = MakeButton(tp, "Next", new Vector2(1, 0), new Vector2(-146, 24), new Vector2(84, 30), () => TutorialNext?.Invoke());
+            _tutNextLabel = next.GetComponentInChildren<Text>();
+            _tutPanel.SetActive(false);
+        }
+
+        /// <summary>Show the tutorial's current step (or hide the panel when it is closed or finished).</summary>
+        public void ShowTutorial(Tutorial t)
+        {
+            bool on = t.Active && !t.Finished;
+            _tutPanel.SetActive(on);
+            _highlight = on ? t.Current.Tool : null;
+            if (!on) { RestoreToolColors(); return; }
+            var s = t.Current;
+            _tutTitle.text = s.Title;
+            _tutStep.text = $"{t.Index + 1} / {Tutorial.Steps.Count}";
+            _tutBody.text = s.Body;
+            _tutGoal.text = "Goal: " + s.Goal + (s.Tool != null && _toolButtons.ContainsKey(s.Tool) ? "  (the lit button below)" : "");
+            _tutNextLabel.text = s.Done == null ? (t.Index == Tutorial.Steps.Count - 1 ? "Finish" : "Next") : "Skip";
+        }
+
+        string _currentTool;
+        void RestoreToolColors() { foreach (var kv in _toolButtons) kv.Value.color = kv.Key == _currentTool ? BtnOn : Btn; }
 
         void BuildBannerPicker(RectTransform root)
         {
@@ -146,7 +193,7 @@ namespace CrownAndHearth.Game
 
         public bool PointerOverUi => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
-        public void SetTool(string id) { foreach (var kv in _toolButtons) kv.Value.color = kv.Key == id ? BtnOn : Btn; }
+        public void SetTool(string id) { _currentTool = id; RestoreToolColors(); }
         public void SetSpeed(int s) { foreach (var kv in _speedButtons) kv.Value.color = kv.Key == s ? BtnOn : Btn; }
         public void SetResources(string text) => _resText.text = text;
         public void SetDemand(string text) => _demandText.text = text;
@@ -156,9 +203,12 @@ namespace CrownAndHearth.Game
         void Update()
         {
             if (_toastText != null && Time.unscaledTime > _toastUntil && _toastText.text.Length > 0) _toastText.text = "";
+            // the tutorial's button pulses gold until the player picks that tool
+            if (_highlight != null && _highlight != _currentTool && _toolButtons.TryGetValue(_highlight, out var hb))
+                hb.color = Color.Lerp(Btn, new Color(0.95f, 0.72f, 0.2f, 1f), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f));
         }
 
-        void ToggleWorkforce() => _workPanel.SetActive(!_workPanel.activeSelf);
+        void ToggleWorkforce() { _workPanel.SetActive(!_workPanel.activeSelf); WorkforceToggled?.Invoke(_workPanel.activeSelf); }
 
         public void RefreshWorkforce(World w)
         {

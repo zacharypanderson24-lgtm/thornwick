@@ -15,6 +15,7 @@ F Forester, X Sawmill, 8 Well, 9 Barracks, 0 Clear. Homes, farms, markets, woodc
 by themselves on zones beside a road when there is demand (strip above the tool bar). Workers (bottom right) sets trade priorities.
 Terrain: long mountain ranges cross the map with passes; how many depends on the region's relief (Lowland, Upland (default), Highland,
 Alpine), set on the GameController in the Inspector until the conquest map exists.
+New to the game? The Tutorial button (bottom right) walks through every mechanic; it opens by itself the first time.
 U cycles the underground view (ore bands 1-3, off). Iron lies hidden in hills and mountains: paint a Mining zone over the high ground and a
 lot at its foot; a mine's miners survey the zone, drive an adit into the high ground and sink a shaft only for ore below the mine's floor.
 
