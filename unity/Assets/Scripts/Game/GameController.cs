@@ -147,7 +147,7 @@ namespace CrownAndHearth.Game
             _drawnVersion = -1;
         }
 
-        void OnDestroy() => _art?.SetBanner(null);
+        void OnDestroy() => _art?.Dispose();
 
         void Update()
         {
@@ -169,6 +169,7 @@ namespace CrownAndHearth.Game
                 _ground.Build(World, _rot); _objects.Build(World, _rot);
                 _drawnVersion = World.Version; _drawnRot = _rot;
             }
+            _objects.RefreshFarmStages(World.Day);
             DrawOverlay();
             _hud.SetResources(ResourceLine());
             _hud.SetDemand(DemandLine());
