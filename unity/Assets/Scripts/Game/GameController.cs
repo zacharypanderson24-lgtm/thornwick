@@ -38,7 +38,6 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "forester", Label = "Forester", Key = "F", Hotkey = Key.F, Build = "forester" },
             new ToolDef { Id = "sawmill", Label = "Sawmill", Key = "X", Hotkey = Key.X, Build = "sawmill" },
             new ToolDef { Id = "silo", Label = "Silo", Key = "J", Hotkey = Key.J, Build = "silo" },
-            new ToolDef { Id = "well", Label = "Well", Key = "8", Hotkey = Key.Digit8, Build = "well" },
             new ToolDef { Id = "barracks", Label = "Barracks", Key = "9", Hotkey = Key.Digit9, Build = "barracks" },
             new ToolDef { Id = "clear", Label = "Clear", Key = "0", Hotkey = Key.Digit0, Clear = true },
         };
@@ -93,7 +92,7 @@ namespace CrownAndHearth.Game
             _hud.TutorialClose += () => { _tutorial.Close(); PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); };
             _hud.SavePicked += SaveSettlement;
             _hud.LoadPicked += LoadSettlement;
-            _hud.SetTool(_tool.Id); _hud.SetSpeed(_speed);
+            SetTool(_tool); _hud.SetSpeed(_speed);
             // the tutorial opens by itself until the player has finished or closed it once (the Tutorial button brings it back)
             if (PlayerPrefs.GetInt(TutorialSeenKey, 0) == 0) { _tutorial.Start(World); _hud.ShowTutorial(_tutorial); }
             else _hud.Toast("Welcome back to Crown & Hearth. The Tutorial button (bottom right) walks through the game.", 6);
@@ -202,7 +201,7 @@ namespace CrownAndHearth.Game
             _agents.Draw(World, _rot, Mathf.Clamp01(_dayAcc), _cam.Zoom <= 0.5f);
             _objects.RefreshCropStages(World.Day);
             DrawOverlay();
-            _hud.SetResources(ResourceLine());
+            _hud.SetSettlement(World);
             _hud.SetDemand(DemandLine());
             _hud.SetInfo(_hover.HasValue ? TileInfo(_hover.Value.x, _hover.Value.y) : "");
             _hud.RefreshWorkforce(World);
@@ -235,6 +234,10 @@ namespace CrownAndHearth.Game
 
         void SetTool(ToolDef t)
         {
+            _hud.SetToolHint(t.Build != null ? $"{t.Label}  ·  {CostText(t.Build)}  ·  Click a tile to place"
+                : t.Road ? "Road  ·  Drag from an existing road or building entrance"
+                : t.Zone != Zone.None ? $"{t.Label}  ·  Click two corners to mark an area"
+                : t.Clear ? "Clear  ·  Click or drag over tiles to remove them" : "Look  ·  Hover a tile to inspect it");
             _tool = t; _roadAnchor = null; _zoneAnchor = null; _hud.SetTool(t.Id);
             if (t.Build != null) _hud.Toast($"{Defs.Names[t.Build]}: {CostText(t.Build)}");
             if (t.Flax) _hud.Toast("Flax needs fertile soil and farm workers. Staffed markets sell it for gold.", 6); else if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + (t.Zone == Zone.Res ? " " + World.Note[Zone.Res] : ""), 6);
@@ -358,19 +361,6 @@ namespace CrownAndHearth.Game
         }
 
         // ---------- Text ----------
-        string ResourceLine()
-        {
-            var w = World; var d = w.D;
-            string R(Res r, string name)
-            {
-                double rate = w.Rate[r];
-                return $"{name} {Mathf.FloorToInt((float)w.ResAmt[r])}" + (System.Math.Abs(rate) >= 0.05 ? $" ({(rate > 0 ? "+" : "")}{rate:0.0})" : "");
-            }
-            return $"Day {w.Day}   " + R(Res.Food, "Food") + "   " + R(Res.Wood, "Wood") + "   " + R(Res.Logs, "Logs") + "   " + R(Res.Stone, "Stone") + "   " +
-                   R(Res.Ore, "Ore") + "   " + R(Res.Flax, "Flax") + "   " + R(Res.Gold, "Gold") + $"     Peasants {w.Peasants}/{d.Civ}   Idle {d.Idle}   Jobs {d.Employed}/{d.Jobs}" +
-                   (w.Soldiers > 0 ? $"   Soldiers {w.Soldiers}" : "") + (w.Starving ? "   STARVING" : "");
-        }
-
         static string ZoneHelp(Zone z) => z switch
         {
             Zone.Res => "Housing zone: homes grow on it beside a road when houses are nearly full.",
@@ -416,7 +406,7 @@ namespace CrownAndHearth.Game
             {
                 lines.Add(b.Name.ToUpper());
                 lines.Add(b.Served ? "Connected to the Town Hall" : "Not connected: needs a road to the Town Hall");
-                if (b.T == "house") lines.Add($"Homes {b.Capacity} villagers. Level {b.Lvl}" + (b.Lvl < 2 ? " (a well within 4 tiles raises it)" : "") + (b.Covered ? ". Market nearby" : ""));
+                if (b.T == "house") lines.Add($"Homes {b.Capacity} villagers. Level {b.Lvl}" + (b.Covered ? ". Market nearby" : ""));
                 if (b.Jobs > 0) lines.Add($"Workers {b.Workers}/{b.Jobs} ({b.Eff * 100:0}%)");
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "mine") lines.Add(w.MineStatus(b));

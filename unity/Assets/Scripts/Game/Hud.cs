@@ -19,9 +19,12 @@ namespace CrownAndHearth.Game
 
         Font _font;
         InputField _bannerInput;
-        Text _resText, _infoText, _toastText, _workText, _demandText;
+        Text _infoText, _toastText, _workText, _demandText;
         GameObject _infoPanel, _workPanel;
         float _toastUntil;
+        readonly Dictionary<Res, Text> _stock = new Dictionary<Res, Text>();
+        Text _day, _population, _toolHint, _infoTitle;
+
         enum Shelf { Closed, Build, Zone }
         readonly Dictionary<string, Shelf> _toolShelves = new Dictionary<string, Shelf>();
         RectTransform _buildShelf, _zoneShelf;
@@ -58,10 +61,19 @@ namespace CrownAndHearth.Game
             var root = (RectTransform)canvasGo.transform;
             BuildBannerPicker(root);
 
-            // top bar
-            var top = MakePanel(root, "TopBar", new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -40), Vector2.zero);
-            _resText = MakeText(top, "Resources", 17, TextAnchor.MiddleLeft);
-            Stretch(_resText.rectTransform, new Vector2(12, 0), new Vector2(-590, 0));
+            var stats = MakePanel(root, "Stockpiles", Vector2.up, Vector2.one, new Vector2(8, -62), new Vector2(-8, -8));
+            var statRow = stats.gameObject.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+            statRow.padding = new RectOffset(6, 6, 6, 6);
+            statRow.spacing = 6;
+            statRow.childControlWidth = statRow.childControlHeight = true;
+            statRow.childForceExpandWidth = statRow.childForceExpandHeight = true;
+            _day = MakeStat(stats, "Day");
+            _population = MakeStat(stats, "Population");
+            foreach (Res resource in new[] { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Flax, Res.Gold })
+                _stock[resource] = MakeStat(stats, resource.ToString());
+
+            var top = MakePanel(root, "TimeAndSession", Vector2.one, Vector2.one,
+                new Vector2(-604, -110), new Vector2(-8, -68));
             float x = -560;
             foreach (var (label, sp) in new[] { ("Pause", 0), ("1x", 1), ("2x", 2), ("4x", 4) })
             {
@@ -106,13 +118,19 @@ namespace CrownAndHearth.Game
 
             // demand strip above the tool bar
             var dp = MakePanel(root, "Demand", new Vector2(0, 0), new Vector2(0, 0), new Vector2(8, 102), new Vector2(260, 129));
+            var hint = MakePanel(root, "ActiveTool", Vector2.zero, Vector2.right,
+                new Vector2(275, 102), new Vector2(-8, 129));
+            _toolHint = MakeText(hint, "ToolInstructions", 15, TextAnchor.MiddleLeft);
+            Stretch(_toolHint.rectTransform, new Vector2(10, 0), new Vector2(-10, 0));
             _demandText = MakeText(dp, "DemandText", 15, TextAnchor.MiddleLeft);
             Stretch(_demandText.rectTransform, new Vector2(10, 0), new Vector2(-10, 0));
 
             // left info panel
-            _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -330), new Vector2(330, -48)).gameObject;
+            _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -417), new Vector2(330, -68)).gameObject;
+            _infoTitle = MakeText((RectTransform)_infoPanel.transform, "InspectionTitle", 19, TextAnchor.UpperLeft);
+            Stretch(_infoTitle.rectTransform, new Vector2(12, 0), new Vector2(-12, -12));
             _infoText = MakeText((RectTransform)_infoPanel.transform, "InfoText", 15, TextAnchor.UpperLeft);
-            Stretch(_infoText.rectTransform, new Vector2(10, 8), new Vector2(-10, -8));
+            Stretch(_infoText.rectTransform, new Vector2(12, 8), new Vector2(-12, -43));
 
             // toast
             _toastText = MakeText(root, "Toast", 18, TextAnchor.MiddleCenter);
@@ -136,7 +154,7 @@ namespace CrownAndHearth.Game
         // ---------- Tutorial panel (top centre, clear of the info panel, banner, workforce and messages) ----------
         void BuildTutorial(RectTransform root)
         {
-            var tp = MakePanel(root, "Tutorial", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-330, -318), new Vector2(330, -48));
+            var tp = MakePanel(root, "Tutorial", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-330, -390), new Vector2(330, -120));
             _tutPanel = tp.gameObject;
             _tutTitle = MakeText(tp, "Title", 19, TextAnchor.UpperLeft); _tutTitle.fontStyle = FontStyle.Bold;
             Stretch(_tutTitle.rectTransform, new Vector2(14, 230), new Vector2(-90, -10));
@@ -252,9 +270,41 @@ namespace CrownAndHearth.Game
             RestoreToolColors();
         }
         public void SetSpeed(int s) { foreach (var kv in _speedButtons) kv.Value.color = kv.Key == s ? BtnOn : Btn; }
-        public void SetResources(string text) => _resText.text = text;
         public void SetDemand(string text) => _demandText.text = text;
-        public void SetInfo(string text) { _infoPanel.SetActive(!string.IsNullOrEmpty(text)); _infoText.text = text; }
+        public void SetInfo(string text)
+        {
+            _infoPanel.SetActive(!string.IsNullOrEmpty(text));
+            int firstLine = text.IndexOf('\n');
+            _infoTitle.text = firstLine < 0 ? text : text.Substring(0, firstLine);
+            _infoText.text = firstLine < 0 ? "" : text.Substring(firstLine + 1);
+        }
+
+        Text MakeStat(RectTransform row, string label)
+        {
+            var card = MakePanel(row, label + "Card", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            card.GetComponent<UnityEngine.UI.Image>().color = Btn;
+            var title = MakeText(card, label, 12, TextAnchor.UpperCenter);
+            title.text = label;
+            Stretch(title.rectTransform, Vector2.zero, new Vector2(0, -3));
+            var value = MakeText(card, label + "Value", 17, TextAnchor.LowerCenter);
+            Stretch(value.rectTransform, new Vector2(0, 3), Vector2.zero);
+            return value;
+        }
+
+        public void SetSettlement(World world)
+        {
+            _day.text = world.Day.ToString();
+            _population.text = world.Starving ? "Starving" : $"{world.Peasants}/{world.D.Civ} · {world.D.Idle} idle";
+            foreach (var pair in _stock)
+            {
+                double rate = world.Rate[pair.Key];
+                string amount = Mathf.FloorToInt((float)world.ResAmt[pair.Key]).ToString();
+                pair.Value.text = System.Math.Abs(rate) < 0.05 ? amount : $"{amount}  {rate:+0.0;-0.0}";
+                pair.Value.color = rate < -0.05 ? new Color(1f, 0.68f, 0.52f) : Ink;
+            }
+        }
+
+        public void SetToolHint(string text) => _toolHint.text = text;
         public void Toast(string text, float secs = 3.5f) { _toastText.text = text; _toastUntil = Time.unscaledTime + secs; }
 
         void Update()

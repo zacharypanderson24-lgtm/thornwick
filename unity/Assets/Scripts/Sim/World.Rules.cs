@@ -71,6 +71,7 @@ namespace CrownAndHearth.Sim
 
         public Result CanPlace(string type, int x, int y)
         {
+            if (type == "well") return Result.No("Wells are unavailable for new construction.");
             var fp = new Building { T = type, X = x, Y = y, Sz = DefaultSize(type) };
             foreach (var (tx, ty) in fp.Tiles())
             {

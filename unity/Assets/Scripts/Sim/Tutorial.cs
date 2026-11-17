@@ -136,10 +136,9 @@ namespace CrownAndHearth.Sim
                 Body = "Logs must be sawn into wood. The Town Hall saws 1 log a day at half yield; a Sawmill (X, 15 wood) saws 4 a day at full yield. " +
                        "Build one beside a road.",
                 Goal = "Build a Sawmill", Done = Grew(s => s.Sawmills, 1) },
-            new Step { Id = "services", Title = "Wells and markets", Tool = "well",
-                Body = "A Well (8, 5 wood and 5 stone) raises the homes within 4 tiles to level 2, so they hold more people.\n\n" +
-                       "Place a 2x2 market (5) beside a connected road. Staffed markets sell flax and surplus wheat for gold.",
-                Goal = "Build a Well", Done = Grew(s => s.Wells, 1) },
+            new Step { Id = "services", Title = "Trade", Tool = "market",
+                Body = "Place a 2x2 market (5) beside a connected road. Staffed markets sell flax and surplus wheat for gold. Use a silo (J) to store more crops.",
+                Goal = "Build a Market", Done = Grew(s => s.Markets, 1) },
             new Step { Id = "stone", Title = "Stone and iron", Tool = "zoneMine",
                 Body = "Mining (7) zones go on rock and on hills and mountains.\n\n" +
                        "Stone: zone rock outcrops or a mountain's edge inside reach of a Quarry you place with Build (K); quarries dig hills down and cut into mountains.\n\n" +
