@@ -49,13 +49,15 @@ namespace CrownAndHearth.Game
                 case Deco.Rock:
                     if (w.IsMountain(x, y)) return null;            // mountains are part of the ground mesh
                     int lv = w.RockLevel(x, y);
-                    return lv >= 2 ? _art.Find("ph_rock_1") : lv == 1 ? _art.Find("ph_rock_0") : null;
-                case Deco.Ore: return _art.Find(Noise.Hash2(x, y, 11) < 0.5 ? "ph_ore_0" : "ph_ore_1");
-                case Deco.Stump: return _art.Find("ph_stump");
-                case Deco.Sapling: return _art.Find("ph_sapling");
+                    return lv >= 2 ? NatureSprite("rock_1") : lv == 1 ? NatureSprite("rock_0") : null;
+                case Deco.Ore: return NatureSprite(Noise.Hash2(x, y, 11) < 0.5 ? "ore_0" : "ore_1");
+                case Deco.Stump: return NatureSprite("stump");
+                case Deco.Sapling: return NatureSprite("sapling");
             }
             return null;
         }
+
+        Sprite NatureSprite(string slot) => _art.Find(slot) ?? _art.Find("ph_" + slot);
 
         void PlaceBuilding(World w, Building b, int rot)
         {

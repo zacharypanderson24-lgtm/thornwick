@@ -253,6 +253,9 @@ namespace CrownAndHearth.Sim
             foreach (var b in Blds)
             {
                 if (b.T == "road") { b.Served = conn[Tk(b.X, b.Y)]; continue; }
+                // a mine's entrance faces away from the high ground it tunnels into, and needs its road right there (World.Mining.cs)
+                int mf = b.T == "mine" ? MineFaceAt(b.X, b.Y) : -1;
+                if (mf >= 0) { b.Face = mf; b.Served = EntranceServed(b.X, b.Y, mf, conn); continue; }
                 b.Face = FaceOf(b);
                 b.Served = b.T == "hall" || ServedAt(b, conn);
             }
