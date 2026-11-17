@@ -36,7 +36,7 @@ namespace CrownAndHearth.Sim
         {
             return new JObject
             {
-                ["v"] = 1, ["v2"] = true, ["unity"] = true, ["seed"] = Seed, ["day"] = Day,
+                ["v"] = 1, ["v2"] = true, ["farmFields"] = true, ["unity"] = true, ["seed"] = Seed, ["day"] = Day,
                 ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["trained"] = Trained,
                 ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["starving"] = Starving,
                 ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
@@ -143,6 +143,7 @@ namespace CrownAndHearth.Sim
                     }
             }
             world.Recalc();
+            if (save.Value<bool?>("farmFields") != true) world.AddStarterFarmFields();
             world.ComputeDemand();
             return world;
         }
