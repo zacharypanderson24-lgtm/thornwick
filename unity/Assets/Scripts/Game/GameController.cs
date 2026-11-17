@@ -1,8 +1,8 @@
 // Runs the settlement: owns the World, ticks it (1 day = 1 second at 1x, like the browser), redraws on change,
-// and turns mouse/keyboard into tools. Hotkeys follow the browser where it has them (1 Look, 2 Road, 8 Well, X Sawmill,
-// F Forester, 9 Barracks, 3 Housing, 4 Farmland, 5 Commerce, 6 Lumber, 7 Mining zones, 0 Clear, Q/E rotate).
-// As in the browser, homes, farms, markets, woodcutter lodges, quarries and mines are not placed by hand: they grow on
-// painted zones beside roads when there is demand (World.Develop).
+// and turns mouse/keyboard into tools. Tools sit in build-bar categories (Cats, Tools): 1 Roads, 2 Housing, 3 Farming,
+// 4 Forestry, 5 Mining, 6 Trade, 7 Military, 0 or Delete Bulldoze; pressing a category key again picks its next tool.
+// Esc or a right-click (without dragging) cancels the half-drawn road or rectangle, then puts the tool away. Q/E rotate.
+// Homes are not placed by hand: they grow on Housing zones beside roads when there is demand (World.Develop).
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -15,31 +15,70 @@ namespace CrownAndHearth.Game
 {
     public class GameController : MonoBehaviour
     {
+        /// <summary>Build bar categories, grouped by what the player is doing: each production building sits beside the zone it works.</summary>
+        public enum Cat { Inspect, Roads, Housing, Farming, Forestry, Mining, Trade, Military, Bulldoze }
+
+        public class CatDef
+        {
+            public Cat Cat; public string Label, Key, Desc, Icon; public Key Hotkey, Alt;
+        }
+
         public class ToolDef
         {
-            public string Id, Label, Key; public Key Hotkey;
-            public string Build; public Zone Zone; public bool Road, Clear, Flax;
+            public string Id, Label, Desc; public Cat Cat;
+            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Flax;
         }
+
+        public static readonly CatDef[] Cats =
+        {
+            new CatDef { Cat = Cat.Inspect, Label = "Inspect", Key = "Esc", Hotkey = Key.Escape, Desc = "Hover or click a tile to see what it is and what it needs." },
+            new CatDef { Cat = Cat.Roads, Label = "Roads", Key = "1", Hotkey = Key.Digit1, Desc = "Roads link everything to the Town Hall." },
+            new CatDef { Cat = Cat.Housing, Label = "Housing", Key = "2", Hotkey = Key.Digit2, Icon = "house_1", Desc = "Zone land where villagers build their own homes." },
+            new CatDef { Cat = Cat.Farming, Label = "Farming", Key = "3", Hotkey = Key.Digit3, Icon = "farm2", Desc = "Farmhouses, the wheat and flax fields they work, and silos to store the crop." },
+            new CatDef { Cat = Cat.Forestry, Label = "Forestry", Key = "4", Hotkey = Key.Digit4, Icon = "wood2", Desc = "Woodcutter lodges and the forest they fell, foresters to replant, sawmills to turn logs into wood." },
+            new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "5", Hotkey = Key.Digit5, Icon = "mine", Desc = "Quarries for stone and mines for iron, and the Mining zones they work." },
+            new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "6", Hotkey = Key.Digit6, Icon = "market", Desc = "Markets." },
+            new CatDef { Cat = Cat.Military, Label = "Military", Key = "7", Hotkey = Key.Digit7, Icon = "barracks", Desc = "Barracks that train soldiers." },
+            new CatDef { Cat = Cat.Bulldoze, Label = "Bulldoze", Key = "0", Hotkey = Key.Digit0, Alt = Key.Delete, Desc = "Demolish buildings and roads, clear trees and rocks, or remove zones." },
+        };
 
         public static readonly ToolDef[] Tools =
         {
-            new ToolDef { Id = "look", Label = "Look", Key = "1", Hotkey = Key.Digit1 },
-            new ToolDef { Id = "road", Label = "Road", Key = "2", Hotkey = Key.Digit2, Road = true },
-            new ToolDef { Id = "zoneRes", Label = "Housing", Key = "3", Hotkey = Key.Digit3, Zone = Zone.Res },
-            new ToolDef { Id = "zoneFarm", Label = "Wheat", Key = "4", Hotkey = Key.Digit4, Zone = Zone.Farm },
-            new ToolDef { Id = "zoneFlax", Label = "Flax", Key = "G", Hotkey = Key.G, Zone = Zone.Farm, Flax = true },
-            new ToolDef { Id = "market", Label = "Market", Key = "5", Hotkey = Key.Digit5, Build = "market" },
-            new ToolDef { Id = "zoneWood", Label = "Lumber", Key = "6", Hotkey = Key.Digit6, Zone = Zone.Wood },
-            new ToolDef { Id = "zoneMine", Label = "Mining", Key = "7", Hotkey = Key.Digit7, Zone = Zone.Mine },
-            new ToolDef { Id = "farmhouse", Label = "Farmhouse", Key = "B", Hotkey = Key.B, Build = "farm" },
-            new ToolDef { Id = "lodge", Label = "Lodge", Key = "L", Hotkey = Key.L, Build = "wood" },
-            new ToolDef { Id = "quarry", Label = "Quarry", Key = "K", Hotkey = Key.K, Build = "quarry" },
-            new ToolDef { Id = "mine", Label = "Iron Mine", Key = "M", Hotkey = Key.M, Build = "mine" },
-            new ToolDef { Id = "forester", Label = "Forester", Key = "F", Hotkey = Key.F, Build = "forester" },
-            new ToolDef { Id = "sawmill", Label = "Sawmill", Key = "X", Hotkey = Key.X, Build = "sawmill" },
-            new ToolDef { Id = "silo", Label = "Silo", Key = "J", Hotkey = Key.J, Build = "silo" },
-            new ToolDef { Id = "barracks", Label = "Barracks", Key = "9", Hotkey = Key.Digit9, Build = "barracks" },
-            new ToolDef { Id = "clear", Label = "Clear", Key = "0", Hotkey = Key.Digit0, Clear = true },
+            new ToolDef { Id = "look", Cat = Cat.Inspect, Label = "Inspect", Desc = "Hover or click a tile to see what it is and what it needs." },
+            new ToolDef { Id = "road", Cat = Cat.Roads, Label = "Dirt Road", Road = true,
+                Desc = "Press on a tile and drag: an L-shaped road follows the mouse and is built when you let go. Homes and work buildings need a road back to the Town Hall. Roads climb hills but not mountains, and cannot go through forest." },
+            new ToolDef { Id = "zoneRes", Cat = Cat.Housing, Label = "Housing Zone", Zone = Zone.Res,
+                Desc = "Drag over land to mark it for homes. Villagers build houses here by themselves, on tiles touching a connected road, when the town needs room." },
+            new ToolDef { Id = "farmhouse", Cat = Cat.Farming, Label = "Farmhouse", Build = "farm",
+                Desc = "Its farmers work the wheat and flax fields within 3 tiles. Each farmer tends 2 fields. Needs a road to the Town Hall." },
+            new ToolDef { Id = "zoneFarm", Cat = Cat.Farming, Label = "Wheat Fields", Zone = Zone.Farm,
+                Desc = "Drag over fertile soil (the darker, olive ground) within 3 tiles of a farmhouse; the shaded area shows each farmhouse's reach. Wheat feeds the town." },
+            new ToolDef { Id = "zoneFlax", Cat = Cat.Farming, Label = "Flax Fields", Zone = Zone.Farm, Flax = true,
+                Desc = "Like wheat fields, but they grow flax instead of food. Fertile soil within 3 tiles of a farmhouse." },
+            new ToolDef { Id = "silo", Cat = Cat.Farming, Label = "Silo", Build = "silo",
+                Desc = "Stores 180 more wheat and 60 more flax. Needs a road to the Town Hall." },
+            new ToolDef { Id = "lodge", Cat = Cat.Forestry, Label = "Woodcutter Lodge", Build = "wood",
+                Desc = "Woodcutters walk out to trees in Lumber zones within 3 tiles, fell them and carry the logs home. Needs a road to the Town Hall." },
+            new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Lumber Zone", Zone = Zone.Wood,
+                Desc = "Drag over forest to have it felled by a nearby lodge, or over open ground for a forester to replant. The shaded area shows where lodges and foresters reach." },
+            new ToolDef { Id = "forester", Cat = Cat.Forestry, Label = "Forester", Build = "forester",
+                Desc = "Plants saplings on Lumber-zoned open ground within 4 tiles, so the forest grows back." },
+            new ToolDef { Id = "sawmill", Cat = Cat.Forestry, Label = "Sawmill", Build = "sawmill",
+                Desc = "Saws 4 logs a day into wood at full yield (the Town Hall saws 1 at half yield). Needs a road." },
+            new ToolDef { Id = "quarry", Cat = Cat.Mining, Label = "Quarry", Build = "quarry",
+                Desc = "Quarrymen dig stone from Mining zones within 3 tiles: rock outcrops, hills, and mountains from their edge inward. Needs a road." },
+            new ToolDef { Id = "mine", Cat = Cat.Mining, Label = "Iron Mine", Build = "mine",
+                Desc = "Miners survey Mining zones within 3 tiles for iron, then tunnel into the hill. Place it at the foot of high ground; its entrance faces away from the hill and needs a road there." },
+            new ToolDef { Id = "zoneMine", Cat = Cat.Mining, Label = "Mining Zone", Zone = Zone.Mine,
+                Desc = "Drag over rock, hills and mountains for a nearby quarry or mine to work. The shaded area shows where they reach." },
+            new ToolDef { Id = "market", Cat = Cat.Trade, Label = "Market", Build = "market",
+                Desc = "Must touch a road. Trading is paused for now." },
+            new ToolDef { Id = "barracks", Cat = Cat.Military, Label = "Barracks", Build = "barracks",
+                Desc = "Trains soldiers from your peasants. Soldiers eat more and do no other work. Must touch a road." },
+            new ToolDef { Id = "clear", Cat = Cat.Bulldoze, Label = "Demolish", Clear = true,
+                Desc = "Click or drag over buildings, roads, zones, trees and rocks to remove them. Buildings give back half their cost. The Town Hall stays." },
+            new ToolDef { Id = "unzone", Cat = Cat.Bulldoze, Label = "Remove Zones", Unzone = true,
+                Desc = "Drag a rectangle to take the zone off open land. Buildings are left standing." },
         };
 
         [Tooltip("Sprite-Unlit material (URP 2D) so the palette shows exactly as drawn.")]
@@ -53,7 +92,9 @@ namespace CrownAndHearth.Game
         int _ugLevel;   // underground view: 0 off, else the level shown (U cycles)
         float _dayAcc;
         ToolDef _tool = Tools[0];
-        Vector2Int? _hover, _roadAnchor, _lastPaint, _zoneAnchor;   // _zoneAnchor: first corner of a zone rectangle
+        Vector2Int? _hover, _roadAnchor, _lastPaint, _zoneAnchor;   // _zoneAnchor: first corner of a zone (or unzone) rectangle
+        bool _zoneDragging;          // the button is still held since the first corner (drag mode); false = click-click mode
+        Vector2? _rightDown;         // where the right button went down, to tell a click (cancel) from a camera drag
         ArtLibrary _art;
         GroundRenderer _ground; ObjectRenderer _objects; OverlayRenderer _overlay; AgentRenderer _agents;
         CameraRig _cam; Hud _hud;
@@ -79,7 +120,7 @@ namespace CrownAndHearth.Game
             _cam.CenterOn(IsoView.TileCenter(World, Defs.Start, Defs.Start + 2, _rot));
 
             _hud = new GameObject("HudRoot", typeof(Hud)).GetComponent<Hud>();
-            _hud.Build(Tools);
+            _hud.Build(Tools, Cats, _art);
             _hud.BannerPicked += SetBanner;
             _hud.ToolPicked += id => SetTool(Tools.First(t => t.Id == id));
             _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); _tutorial.SpeedChanged = true; };
@@ -95,7 +136,7 @@ namespace CrownAndHearth.Game
             SetTool(_tool); _hud.SetSpeed(_speed);
             // the tutorial opens by itself until the player has finished or closed it once (the Tutorial button brings it back)
             if (PlayerPrefs.GetInt(TutorialSeenKey, 0) == 0) { _tutorial.Start(World); _hud.ShowTutorial(_tutorial); }
-            else _hud.Toast("Welcome back to Crown & Hearth. The Tutorial button (bottom right) walks through the game.", 6);
+            else _hud.Toast("Welcome back to Crown & Hearth. Pick a category along the bottom to build; the Tutorial button walks through the game.", 6);
         }
 
         static string SavePath => Path.Combine(Application.persistentDataPath, "thornwick-save-1.json");
@@ -202,7 +243,8 @@ namespace CrownAndHearth.Game
             _objects.RefreshCropStages(World.Day);
             DrawOverlay();
             _hud.SetSettlement(World);
-            _hud.SetDemand(DemandLine());
+            _hud.SetDemand(World.Dem[Zone.Res]);
+            var tip = CursorTip(); _hud.SetCursorTip(tip.text, tip.bad, Mouse.current?.position.ReadValue() ?? Vector2.zero);
             _hud.SetInfo(_hover.HasValue ? TileInfo(_hover.Value.x, _hover.Value.y) : "");
             _hud.RefreshWorkforce(World);
             if (World.Events.Count > 0) { _hud.Toast(World.Events[World.Events.Count - 1], 8); World.Events.Clear(); }   // cave-ins, new levels, empty surveys
@@ -218,8 +260,9 @@ namespace CrownAndHearth.Game
         void HandleKeys()
         {
             var kb = Keyboard.current; if (kb == null || _hud.EditingBanner) return;
-            foreach (var t in Tools) if (kb[t.Hotkey].wasPressedThisFrame) SetTool(t);
-            if (kb.escapeKey.wasPressedThisFrame) SetTool(Tools[0]);
+            if (kb.escapeKey.wasPressedThisFrame) Cancel();
+            foreach (var c in Cats)
+                if (c.Cat != Cat.Inspect && (kb[c.Hotkey].wasPressedThisFrame || (c.Alt != Key.None && kb[c.Alt].wasPressedThisFrame))) _hud.CategoryKey(c.Cat);
             if (kb.qKey.wasPressedThisFrame) Rotate(-1);
             if (kb.eKey.wasPressedThisFrame) Rotate(1);
             if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); _tutorial.SpeedChanged = true; }
@@ -234,13 +277,21 @@ namespace CrownAndHearth.Game
 
         void SetTool(ToolDef t)
         {
-            _hud.SetToolHint(t.Build != null ? $"{t.Label}  ·  {CostText(t.Build)}  ·  Click a tile to place"
-                : t.Road ? "Road  ·  Drag from an existing road or building entrance"
-                : t.Zone != Zone.None ? $"{t.Label}  ·  Click two corners to mark an area"
-                : t.Clear ? "Clear  ·  Click or drag over tiles to remove them" : "Look  ·  Hover a tile to inspect it");
-            _tool = t; _roadAnchor = null; _zoneAnchor = null; _hud.SetTool(t.Id);
-            if (t.Build != null) _hud.Toast($"{Defs.Names[t.Build]}: {CostText(t.Build)}");
-            if (t.Flax) _hud.Toast("Flax needs fertile soil and farm workers.", 6); else if (t.Zone != Zone.None) _hud.Toast(ZoneHelp(t.Zone) + (t.Zone == Zone.Res ? " " + World.Note[Zone.Res] : ""), 6);
+            const string stop = "   ·   Right-click or Esc to stop";
+            string hint = t.Build != null ? $"{t.Label} ({Hud.CostText(t.Build)}): click a spot to build it." + (ReachOf(t.Build) > 0 ? " The shaded ring is the land it works." : "") + stop
+                : t.Road ? $"Road (1 wood a tile): press and drag from a road to lay one.{stop}"
+                : t.Zone != Zone.None ? $"{t.Label}: drag over the land, or click two corners. Green tiles will be zoned, red ones cannot be.{stop}"
+                : t.Unzone ? $"Remove Zones: drag over zoned land. Buildings stay.{stop}"
+                : t.Clear ? $"Demolish: click or drag over what you want removed.{stop}"
+                : "Inspect: hover or click a tile. Pick a category along the bottom to build.";
+            _tool = t; _roadAnchor = null; _zoneAnchor = null; _zoneDragging = false; _hud.SetTool(t, hint);
+        }
+
+        /// <summary>Esc or a right-click: drop the half-drawn road or rectangle first; otherwise put the tool away.</summary>
+        void Cancel()
+        {
+            if (_roadAnchor.HasValue || _zoneAnchor.HasValue) { _roadAnchor = null; _zoneAnchor = null; _zoneDragging = false; return; }
+            SetTool(Tools[0]); _hud.CloseTray();
         }
 
         void Rotate(int dir)
@@ -265,6 +316,32 @@ namespace CrownAndHearth.Game
             var wp = _cam.Cam.ScreenToWorldPoint(mouse.position.ReadValue());
             _hover = overUi ? null : IsoView.PickTile(World, wp, _rot);
 
+            // right button: a click (barely moved) cancels; a drag pans the camera (CameraRig)
+            var mp = mouse.position.ReadValue();
+            if (mouse.rightButton.wasPressedThisFrame) _rightDown = overUi ? (Vector2?)null : mp;
+            if (mouse.rightButton.wasReleasedThisFrame)
+            {
+                if (_rightDown.HasValue && (mp - _rightDown.Value).sqrMagnitude < 36) Cancel();
+                _rightDown = null;
+            }
+
+            if (_tool.Zone != Zone.None || _tool.Unzone)
+            {
+                // zoning: press, drag and let go to zone the rectangle; or click one corner, then click the opposite corner
+                if (mouse.leftButton.wasPressedThisFrame && _hover.HasValue && !overUi)
+                {
+                    if (_zoneAnchor.HasValue && !_zoneDragging) { ApplyRect(_zoneAnchor.Value, _hover.Value); return; }
+                    _zoneAnchor = _hover; _zoneDragging = true;
+                }
+                if (mouse.leftButton.wasReleasedThisFrame && _zoneDragging)
+                {
+                    _zoneDragging = false;
+                    if (_zoneAnchor.HasValue && _hover.HasValue && _hover.Value != _zoneAnchor.Value) ApplyRect(_zoneAnchor.Value, _hover.Value);
+                    // let go on the same tile: it stays as the first corner, and the next click is the opposite corner
+                }
+                return;
+            }
+
             if (_tool.Road)
             {
                 if (mouse.leftButton.wasPressedThisFrame && _hover.HasValue) _roadAnchor = _hover;
@@ -285,22 +362,26 @@ namespace CrownAndHearth.Game
                 var r = World.Place(_tool.Build, h.x, h.y);
                 _hud.Toast(r.Ok ? $"Built a {Defs.Names[_tool.Build]}." : r.Reason);
             }
-            else if (_tool.Zone != Zone.None)
-            {
-                // zoning: the first click sets a corner, the second zones the whole rectangle
-                if (!mouse.leftButton.wasPressedThisFrame) return;
-                if (!_zoneAnchor.HasValue) { _zoneAnchor = h; _hud.Toast("Click the opposite corner to zone the rectangle (Esc cancels)."); return; }
-                var a = _zoneAnchor.Value; _zoneAnchor = null;
-                var (zoned, skipped, why) = World.ZoneRect(_tool.Zone, a.x, a.y, h.x, h.y, _tool.Flax);
-                _hud.Toast(zoned == 0 && skipped > 0 ? why : $"Zoned {zoned} tile{(zoned == 1 ? "" : "s")}." + (skipped > 0 ? $" {skipped} skipped: {why}" : ""), 5);
-            }
             else if (_tool.Clear)
             {
                 if (_lastPaint == h) return;
                 _lastPaint = h;
-                var r = _tool.Clear ? World.Remove(h.x, h.y) : World.SetZone(_tool.Zone, h.x, h.y, _tool.Flax);
+                var r = World.Remove(h.x, h.y);
                 if (!r.Ok && mouse.leftButton.wasPressedThisFrame) _hud.Toast(r.Reason);
             }
+        }
+
+        void ApplyRect(Vector2Int a, Vector2Int b)
+        {
+            _zoneAnchor = null; _zoneDragging = false;
+            if (_tool.Unzone)
+            {
+                int n = World.ClearZoneRect(a.x, a.y, b.x, b.y);
+                _hud.Toast(n == 0 ? "No zoned open land there." : $"Removed the zone from {n} tile{(n == 1 ? "" : "s")}.");
+                return;
+            }
+            var (zoned, skipped, why) = World.ZoneRect(_tool.Zone, a.x, a.y, b.x, b.y, _tool.Flax);
+            _hud.Toast(zoned == 0 && skipped > 0 ? why : $"Zoned {zoned} tile{(zoned == 1 ? "" : "s")}." + (skipped > 0 ? $" {skipped} skipped: {why}" : ""), 5);
         }
 
         static readonly Color32 Ok = new Color32(120, 255, 120, 110), Bad = new Color32(255, 90, 80, 120), Hover = new Color32(255, 255, 255, 70);
@@ -328,10 +409,52 @@ namespace CrownAndHearth.Game
                 }
         }
 
+        static readonly Color32 Reach = new Color32(110, 190, 255, 55), ReachNew = new Color32(255, 230, 120, 70), Unzone = new Color32(255, 150, 60, 110);
+
+        /// <summary>How far a work building reaches, in tiles around its footprint (0 = it has no reach). Foresters count from their own
+        /// tile (World.ForesterCovers); everything else from the footprint's edge (crews, mines, farm fields).</summary>
+        static int ReachOf(string type) => type switch
+        {
+            "farm" => World.FarmFieldRange, "wood" => WorkR, "quarry" => WorkR, "mine" => WorkR, "forester" => ForesterR, _ => 0,
+        };
+
+        void AddReach(string type, int bx, int by, int sz, Color32 col, HashSet<int> seen)
+        {
+            int r = ReachOf(type); if (r == 0) return;
+            for (int y = by - r; y <= by + sz - 1 + r; y++)
+                for (int x = bx - r; x <= bx + sz - 1 + r; x++)
+                {
+                    if (!World.Inb(x, y) || (x >= bx && x < bx + sz && y >= by && y < by + sz)) continue;
+                    if (seen != null && !seen.Add(y * N + x)) continue;
+                    _overlay.AddTile(World, x, y, _rot, col);
+                }
+        }
+
+        /// <summary>The buildings whose reach matters to this zone tool: farmhouses for fields, lodges and foresters for lumber, quarries and mines for mining.</summary>
+        static bool Works(Zone z, string type) => z switch
+        {
+            Zone.Farm => type == "farm",
+            Zone.Wood => type == "wood" || type == "forester",
+            Zone.Mine => type == "quarry" || type == "mine",
+            _ => false,
+        };
+
+        (int x0, int y0, int x1, int y1) RectTo(Vector2Int h)
+        {
+            var a = _zoneAnchor ?? h;
+            return (Mathf.Min(a.x, h.x), Mathf.Min(a.y, h.y), Mathf.Max(a.x, h.x), Mathf.Max(a.y, h.y));
+        }
+
         void DrawOverlay()
         {
             _overlay.Clear();
             if (_ugLevel > 0) DrawUnderground();
+            // zone tools: shade where the buildings that work this zone can reach, so the player knows where to paint
+            if (_tool.Zone == Zone.Farm || _tool.Zone == Zone.Wood || _tool.Zone == Zone.Mine)
+            {
+                var seen = new HashSet<int>();
+                foreach (var b in World.Blds) if (Works(_tool.Zone, b.T)) AddReach(b.T, b.X, b.Y, b.Sz, Reach, seen);
+            }
             if (_hover.HasValue)
             {
                 var h = _hover.Value;
@@ -346,37 +469,98 @@ namespace CrownAndHearth.Game
                 {
                     bool ok = World.CanPlace(_tool.Build, h.x, h.y).Ok;
                     int sz = PlacementSize(_tool.Build);
+                    AddReach(_tool.Build, h.x, h.y, sz, ReachNew, null);
                     for (int j = 0; j < sz; j++) for (int i = 0; i < sz; i++) _overlay.AddTile(World, h.x + i, h.y + j, _rot, ok ? Ok : Bad);
                 }
                 else if (_tool.Zone != Zone.None)
                 {
                     // the rectangle from the first corner to the cursor (or just the hovered tile before the first click)
-                    var a = _zoneAnchor ?? h;
-                    int x0 = Mathf.Min(a.x, h.x), x1 = Mathf.Max(a.x, h.x), y0 = Mathf.Min(a.y, h.y), y1 = Mathf.Max(a.y, h.y);
+                    var (x0, y0, x1, y1) = RectTo(h);
                     for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) _overlay.AddTile(World, x, y, _rot, World.ZoneCheck(_tool.Zone, x, y).Ok ? Ok : Bad);
                 }
-                else _overlay.AddTile(World, h.x, h.y, _rot, Hover);
+                else if (_tool.Unzone)
+                {
+                    var (x0, y0, x1, y1) = RectTo(h);
+                    for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++)
+                            _overlay.AddTile(World, x, y, _rot, World.Grid[y, x] == null && World.ZoneMap[y, x] != Zone.None ? Unzone : Hover);
+                }
+                else if (_tool.Clear) _overlay.AddTile(World, h.x, h.y, _rot, Bad);
+                else
+                {
+                    // inspecting a work building shows its reach too
+                    var b = World.Grid[h.y, h.x];
+                    if (b != null && ReachOf(b.T) > 0) AddReach(b.T, b.X, b.Y, b.Sz, Reach, null);
+                    _overlay.AddTile(World, h.x, h.y, _rot, Hover);
+                }
             }
             _overlay.Apply();
         }
 
-        // ---------- Text ----------
-        static string ZoneHelp(Zone z) => z switch
+        static string ZoneName(Zone z, bool flax = false) => z switch
         {
-            Zone.Res => "Housing zone: homes grow on it beside a road when houses are nearly full.",
-            Zone.Farm => "Wheat: mark fertile tiles within 3 tiles of a farmhouse.",
-            Zone.Wood => "Lumber: mark forest for crews from a nearby woodcutter lodge.",
-            _ => "Mining: mark deposits for a nearby quarry or iron mine.",
+            Zone.Res => "Housing", Zone.Farm => flax ? "Flax field" : "Wheat field", Zone.Wood => "Lumber", Zone.Mine => "Mining", Zone.Comm => "Commerce", _ => "No",
         };
 
-        string DemandLine()
+        /// <summary>The line beside the mouse: what a click will do here, or why it cannot (bad = red).</summary>
+        (string text, bool bad) CursorTip()
         {
-            string D(Zone z, string name) { double v = World.Dem[z]; return $"{name} {(v > DemandThresholdShown ? "+" : v < -0.05 ? "-" : " ")}{System.Math.Abs(v) * 100:0}%"; }
-            return "Demand   " + D(Zone.Res, "Homes");
+            if (!_hover.HasValue || _tool.Id == "look") return (null, false);
+            var h = _hover.Value;
+            if (_tool.Road)
+            {
+                var path = World.LPath((_roadAnchor ?? h).x, (_roadAnchor ?? h).y, h.x, h.y);
+                var r = World.RoadPathCheck(path);
+                if (!r.Ok) return (r.Reason, true);
+                int n = r.Count;
+                return _roadAnchor.HasValue ? ($"{n} new tile{(n == 1 ? "" : "s")}, {n} wood. Let go to build", false) : ("Press and drag to lay a road", false);
+            }
+            if (_tool.Build != null)
+            {
+                var r = World.CanPlace(_tool.Build, h.x, h.y);
+                return r.Ok ? ($"Click to build: {Hud.CostText(_tool.Build)}", false) : (r.Reason, true);
+            }
+            if (_tool.Zone != Zone.None)
+            {
+                var (x0, y0, x1, y1) = RectTo(h);
+                int ok = 0, bad = 0; string why = null;
+                for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++)
+                    {
+                        var r = World.ZoneCheck(_tool.Zone, x, y);
+                        if (r.Ok) ok++; else { bad++; why ??= r.Reason; }
+                    }
+                if (!_zoneAnchor.HasValue) return ok > 0 ? ("Press and drag over the land", false) : (why, true);
+                string size = $"{x1 - x0 + 1} x {y1 - y0 + 1}: ";
+                return ok == 0 ? (size + why, true) : (size + $"{ok} tile{(ok == 1 ? "" : "s")} to zone" + (bad > 0 ? $", {bad} cannot be ({why})" : ""), false);
+            }
+            if (_tool.Unzone)
+            {
+                var (x0, y0, x1, y1) = RectTo(h);
+                int n = 0;
+                for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) if (World.Grid[y, x] == null && World.ZoneMap[y, x] != Zone.None) n++;
+                return _zoneAnchor.HasValue ? ($"Remove the zone from {n} tile{(n == 1 ? "" : "s")}", n == 0) : ("Press and drag over zoned land", false);
+            }
+            if (_tool.Clear)
+            {
+                var b = World.Grid[h.y, h.x];
+                if (b != null)
+                {
+                    if (b.T == "hall") return ("The Town Hall cannot be removed", true);
+                    var refund = string.Join(", ", CostOf(b.T, b.Sz).Where(kv => kv.Value >= 2).Select(kv => $"{kv.Value / 2} {kv.Key.ToString().ToLower()}"));
+                    return ($"Demolish the {b.Name}" + (refund.Length > 0 ? $" (get back {refund})" : ""), false);
+                }
+                if (World.ZoneMap[h.y, h.x] != Zone.None) return ($"Remove the {ZoneName(World.ZoneMap[h.y, h.x], World.IsFlaxField(h.x, h.y))} zone", false);
+                return World.DecoMap[h.y, h.x] switch
+                {
+                    Deco.Tree => ("Cut down the tree (2 logs)", false),
+                    Deco.Rock => World.IsMountain(h.x, h.y) ? ("A mountain cannot be cleared by hand", true) : World.PitDepth(h.x, h.y) > 0 ? ("A quarry pit cannot be filled in", true) : ("Clear the rock (1 stone)", false),
+                    Deco.Ore => ("Clear the ore showing (1 ore)", false),
+                    Deco.Stump => ("Clear the stump", false),
+                    Deco.Sapling => ("Clear the sapling", false),
+                    _ => ("Nothing to clear here", true),
+                };
+            }
+            return (null, false);
         }
-        const double DemandThresholdShown = World.DemandThreshold;
-
-        static string CostText(string type) => string.Join(", ", CostOf(type, PlacementSize(type)).Select(kv => $"{kv.Value} {kv.Key.ToString().ToLower()}"));
 
         /// <summary>JS crewLine: what the building's crew is doing.</summary>
         static string CrewLine(Building b)
@@ -392,7 +576,7 @@ namespace CrownAndHearth.Game
         {
             var w = World;
             if (!w.IsSurveyed(x, y))
-                return w.ZoneMap[y, x] == Zone.Mine ? "Underground: not surveyed yet (a mine's miners will survey it)" : "Underground: unknown. Paint a Mining zone (7) to have it surveyed";
+                return w.ZoneMap[y, x] == Zone.Mine ? "Underground: not surveyed yet (a mine's miners will survey it)" : "Underground: unknown. Zone it for mining (Mining, 5) to have it surveyed";
             var parts = new List<string>();
             for (int l = 1; l <= World.MaxDepth; l++) { double o = w.KnownOre(x, y, l); parts.Add($"band {l} " + (o > 1e-9 ? $"{o:0} ore" : "none")); }
             return "Underground (surveyed): " + string.Join(", ", parts);
@@ -417,15 +601,16 @@ namespace CrownAndHearth.Game
             }
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");
             var d = w.DecoMap[y, x];
-            if (d == Deco.Tree) lines.Add("FOREST. Paint a Lumber zone (6) so a woodcutter lodge fells it.");
-            if (d == Deco.Rock) lines.Add(w.IsMountain(x, y) ? $"MOUNTAIN. Stone left {w.RockLeft(x, y):0}. Quarry it from the edge." : $"STONE OUTCROP. Stone left {w.RockLeft(x, y):0}.");
-            if (d == Deco.Ore) lines.Add(w.IsSurveyed(x, y) ? "IRON SHOWING. Ore shows at the surface here." : "IRON SHOWING. Ore shows at the surface here; more lies inside the hill. Paint a Mining zone (7) over it and the high ground, with a lot at the foot for the mine");
+            // a short heading line of its own (the info panel shows the first line as its title), then the explanation
+            if (d == Deco.Tree) { lines.Add("FOREST"); lines.Add("Zone it for lumber (Forestry, 4) so a woodcutter lodge fells it."); }
+            if (d == Deco.Rock) { lines.Add(w.IsMountain(x, y) ? "MOUNTAIN" : "STONE OUTCROP"); lines.Add(w.IsMountain(x, y) ? $"Stone left {w.RockLeft(x, y):0}. Quarry it from the edge." : $"Stone left {w.RockLeft(x, y):0}."); }
+            if (d == Deco.Ore) { lines.Add("IRON SHOWING"); lines.Add(w.IsSurveyed(x, y) ? "Ore shows at the surface here." : "Ore shows at the surface here; more lies inside the hill. Zone it for mining (Mining, 5) with the high ground, with a lot at the foot for the mine."); }
             lines.Add(UndergroundLine(x, y));
             if (d == Deco.Stump) lines.Add("Stump. It rots away into open ground.");
             if (d == Deco.Sapling) lines.Add("Sapling. It grows into a tree in three years.");
             if (w.ZoneMap[y, x] == Zone.Farm)
                 lines.Add(w.IsFlaxField(x, y) ? "Flax field. Produces flax." : "Wheat field. Produces food.");
-            else if (w.ZoneMap[y, x] != Zone.None) lines.Add(w.ZoneMap[y, x] + " zone");
+            else if (w.ZoneMap[y, x] != Zone.None) lines.Add(ZoneName(w.ZoneMap[y, x]) + " zone");
             lines.Add($"Tile {x},{y}   level {w.TileLevel(x, y):0.##}" + (w.Fert[y, x] ? "   fertile soil" : "") + (w.TileSpread(x, y) >= 3 ? "   too steep" : ""));
             return string.Join("\n", lines);
         }

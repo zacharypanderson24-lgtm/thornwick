@@ -105,45 +105,46 @@ namespace CrownAndHearth.Sim
                 Body = "One day passes every second. Space pauses; the 1x, 2x and 4x buttons speed things up while you wait for the town to grow.",
                 Goal = "Pause or change the speed", Done = (t, w) => t.SpeedChanged },
             new Step { Id = "road", Title = "Roads", Tool = "road",
-                Body = "Use Build for buildings and roads, and Zone to mark land. Working buildings need a road back to the Town Hall.\n\n" +
-                       "Pick Road (2), press on a tile next to the street and drag: an L-shaped road follows the mouse and is built when you let go. " +
+                Body = "Everything you build is in the bar along the bottom, grouped by job: Roads, Housing, Farming, Forestry, Mining and more. " +
+                       "Hover a button to see what it does. Working buildings need a road back to the Town Hall.\n\n" +
+                       "Pick Roads (1), press on a tile next to the street and drag: an L-shaped road follows the mouse and is built when you let go. " +
                        "Each tile costs 1 wood. Roads climb hills but not mountains, and cannot go through forest.",
                 Goal = "Lay 3 more road tiles connected to the Town Hall", Done = Grew(s => s.Roads, 3) },
             new Step { Id = "housing", Title = "Homes", Tool = "zoneRes",
                 Body = "You don't build houses yourself: you zone land and villagers build there when they need room.\n\n" +
-                       "Pick Housing (3). Zoning is two clicks: click one corner, move the mouse (the rectangle shows green where it can go, red " +
-                       "where it can't), then click the opposite corner. Zone tiles touching a road.",
+                       "Pick Housing (2), press on a tile and drag over the land: green tiles will be zoned, red ones cannot be. Let go to zone them. " +
+                       "Zone tiles touching a road. Right-click or Esc puts the tool away.",
                 Goal = "Zone 4 Housing tiles beside a connected road", Done = Grew(s => s.ResByRoad, 4) },
             new Step { Id = "growth", Title = "Watch it grow",
-                Body = "The Demand strip at the bottom left says what the town wants: + means wanted. Homes are wanted when houses are nearly full " +
+                Body = "The Homes meter in the bottom bar says what the town wants: green and full means homes are wanted. Homes are wanted when houses are nearly full " +
                        "and food is stocked. Hover a zone tile: the panel on the left says why nothing grows yet.\n\nTry 4x speed and wait for a new home.",
                 Goal = "A new home grows", Done = Grew(s => s.Houses, 1) },
             new Step { Id = "farmland", Title = "Food", Tool = "zoneFarm",
-                Body = "Villagers eat every day; with no food they starve and leave.\n\nPick Wheat (4) and zone fertile soil (the darker, olive ground) " +
-                       "within 3 tiles of a 2x2 farmhouse. Place more farmhouses with Build > Farmhouse (B); each field becomes one of its " +
-                       "1x1 plots. Each farmer tends 2 plots, so give farms room.",
+                Body = "Villagers eat every day; with no food they starve and leave.\n\nOpen Farming (3) and pick Wheat Fields. The shaded area is the " +
+                       "farmhouse's reach: drag over fertile soil (the darker, olive ground) inside it. Farming also has more Farmhouses, " +
+                       "Flax Fields and Silos. Each farmer tends 2 fields, so give farms room.",
                 Goal = "Zone 6 Farmland tiles", Done = Grew(s => s.Farmland, 6) },
             new Step { Id = "workers", Title = "Workers",
                 Body = "Buildings only work when villagers staff them. Open Workers (bottom right): villagers fill the trades from the top down, " +
                        "farming first. Use Up and Dn to change who gets hands first; a row in red is short of workers.",
                 Goal = "Open the Workers panel", Done = (t, w) => t.WorkersOpened },
             new Step { Id = "lumber", Title = "Wood", Tool = "zoneWood",
-                Body = "Wood builds everything. Build a Woodcutter Lodge (L) beside a road, then mark nearby forest with Lumber (6). " +
+                Body = "Wood builds everything. Open Forestry (4): build a Woodcutter Lodge beside a road, then drag a Lumber Zone over forest in its shaded reach. " +
                        "Woodcutters walk out, fell the marked trees and carry logs home. Felled land turns to stumps, then open ground.\n\n" +
-                       "A Forester (F) replants saplings on Lumber-zoned open ground, so a forest can last.",
+                       "A Forester (also in Forestry) replants saplings on Lumber-zoned open ground, so a forest can last.",
                 Goal = "Zone 6 Lumber tiles", Done = Grew(s => s.Lumber, 6) },
             new Step { Id = "sawmill", Title = "Logs into wood", Tool = "sawmill",
-                Body = "Logs must be sawn into wood. The Town Hall saws 1 log a day at half yield; a Sawmill (X, 15 wood) saws 4 a day at full yield. " +
+                Body = "Logs must be sawn into wood. The Town Hall saws 1 log a day at half yield; a Sawmill (Forestry, 15 wood) saws 4 a day at full yield. " +
                        "Build one beside a road.",
                 Goal = "Build a Sawmill", Done = Grew(s => s.Sawmills, 1) },
             new Step { Id = "services", Title = "Crop storage", Tool = "silo",
-                Body = "Build a Silo (J) beside a connected road to store 180 more wheat and 60 more flax.",
+                Body = "Build a Silo (Farming, 3) beside a connected road to store 180 more wheat and 60 more flax.",
                 Goal = "Build and connect a Silo", Done = Grew(s => s.Silos, 1) },
             new Step { Id = "stone", Title = "Stone and iron", Tool = "zoneMine",
-                Body = "Mining (7) zones go on rock and on hills and mountains.\n\n" +
-                       "Stone: zone rock outcrops or a mountain's edge inside reach of a Quarry you place with Build (K); quarries dig hills down and cut into mountains.\n\n" +
+                Body = "Open Mining (5). Mining Zones go on rock and on hills and mountains.\n\n" +
+                       "Stone: build a Quarry, then zone rock outcrops or a mountain's edge inside its shaded reach; quarries dig hills down and cut into mountains.\n\n" +
                        "Iron lies hidden inside hills and mountains (orange-veined stones on the slopes hint at it). Zone the high ground and a lot at its " +
-                       "foot, then place a Mine (M). Its entrance faces away from the hill and needs the road right at that entrance.",
+                       "foot, then place an Iron Mine. Its entrance faces away from the hill and needs the road right at that entrance.",
                 Goal = "Zone 6 Mining tiles", Done = Grew(s => s.Mining, 6) },
             new Step { Id = "underground", Title = "Underground",
                 Body = "Press U for the underground view (U again for deeper bands). A mine's miners first survey its zone: orange shows the ore " +
@@ -155,7 +156,7 @@ namespace CrownAndHearth.Sim
                        "for repairs and a miner may die. Keep some wood in store while you mine. Click a mine to see its tunnels and supports.",
                 Goal = "Press Next" },
             new Step { Id = "defence", Title = "Soldiers",
-                Body = "A Barracks (9) trains soldiers from your peasants, using wood, gold and iron ore. Soldiers eat half as much again and do no other work, " +
+                Body = "A Barracks (Military, 7) trains soldiers from your peasants, using wood, gold and iron ore. Soldiers eat half as much again and do no other work, " +
                        "so every one is a farmer or woodcutter you give up.",
                 Goal = "Press Next" },
             new Step { Id = "save", Title = "Saving",

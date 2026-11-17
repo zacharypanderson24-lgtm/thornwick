@@ -84,5 +84,22 @@ namespace CrownAndHearth.Tests
                 if (w.ZoneMap[y, x] == Zone.Farm && w.Grid[y, x] == null) Assert.IsTrue(w.Fert[y, x], $"Farmland on infertile {x},{y}");
             Assert.IsNotEmpty(why);
         }
+
+        [Test]
+        public void UnzoningARectangleClearsOpenTilesAndLeavesBuildingsAlone()
+        {
+            var w = new World(7);
+            var farm = w.Blds.Single(b => b.T == "farm");
+            int x0 = farm.X - World.FarmFieldRange, y0 = farm.Y - World.FarmFieldRange;
+            int x1 = farm.X + farm.Sz - 1 + World.FarmFieldRange, y1 = farm.Y + farm.Sz - 1 + World.FarmFieldRange;
+            int before = w.FarmFields().Count; Assert.Greater(before, 0);
+            int blds = w.Blds.Count;
+            int cleared = w.ClearZoneRect(x1, y1, x0, y0);   // corners in either order
+            Assert.Greater(cleared, 0);
+            Assert.AreEqual(0, w.FarmFields().Count, "every field in reach of the farmhouse is unzoned");
+            Assert.AreEqual(blds, w.Blds.Count, "no building is removed");
+            Assert.AreEqual(0, w.ClearZoneRect(x0, y0, x1, y1), "unzoning it again changes nothing");
+            Assert.AreEqual(0, w.ClearZoneRect(-5, -5, -1, -1), "off the map is ignored");
+        }
     }
 }
