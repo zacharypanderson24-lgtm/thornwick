@@ -1,6 +1,5 @@
 // Work crews and townsfolk on the map (JS draw(): the crewAt buckets, SPR.worker and SPR.folk).
-// The sprites are drawn in code from the same pixels as src/ui.js: crew workers 6x10 (tunic by trade, a carried load on the way home),
-// townsfolk 3x5 (six tunic colours, two stepping frames). Positions slide between tiles through the day (the browser's tickFrac).
+// Point-sampled PNG atlas with trade outfits, carried materials, and two walking poses.
 // Pooled SpriteRenderers, updated every frame without allocations; hidden at the 0.25x/0.5x zooms like the browser's LOD.
 using System.Collections.Generic;
 using CrownAndHearth.Sim;
@@ -12,7 +11,7 @@ namespace CrownAndHearth.Game
     public class AgentRenderer : MonoBehaviour
     {
         Material _mat;
-        Sprite[,] _worker;   // [kind 0 tree / 1 rock / 2 ore, carrying 0/1]
+        Sprite[,,] _worker;  // [trade, carrying, step]
         Sprite[,] _folk;     // [tunic, frame]
         readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
         int _used;
@@ -23,7 +22,7 @@ namespace CrownAndHearth.Game
         public void Draw(World w, int rot, float frac, bool lod)
         {
             _used = 0;
-            if (!lod)
+            if (!lod && _worker != null)
             {
                 foreach (var b in w.Blds)
                 {
@@ -33,7 +32,8 @@ namespace CrownAndHearth.Game
                     {
                         var a = b.Crew[i]; if (a.St == CrewState.Home) continue;
                         int jit = (i * 3) % 5 - 2;
-                        Put(w, rot, _worker[k, a.St == CrewState.Back && a.Carry > 0 ? 1 : 0], a.Px, a.Py, a.X, a.Y, frac, jit, 0);
+                        int step = (a.Px != a.X || a.Py != a.Y) && frac >= 0.5f ? 1 : 0;
+                        Put(w, rot, _worker[k, a.St == CrewState.Back && a.Carry > 0 ? 1 : 0, step], a.Px, a.Py, a.X, a.Y, frac, jit, 0);
                     }
                 }
                 foreach (var v in w.Folk)
@@ -67,61 +67,45 @@ namespace CrownAndHearth.Game
                 _pool.Add(r);
             }
             _used++;
+            int dx = x - px, dy = y - py;
+            int screenStep = rot switch { 1 => -dy - dx, 2 => dy - dx, 3 => dy + dx, _ => dx - dy };
+            r.flipX = screenStep < 0;
             r.sprite = s; r.sortingOrder = IsoView.SortOrder(near.x, near.y); r.enabled = true;
             // same painter's slot as the tile's tree or building; a hair nearer the camera so the walker draws after it (JS draws crews last per tile)
             r.transform.localPosition = new Vector3(sx / IsoView.PPU, -sy / IsoView.PPU, -0.01f);
         }
 
-        // ---------- Sprites (pixels from src/ui.js) ----------
-        static Color32 C(string hex, float a = 1)
-        {
-            ColorUtility.TryParseHtmlString(hex, out var c); c.a = a; return c;
-        }
-
         void MakeSprites()
         {
-            // one small atlas: 3 kinds x 2 worker frames (6x10) on the first row, 6 tunics x 2 folk frames (3x5) below
-            const int W = 36, H = 16;
-            var tex = new Texture2D(W, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = "agents" };
-            var px = new Color32[W * H];
-            // canvas coordinates are y-down; the texture is y-up
-            void Fill(int ox, int oy, int h, int x, int y, int w, int hh, Color32 c)
+            const int width = 8, height = 12, columns = 12;
+            var atlas = Resources.Load<Texture2D>("Art/agents");
+            if (atlas == null || atlas.width != width * columns || atlas.height != height * 2)
             {
-                for (int j = y; j < y + hh; j++) for (int i = x; i < x + w; i++) px[(oy + h - 1 - j) * W + ox + i] = c;
+                Debug.LogError("Expected a 96×24 people atlas at Resources/Art/agents.");
+                return;
             }
-            _worker = new Sprite[3, 2];
-            var kinds = new[] { ("#5f8a3c", "#8a5a2b"), ("#8a8d98", "#b4b8c4"), ("#a8622a", "#e0873a") };
-            for (int k = 0; k < 3; k++)
-                for (int carry = 0; carry < 2; carry++)
-                {
-                    int ox = (k * 2 + carry) * 6, oy = H - 10;
-                    var (tunic, load) = kinds[k];
-                    void F(int x, int y, int w, int h, Color32 c) => Fill(ox, oy, 10, x, y, w, h, c);
-                    F(0, 9, 6, 1, C("#000000", 0.28f));
-                    F(1, 7, 1, 2, C("#3a2a1a")); F(4, 7, 1, 2, C("#3a2a1a"));
-                    F(1, 3, 4, 5, C("#20180f")); F(2, 4, 2, 3, C(tunic));
-                    F(2, 1, 2, 2, C("#e0b890")); F(1, 0, 4, 1, C("#4a3220"));
-                    if (carry == 1) { F(4, 2, 2, 3, C("#20180f")); F(4, 3, 2, 1, C(load)); }
-                }
+
+            Sprite Frame(int column, int row) => Sprite.Create(atlas,
+                new Rect(column * width, row * height, width, height), new Vector2(0.5f, 0),
+                IsoView.PPU, 0, SpriteMeshType.FullRect);
+
+            _worker = new Sprite[3, 2, 2];
+            for (int trade = 0; trade < 3; trade++)
+                for (int carrying = 0; carrying < 2; carrying++)
+                    for (int step = 0; step < 2; step++)
+                        _worker[trade, carrying, step] = Frame(trade * 4 + carrying * 2 + step, 1);
+
             _folk = new Sprite[World.FolkVariants, 2];
-            var tunics = new[] { "#8a5a34", "#6b7f3a", "#8d93a5", "#a3412f", "#c9a24a", "#4d6d92" };
-            for (int t = 0; t < tunics.Length; t++)
-                for (int fr = 0; fr < 2; fr++)
-                {
-                    int ox = (t * 2 + fr) * 3, oy = 0;
-                    void F(int x, int y, int w, int h, Color32 c) => Fill(ox, oy, 5, x, y, w, h, c);
-                    F(1, 0, 1, 1, C("#e0b890"));
-                    F(0, 1, 3, 2, C(tunics[t]));
-                    var leg = C("#2e2218");
-                    if (fr == 1) { F(0, 4, 1, 1, leg); F(2, 3, 1, 1, leg); F(1, 3, 1, 1, leg); }
-                    else { F(0, 3, 1, 1, leg); F(2, 4, 1, 1, leg); F(1, 3, 1, 1, leg); }
-                }
-            tex.SetPixels32(px); tex.Apply(false, true);
-            // pivot: bottom-centre (whole pixels), so the feet stand on the point Put computes
-            for (int k = 0; k < 3; k++) for (int c = 0; c < 2; c++)
-                _worker[k, c] = Sprite.Create(tex, new Rect((k * 2 + c) * 6, H - 10, 6, 10), new Vector2(3f / 6f, 0), IsoView.PPU, 0, SpriteMeshType.FullRect);
-            for (int t = 0; t < tunics.Length; t++) for (int fr = 0; fr < 2; fr++)
-                _folk[t, fr] = Sprite.Create(tex, new Rect((t * 2 + fr) * 3, 0, 3, 5), new Vector2(1f / 3f, 0), IsoView.PPU, 0, SpriteMeshType.FullRect);
+            for (int tunic = 0; tunic < World.FolkVariants; tunic++)
+                for (int step = 0; step < 2; step++)
+                    _folk[tunic, step] = Frame(tunic * 2 + step, 0);
+        }
+
+        void OnDestroy()
+        {
+            if (_worker == null) return;
+            foreach (var sprite in _worker) Destroy(sprite);
+            foreach (var sprite in _folk) Destroy(sprite);
         }
     }
 }
