@@ -1,5 +1,7 @@
 # Thornwick: notes for Claude (read this first in every new chat)
 
+> **Crown & Hearth long-term game design (MANDATORY READ):** [docs/GAME_VISION.md](docs/GAME_VISION.md). This is the canonical detailed statement of the owner's intended settlement-to-kingdom experience, the 600×600 km strategic world, 16-biome broader Old World setting, economy, five eras, architecture, combat, governance and six-phase roadmap. **Do not implement its future features unless they are part of the specifically assigned development milestone.** For actual implementation status use [DEVELOPMENT_PROGRESS.md](DEVELOPMENT_PROGRESS.md); for playable Unity usage see [unity/README.md](unity/README.md). Preserve the browser prototype and work in feature branches targeting `unity-migration`. Concept illustrations are references, never final texture assets.
+
 Medieval TheoTown-style pixel isometric city builder. Owner: Zach. Hosted from this repo on GitHub Pages and Vercel (https://thornwick-two.vercel.app/, auto-deploys on push to main). ChatGPT makes the art (rules in CHATGPT_START_HERE.md); Claude does the code and reviews the art.
 
 ## Layout and build

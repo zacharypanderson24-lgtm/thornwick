@@ -1,5 +1,7 @@
 # Crown & Hearth (Unity)
 
+> **Full game design:** [../docs/GAME_VISION.md](../docs/GAME_VISION.md) describes the approved long-term Crown & Hearth vision, including 16 primary biomes, climate-coherent 600×600 km regional campaigns, regional architecture, agricultural and economic systems, five historical eras, fortifications, armies, generals and kingdom management. **This is future scope, not a description of implemented Unity features.** Check [../DEVELOPMENT_PROGRESS.md](../DEVELOPMENT_PROGRESS.md) for current build status.
+
 The Unity 6 port of Thornwick, the browser prototype at the root of this repository. The browser game stays untouched;
 everything Unity lives in this folder.
 
