@@ -75,6 +75,41 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
+        public void HousingStepShowsProgressAndCountsHomesThatGrowOnTheZone()
+        {
+            var w = new World(7); var t = new Tutorial();
+            int C = Defs.Start;
+            t.Start(w, IndexOf("housing"));
+            Assert.AreEqual("0 / 4", t.Progress(w));
+            // two zoned tiles beside the street, then a home grows on one of them: still 2 of 4, not 1
+            int zoned = 0;
+            for (int y = C + 2; y <= C + 6 && zoned < 2; y++)
+                if (w.Grid[y, C + 1] == null && w.BesideConnectedRoad(C + 1, y) && w.ZoneRect(Zone.Res, C + 1, y, C + 1, y).zoned == 1) zoned++;
+            Assume.That(zoned == 2, "two open tiles beside the starting street on this seed");
+            Assert.AreEqual("2 / 4", t.Progress(w));
+            var tile = Enumerable.Range(C + 2, 5).First(y => w.Grid[y, C + 1] == null && w.ZoneMap[y, C + 1] == Zone.Res);
+            w.AddBld("house", C + 1, tile, 1); w.Recalc();
+            Assert.AreEqual("2 / 4", t.Progress(w), "a home on a zoned tile keeps the count");
+            Assert.IsNull(t.Check(w));
+            Assert.IsNull(new Tutorial().Progress(w), "no progress line when the tutorial is not running");
+        }
+
+        [Test]
+        public void ZoningHelpersSeeExistingZonesAndConnectedRoads()
+        {
+            var w = new World(7);
+            int C = Defs.Start;
+            int y = Enumerable.Range(C + 2, 5).First(j => w.Grid[j, C + 1] == null && w.ZoneCheck(Zone.Res, C + 1, j).Ok);
+            Assert.IsTrue(w.BesideConnectedRoad(C + 1, y), "beside the starting street");
+            Assert.IsFalse(w.AlreadyZoned(Zone.Res, C + 1, y));
+            w.ZoneRect(Zone.Res, C + 1, y, C + 1, y);
+            Assert.IsTrue(w.AlreadyZoned(Zone.Res, C + 1, y));
+            Assert.AreEqual(1, w.ZonedUnder("silo", C + 1, y), "a 1x1 building there would cover the zoned tile");
+            Assert.IsTrue(w.WouldConnect("silo", C + 1, y));
+            Assert.IsFalse(w.WouldConnect("silo", 2, 2), "the map corner is nowhere near a road");
+        }
+
+        [Test]
         public void ProgressMadeBeforeAStepBeganDoesNotCount()
         {
             var w = new World(7); var t = new Tutorial();

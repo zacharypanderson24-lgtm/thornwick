@@ -17,17 +17,17 @@ button or card to see what it does, what it costs and what it needs:
 |---|---|---|
 | 1 | Roads | Dirt road (press and drag) |
 | 2 | Housing | Housing zone (homes grow on it by themselves) |
-| 3 | Farming | Farmhouse, wheat fields, flax fields, silo |
+| 3 | Farming | Farmhouse, farmland (wheat and flax mix set in the Farming menu), silo |
 | 4 | Forestry | Woodcutter lodge, lumber zone, forester, sawmill |
 | 5 | Mining | Quarry, iron mine, mining zone |
 | 6 | Trade | Market |
 | 7 | Military | Barracks |
 | 0 / Delete | Bulldoze | Demolish, remove zones |
 
-Pressing a category key picks its last-used tool; pressing it again cycles through the category.
+Clicking a category or pressing its key picks its last-used tool (else its first) and opens its cards; pressing the key again cycles through the category, clicking it again puts the tool away.
 Zones: press and drag over the land (or click two corners); green tiles will be zoned, red ones cannot be.
 Picking a building or a zone shades the land the work buildings reach (a farmhouse's fields, a lodge's forest).
-A line beside the mouse says what a click will do there, or why it cannot.
+A line beside the mouse says what a click will do there, or why it cannot (red). Amber means it will build but something is off: no connected road yet, or zoned land it would cover.
 Esc or a right-click (without dragging) cancels the road or rectangle being drawn, then puts the tool away.
 A mine's road must reach its downhill entrance.
 **Workers** sets staffing priorities. **Tutorial** explains the controls.
