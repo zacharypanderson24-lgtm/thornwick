@@ -66,6 +66,11 @@ namespace CrownAndHearth.Game
 
         GameObject _tutPanel;
         Text _tutTitle, _tutBody, _tutGoal, _tutStep, _tutNextLabel;
+        string _tutGoalBase = "";
+
+        /// <summary>Progress on the tutorial's counted goal ("2 / 4"), shown after the goal line; null shows the goal alone.</summary>
+        public void SetTutorialProgress(string progress) =>
+            _tutGoal.text = _tutGoalBase + (progress != null ? $"   Progress: {progress}" : "");
         string _highlight;   // tool the tutorial points at
         World _world;        // for card prices
 
@@ -119,7 +124,11 @@ namespace CrownAndHearth.Game
             // left info panel
             _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -417), new Vector2(330, -68)).gameObject;
             _infoTitle = MakeText((RectTransform)_infoPanel.transform, "InspectionTitle", 19, TextAnchor.UpperLeft);
-            Stretch(_infoTitle.rectTransform, new Vector2(12, 0), new Vector2(-12, -12));
+            // one line at the top: long headings shrink to fit instead of wrapping over the text below
+            var itr = _infoTitle.rectTransform; itr.anchorMin = new Vector2(0, 1); itr.anchorMax = Vector2.one;
+            itr.offsetMin = new Vector2(12, -40); itr.offsetMax = new Vector2(-12, -8);
+            _infoTitle.resizeTextForBestFit = true; _infoTitle.resizeTextMinSize = 11; _infoTitle.resizeTextMaxSize = 19;
+            _infoTitle.horizontalOverflow = HorizontalWrapMode.Wrap; _infoTitle.verticalOverflow = VerticalWrapMode.Truncate;
             _infoText = MakeText((RectTransform)_infoPanel.transform, "InfoText", 15, TextAnchor.UpperLeft);
             Stretch(_infoText.rectTransform, new Vector2(12, 8), new Vector2(-12, -43));
 
@@ -213,28 +222,40 @@ namespace CrownAndHearth.Game
 
                 var icon = MakeIcon(card, ToolIcon(t));
                 var ir = icon.rectTransform; ir.anchorMin = ir.anchorMax = new Vector2(0, 0.5f); ir.sizeDelta = new Vector2(58, 64); ir.anchoredPosition = new Vector2(34, 0);
-                var name = MakeText(card, "Name", 15, TextAnchor.UpperLeft); name.text = t.Label; name.fontStyle = FontStyle.Bold;
-                Stretch(name.rectTransform, new Vector2(68, 0), new Vector2(-6, -8));
+                // three rows of their own (name, kind, cost) that shrink to fit, so long names and prices never run into each other
+                var name = MakeText(card, "Name", 15, TextAnchor.MiddleLeft); name.text = t.Label; name.fontStyle = FontStyle.Bold;
+                Stretch(name.rectTransform, new Vector2(68, CardH - 36), new Vector2(-6, -4));
+                FitText(name, 10, 15);
                 var kind = MakeText(card, "Kind", 12, TextAnchor.MiddleLeft); kind.color = Dim;
                 kind.text = t.Zone != Zone.None ? "Zone: drag an area" : t.Unzone ? "Drag an area" : t.Clear ? "Click or drag" : t.Road ? "Drag a line" : $"{Defs.PlacementSize(t.Build)}x{Defs.PlacementSize(t.Build)} building";
-                Stretch(kind.rectTransform, new Vector2(68, 22), new Vector2(-6, -40));
-                var cost = MakeText(card, "Cost", 13, TextAnchor.LowerLeft);
+                Stretch(kind.rectTransform, new Vector2(68, 30), new Vector2(-6, -36));
+                FitText(kind, 9, 12);
+                var cost = MakeText(card, "Cost", 13, TextAnchor.MiddleLeft);
                 cost.text = t.Build != null ? CostText(t.Build) : t.Road ? "1 wood a tile" : t.Zone != Zone.None ? "Free" : "";
-                Stretch(cost.rectTransform, new Vector2(68, 8), new Vector2(-6, 0));
+                Stretch(cost.rectTransform, new Vector2(68, 6), new Vector2(-6, -CardH + 30));
+                FitText(cost, 9, 13);
                 _cards[id] = img; _cardCost[id] = cost;
             }
             tray.gameObject.SetActive(false);
             return tray;
         }
 
+        static void FitText(Text t, int min, int max)
+        {
+            t.resizeTextForBestFit = true; t.resizeTextMinSize = min; t.resizeTextMaxSize = max;
+            t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Truncate;
+        }
+
         List<GameController.ToolDef> ToolsIn(GameController.Cat c) => _tools.Where(t => t.Cat == c).ToList();
 
         void ClickCategory(GameController.Cat c)
         {
+            ShowTip(false, null, "", "", "");   // the category's hover text would cover the cards that open
             var tools = ToolsIn(c);
             if (tools.Count == 1) { ToolPicked?.Invoke(tools[0].Id); ShowTray(null); return; }
             if (_openCat == c) { ToolPicked?.Invoke("look"); ShowTray(null); return; }   // second click closes it
-            if (!tools.Any(t => t.Id == _currentTool)) ToolPicked?.Invoke("look");
+            // like the hotkey and the one-tool categories, a click picks a tool straight away: the last one used here, else the first
+            if (!tools.Any(t => t.Id == _currentTool)) ToolPicked?.Invoke(_lastInCat.TryGetValue(c, out var last) ? last : tools[0].Id);
             ShowTray(c);
         }
 
@@ -329,13 +350,13 @@ namespace CrownAndHearth.Game
         }
 
         /// <summary>Show a short line beside the mouse (null hides it); bad = red, for "this will not work here, because...".</summary>
-        public void SetCursorTip(string text, bool bad, Vector2 screenPos)
+        public void SetCursorTip(string text, bool bad, Vector2 screenPos, bool warn = false)
         {
             bool on = !string.IsNullOrEmpty(text);
             _cursorTip.gameObject.SetActive(on);
             if (!on) return;
             _cursorText.text = text;
-            _cursorText.color = bad ? BadInk : Ink;
+            _cursorText.color = bad ? BadInk : warn ? Pulse : Ink;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(_root, screenPos, null, out var local);
             var size = _root.rect.size;
             float w = _cursorTip.rect.width;
@@ -376,7 +397,8 @@ namespace CrownAndHearth.Game
             _tutStep.text = $"{t.Index + 1} / {Tutorial.Steps.Count}";
             _tutBody.text = s.Body;
             _tutGoal.text = "Goal: " + s.Goal + (s.Tool != null ? "  (the glowing button below)" : "");
-            _tutNextLabel.text = s.Done == null ? (t.Index == Tutorial.Steps.Count - 1 ? "Finish" : "Next") : "Skip";
+            _tutGoalBase = _tutGoal.text;
+            _tutNextLabel.text = s.Explanation ?(t.Index == Tutorial.Steps.Count - 1 ? "Finish" : "Next") : "Skip";
             RestoreColors();
         }
 
@@ -441,6 +463,9 @@ namespace CrownAndHearth.Game
             int firstLine = text.IndexOf('\n');
             _infoTitle.text = firstLine < 0 ? text : text.Substring(0, firstLine);
             _infoText.text = firstLine < 0 ? "" : text.Substring(firstLine + 1);
+            // fit the panel to its text, so it does not hide a big piece of the map
+            var pr = (RectTransform)_infoPanel.transform;
+            pr.offsetMin = new Vector2(pr.offsetMin.x, pr.offsetMax.y - Mathf.Min(349, 56 + _infoText.preferredHeight));
         }
 
         Text MakeStat(RectTransform row, string label)

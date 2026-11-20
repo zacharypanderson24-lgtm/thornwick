@@ -204,7 +204,7 @@ namespace CrownAndHearth.Sim
             for (int y = Math.Min(ay, by); y <= Math.Max(ay, by); y++)
                 for (int x = Math.Min(ax, bx); x <= Math.Max(ax, bx); x++)
                 {
-                    if (Inb(x, y) && Grid[y, x] == null && ZoneMap[y, x] == kind && (FlaxPercent.HasValue || IsFlaxField(x, y) == (kind == Zone.Farm && flax))) continue;   // already that zone
+                    if (AlreadyZoned(kind, x, y, flax)) continue;
                     var r = SetZone(kind, x, y, flax);
                     if (r.Ok) { if (Grid[y, x] == null) zoned++; continue; }
                     skipped++; reasons[r.Reason] = (reasons.TryGetValue(r.Reason, out var n) ? n : 0) + 1;
@@ -250,6 +250,39 @@ namespace CrownAndHearth.Sim
             var g = Grid[y, x];
             return g != null && g != self && (g.T == "road" || g == Hall);
         }
+        /// <summary>True when an open tile already carries this zone, so zoning it again changes nothing (ZoneRect skips it).</summary>
+        public bool AlreadyZoned(Zone kind, int x, int y, bool flax = false) =>
+            Inb(x, y) && Grid[y, x] == null && ZoneMap[y, x] == kind && (FlaxPercent.HasValue || IsFlaxField(x, y) == (kind == Zone.Farm && flax));
+
+        /// <summary>True when the tile touches a road connected to the Town Hall (or the Hall itself): homes only grow on such tiles.</summary>
+        public bool BesideConnectedRoad(int x, int y)
+        {
+            for (int k = 0; k < 4; k++)
+            {
+                int i = x + Nb[k, 0], j = y + Nb[k, 1];
+                if (!Inb(i, j) || Grid[j, i] == null) continue;
+                if ((Grid[j, i].T == "road" && Grid[j, i].Served) || Grid[j, i].T == "hall") return true;
+            }
+            return false;
+        }
+
+        /// <summary>True when a building of this type placed at x,y would touch a connected road, so it would be served at once.</summary>
+        public bool WouldConnect(string type, int x, int y)
+        {
+            var fp = new Building { T = type, X = x, Y = y, Sz = PlacementSize(type) };
+            foreach (var (tx, ty) in fp.Tiles()) if (BesideConnectedRoad(tx, ty)) return true;
+            return false;
+        }
+
+        /// <summary>How many zoned open tiles a building of this type placed at x,y would cover (the zone is lost under it).</summary>
+        public int ZonedUnder(string type, int x, int y)
+        {
+            int n = 0;
+            var fp = new Building { T = type, X = x, Y = y, Sz = PlacementSize(type) };
+            foreach (var (tx, ty) in fp.Tiles()) if (Inb(tx, ty) && Grid[ty, tx] == null && ZoneMap[ty, tx] != Zone.None) n++;
+            return n;
+        }
+
         bool NextToRoad(Building b)
         {
             foreach (var (x, y) in b.Tiles()) for (int k = 0; k < 4; k++) if (RoadOrHall(x + Nb[k, 0], y + Nb[k, 1], b)) return true;

@@ -217,6 +217,23 @@ Play-tested in the Editor (trays, tooltips, wheat-field preview with counts, lod
 mouse drag could not be simulated there, so drag zoning and right-click cancel still want a hands-on try. Not done from the agreed list:
 resource chips with icons in the top bar.
 
+### Build bar playtest fixes (`claude/build-ui`, 2026-11-20)
+
+A scripted playtest (a Windows build driven by a virtual mouse and keyboard, following the tutorial for about 140 game days, with
+screenshots) found these, now fixed and re-checked the same way:
+
+- **Tutorial stuck on Homes**: zoning a block where only some tiles touch the road left the step unfinishable once homes grew on them.
+  The step now counts homes too, every counted goal shows progress ("Progress: 2 / 4"), and the zoning message and cursor tip say
+  how many Housing tiles do not touch a connected road. The text says Farmland (not "Wheat Fields"/"Flax Fields").
+- **Zoning preview vs result**: tiles that already carry the zone are no longer counted as "to zone" (`World.AlreadyZoned`); zoning only
+  such land says so instead of "Zoned 0 tiles".
+- **Building with no road / over zones**: the ghost turns amber and the tip warns (`World.WouldConnect`, `World.ZonedUnder`); the click
+  still builds, and the message afterwards says it needs a road.
+- **Category clicks** now pick a tool straight away (last used, else first), like the hotkeys; the category tooltip hides on click.
+- **Layout**: on a first run the camera starts with the town below the tutorial panel; the info panel has a one-line heading for every
+  tile, shows the underground line only where ore can be, says why a Housing tile has no home yet, and shrinks to its text; card
+  name, kind and cost each have their own row and shrink to fit (the Silo price no longer overlaps).
+
 ## Not done yet (next candidates)
 
 1. Saves: built by ChatGPT, in `unity-migration` (see Farming above).

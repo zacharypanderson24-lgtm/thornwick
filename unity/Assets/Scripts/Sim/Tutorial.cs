@@ -13,7 +13,9 @@ namespace CrownAndHearth.Sim
         public sealed class Step
         {
             public string Id, Title, Body, Tool, Goal;   // Tool: toolbar button to light up (GameController tool id); Goal: what finishes the step
-            public Func<Tutorial, World, bool> Done;     // null: an explanation, finished with Next
+            public Func<Tutorial, World, bool> Done;     // a goal the world cannot count (camera moved, panel opened...)
+            public Func<Snapshot, int> Count; public int By;   // a counted goal: done once Count has grown by By since the step began
+            public bool Explanation => Done == null && Count == null;   // finished with Next
         }
 
         // what the world looked like when the current step began
@@ -44,7 +46,8 @@ namespace CrownAndHearth.Sim
         {
             if (!Active || Finished) return null;
             var s = Current;
-            if (s.Done == null || !s.Done(this, w)) return null;
+            bool done = s.Count != null ? Gained(w) >= s.By : s.Done != null && s.Done(this, w);
+            if (!done) return null;
             Next(w);
             return s;
         }
@@ -67,7 +70,7 @@ namespace CrownAndHearth.Sim
                     if (w.Grid[y, x] != null) continue;
                     switch (w.ZoneMap[y, x])
                     {
-                        case Zone.Res: if (BesideConnectedRoad(w, x, y)) n.ResByRoad++; break;
+                        case Zone.Res: if (w.BesideConnectedRoad(x, y)) n.ResByRoad++; break;
                         case Zone.Farm: n.Farmland++; break;
                         case Zone.Wood: n.Lumber++; break;
                         case Zone.Comm: n.Comm++; break;
@@ -77,17 +80,11 @@ namespace CrownAndHearth.Sim
             return n;
         }
 
-        static bool BesideConnectedRoad(World w, int x, int y)
-        {
-            for (int k = 0; k < 4; k++)
-            {
-                int i = x + Nb[k, 0], j = y + Nb[k, 1];
-                if (World.Inb(i, j) && w.Grid[j, i] != null && w.Grid[j, i].T == "road" && w.Grid[j, i].Served) return true;
-            }
-            return false;
-        }
 
-        static Func<Tutorial, World, bool> Grew(Func<Snapshot, int> count, int by) => (t, w) => count(Snap(w)) - count(t.At) >= by;
+        int Gained(World w) => Current.Count(Snap(w)) - Current.Count(At);
+
+        /// <summary>How far the current counted goal has got, such as "2 / 4" (null for other steps).</summary>
+        public string Progress(World w) => Active && !Finished && Current.Count != null ? $"{Math.Max(0, Math.Min(Current.By, Gained(w)))} / {Current.By}" : null;
 
         public static readonly IReadOnlyList<Step> Steps = new List<Step>
         {
@@ -109,21 +106,22 @@ namespace CrownAndHearth.Sim
                        "Hover a button to see what it does. Working buildings need a road back to the Town Hall.\n\n" +
                        "Pick Roads (1), press on a tile next to the street and drag: an L-shaped road follows the mouse and is built when you let go. " +
                        "Each tile costs 1 wood. Roads climb hills but not mountains, and cannot go through forest.",
-                Goal = "Lay 3 more road tiles connected to the Town Hall", Done = Grew(s => s.Roads, 3) },
+                Goal = "Lay 3 more road tiles connected to the Town Hall", Count = s => s.Roads, By = 3 },
             new Step { Id = "housing", Title = "Homes", Tool = "zoneRes",
                 Body = "You don't build houses yourself: you zone land and villagers build there when they need room.\n\n" +
                        "Pick Housing (2), press on a tile and drag over the land: green tiles will be zoned, red ones cannot be. Let go to zone them. " +
-                       "Zone tiles touching a road. Right-click or Esc puts the tool away.",
-                Goal = "Zone 4 Housing tiles beside a connected road", Done = Grew(s => s.ResByRoad, 4) },
+                       "Homes only grow on tiles touching a connected road, so zone along the street. Right-click or Esc puts the tool away.",
+                Goal = "Zone 4 Housing tiles beside a connected road", Count = s => s.ResByRoad + s.Houses, By = 4 },
             new Step { Id = "growth", Title = "Watch it grow",
                 Body = "The Homes meter in the bottom bar says what the town wants: green and full means homes are wanted. Homes are wanted when houses are nearly full " +
                        "and food is stocked. Hover a zone tile: the panel on the left says why nothing grows yet.\n\nTry 4x speed and wait for a new home.",
-                Goal = "A new home grows", Done = Grew(s => s.Houses, 1) },
+                Goal = "A new home grows", Count = s => s.Houses, By = 1 },
             new Step { Id = "farmland", Title = "Food", Tool = "zoneFarm",
-                Body = "Villagers eat every day; with no food they starve and leave.\n\nOpen Farming (3) and pick Wheat Fields. The shaded area is the " +
-                       "farmhouse's reach: drag over fertile soil (the darker, olive ground) inside it. Farming also has more Farmhouses, " +
-                       "Flax Fields and Silos. Each farmer tends 2 fields, so give farms room.",
-                Goal = "Zone 6 Farmland tiles", Done = Grew(s => s.Farmland, 6) },
+                Body = "Villagers eat every day; with no food they starve and leave.\n\nOpen Farming (3) and pick Farmland. The shaded area is the " +
+                       "farmhouse's reach: drag over fertile soil (the darker, olive ground) inside it. Farming also has more Farmhouses " +
+                       "and Silos; the Farming menu above the build bar sets how much farmland grows wheat and how much flax. " +
+                       "Each farmer tends 2 fields, so give farms room.",
+                Goal = "Zone 6 Farmland tiles", Count = s => s.Farmland, By = 6 },
             new Step { Id = "workers", Title = "Workers",
                 Body = "Buildings only work when villagers staff them. Open Workers (bottom right): villagers fill the trades from the top down, " +
                        "farming first. Use Up and Dn to change who gets hands first; a row in red is short of workers.",
@@ -132,20 +130,20 @@ namespace CrownAndHearth.Sim
                 Body = "Wood builds everything. Open Forestry (4): build a Woodcutter Lodge beside a road, then drag a Lumber Zone over forest in its shaded reach. " +
                        "Woodcutters walk out, fell the marked trees and carry logs home. Felled land turns to stumps, then open ground.\n\n" +
                        "A Forester (also in Forestry) replants saplings on Lumber-zoned open ground, so a forest can last.",
-                Goal = "Zone 6 Lumber tiles", Done = Grew(s => s.Lumber, 6) },
+                Goal = "Zone 6 Lumber tiles", Count = s => s.Lumber, By = 6 },
             new Step { Id = "sawmill", Title = "Logs into wood", Tool = "sawmill",
                 Body = "Logs must be sawn into wood. The Town Hall saws 1 log a day at half yield; a Sawmill (Forestry, 15 wood) saws 4 a day at full yield. " +
                        "Build one beside a road.",
-                Goal = "Build a Sawmill", Done = Grew(s => s.Sawmills, 1) },
+                Goal = "Build a Sawmill", Count = s => s.Sawmills, By = 1 },
             new Step { Id = "services", Title = "Crop storage", Tool = "silo",
                 Body = "Build a Silo (Farming, 3) beside a connected road to store 180 more wheat and 60 more flax.",
-                Goal = "Build and connect a Silo", Done = Grew(s => s.Silos, 1) },
+                Goal = "Build and connect a Silo", Count = s => s.Silos, By = 1 },
             new Step { Id = "stone", Title = "Stone and iron", Tool = "zoneMine",
                 Body = "Open Mining (5). Mining Zones go on rock and on hills and mountains.\n\n" +
                        "Stone: build a Quarry, then zone rock outcrops or a mountain's edge inside its shaded reach; quarries dig hills down and cut into mountains.\n\n" +
                        "Iron lies hidden inside hills and mountains (orange-veined stones on the slopes hint at it). Zone the high ground and a lot at its " +
                        "foot, then place an Iron Mine. Its entrance faces away from the hill and needs the road right at that entrance.",
-                Goal = "Zone 6 Mining tiles", Done = Grew(s => s.Mining, 6) },
+                Goal = "Zone 6 Mining tiles", Count = s => s.Mining, By = 6 },
             new Step { Id = "underground", Title = "Underground",
                 Body = "Press U for the underground view (U again for deeper bands). A mine's miners first survey its zone: orange shows the ore " +
                        "they found (brighter is richer), grey shows nothing, blue is not surveyed yet. Then they drive an adit into the hill and " +

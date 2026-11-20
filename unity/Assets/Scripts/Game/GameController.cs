@@ -87,6 +87,7 @@ namespace CrownAndHearth.Game
 
         public World World { get; private set; }
         int _rot, _drawnVersion = -1, _drawnRot = -1, _speed = 1;
+        int _progressVersion = -1;   // world version the tutorial's progress line was last counted at
         int _ugLevel;   // underground view: 0 off, else the level shown (U cycles)
         float _dayAcc;
         ToolDef _tool = Tools[0];
@@ -115,7 +116,10 @@ namespace CrownAndHearth.Game
 
             _cam = Camera.main.GetComponent<CameraRig>();
             if (_cam == null) _cam = Camera.main.gameObject.AddComponent<CameraRig>();
-            _cam.CenterOn(IsoView.TileCenter(World, Defs.Start, Defs.Start + 2, _rot));
+            var home = IsoView.TileCenter(World, Defs.Start, Defs.Start + 2, _rot);
+            // on a first run the tutorial panel covers the top middle of the screen: start with the town lower down, in clear view
+            if (PlayerPrefs.GetInt(TutorialSeenKey, 0) == 0) home.y += 170f * Screen.height / 900f / (IsoView.PPU * _cam.Zoom);
+            _cam.CenterOn(home);
 
             _hud = new GameObject("HudRoot", typeof(Hud)).GetComponent<Hud>();
             _hud.Build(Tools, Cats, _art);
@@ -125,10 +129,10 @@ namespace CrownAndHearth.Game
             _hud.RotatePicked += Rotate;
             _hud.PrioMoved += MovePrio;
             _hud.WorkforceToggled += open => { if (open) _tutorial.WorkersOpened = true; };
-            _hud.TutorialOpen += () => { _tutorial.Start(World, _tutorial.Finished ? 0 : _tutorial.Index); _hud.ShowTutorial(_tutorial); };
-            _hud.TutorialNext += () => { _tutorial.Next(World); if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); };
-            _hud.TutorialBack += () => { _tutorial.Back(World); _hud.ShowTutorial(_tutorial); };
-            _hud.TutorialClose += () => { _tutorial.Close(); PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); };
+            _hud.TutorialOpen += () => { _tutorial.Start(World, _tutorial.Finished ? 0 : _tutorial.Index); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
+            _hud.TutorialNext += () => { _tutorial.Next(World); if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
+            _hud.TutorialBack += () => { _tutorial.Back(World); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
+            _hud.TutorialClose += () => { _tutorial.Close(); PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
             _hud.SavePicked += SaveSettlement;
             _hud.LoadPicked += LoadSettlement;
             SetTool(_tool); _hud.SetSpeed(_speed);
@@ -242,7 +246,7 @@ namespace CrownAndHearth.Game
             DrawOverlay();
             _hud.SetSettlement(World);
             _hud.SetDemand(World.Dem[Zone.Res]);
-            var tip = CursorTip(); _hud.SetCursorTip(tip.text, tip.bad, Mouse.current?.position.ReadValue() ?? Vector2.zero);
+            var tip = CursorTip(); _hud.SetCursorTip(tip.text, tip.bad, Mouse.current?.position.ReadValue() ?? Vector2.zero, _tipWarn);
             _hud.SetInfo(_hover.HasValue ? TileInfo(_hover.Value.x, _hover.Value.y) : "");
             _hud.RefreshWorkforce(World);
             _hud.RefreshTownMenus(World);
@@ -253,7 +257,9 @@ namespace CrownAndHearth.Game
                 _hud.Toast($"Well done: {done.Title}." + (_tutorial.Finished ? " That's the whole tutorial." : ""), 4);
                 if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1);
                 _hud.ShowTutorial(_tutorial);
+                _progressVersion = -1;
             }
+            if (World.Version != _progressVersion) { _progressVersion = World.Version; _hud.SetTutorialProgress(_tutorial.Progress(World)); }
         }
 
         void HandleKeys()
@@ -358,8 +364,9 @@ namespace CrownAndHearth.Game
             if (_tool.Build != null)
             {
                 if (!mouse.leftButton.wasPressedThisFrame) return;
+                var warn = PlaceWarning(_tool.Build, h.x, h.y);
                 var r = World.Place(_tool.Build, h.x, h.y);
-                _hud.Toast(r.Ok ? $"Built a {Defs.Names[_tool.Build]}." : r.Reason);
+                _hud.Toast(r.Ok ? $"Built a {Defs.Names[_tool.Build]}." + (warn != null && !World.Grid[h.y, h.x].Served ? " It needs a road to the Town Hall before it can work." : "") : r.Reason, 6);
             }
             else if (_tool.Clear)
             {
@@ -379,11 +386,27 @@ namespace CrownAndHearth.Game
                 _hud.Toast(n == 0 ? "No zoned open land there." : $"Removed the zone from {n} tile{(n == 1 ? "" : "s")}.");
                 return;
             }
+            var (x0, y0, x1, y1) = (Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
+            var fresh = new List<Vector2Int>();   // tiles that are not this zone yet
+            for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) if (World.Inb(x, y) && !World.AlreadyZoned(_tool.Zone, x, y)) fresh.Add(new Vector2Int(x, y));
+            int already = (x1 - x0 + 1) * (y1 - y0 + 1) - fresh.Count;
             var (zoned, skipped, why) = World.ZoneRect(_tool.Zone, a.x, a.y, b.x, b.y);
-            _hud.Toast(zoned == 0 && skipped > 0 ? why : $"Zoned {zoned} tile{(zoned == 1 ? "" : "s")}." + (skipped > 0 ? $" {skipped} skipped: {why}" : ""), 5);
+            string msg;
+            if (zoned == 0 && skipped == 0) msg = already > 0 ? $"That land is already {_tool.Label}: nothing changed." : "Nothing to zone there.";
+            else if (zoned == 0) msg = why;
+            else
+            {
+                msg = $"Zoned {zoned} tile{(zoned == 1 ? "" : "s")}." + (skipped > 0 ? $" {skipped} skipped: {why.TrimEnd('.')}." : "");
+                if (_tool.Zone == Zone.Res)
+                {
+                    int offRoad = fresh.Count(p => World.Grid[p.y, p.x] == null && World.ZoneMap[p.y, p.x] == Zone.Res && !World.BesideConnectedRoad(p.x, p.y));
+                    if (offRoad > 0) msg += $" {offRoad} do not touch a connected road, so homes will not grow there yet.";
+                }
+            }
+            _hud.Toast(msg, 6);
         }
 
-        static readonly Color32 Ok = new Color32(120, 255, 120, 110), Bad = new Color32(255, 90, 80, 120), Hover = new Color32(255, 255, 255, 70);
+        static readonly Color32 Ok = new Color32(120, 255, 120, 110), Bad = new Color32(255, 90, 80, 120), Hover = new Color32(255, 255, 255, 70), Warn = new Color32(255, 200, 70, 120);
 
         static readonly Color32 UgNone = new Color32(40, 40, 48, 150), UgUnknown = new Color32(70, 110, 200, 110), UgShaft = new Color32(255, 240, 120, 200);
 
@@ -469,13 +492,13 @@ namespace CrownAndHearth.Game
                     bool ok = World.CanPlace(_tool.Build, h.x, h.y).Ok;
                     int sz = PlacementSize(_tool.Build);
                     AddReach(_tool.Build, h.x, h.y, sz, ReachNew, null);
-                    for (int j = 0; j < sz; j++) for (int i = 0; i < sz; i++) _overlay.AddTile(World, h.x + i, h.y + j, _rot, ok ? Ok : Bad);
+                    for (int j = 0; j < sz; j++) for (int i = 0; i < sz; i++) _overlay.AddTile(World, h.x + i, h.y + j, _rot, !ok ? Bad : PlaceWarning(_tool.Build, h.x, h.y) != null ? Warn : Ok);
                 }
                 else if (_tool.Zone != Zone.None)
                 {
                     // the rectangle from the first corner to the cursor (or just the hovered tile before the first click)
                     var (x0, y0, x1, y1) = RectTo(h);
-                    for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) _overlay.AddTile(World, x, y, _rot, World.ZoneCheck(_tool.Zone, x, y).Ok ? Ok : Bad);
+                    for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) _overlay.AddTile(World, x, y, _rot, World.AlreadyZoned(_tool.Zone, x, y) ? Hover : World.ZoneCheck(_tool.Zone, x, y).Ok ? Ok : Bad);
                 }
                 else if (_tool.Unzone)
                 {
@@ -501,8 +524,22 @@ namespace CrownAndHearth.Game
         };
 
         /// <summary>The line beside the mouse: what a click will do here, or why it cannot (bad = red).</summary>
+        /// <summary>Why a building that can be placed here may still disappoint: no connected road yet, or zoned land it would cover.
+        /// Null when there is nothing to warn about. Shown amber; the click still builds.</summary>
+        string PlaceWarning(string type, int x, int y)
+        {
+            var notes = new List<string>();
+            if (!World.WouldConnect(type, x, y)) notes.Add("No connected road here: it stays idle until a road reaches it");
+            int zoned = World.ZonedUnder(type, x, y);
+            if (zoned > 0) notes.Add($"It covers {zoned} zoned tile{(zoned == 1 ? "" : "s")}");
+            return notes.Count == 0 ? null : string.Join(". ", notes);
+        }
+
+        bool _tipWarn;   // the cursor tip is a warning (amber): set by CursorTip
+
         (string text, bool bad) CursorTip()
         {
+            _tipWarn = false;
             if (!_hover.HasValue || _tool.Id == "look") return (null, false);
             var h = _hover.Value;
             if (_tool.Road)
@@ -516,20 +553,34 @@ namespace CrownAndHearth.Game
             if (_tool.Build != null)
             {
                 var r = World.CanPlace(_tool.Build, h.x, h.y);
-                return r.Ok ? ($"Click to build: {Hud.CostText(_tool.Build)}", false) : (r.Reason, true);
+                if (!r.Ok) return (r.Reason, true);
+                var warn = PlaceWarning(_tool.Build, h.x, h.y); _tipWarn = warn != null;
+                return ($"Click to build: {Hud.CostText(_tool.Build)}" + (warn != null ? $". {warn}" : ""), false);
             }
             if (_tool.Zone != Zone.None)
             {
                 var (x0, y0, x1, y1) = RectTo(h);
-                int ok = 0, bad = 0; string why = null;
+                int ok = 0, bad = 0, already = 0, offRoad = 0; string why = null;
                 for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++)
                     {
+                        if (World.AlreadyZoned(_tool.Zone, x, y)) { already++; continue; }
                         var r = World.ZoneCheck(_tool.Zone, x, y);
-                        if (r.Ok) ok++; else { bad++; why ??= r.Reason; }
+                        if (!r.Ok) { bad++; why ??= r.Reason; continue; }
+                        if (World.Grid[y, x] != null) continue;   // a building already carrying this zone: nothing to do
+                        ok++;
+                        if (_tool.Zone == Zone.Res && !World.BesideConnectedRoad(x, y)) offRoad++;
                     }
-                if (!_zoneAnchor.HasValue) return ok > 0 ? ("Press and drag over the land", false) : (why, true);
+                string alreadyNote = already > 0 ? $"{already} already {_tool.Label}" : null;
+                if (!_zoneAnchor.HasValue)
+                    return ok > 0 ? ("Press and drag over the land" + (offRoad > 0 ? " (homes only grow beside a connected road)" : ""), false)
+                        : already > 0 ? ($"Already {_tool.Label}", false) : (why, true);
                 string size = $"{x1 - x0 + 1} x {y1 - y0 + 1}: ";
-                return ok == 0 ? (size + why, true) : (size + $"{ok} tile{(ok == 1 ? "" : "s")} to zone" + (bad > 0 ? $", {bad} cannot be ({why})" : ""), false);
+                if (ok == 0) return (size + (already > 0 ? $"already {_tool.Label}, nothing to zone" : why), true);
+                var parts = new List<string> { $"{ok} tile{(ok == 1 ? "" : "s")} to zone" };
+                if (offRoad > 0) parts.Add($"{offRoad} not beside a connected road");
+                if (alreadyNote != null) parts.Add(alreadyNote);
+                if (bad > 0) parts.Add($"{bad} cannot be ({why})");
+                return (size + string.Join(", ", parts), false);
             }
             if (_tool.Unzone)
             {
@@ -604,12 +655,23 @@ namespace CrownAndHearth.Game
             if (d == Deco.Tree) { lines.Add("FOREST"); lines.Add("Zone it for lumber (Forestry, 4) so a woodcutter lodge fells it."); }
             if (d == Deco.Rock) { lines.Add(w.IsMountain(x, y) ? "MOUNTAIN" : "STONE OUTCROP"); lines.Add(w.IsMountain(x, y) ? $"Stone left {w.RockLeft(x, y):0}. Quarry it from the edge." : $"Stone left {w.RockLeft(x, y):0}."); }
             if (d == Deco.Ore) { lines.Add("IRON SHOWING"); lines.Add(w.IsSurveyed(x, y) ? "Ore shows at the surface here." : "Ore shows at the surface here; more lies inside the hill. Zone it for mining (Mining, 5) with the high ground, with a lot at the foot for the mine."); }
-            lines.Add(UndergroundLine(x, y));
-            if (d == Deco.Stump) lines.Add("Stump. It rots away into open ground.");
-            if (d == Deco.Sapling) lines.Add("Sapling. It grows into a tree in three years.");
-            if (w.ZoneMap[y, x] == Zone.Farm)
-                lines.Add(w.IsFlaxField(x, y) ? "Flax field. Produces flax." : "Wheat field. Produces food.");
-            else if (w.ZoneMap[y, x] != Zone.None) lines.Add(ZoneName(w.ZoneMap[y, x]) + " zone");
+            var z = w.ZoneMap[y, x];
+            bool flax = z == Zone.Farm && w.IsFlaxField(x, y);
+            // open land has no heading yet: name it after its zone or its ground, so the title line is always short
+            bool zoneHeading = lines.Count == 0 && z != Zone.None && d != Deco.Stump && d != Deco.Sapling;
+            if (lines.Count == 0)
+                lines.Add(zoneHeading ? (z == Zone.Farm ? ZoneName(z, flax) : ZoneName(z) + " zone").ToUpper()
+                    : d == Deco.Stump ? "STUMP" : d == Deco.Sapling ? "SAPLING" : w.Fert[y, x] ? "FERTILE GROUND" : "OPEN GROUND");
+            // the underground only matters where ore can be: hills, mountains, rock, ore showings, mining land, surveyed tiles
+            if (z == Zone.Mine || d == Deco.Rock || d == Deco.Ore || w.IsSurveyed(x, y) || w.TileLevel(x, y) >= 1) lines.Add(UndergroundLine(x, y));
+            if (d == Deco.Stump) lines.Add("It rots away into open ground.");
+            if (d == Deco.Sapling) lines.Add("It grows into a tree in three years.");
+            if (z == Zone.Farm) lines.Add(flax ? "Produces flax." : "Produces food.");
+            else if (z != Zone.None && !zoneHeading) lines.Add(ZoneName(z) + " zone");
+            if (z == Zone.Res && b == null)
+                lines.Add(!w.BesideConnectedRoad(x, y) ? "No home will grow here: it does not touch a road connected to the Town Hall."
+                    : w.Dem[Zone.Res] > World.DemandThreshold ? "Homes are wanted: one should grow here soon."
+                    : "Waiting: homes grow when the Homes meter (bottom bar) says homes are wanted.");
             lines.Add($"Tile {x},{y}   level {w.TileLevel(x, y):0.##}" + (w.Fert[y, x] ? "   fertile soil" : "") + (w.TileSpread(x, y) >= 3 ? "   too steep" : ""));
             return string.Join("\n", lines);
         }
