@@ -16,7 +16,7 @@ namespace CrownAndHearth.Sim
             double occupancy = D.Civ > 0 ? Peasants / (double)D.Civ : 1;
             double food = ResAmt[Res.Food];
             double demand = Starving || food < 10 ? -0.3 : Math.Max(-1, Math.Min(1, (occupancy - 0.7) * 4));
-            if (Rate[Res.Food] < -0.3 && food < 120) demand = Math.Min(demand, 0);
+            if (!SeasonalFarming && Rate[Res.Food] < -0.3 && food < 120) demand = Math.Min(demand, 0);
             Dem[Zone.Res] = demand;
         }
 

@@ -20,9 +20,9 @@ namespace CrownAndHearth.Sim
             var got = new Dictionary<Res, double> { { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 } };
 
             // farms + foresters
-            var crops = FarmOutput();
-            food += crops.food;
-            ResAmt[Res.Flax] += crops.flax;
+            var crops = SeasonalFarming ? WorkSeasonalFields() : FarmOutput();
+            food += SeasonalFarming ? Math.Min(crops.food, Math.Max(0, CropStorage(Res.Food) - ResAmt[Res.Food])) : crops.food;
+            ResAmt[Res.Flax] += SeasonalFarming ? Math.Min(crops.flax, Math.Max(0, CropStorage(Res.Flax) - ResAmt[Res.Flax])) : crops.flax;
             foreach (var b in Blds.Where(b => b.T == "forester" && b.Served).ToList())
             {
                 if (b.Eff <= 0) continue;
@@ -47,7 +47,7 @@ namespace CrownAndHearth.Sim
                 if (--SapT[k] <= 0) { SapT.Remove(k); int y = k / N, x = k % N; if (DecoMap[y, x] == Deco.Sapling) { DecoMap[y, x] = Deco.Tree; Touch(); } }
 
             // economy
-            double eat = (Peasants + Soldiers * 1.5) * 0.2;
+            double eat = DailyFoodDemand;
             ResAmt[Res.Food] += food - eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
             ResAmt[Res.Gold] += employed * 0.12 - Soldiers * 0.1;
             Starving = false;

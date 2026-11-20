@@ -14,7 +14,7 @@ namespace CrownAndHearth.Game
         readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
         int _used, _cropDay;
         FarmCropArt _crops;
-        readonly List<(SpriteRenderer renderer, bool flax, int offset)> _fields = new();
+        readonly List<(SpriteRenderer renderer, bool flax, int offset, int planted)> _fields = new();
 
         void OnDestroy() => _crops?.Dispose();
 
@@ -37,16 +37,20 @@ namespace CrownAndHearth.Game
                     }
                     if (fields.ContainsKey(World.Tk(x, y)))
                     {
+                        int key = World.Tk(x, y);
+                        int planted = w.SownOn(key);
+                        if (w.SeasonalFarming && (planted == 0 || planted < w.Day - w.YearDay + 1 || w.YearDay > 180)) continue;
                         int offset = FarmCropArt.GrowthOffset(x, y, w.Seed);
                         bool flax = w.IsFlaxField(x, y);
-                        var plant = _crops.Tile(flax, w.Day, offset);
+                        if (w.SeasonalFarming) flax = w.PlantedFlax(key);
+                        var plant = w.SeasonalFarming ? _crops.SeasonalTile(flax, w.Day - planted) : _crops.Tile(flax, w.Day, offset);
                         var tile = IsoView.ToView(x, y, rot);
                         if (plant != null)
                         {
                             int baseHeight = IsoView.VhView(w, tile.x + 1, tile.y + 1, rot);
                             var renderer = Put(plant, IsoView.VertexPos(tile.x + 1, tile.y + 1, baseHeight),
                                 IsoView.SortOrder(tile.x, tile.y));
-                            _fields.Add((renderer, flax, offset));
+                            _fields.Add((renderer, flax, offset, w.SeasonalFarming ? planted : 0));
                         }
                         continue;
                     }
@@ -115,7 +119,11 @@ namespace CrownAndHearth.Game
         {
             if (day == _cropDay) return;
             foreach (var field in _fields)
-                field.renderer.sprite = _crops.Tile(field.flax, day, field.offset);
+                field.renderer.sprite = field.planted > 0
+                    ? (day - 1) % World.YearLength < 2 * World.SeasonLength
+                        ? _crops.SeasonalTile(field.flax, day - field.planted)
+                        : null
+                    : _crops.Tile(field.flax, day, field.offset);
             _cropDay = day;
         }
 

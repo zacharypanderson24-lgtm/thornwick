@@ -23,6 +23,9 @@ namespace CrownAndHearth.Game
         public Sprite Tile(bool flax, int day, int offset) =>
             _sprites[flax ? 1 : 0, ((day - 1 + offset) / DaysPerStage) % StageCount];
 
+        public Sprite SeasonalTile(bool flax, int age) =>
+            _sprites[flax ? 1 : 0, Mathf.Clamp(age * (StageCount - 1) / Sim.World.CropGrowth(flax), 0, StageCount - 1)];
+
         public static int GrowthOffset(int x, int y, int seed) =>
             (int)(Sim.Noise.Hash2(x, y, seed + 17) * StageCount * DaysPerStage);
 

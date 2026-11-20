@@ -54,7 +54,7 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "zoneFarm", Cat = Cat.Farming, Label = "Farmland", Zone = Zone.Farm,
                 Desc = "Drag over fertile land near a farmhouse. Set the wheat and flax percentages in the Farming menu above the build bar." },
             new ToolDef { Id = "silo", Cat = Cat.Farming, Label = "Silo", Build = "silo",
-                Desc = "Stores 180 more wheat and 60 more flax. Needs a road to the Town Hall." },
+                Desc = $"Stores {World.SiloFood} more wheat and {World.SiloFlax} more flax. Needs a road to the Town Hall." },
             new ToolDef { Id = "lodge", Cat = Cat.Forestry, Label = "Woodcutter Lodge", Build = "wood",
                 Desc = "Woodcutters walk out to trees in Lumber zones within 3 tiles, fell them and carry the logs home. Needs a road to the Town Hall." },
             new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Lumber Zone", Zone = Zone.Wood,
@@ -647,6 +647,8 @@ namespace CrownAndHearth.Game
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
                 if (b.T == "silo")
                     lines.Add(b.Served ? $"+{World.SiloFood} wheat and +{World.SiloFlax} flax storage" : "Connect to the Town Hall to use its crop storage.");
+                if (b.T == "silo" && w.SeasonalFarming && w.DailyFoodDemand > 0)
+                    lines.Add($"Town reserve: {w.ResAmt[Res.Food]:0}/{w.CropStorage(Res.Food)} food, about {System.Math.Floor(w.ResAmt[Res.Food] / w.DailyFoodDemand):0} days without a harvest.");
                 if (b.T == "market") lines.Add("Trading is paused.");
             }
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");
@@ -656,7 +658,17 @@ namespace CrownAndHearth.Game
             if (d == Deco.Rock) { lines.Add(w.IsMountain(x, y) ? "MOUNTAIN" : "STONE OUTCROP"); lines.Add(w.IsMountain(x, y) ? $"Stone left {w.RockLeft(x, y):0}. Quarry it from the edge." : $"Stone left {w.RockLeft(x, y):0}."); }
             if (d == Deco.Ore) { lines.Add("IRON SHOWING"); lines.Add(w.IsSurveyed(x, y) ? "Ore shows at the surface here." : "Ore shows at the surface here; more lies inside the hill. Zone it for mining (Mining, 5) with the high ground, with a lot at the foot for the mine."); }
             var z = w.ZoneMap[y, x];
-            bool flax = z == Zone.Farm && w.IsFlaxField(x, y);
+            int fieldKey = World.Tk(x, y);
+            int sowDay = z == Zone.Farm && w.SeasonalFarming ? w.SownOn(fieldKey) : 0;
+            bool planted = sowDay > 0 && sowDay >= w.Day - w.YearDay + 1 && w.YearDay <= 180;
+            bool flax = z == Zone.Farm && (planted ? w.PlantedFlax(fieldKey) : w.IsFlaxField(x, y));
+            if (planted && b == null)
+            {
+                int ready = sowDay + World.CropGrowth(flax);
+                lines.Insert(0, flax ? "FLAX FIELD" : "WHEAT FIELD");
+                lines.Add(ready > w.Day ? $"Sown on day {sowDay}. Ripens on day {ready}." : "Ripe. Waiting for farm workers to harvest.");
+                return string.Join("\n", lines);
+            }
             // open land has no heading yet: name it after its zone or its ground, so the title line is always short
             bool zoneHeading = lines.Count == 0 && z != Zone.None && d != Deco.Stump && d != Deco.Sapling;
             if (lines.Count == 0)

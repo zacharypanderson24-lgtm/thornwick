@@ -14,6 +14,7 @@ namespace CrownAndHearth.Game
         readonly UnityEngine.UI.Image[] _depthButtons = new UnityEngine.UI.Image[World.MaxDepth + 1];
         World _menuWorld;
         Text _cropTarget, _cropCount, _supportsLabel, _historyHeader, _resourceTitle, _dayValues, _populationScale, _resourceScale;
+        Text _cropWindows, _cropLabor, _cropStorage;
         UnityEngine.UI.Slider _cropSlider;
         UnityEngine.UI.Image _supportsButton;
         UnityEngine.UI.Button _older, _newer;
@@ -27,8 +28,8 @@ namespace CrownAndHearth.Game
         void BuildTownMenus(RectTransform root, RectTransform toolbar)
         {
             string[] titles = { "Farming", "Mining", "Statistics" };
-            int[] widths = { 350, 392, 446 };
-            int[] heights = { 172, 208, 396 };
+            int[] widths = { 440, 392, 446 };
+            int[] heights = { 356, 208, 396 };
             for (int i = 0; i < titles.Length; i++)
             {
                 var menu = (TownMenu)(i + 1);
@@ -72,7 +73,9 @@ namespace CrownAndHearth.Game
             _cropSlider.wholeNumbers = true;
             _cropSlider.onValueChanged.AddListener(value => _menuWorld?.SetFlaxPercent((int)value));
             _cropCount = PanelLabel(panel, "PlantedFields", "", 15, 105, 129);
-            PanelLabel(panel, "AssignmentHelp", "Applies to all farmland, rounded to whole tiles.", 14, 132, 156);
+            _cropWindows = PanelLabel(panel, "CropWindows", "", 14, 135, 200);
+            _cropLabor = PanelLabel(panel, "FarmLabor", "", 14, 202, 242);
+            _cropStorage = PanelLabel(panel, "CropStorage", "", 14, 244, 344);
         }
 
         void BuildMining(RectTransform panel)
@@ -164,6 +167,24 @@ namespace CrownAndHearth.Game
                     _cropSlider.SetValueWithoutNotify(percent);
                     _cropTarget.text = $"Wheat {100 - percent}%   |   Flax {percent}%";
                     _cropCount.text = $"Assigned fields: {total - flax} wheat, {flax} flax";
+                    if (world.SeasonalFarming)
+                    {
+                        var forecast = world.FarmingForecast();
+                        _cropCount.text = $"Standing / planned plots: Wheat {forecast.wheat}/{forecast.wheatTarget} · Flax {forecast.flax}/{forecast.flaxTarget}";
+                        _cropWindows.text = $"Both need fertile soil. Harvest in summer (days 91–180).\n" +
+                            $"Wheat (food): sow by spring day {World.LastSowingDay(false)}, grows in {World.WheatGrowth} days, yields {World.WheatYield}/field.\n" +
+                            $"Flax (trade): sow by spring day {World.LastSowingDay(true)}, grows in {World.FlaxGrowth} days, yields {World.FlaxYield}/field.";
+                        var (workers, jobs, _, _) = world.D.Work["farming"];
+                        _cropLabor.text = jobs == 0 ? "No field work today. Workers can take other jobs."
+                            : $"{workers}/{jobs} field jobs staffed today" + (workers < jobs ? " · Raise Farming priority to avoid delays." : "");
+                        string next = forecast.firstHarvest == 0 ? "No harvest forecast this year." : $"First expected harvest on day {forecast.firstHarvest}.";
+                        string shortage = forecast.emptyDay == 0 ? "No shortage projected before next spring's wheat matures."
+                            : $"Food may run out on day {forecast.emptyDay}.";
+                        _cropStorage.text = $"Food {world.ResAmt[Res.Food]:0}/{world.CropStorage(Res.Food)} · Uses {world.DailyFoodDemand:0.0}/day\n" +
+                            $"Flax {world.ResAmt[Res.Flax]:0}/{world.CropStorage(Res.Flax)} · {next}\n" +
+                            $"Remaining yield at full staffing: {forecast.wheatYield:0} wheat, {forecast.flaxYield:0} flax.\n" +
+                            $"{shortage} Potential wheat overflow: {forecast.overflow:0}.";
+                    }
                     break;
                 case TownMenu.Mining:
                     for (int i = 0; i < _depthButtons.Length; i++)

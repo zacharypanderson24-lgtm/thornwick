@@ -85,6 +85,7 @@ namespace CrownAndHearth.Sim
             if (Style == TerrainStyle.Classic) { AddBld("farm", c - 1, c + 5, 1).Zoned = true; ZoneMap[c + 5, c - 1] = Zone.Farm; }
             else { AddBld("farm", c - 2, c + 5, 2).Zoned = true; for (int j = 0; j < 2; j++) for (int i = 0; i < 2; i++) ZoneMap[c + 5 + j, c - 2 + i] = Zone.Farm; }
             ZoneMap[c + 3, c - 1] = Zone.Res; ZoneMap[c + 3, c + 1] = Zone.Res;
+            if (SeasonalFarming) ResAmt[Res.Food] = SeasonalTownFood;
             AddStarterFarmFields();
             Recalc();
             ComputeDemand();

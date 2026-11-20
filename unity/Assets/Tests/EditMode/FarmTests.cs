@@ -13,6 +13,49 @@ namespace CrownAndHearth.Tests
         const int N = Defs.N;
 
         [Test]
+        public void SeasonalFieldsReleaseWorkersAndHarvestOnlyAfterMaturity()
+        {
+            var w = new World(7);
+            var farm = w.Blds.Single(b => b.T == "farm");
+            var fields = w.FarmFields().Keys.ToArray();
+            w.Tick();
+            int planted = fields.Count(key => w.SownOn(key) == 1);
+            Assert.That(planted, Is.InRange(1, fields.Length - 1));
+
+            w = World.LoadJson(w.SaveJson());
+            farm = w.Blds.Single(b => b.T == "farm");
+            w.SetFlaxPercent(100);
+            w.Tick();
+            Assert.That(fields.Count(key => w.SownOn(key) == 2 && w.PlantedFlax(key)), Is.EqualTo(fields.Length - planted));
+            Assert.That(farm.Workers, Is.Zero, "Workers are released while crops grow.");
+            Assert.That(fields.Count(key => w.SownOn(key) == 1 && !w.PlantedFlax(key)), Is.EqualTo(planted));
+
+            w.Day = 100;
+            double before = w.ResAmt[Res.Food];
+            w.Tick();
+            Assert.That(w.ResAmt[Res.Food], Is.LessThan(before));
+            Assert.That(farm.Workers, Is.EqualTo(planted), "Ripe wheat calls workers back.");
+            before = w.ResAmt[Res.Food];
+            w.Tick();
+            Assert.That(w.ResAmt[Res.Food], Is.GreaterThan(before));
+            Assert.That(farm.Workers, Is.Zero);
+
+            w.Day = 181;
+            w.Tick();
+            w.Tick();
+            w.Day = 271;
+            w.Recalc();
+            Assert.That(w.Season, Is.EqualTo("Winter"));
+            Assert.That(farm.Workers, Is.Zero);
+            Assert.That(fields.All(key => w.SownOn(key) == 0), Is.True);
+            w.Day = 361;
+            w.Recalc();
+            Assert.That(w.Year, Is.EqualTo(2));
+            Assert.That(farm.Workers, Is.EqualTo(Math.Min(w.Peasants, Math.Min(farm.Jobs, fields.Length))), "Prepared fields can be sown again.");
+        }
+
+
+        [Test]
         public void ANewGameStartsWithA2x2FarmhouseAndItsPlots()
         {
             var w = new World(7);

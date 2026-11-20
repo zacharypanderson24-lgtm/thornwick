@@ -483,7 +483,7 @@ namespace CrownAndHearth.Game
         public void SetSettlement(World world)
         {
             _world = world;
-            _day.text = world.Day.ToString();
+            _day.text = world.SeasonalFarming ? $"{world.Season} {1 + (world.YearDay - 1) % World.SeasonLength} / Y{world.Year}" : world.Day.ToString();
             _population.text = world.Starving ? "Starving" : $"{world.Peasants}/{world.D.Civ} · {world.D.Idle} idle";
             foreach (var pair in _stock)
             {
