@@ -33,10 +33,10 @@ namespace CrownAndHearth.Game
             {
                 var menu = (TownMenu)(i + 1);
                 _townButtons[i] = MakeButton(toolbar, titles[i], new Vector2(1, 0.5f),
-                    new Vector2(-277 - i * 98, 0), new Vector2(90, 34),
+                    new Vector2(-55 - (titles.Length - 1 - i) * 106, 0), new Vector2(100, 34),
                     () => ShowTownMenu(_townMenu == menu ? TownMenu.Closed : menu));
                 _townPanels[i] = MakePanel(root, titles[i], Vector2.right, Vector2.right,
-                    new Vector2(-8 - widths[i], 134), new Vector2(-8, 134 + heights[i]));
+                    new Vector2(-8 - widths[i], BarH + 58), new Vector2(-8, BarH + 58 + heights[i]));
                 PanelLabel(_townPanels[i], "Title", titles[i], 20, 8, 36);
             }
             BuildFarming(_townPanels[0]);

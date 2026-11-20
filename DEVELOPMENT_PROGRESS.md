@@ -193,6 +193,30 @@ until finished or closed once (PlayerPrefs), and the Tutorial button (bottom rig
 Tested by `TutorialTests.cs` (5 tests). The text names today's buttons; the planned UI rework (grouped Build/Zone flyouts, resource
 chips, demand bars, quieter tile info, code-drawn icons; agreed 2026-11-16) must update it.
 
+### Build bar rework (`claude/build-ui`, 2026-11-17)
+
+Zach found the Build/Zone shelves unintuitive, so building and zoning now follow the usual city-builder pattern (SimCity, Cities:
+Skylines, TheoTown, Banished, Anno), replacing ChatGPT's two-shelf HUD from `codex/hud-overhaul`:
+
+- **Categories by job, not by Build vs Zone** (`GameController.Cats`/`Tools`): Inspect, Roads, Housing, Farming, Forestry, Mining,
+  Trade, Military, Bulldoze. A zone sits in the same tray as the building that works it (Wheat/Flax Fields beside the Farmhouse,
+  Lumber Zone beside the Woodcutter Lodge, Mining Zone beside the Quarry and Iron Mine).
+- **Cards** with the building's own art (code-drawn icons for zones, roads, bulldozing), the name, its kind and its price (red when the
+  town cannot afford it). Hovering a card or category shows a tooltip: what it does, what it needs, cost and jobs.
+- **Hotkeys** 1-7 for the categories, 0/Delete Bulldoze; pressing a key again cycles through its tools. The old letter keys (B, L, K,
+  M, F, X, J, G, 9) are gone; WASD, Q/E, U and Space are unchanged.
+- **Zoning by drag** (press, drag, let go), with click-two-corners kept; **Remove Zones** (`World.ClearZoneRect`, tested) unzones an
+  area without touching buildings.
+- **Reach shading**: a building being placed shows the land it will work; a zone tool shades the reach of the buildings that work it;
+  inspecting a work building shows its reach.
+- **Cursor tip** beside the mouse: what a click does there, or why it cannot (red), and live counts while dragging a zone.
+- **Right-click (without dragging) or Esc** cancels the half-drawn road or rectangle, then puts the tool away.
+- The tool's instructions sit in the bar; the Homes demand is a meter; tile-info headings are their own line so they no longer wrap.
+
+Play-tested in the Editor (trays, tooltips, wheat-field preview with counts, lodge ghost with reach and a red reason, hotkeys); a real
+mouse drag could not be simulated there, so drag zoning and right-click cancel still want a hands-on try. Not done from the agreed list:
+resource chips with icons in the top bar.
+
 ## Not done yet (next candidates)
 
 1. Saves: built by ChatGPT, in `unity-migration` (see Farming above).

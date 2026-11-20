@@ -213,6 +213,21 @@ namespace CrownAndHearth.Sim
             return (zoned, skipped, why);
         }
 
+        /// <summary>Remove the zone from every open tile of the rectangle between two corners (either order). Buildings, and the zone
+        /// under them, are left alone: this is the safe "unzone" tool, not the bulldozer. Returns how many tiles lost their zone.</summary>
+        public int ClearZoneRect(int ax, int ay, int bx, int by)
+        {
+            int cleared = 0;
+            for (int y = Math.Max(0, Math.Min(ay, by)); y <= Math.Min(N - 1, Math.Max(ay, by)); y++)
+                for (int x = Math.Max(0, Math.Min(ax, bx)); x <= Math.Min(N - 1, Math.Max(ax, bx)); x++)
+                {
+                    if (Grid[y, x] != null || ZoneMap[y, x] == Zone.None) continue;
+                    ZoneMap[y, x] = Zone.None; FlaxFields.Remove(Tk(x, y)); cleared++;
+                }
+            if (cleared > 0) Touch();
+            return cleared;
+        }
+
         public Result SetZone(Zone kind, int x, int y, bool flax = false)
         {
             var c = ZoneCheck(kind, x, y);

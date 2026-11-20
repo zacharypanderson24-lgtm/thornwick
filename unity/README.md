@@ -10,13 +10,27 @@ everything Unity lives in this folder.
 
 Pan: WASD / arrows / right- or middle-drag. Zoom: mouse wheel (0.25x to 5x pixel ladder). Rotate: Q / E.
 Space pauses; the top bar sets 1x / 2x / 4x (1 day = 1 second at 1x, as in the browser).
-- **Build** places roads, buildings, and industry sites. Place a 2×2 farmhouse
-  (B) or market (5), a lumber lodge (L), a quarry (K), or an iron mine (M).
-  A mine's road must reach its downhill entrance.
-- **Zone** marks land. Housing (3) grows one-tile homes. Wheat (4) and flax (G)
-  mark fertile fields, Lumber (6) marks trees, and Mining (7) marks deposits for
-  nearby buildings to work. Click two corners to set a zone.
-- **Workers** sets staffing priorities. **Tutorial** explains the controls.
+The build bar along the bottom groups everything by job, each building beside the zone it works. Hover any
+button or card to see what it does, what it costs and what it needs:
+
+| Key | Category | Holds |
+|---|---|---|
+| 1 | Roads | Dirt road (press and drag) |
+| 2 | Housing | Housing zone (homes grow on it by themselves) |
+| 3 | Farming | Farmhouse, wheat fields, flax fields, silo |
+| 4 | Forestry | Woodcutter lodge, lumber zone, forester, sawmill |
+| 5 | Mining | Quarry, iron mine, mining zone |
+| 6 | Trade | Market |
+| 7 | Military | Barracks |
+| 0 / Delete | Bulldoze | Demolish, remove zones |
+
+Pressing a category key picks its last-used tool; pressing it again cycles through the category.
+Zones: press and drag over the land (or click two corners); green tiles will be zoned, red ones cannot be.
+Picking a building or a zone shades the land the work buildings reach (a farmhouse's fields, a lodge's forest).
+A line beside the mouse says what a click will do there, or why it cannot.
+Esc or a right-click (without dragging) cancels the road or rectangle being drawn, then puts the tool away.
+A mine's road must reach its downhill entrance.
+**Workers** sets staffing priorities. **Tutorial** explains the controls.
 
 A staffed market sells one unit per worker per day. Flax earns two gold and
 surplus wheat earns half a gold. Markets preserve at least ten days of food,
