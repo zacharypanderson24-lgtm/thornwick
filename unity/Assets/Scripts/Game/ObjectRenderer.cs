@@ -91,7 +91,11 @@ namespace CrownAndHearth.Game
             Vector2Int front = new Vector2Int(-1, -1); int best = -1;
             foreach (var (tx, ty) in b.Tiles()) { var v = IsoView.ToView(tx, ty, rot); if (v.x + v.y > best) { best = v.x + v.y; front = v; } }
             int view = ((rot + Mathf.Max(0, b.Face)) % 4 + 4) % 4;
-            var sprite = _art.Building(SlotName(b), view);
+            string slot = SlotName(b);
+            // level 2 huts (watered, World.Water.cs) keep their own hut look until real house_2 art exists, rather than the placeholder block
+            if (slot == "house_2" && _art.Find("house_2_1") == null && _art.Find("house_2") == null)
+                slot = b.Var > 1 ? "house_1_v" + b.Var : "house_1";
+            var sprite = _art.Building(slot, view);
             if (sprite == null) return;
             int lvl = IsoView.VhView(w, front.x + 1, front.y + 1, rot);
             Put(sprite, IsoView.VertexPos(front.x + 1, front.y + 1, lvl), IsoView.SortOrder(front.x, front.y));

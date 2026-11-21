@@ -234,12 +234,46 @@ screenshots) found these, now fixed and re-checked the same way:
   tile, shows the underground line only where ore can be, says why a Housing tile has no home yet, and shrinks to its text; card
   name, kind and cost each have their own row and shrink to fit (the Silo price no longer overlaps).
 
+### Drinking water (Unity-only, 2026-11-21; `Sim/World.Water.cs`, tests in `WaterTests.cs`)
+
+Water is a daily service that replaces the old "a well within 4 tiles makes a level 2 house" rule. All tuning is in `WaterTuning`.
+
+- **Groundwater**: about 24 round, ragged aquifer patches per 128 map (25-165 tiles, 10-13% of the land), one about 10 tiles from the
+  Town Hall, generated from the seed alone so a save gets the same patches back. Each holds 5 water a tile and recharges 0.4 a tile
+  a day (a 60-tile patch: 300 and 24 a day). Every well on a patch shares its reserve and recharge; each well pumps at most 30 a day.
+  Draw above the recharge comes out of the reserve; at zero the wells give only the recharge; below it the patch refills to its cap.
+- **Delivery** is separate from groundwater: carriers walk Hall-connected roads from a source (the Town Hall's spring, 24 a day, reach
+  8; a well, reach 6) or a store (the Hall's cistern 150, a Cistern 120, reach 6) to the homes beside them. `ReachFrom` takes a
+  "closed tile" test so a future gate can cut deliveries; `ForecastClosure` is the preview a gate will need (homes losing service,
+  groundwater before and after, how long stored water lasts).
+- **Each day** (`StepWater`, before the economy): homes ask for villagers x 1; springs are used before groundwater; sources pump
+  only for demand and free cistern space, so a spare well leaves its aquifer alone. Stored water covers what the sources cannot,
+  where it reaches. A home short of water says why: no road, too far along the roads, or not enough supply.
+- **Shortages**: while any home is short, houses stop growing and births slow by the unmet share; after 15 days a house's capacity
+  halves and residents leave. Warnings come as messages: the first shortage, stored water running out within 8 days, a patch run dry,
+  residents leaving. A watered home is level 2 (level 2 huts keep their hut art until real `house_2` art exists).
+- **Build bar**: a Water category (8) with Well (only on groundwater) and Cistern. Placing either shows the blue patches (fainter as
+  they run down), short homes in red and the roads and homes it would reach; the well tip separates its pumping limit from the extra
+  water the town would really get (to homes and into storage) and shows the patch's trend (Refilling, Stable, Drawing down, Dry) and
+  days until empty. Inspecting a well, cistern, Hall or house shows its water; the top bar has a Water card (stored, short homes)
+  whose tooltip shows demand, delivery and how many days storage covers a shortfall.
+- **Saves** keep each aquifer's reserve (by id), stored water and each home's short days; older saves load with full aquifers, a
+  full Town Hall cistern and no shortage, and their existing wells keep working (a well off any patch seeps 6 a day).
+- **Tests**: shared reserve and the 300 / 20 / 60 = 7.5 days example, running dry and refilling to the cap, spare wells leaving the
+  aquifer alone, the opening town watered by the Hall, the three shortage reasons, storage covering only homes it reaches, a cistern
+  bridging an out-of-reach home, the grace period, wells only on groundwater, the well preview, a closed road tile cutting
+  deliveries, and save round trips including pre-water saves. `StartingSettlementMatches` now expects watered huts at level 2
+  (a deliberate change from the browser).
+- **Not done (sieges)**: walls and gates do not exist yet. When they do: make gate tiles return true from the `closed` test in
+  `PlanWater`/`StepWater` while a gate is shut, and show `ForecastClosure` in the gate's preview. Groundwater already ignores roads,
+  so an inside well keeps tapping a patch that runs under the walls.
+
 ## Not done yet (next candidates)
 
 1. Saves: built by ChatGPT, in `unity-migration` (see Farming above).
 2. Hills hiding objects behind them (all ground currently draws before all objects).
 3. Info overlay (V: fertility and deposits), banner tint, texture lab.
-4. Art: ChatGPT art for the placeholder slots `farm`, `wood`, `sawmill`, `forester`, `quarry`, `market`, `well`,
+4. Art: ChatGPT art for the placeholder slots `farm`, `wood`, `sawmill`, `forester`, `quarry`, `market`, `well`, `cistern`, `house_2`,
    `manor_1`, `manor_2`, `farm2`, `market2`, rocks, stump, sapling (several are drawn on ChatGPT's unmerged `codex/*` branches) (rules: `TEXTURE_SPEC.md`, `CHATGPT_START_HERE.md`).
    Crew workers and villagers are code-drawn like in the browser (ChatGPT villager sprites are a browser idea too).
 5. Later milestones from the design: tech tree, fortified cities, armies, conquest map.

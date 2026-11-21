@@ -75,6 +75,7 @@ namespace CrownAndHearth.Sim
             Style = style; Relief = relief;
             if (!createSettlement) return;
             GenTerrain();
+            GenAquifers();   // groundwater, World.Water.cs
             int c = Start;
             AddBld("hall", c - 1, c - 1, 3);
             for (int y = c + 2; y <= c + 6; y++) AddBld("road", c, y);

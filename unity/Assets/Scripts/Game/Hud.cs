@@ -36,7 +36,7 @@ namespace CrownAndHearth.Game
         GameObject _infoPanel, _workPanel;
         float _toastUntil;
         readonly Dictionary<Res, Text> _stock = new Dictionary<Res, Text>();
-        Text _day, _population, _infoTitle;
+        Text _day, _population, _water, _infoTitle;
         readonly Dictionary<int, Image> _speedButtons = new Dictionary<int, Image>();
         RectTransform _workRows, _root;
 
@@ -98,6 +98,9 @@ namespace CrownAndHearth.Game
             statRow.childForceExpandWidth = statRow.childForceExpandHeight = true;
             _day = MakeStat(stats, "Day");
             _population = MakeStat(stats, "Population");
+            _water = MakeStat(stats, "Water");
+            var waterCard = (RectTransform)_water.transform.parent;
+            AddHover(waterCard.gameObject, on => { if (_world != null) ShowTip(on, waterCard, "Drinking water", WaterSummary(_world), "Build wells and cisterns in Water (8)."); });
             foreach (Res resource in new[] { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Flax, Res.Gold })
                 _stock[resource] = MakeStat(stats, resource.ToString());
 
@@ -485,6 +488,11 @@ namespace CrownAndHearth.Game
             _world = world;
             _day.text = world.SeasonalFarming ? $"{world.Season} {1 + (world.YearDay - 1) % World.SeasonLength} / Y{world.Year}" : world.Day.ToString();
             _population.text = world.Starving ? "Starving" : $"{world.Peasants}/{world.D.Civ} · {world.D.Idle} idle";
+            var (stored, room) = world.WaterStored();
+            var wp = world.LastWater;
+            int shortHomes = wp?.ShortHomes ?? 0;
+            _water.text = shortHomes > 0 ? $"{stored:0} · {shortHomes} short" : $"{stored:0}/{room:0}";
+            _water.color = shortHomes > 0 ? BadInk : wp != null && wp.FromStore > 1e-6 ? Pulse : Ink;
             foreach (var pair in _stock)
             {
                 double rate = world.Rate[pair.Key];
@@ -495,6 +503,24 @@ namespace CrownAndHearth.Game
             // prices turn red on the cards the town cannot afford yet
             foreach (var t in _tools)
                 if (t.Build != null && _cardCost.TryGetValue(t.Id, out var cost)) cost.color = world.CanAfford(t.Build).Ok ? Ink : BadInk;
+        }
+
+        /// <summary>The Water card's tooltip: what the town drinks, what the sources deliver, and how long storage covers a shortfall.</summary>
+        public static string WaterSummary(World w)
+        {
+            var p = w.LastWater; var (stored, room) = w.WaterStored();
+            if (p == null) return $"Stored {stored:0} of {room:0}. The first day has not run yet.";
+            var lines = new List<string>
+            {
+                $"The town drinks {p.Demand:0.#} a day; wells and the Town Hall's spring delivered {p.Delivered:0.#}.",
+                $"Stored: {stored:0} of {room:0} (Town Hall cistern and Cisterns)." + (p.StoreFill > 0.05 ? $" Filled {p.StoreFill:0.#} today." : ""),
+            };
+            if (p.StoreDays is double days) lines.Add($"Storage covered {p.FromStore:0.#} of a {p.Shortfall:0.#} shortfall: it lasts about {System.Math.Floor(days)} more days at this rate.");
+            else if (p.Shortfall > 0.05) lines.Add($"The {p.Shortfall:0.#} shortfall is beyond the reach of any stored water.");
+            if (p.ShortHomes > 0) lines.Add($"{p.ShortHomes} home{(p.ShortHomes == 1 ? " is" : "s are")} short. Hover one to see why. Homes stop growing; people leave after {WaterTuning.Grace} days.");
+            else lines.Add("Every home has enough.");
+            if (p.GroundwaterDraw > 0.05) lines.Add($"Groundwater drawn today: {p.GroundwaterDraw:0.#}.");
+            return string.Join("\n", lines);
         }
 
         public void Toast(string text, float secs = 3.5f) { _toastText.text = text; _toastUntil = Time.unscaledTime + secs; }

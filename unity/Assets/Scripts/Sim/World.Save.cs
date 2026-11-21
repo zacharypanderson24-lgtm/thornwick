@@ -49,6 +49,8 @@ namespace CrownAndHearth.Sim
                 ["stumpT"] = JObject.FromObject(StumpT), ["sapT"] = JObject.FromObject(SapT),
                 ["chop"] = JObject.FromObject(Chop), ["dig"] = JObject.FromObject(Dig),
                 ["oreLeft"] = JObject.FromObject(OreLeftMap),
+                // water (World.Water.cs): what each aquifer still holds, by id (the patches regenerate from the seed)
+                ["aquifers"] = new JArray(Aquifers.Select(a => Math.Round(a.Reserve, 3))),
                 ["blds"] = new JArray(Blds.Select(SaveBuilding)),
             }.ToString(Formatting.None);
         }
@@ -65,6 +67,8 @@ namespace CrownAndHearth.Sim
                 o["adit"] = b.Adit; o["aditShored"] = b.AditShored; o["aditProg"] = b.AditProg; o["depth"] = b.Depth;
                 o["shored"] = b.Shored; o["digProg"] = b.DigProg; o["closed"] = b.Closed; o["caveIns"] = b.CaveIns;
             }
+            if (b.T == "hall" || b.T == "cistern") o["water"] = Math.Round(b.Water, 3);
+            if (b.ShortDays > 0) o["dry"] = b.ShortDays;   // days a home has gone short of water
             return o;
         }
 
@@ -128,7 +132,11 @@ namespace CrownAndHearth.Sim
                     AditProg = entry.Value<int?>("aditProg") ?? 0, Depth = entry.Value<int?>("depth") ?? 0,
                     Shored = entry.Value<int?>("shored") ?? 0, DigProg = entry.Value<int?>("digProg") ?? 0,
                     Closed = entry.Value<int?>("closed") ?? 0, CaveIns = entry.Value<int?>("caveIns") ?? 0,
+                    ShortDays = entry.Value<int?>("dry") ?? 0,
                 };
+                // stored water: older saves have none recorded, so the Town Hall's cistern starts full and a cistern empty
+                b.Water = Math.Max(0, Math.Min(StoreCapOf(b), entry.Value<double?>("water") ?? (b.T == "hall" ? WaterTuning.HallCistern : 0)));
+                if (b.ShortDays < 0) throw new InvalidDataException("Invalid water shortage in settlement save.");
                 if (b.Depth < 0 || b.Depth > MaxDepth || b.Shored < 0 || b.Shored > b.Depth)
                     throw new InvalidDataException("Invalid mine in settlement save.");
                 if (b.T == null || !Names.ContainsKey(b.T) || b.Sz < 1 || b.Sz > 3 ||
@@ -167,6 +175,11 @@ namespace CrownAndHearth.Sim
                     if (pair.Key < N * N || pair.Key >= (Bands + 1) * N * N || pair.Value < 0) throw new InvalidDataException("Invalid mined ore in settlement save.");
                     world.OreTaken[pair.Key] = pair.Value;
                 }
+            // groundwater: the patches come from the seed; older saves start with every aquifer full
+            world.GenAquifers();
+            if (save["aquifers"] is JArray reserves && reserves.Count == world.Aquifers.Count)
+                for (int i = 0; i < reserves.Count; i++)
+                    world.Aquifers[i].Reserve = Math.Max(0, Math.Min(world.Aquifers[i].Cap, reserves[i].Value<double>()));
             world.MinerDeaths = save.Value<int?>("minerDeaths") ?? 0;
             world.CaveIns = save.Value<int?>("caveIns") ?? 0;
             if (save.Value<bool?>("unity") != true) world.UpgradeBarracks();

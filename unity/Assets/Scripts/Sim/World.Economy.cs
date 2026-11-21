@@ -46,6 +46,10 @@ namespace CrownAndHearth.Sim
             foreach (var k in SapT.Keys.ToList())
                 if (--SapT[k] <= 0) { SapT.Remove(k); int y = k / N, x = k % N; if (DecoMap[y, x] == Deco.Sapling) { DecoMap[y, x] = Deco.Tree; Touch(); } }
 
+            // drinking water (World.Water.cs): wells pump, cisterns fill or cover shortfalls, homes count days without enough
+            var water = StepWater();
+            double watered = water.Demand > 1e-9 ? 1 - water.Unmet / water.Demand : 1;
+
             // economy
             double eat = DailyFoodDemand;
             ResAmt[Res.Food] += food - eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
@@ -59,7 +63,7 @@ namespace CrownAndHearth.Sim
             else
             {
                 double free = Math.Max(0, 1 - Peasants / (double)Math.Max(1, d.Civ));
-                double births = Peasants * 0.04 * free * (ResAmt[Res.Food] > 40 ? 1 : 0.5);
+                double births = Peasants * 0.04 * free * (ResAmt[Res.Food] > 40 ? 1 : 0.5) * watered;   // thirsty towns grow slower
                 PopAcc += births - Peasants * 0.004 + (Peasants < 2 ? 0.05 : 0);
                 while (PopAcc >= 1 && Peasants < d.Civ) { Peasants++; PopAcc -= 1; }
                 if (PopAcc > 0.99) PopAcc = 0.99;

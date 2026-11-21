@@ -25,7 +25,7 @@ namespace CrownAndHearth.Sim
         public const double SnowLevel = 12;
 
         // Economy
-        public const int HallCap = 6, Bunks = 6, WellR = 4, WorkR = 3, Storage = 400;
+        public const int HallCap = 6, Bunks = 6, WorkR = 3, Storage = 400;   // water tuning: WaterTuning in World.Water.cs
         public const double SawRate = 4, HallSaw = 1, HallYield = 0.5;
         public const int StumpDays = 8;
         public const int PlantEvery = 4, SaplingDays = 3 * 365, ForesterR = 4;
@@ -53,6 +53,7 @@ namespace CrownAndHearth.Sim
             { "forester", new Dictionary<Res, int> { { Res.Wood, 8 } } },
             { "silo", new Dictionary<Res, int> { { Res.Wood, 20 }, { Res.Stone, 5 } } },
             { "well", new Dictionary<Res, int> { { Res.Wood, 5 }, { Res.Stone, 5 } } },
+            { "cistern", new Dictionary<Res, int> { { Res.Wood, 10 }, { Res.Stone, 10 } } },
             { "barracks", new Dictionary<Res, int> { { Res.Wood, 20 }, { Res.Stone, 15 }, { Res.Gold, 20 } } },
         };
         public static readonly Dictionary<string, Dictionary<Res, int>> Cost2 = new Dictionary<string, Dictionary<Res, int>>
@@ -72,7 +73,7 @@ namespace CrownAndHearth.Sim
         {
             { "road", "Dirt Road" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "quarry", "Quarry" },
             { "mine", "Iron Mine" }, { "market", "Market" }, { "sawmill", "Sawmill" }, { "forester", "Forester" }, { "well", "Well" },
-            { "barracks", "Barracks" }, { "hall", "Town Hall" }, { "silo", "Silo" },
+            { "barracks", "Barracks" }, { "hall", "Town Hall" }, { "silo", "Silo" }, { "cistern", "Cistern" },
         };
 
         public static readonly Dictionary<string, int> Jobs = new Dictionary<string, int>

@@ -66,6 +66,11 @@ namespace CrownAndHearth.Sim
                 Note[Zone.Res] = "Homes grow once houses are nearly full and food is stocked.";
                 return;
             }
+            if (LastWater != null && LastWater.ShortHomes > 0)
+            {
+                Note[Zone.Res] = "Homes will not grow while homes are short of water. Build a well or a cistern near them.";
+                return;
+            }
             var (site, wait) = Choose(Zone.Res);
             if (site == null)
             {

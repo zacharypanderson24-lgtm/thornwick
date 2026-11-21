@@ -57,7 +57,7 @@ namespace CrownAndHearth.Sim
                 RockAmtMap.Remove(k); Dig.Remove(k); Elev.Remove(k); OreLeftMap.Remove(k); SapT.Remove(k);
                 if (t == "road") ZoneMap[j, i] = Zone.None;
             }
-            if (t == "hall") Hall = b;
+            if (t == "hall") { Hall = b; b.Water = WaterTuning.HallCistern; }   // the Town Hall starts with a full cistern
             if (t != "road") LevelFootprint(b);
             Touch();
             return b;
@@ -71,7 +71,7 @@ namespace CrownAndHearth.Sim
 
         public Result CanPlace(string type, int x, int y)
         {
-            if (type == "well") return Result.No("Wells are unavailable for new construction.");
+            if (type == "well" && AquiferAt(x, y) < 0) return Result.No("No groundwater here. Wells go on the blue patches");
             var fp = new Building { T = type, X = x, Y = y, Sz = PlacementSize(type) };
             foreach (var (tx, ty) in fp.Tiles())
             {
@@ -336,17 +336,18 @@ namespace CrownAndHearth.Sim
                 b.Face = FaceOf(b);
                 b.Served = b.T == "hall" || ServedAt(b, conn);
             }
+            // a home reached by water and not past its grace is level 2 (World.Water.cs); one past its grace holds half its people
+            var cover = WaterCover(conn);
             RefreshFarmJobs();
-            var wells = Blds.Where(b => b.T == "well").ToList();
             int civ = HallCap, bunks = 0, jobs = 0;
             foreach (var b in Blds)
             {
                 if (b.T == "house")
                 {
-                    b.Lvl = b.Served && wells.Any(w => Building.Cheb(w, b) <= WellR) ? 2 : 1;
+                    b.Lvl = b.Served && cover.Contains(b) && b.ShortDays < WaterTuning.Grace ? 2 : 1;
                     if (b.Served)
                     {
-                        civ += b.Capacity;
+                        civ += b.Housing;
                     }
                 }
                 else if (b.T == "barracks") { if (b.Served) bunks += Bunks; }

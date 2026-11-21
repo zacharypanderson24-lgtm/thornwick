@@ -1,6 +1,6 @@
 // Runs the settlement: owns the World, ticks it (1 day = 1 second at 1x, like the browser), redraws on change,
 // and turns mouse/keyboard into tools. Tools sit in build-bar categories (Cats, Tools): 1 Roads, 2 Housing, 3 Farming,
-// 4 Forestry, 5 Mining, 6 Trade, 7 Military, 0 or Delete Bulldoze; pressing a category key again picks its next tool.
+// 4 Forestry, 5 Mining, 6 Trade, 7 Military, 8 Water, 0 or Delete Bulldoze; pressing a category key again picks its next tool.
 // Esc or a right-click (without dragging) cancels the half-drawn road or rectangle, then puts the tool away. Q/E rotate.
 // Homes are not placed by hand: they grow on Housing zones beside roads when there is demand (World.Develop).
 using System.Collections.Generic;
@@ -16,7 +16,7 @@ namespace CrownAndHearth.Game
     public class GameController : MonoBehaviour
     {
         /// <summary>Build bar categories, grouped by what the player is doing: each production building sits beside the zone it works.</summary>
-        public enum Cat { Inspect, Roads, Housing, Farming, Forestry, Mining, Trade, Military, Bulldoze }
+        public enum Cat { Inspect, Roads, Housing, Farming, Forestry, Mining, Trade, Military, Water, Bulldoze }
 
         public class CatDef
         {
@@ -39,6 +39,7 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "5", Hotkey = Key.Digit5, Icon = "mine", Desc = "Quarries for stone and mines for iron, and the Mining zones they work." },
             new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "6", Hotkey = Key.Digit6, Icon = "market", Desc = "Markets." },
             new CatDef { Cat = Cat.Military, Label = "Military", Key = "7", Hotkey = Key.Digit7, Icon = "barracks", Desc = "Barracks that train soldiers." },
+            new CatDef { Cat = Cat.Water, Label = "Water", Key = "8", Hotkey = Key.Digit8, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
             new CatDef { Cat = Cat.Bulldoze, Label = "Bulldoze", Key = "0", Hotkey = Key.Digit0, Alt = Key.Delete, Desc = "Demolish buildings and roads, clear trees and rocks, or remove zones." },
         };
 
@@ -73,6 +74,10 @@ namespace CrownAndHearth.Game
                 Desc = "Must touch a road. Trading is paused for now." },
             new ToolDef { Id = "barracks", Cat = Cat.Military, Label = "Barracks", Build = "barracks",
                 Desc = "Trains soldiers from your peasants. Soldiers eat more and do no other work. Must touch a road." },
+            new ToolDef { Id = "well", Cat = Cat.Water, Label = "Well", Build = "well",
+                Desc = $"Pumps up to {WaterTuning.WellPump:0} water a day from the groundwater patch it stands on (the blue patches); carriers take it along connected roads to homes within {WaterTuning.WellReach} road tiles. Wells on one patch share its reserve and recharge: draw more than the recharge and the patch runs down." },
+            new ToolDef { Id = "cistern", Cat = Cat.Water, Label = "Cistern", Build = "cistern",
+                Desc = $"Stores {WaterTuning.CisternCap:0} water. Sources that reach it along the roads fill it with what homes do not need; it covers shortfalls for homes within {WaterTuning.CisternReach} road tiles." },
             new ToolDef { Id = "clear", Cat = Cat.Bulldoze, Label = "Demolish", Clear = true,
                 Desc = "Click or drag over buildings, roads, zones, trees and rocks to remove them. Buildings give back half their cost. The Town Hall stays." },
             new ToolDef { Id = "unzone", Cat = Cat.Bulldoze, Label = "Remove Zones", Unzone = true,
@@ -283,7 +288,9 @@ namespace CrownAndHearth.Game
         void SetTool(ToolDef t)
         {
             const string stop = "   ·   Right-click or Esc to stop";
-            string hint = t.Build != null ? $"{t.Label} ({Hud.CostText(t.Build)}): click a spot to build it." + (ReachOf(t.Build) > 0 ? " The shaded ring is the land it works." : "") + stop
+            string hint = t.Build == "well" ? $"Well ({Hud.CostText(t.Build)}): click a blue groundwater patch. Light roads show where its water would go.{stop}"
+                : t.Build == "cistern" ? $"Cistern ({Hud.CostText(t.Build)}): click beside a road. Light roads show the homes it would cover.{stop}"
+                : t.Build != null ? $"{t.Label} ({Hud.CostText(t.Build)}): click a spot to build it." + (ReachOf(t.Build) > 0 ? " The shaded ring is the land it works." : "") + stop
                 : t.Road ? $"Road (1 wood a tile): press and drag from a road to lay one.{stop}"
                 : t.Zone != Zone.None ? $"{t.Label}: drag over the land, or click two corners. Green tiles will be zoned, red ones cannot be.{stop}"
                 : t.Unzone ? $"Remove Zones: drag over zoned land. Buildings stay.{stop}"
@@ -477,6 +484,12 @@ namespace CrownAndHearth.Game
                 var seen = new HashSet<int>();
                 foreach (var b in World.Blds) if (Works(_tool.Zone, b.T)) AddReach(b.T, b.X, b.Y, b.Sz, Reach, seen);
             }
+            // water tools, or inspecting a water building or a home: groundwater patches, short homes, and the roads water reaches
+            var hb = _hover.HasValue ? World.Grid[_hover.Value.y, _hover.Value.x] : null;
+            if (_tool.Build == "well" || _tool.Build == "cistern")
+                DrawWater(_hover, _hover.HasValue ? (_tool.Build == "well" ? WaterTuning.WellReach : WaterTuning.CisternReach) : 0);
+            else if (_tool.Id == "look" && hb != null && (hb.T == "well" || hb.T == "cistern" || hb.T == "hall" || hb.T == "house"))
+                DrawWater(_hover, 0, hb);
             if (_hover.HasValue)
             {
                 var h = _hover.Value;
@@ -518,12 +531,121 @@ namespace CrownAndHearth.Game
             _overlay.Apply();
         }
 
+        static readonly Color32 ReachRoad = new Color32(210, 245, 255, 120), HomeGain = new Color32(120, 255, 160, 120), HomeShort = new Color32(255, 80, 70, 130);
+
+        /// <summary>Groundwater as blue patches (fainter as they run down, brighter under the cursor), homes short of water in red, and
+        /// the road tiles and homes reached from the hovered spot (a well or cistern being placed: reach &gt; 0) or by an inspected building.</summary>
+        void DrawWater(Vector2Int? hover, int reach, Building inspected = null)
+        {
+            var w = World;
+            int under = hover.HasValue ? w.AquiferAt(hover.Value.x, hover.Value.y) : -1;
+            if (inspected != null && inspected.T != "well") under = -1;
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    int a = w.AquiferMap[World.Tk(x, y)];
+                    if (a < 0) continue;
+                    var aq = w.Aquifers[a];
+                    float full = aq.Cap > 0 ? (float)(aq.Reserve / aq.Cap) : 0;
+                    _overlay.AddTile(w, x, y, _rot, new Color32(70, 150, 255, (byte)(30 + 60 * full + (a == under ? 50 : 0))));
+                }
+            if (w.LastWater != null)
+                foreach (var kv in w.LastWater.Why)
+                    if (kv.Value != WaterWhy.Ok) foreach (var (x, y) in kv.Key.Tiles()) _overlay.AddTile(w, x, y, _rot, HomeShort);
+            WaterReach r = null;
+            if (reach > 0 && hover.HasValue) r = w.ReachFrom(hover.Value.x, hover.Value.y, 1, reach);
+            else if (inspected != null && inspected.T != "house") r = w.ReachFrom(inspected.X, inspected.Y, inspected.Sz, inspected.T == "well" ? WaterTuning.WellReach : World.StoreReachOf(inspected));
+            if (r == null) return;
+            foreach (int k in r.Roads) _overlay.AddTile(w, k % N, k / N, _rot, ReachRoad);
+            foreach (var home in r.Homes) foreach (var (x, y) in home.Tiles()) _overlay.AddTile(w, x, y, _rot, HomeGain);
+        }
+
+        // the well preview is worked out once per tile and world state, not every frame
+        Vector2Int _forecastAt = new Vector2Int(-1, -1); int _forecastVersion = -1, _forecastDay = -1; World.WellForecast _forecast;
+        World.WellForecast WellForecastAt(Vector2Int h)
+        {
+            if (_forecast == null || h != _forecastAt || World.Version != _forecastVersion || World.Day != _forecastDay)
+            {
+                _forecast = World.ForecastWell(h.x, h.y); _forecastAt = h; _forecastVersion = World.Version; _forecastDay = World.Day;
+            }
+            return _forecast;
+        }
+
+        Vector2Int _cisternAt = new Vector2Int(-1, -1); int _cisternVersion = -1; string _cisternTip;
+        /// <summary>What a cistern here would hold, how many homes it would cover and how many sources would fill it.</summary>
+        string CisternTip(Vector2Int h)
+        {
+            if (_cisternTip != null && h == _cisternAt && World.Version == _cisternVersion) return _cisternTip;
+            var r = World.ReachFrom(h.x, h.y, 1, WaterTuning.CisternReach);
+            int fillers = 0;
+            foreach (var b in World.Blds)
+            {
+                var s = World.SourceFor(b); if (s == null) continue;
+                var sr = World.ReachFrom(s.X, s.Y, s.Sz, s.Reach);
+                bool reaches = false;
+                for (int n = 0; n < 4 && !reaches; n++) reaches = sr.Roads.Contains(World.Tk(h.x + Nb[n, 0], h.y + Nb[n, 1]));
+                if (reaches) fillers++;
+            }
+            int homes = r.Homes.Count(b => b.T == "house");
+            _cisternTip = $"Stores {WaterTuning.CisternCap:0}; covers {homes} home{(homes == 1 ? "" : "s")}; " +
+                (fillers == 0 ? "no well or spring reaches it to fill it" : $"filled by {fillers} source{(fillers == 1 ? "" : "s")}");
+            _cisternAt = h; _cisternVersion = World.Version;
+            return _cisternTip;
+        }
+
+        /// <summary>An aquifer in plain words: what it holds, its recharge, what its wells draw, its trend and how long it lasts.</summary>
+        string AquiferLine(Aquifer a)
+        {
+            var days = World.DaysLeft(a.Reserve, a.Recharge, a.Draw);
+            return $"Groundwater: {a.Reserve:0} of {a.Cap:0}, recharges {a.Recharge:0.#} a day; its wells drew {a.Draw:0.#} yesterday. {a.Trend}" +
+                (days is double d ? $": empty in about {System.Math.Floor(d)} days" : a.Trend == "Dry" ? ": giving only what recharges" : "") + ".";
+        }
+
+        /// <summary>Water lines for the info panel: wells, stores and homes.</summary>
+        IEnumerable<string> WaterLines(Building b)
+        {
+            var w = World; var p = w.LastWater;
+            if (b.T == "well")
+            {
+                var s = w.SourceFor(b);
+                yield return $"Pumped {b.Pumped:0.#} of {s.Pump:0} yesterday" + (p != null && b.Pumped < s.Pump - 0.05 && p.ShortHomes == 0 ? " (all its homes had enough and storage is full)" : "") + ".";
+                if (s.Aquifer >= 0) yield return AquiferLine(w.Aquifers[s.Aquifer]) + $" {w.Blds.Count(o => o.T == "well" && w.AquiferAt(o.X, o.Y) == s.Aquifer)} well(s) share it.";
+                else yield return $"An old well with no groundwater patch beneath it: it seeps {WaterTuning.WellSeep:0} a day.";
+                if (!b.Served) yield return "Not on a connected road: its water goes nowhere.";
+            }
+            if (b.T == "cistern" || b.T == "hall")
+            {
+                yield return $"Stored water {b.Water:0} of {World.StoreCapOf(b):0}" + (b.T == "hall" ? $"; its spring gives {WaterTuning.HallSpring:0} a day (pumped {b.Pumped:0.#} yesterday)." : ".");
+                if (p?.StoreDays is double days) yield return $"Stored water is covering {p.FromStore:0.#} a day of shortfall: it lasts about {System.Math.Floor(days)} more days at this rate.";
+            }
+            if (b.T == "house" && b.Served)
+            {
+                if (b.WaterWhy == WaterWhy.Ok) yield return b.WaterNeed > 0.05 ? $"Water: {b.WaterNeed:0.#} a day, all delivered" + (b.WaterStocked > 0.05 ? $" ({b.WaterStocked:0.#} from stored water)." : ".") : "Water: nobody to drink yet.";
+                else yield return $"Short of water: {World.WhyText(b.WaterWhy)} (got {b.WaterGot + b.WaterStocked:0.#} of {b.WaterNeed:0.#}).";
+                if (b.Parched) yield return $"No water for {b.ShortDays} days: residents are leaving.";
+                else if (b.ShortDays > 0) yield return $"Short for {b.ShortDays} day{(b.ShortDays == 1 ? "" : "s")}: residents leave after {WaterTuning.Grace}.";
+                else if (b.Lvl == 2) yield return "Watered, so it is a level 2 home.";
+            }
+            else if (b.T == "house") yield return $"Short of water: {World.WhyText(WaterWhy.NoRoad)}.";
+        }
+
+        /// <summary>The well preview in words: pumping limit vs what the town would really get, and what it does to the aquifer.</summary>
+        string WellTip(Vector2Int h)
+        {
+            var f = WellForecastAt(h);
+            string gain = f.ToHomes + f.ToStorage < 0.05 ? "the town would get nothing more today (needs are met and storage is full)"
+                : f.ToHomes < 0.05 ? $"the town gets +{f.ToStorage:0.#} into storage (homes already have enough)"
+                : $"the town gets +{f.ToHomes:0.#} a day to homes" + (f.ToStorage > 0.05 ? $" and +{f.ToStorage:0.#} into storage" : "");
+            string aq = f.Aquifer < 0 ? "" : $"\nGroundwater {f.AqReserve:0}/{f.AqCap:0}, recharge {f.AqRecharge:0.#}, draw would be {f.AqDraw:0.#}: {f.Trend}"
+                + (f.DaysLeft is double d ? $", empty in about {System.Math.Floor(d)} days" + (f.ToStorage > 0.05 ? " (the draw drops once storage is full)" : "") : "");
+            return $"Pumps up to {f.MaxPump:0} a day; {gain}.{aq}";
+        }
+
         static string ZoneName(Zone z, bool flax = false) => z switch
         {
             Zone.Res => "Housing", Zone.Farm => flax ? "Flax field" : "Wheat field", Zone.Wood => "Lumber", Zone.Mine => "Mining", Zone.Comm => "Commerce", _ => "No",
         };
 
-        /// <summary>The line beside the mouse: what a click will do here, or why it cannot (bad = red).</summary>
         /// <summary>Why a building that can be placed here may still disappoint: no connected road yet, or zoned land it would cover.
         /// Null when there is nothing to warn about. Shown amber; the click still builds.</summary>
         string PlaceWarning(string type, int x, int y)
@@ -537,6 +659,7 @@ namespace CrownAndHearth.Game
 
         bool _tipWarn;   // the cursor tip is a warning (amber): set by CursorTip
 
+        /// <summary>The line beside the mouse: what a click will do here, or why it cannot (bad = red).</summary>
         (string text, bool bad) CursorTip()
         {
             _tipWarn = false;
@@ -555,7 +678,16 @@ namespace CrownAndHearth.Game
                 var r = World.CanPlace(_tool.Build, h.x, h.y);
                 if (!r.Ok) return (r.Reason, true);
                 var warn = PlaceWarning(_tool.Build, h.x, h.y); _tipWarn = warn != null;
-                return ($"Click to build: {Hud.CostText(_tool.Build)}" + (warn != null ? $". {warn}" : ""), false);
+                string water = "";
+                if (_tool.Build == "well")
+                {
+                    var f = WellForecastAt(h);
+                    water = "\n" + WellTip(h);
+                    if (f.Trend == "Drawing down" || f.Trend == "Dry" || f.ToHomes + f.ToStorage < 0.05) _tipWarn = true;
+                }
+                else if (_tool.Build == "cistern") water = "\n" + CisternTip(h);
+                // water tips run long: one fact per line, so the tip stays narrow
+                return ($"Click to build: {Hud.CostText(_tool.Build)}" + (warn != null ? (water.Length > 0 ? "\n" : ". ") + warn : "") + water, false);
             }
             if (_tool.Zone != Zone.None)
             {
@@ -650,6 +782,7 @@ namespace CrownAndHearth.Game
                 if (b.T == "silo" && w.SeasonalFarming && w.DailyFoodDemand > 0)
                     lines.Add($"Town reserve: {w.ResAmt[Res.Food]:0}/{w.CropStorage(Res.Food)} food, about {System.Math.Floor(w.ResAmt[Res.Food] / w.DailyFoodDemand):0} days without a harvest.");
                 if (b.T == "market") lines.Add("Trading is paused.");
+                lines.AddRange(WaterLines(b));
             }
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");
             var d = w.DecoMap[y, x];
@@ -684,6 +817,7 @@ namespace CrownAndHearth.Game
                 lines.Add(!w.BesideConnectedRoad(x, y) ? "No home will grow here: it does not touch a road connected to the Town Hall."
                     : w.Dem[Zone.Res] > World.DemandThreshold ? "Homes are wanted: one should grow here soon."
                     : "Waiting: homes grow when the Homes meter (bottom bar) says homes are wanted.");
+            if (w.AquiferAt(x, y) is int aq && aq >= 0 && (b == null || b.T != "well")) lines.Add(AquiferLine(w.Aquifers[aq]) + " A well here could tap it.");
             lines.Add($"Tile {x},{y}   level {w.TileLevel(x, y):0.##}" + (w.Fert[y, x] ? "   fertile soil" : "") + (w.TileSpread(x, y) >= 3 ? "   too steep" : ""));
             return string.Join("\n", lines);
         }
