@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: -2437542515313001157
-    second: barracks_1_0
+    second: barracks_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -102,7 +102,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: barracks_1_0
+      name: barracks_1
       rect:
         serializedVersion: 2
         x: 2
