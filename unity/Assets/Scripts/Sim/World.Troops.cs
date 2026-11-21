@@ -12,6 +12,8 @@ namespace CrownAndHearth.Sim
         /// <summary>Days a barracks needs between two recruits.</summary>
         public const int TrainDays = 4;
 
+        /// <summary>Whether working residents fight raiders with their trade tools (weakly, next to soldiers or alone). Set in the Troops menu.</summary>
+        public bool MilitiaFights = true;
         public int Archers;
         /// <summary>Share of new recruits that are archers, 0..100 (the rest are infantry).</summary>
         public int ArcherPercent;
