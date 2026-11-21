@@ -120,5 +120,32 @@ namespace CrownAndHearth.Tests
             t.Start(w, IndexOf("farmland"));
             Assert.IsNull(t.Check(w), "zoning done before the step began does not finish it");
         }
+
+        [Test]
+        public void TheRaidStepSendsRaidersOnceAndSoldiersHoldThemOff()
+        {
+            var w = new World(7);
+            w.ResAmt[Res.Wood] = 200; w.ResAmt[Res.Gold] = 100; w.ResAmt[Res.Food] = 100;
+            var t = new Tutorial();
+            t.Start(w, IndexOf("raid") - 1);
+            Assert.IsNull(t.Raid);
+            t.Next(w);   // onto the raid step
+            Assert.IsNotNull(t.Raid);
+            Assert.AreEqual(0, t.Raid.Defenders);
+            Assert.AreEqual(80, w.ResAmt[Res.Wood], 1, "an undefended town loses 60% of its wood");
+            StringAssert.Contains("raiders", t.BodyText);
+            StringAssert.Contains("wood", t.BodyText);
+            double wood = w.ResAmt[Res.Wood];
+            t.Back(w); t.Next(w);
+            Assert.AreEqual(wood, w.ResAmt[Res.Wood], 1e-9, "the raid comes once");
+
+            var defended = new World(7);
+            defended.ResAmt[Res.Wood] = 200;
+            defended.Soldiers = 12;
+            var held = defended.Raid(Tutorial.RaidBand);
+            Assert.AreEqual(1.0, held.HeldOff, 1e-9);
+            Assert.AreEqual(200, defended.ResAmt[Res.Wood], 1e-9, "a fully held band steals nothing");
+            Assert.AreEqual(9, defended.Soldiers, "a quarter of the defenders fell");
+        }
     }
 }

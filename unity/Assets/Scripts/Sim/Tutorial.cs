@@ -24,6 +24,14 @@ namespace CrownAndHearth.Sim
         // actions the world cannot show, reported by the game
         public bool Panned, Zoomed, Rotated, SpeedChanged, WorkersOpened, UndergroundViewed;
 
+        /// <summary>The raid step sends raiders once per tutorial: how many, and what happened.</summary>
+        public const int RaidBand = 12;
+        public bool RaidDone { get; private set; }
+        public RaidReport Raid { get; private set; }
+
+        /// <summary>The step text, with the raid report added on the raid step.</summary>
+        public string BodyText => Current == null ? "" : Current.Id == "raid" && Raid != null ? Current.Body + "\n\n" + Raid.Summary() : Current.Body;
+
         public bool Active { get; private set; }
         public int Index { get; private set; }
         public Snapshot At { get; private set; }
@@ -39,6 +47,7 @@ namespace CrownAndHearth.Sim
         {
             At = Snap(w);
             Panned = Zoomed = Rotated = SpeedChanged = WorkersOpened = UndergroundViewed = false;
+            if (Current != null && Current.Id == "raid" && !RaidDone) { RaidDone = true; Raid = w.Raid(RaidBand); }
         }
 
         /// <summary>Advance when the current step's goal has been met. Returns the finished step (for a "well done" message), or null.</summary>
@@ -163,6 +172,11 @@ namespace CrownAndHearth.Sim
             new Step { Id = "defence", Title = "Troops",
                 Body = "A Barracks (Military, 8) trains infantry (wood, gold, iron ore) and archers (wood, gold, flax) from your peasants. Pick the share of archers in the Troops menu. Troops are a standing army: each recruit leaves your workforce for good and keeps a place in the population, so births do not replace them. They eat half as much again and do no other work, " +
                        "so every one is a farmer or woodcutter you give up.",
+                Goal = "Press Next" },
+            new Step { Id = "raid", Title = "Raiders!",
+                Body = "Smoke on the hills. A band of raiders storms the village and drives off with a big share of your stores: gold, food, wood, stone and ore. " +
+                       "Every soldier you have holds off one raider, and each soldier you keep cuts what they carry away. A settlement with no troops is an easy target.\n\n" +
+                       "Build a Barracks and train infantry and archers before the next band comes.",
                 Goal = "Press Next" },
             new Step { Id = "land", Title = "Land", Tool = "claim",
                 Body = "You own a 64 x 64 district round the Town Hall: the brighter land. The rest of the 256 x 256 map is yours to see and walk, but not to build or work until you own it.\n\n" +
