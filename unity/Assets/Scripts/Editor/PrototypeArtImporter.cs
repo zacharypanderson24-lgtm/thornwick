@@ -21,6 +21,10 @@ namespace CrownAndHearth.EditorTools
 
         internal static string SourceDir => Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "assets"));
 
+        /// <summary>Only the code-drawn placeholders (ph_*), without re-importing the browser art.</summary>
+        [MenuItem("Crown & Hearth/Write Placeholder Art")]
+        public static void WritePlaceholderArt() { Directory.CreateDirectory(OutDir); WritePlaceholders(); AssetDatabase.Refresh(); }
+
         [MenuItem("Crown & Hearth/Import Prototype Art")]
         public static void ImportAll()
         {
@@ -190,6 +194,7 @@ namespace CrownAndHearth.EditorTools
                 { "mine", new[] { new Block { Inset = 2, H = 8, L = "#5A5E6B", R = "#474A55", Top = "#6A6E7A" }, new Block { Inset = 11, Lift = 0, H = 5, L = "#2A2420", R = "#1E1A17", Top = "#6E4526" } } },
                 { "market", new[] { new Block { Inset = 4, H = 6, L = "#E8D9B0", R = "#CDBB8C", Top = "#E8D9B0" }, new Block { Inset = 3, Lift = 6, H = 3, L = "#B5533C", R = "#8F3F2E", Top = "#E8D9B0" } } },
                 { "well", new[] { new Block { Inset = 9, H = 5, L = "#858A9C", R = "#666B7C", Top = "#4C8FD6" } } },
+                { "cistern", new[] { new Block { Inset = 4, H = 5, L = "#858A9C", R = "#666B7C", Top = "#858A9C" }, new Block { Inset = 6, Lift = 5, H = 1, L = "#3E77B8", R = "#2F5F96", Top = "#4C8FD6" } } },
                 { "house_2", new[] { new Block { Inset = 2, H = 6, L = "#858A9C", R = "#666B7C", Top = "#858A9C" }, new Block { Inset = 2, Lift = 6, H = 5, L = "#E8D9B0", R = "#CDBB8C", Top = "#E8D9B0" }, new Block { Inset = 1, Lift = 11, H = 5, L = "#B5533C", R = "#8F3F2E", Top = "#B5533C" } } },
                 { "rock_0", new[] { new Block { Inset = 9, H = 4, L = "#858A9C", R = "#666B7C", Top = "#9DA2B2" } } },
                 { "rock_1", new[] { new Block { Inset = 6, H = 7, L = "#858A9C", R = "#666B7C", Top = "#9DA2B2" } } },

@@ -96,10 +96,14 @@ namespace CrownAndHearth.Tests
             {
                 var e = r.blds[i]; var b = w.Blds[i];
                 Assert.AreEqual(e.t, b.T); Assert.AreEqual(e.x, b.X); Assert.AreEqual(e.y, b.Y); Assert.AreEqual(e.sz, b.Sz);
-                Assert.AreEqual(e.hut, b.Var, $"{b.T} hut look"); Assert.AreEqual(e.served, b.Served, $"{b.T} served"); Assert.AreEqual(e.lvl, b.Lvl);
+                Assert.AreEqual(e.hut, b.Var, $"{b.T} hut look"); Assert.AreEqual(e.served, b.Served, $"{b.T} served");
+                // deliberate change from the browser: a house the Town Hall's water reaches is level 2 (World.Water.cs), not only one near a well
+                Assert.AreEqual(b.T == "house" && b.Served ? 2 : e.lvl, b.Lvl, $"{b.T} level");
                 if (e.t != "road") Assert.AreEqual(e.face, b.Face, $"{b.T} at {b.X},{b.Y} face");
             }
-            Assert.AreEqual(r.civ, w.D.Civ, "housing"); Assert.AreEqual(r.jobs, w.D.Jobs, "jobs");
+            // level 2 huts hold 6 instead of 4 (watered by the Town Hall), so housing is 2 more per hut than the browser's
+            int watered = w.Blds.Count(b => b.T == "house" && b.Served && b.Sz == 1 && r.blds.Any(e => e.t == "house" && e.x == b.X && e.y == b.Y && e.lvl == 1));
+            Assert.AreEqual(r.civ + watered * (Defs.HouseCap[2] - Defs.HouseCap[1]), w.D.Civ, "housing"); Assert.AreEqual(r.jobs, w.D.Jobs, "jobs");
             Assert.AreEqual(r.idle, w.D.Idle, "idle"); Assert.AreEqual(r.employed, w.D.Employed, "employed");
         }
 

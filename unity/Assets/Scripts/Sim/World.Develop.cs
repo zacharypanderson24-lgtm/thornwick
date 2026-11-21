@@ -16,7 +16,7 @@ namespace CrownAndHearth.Sim
             double occupancy = D.Civ > 0 ? Peasants / (double)D.Civ : 1;
             double food = ResAmt[Res.Food];
             double demand = Starving || food < 10 ? -0.3 : Math.Max(-1, Math.Min(1, (occupancy - 0.7) * 4));
-            if (Rate[Res.Food] < -0.3 && food < 120) demand = Math.Min(demand, 0);
+            if (!SeasonalFarming && Rate[Res.Food] < -0.3 && food < 120) demand = Math.Min(demand, 0);
             Dem[Zone.Res] = demand;
         }
 
@@ -64,6 +64,11 @@ namespace CrownAndHearth.Sim
             if (Dem[Zone.Res] <= DemandThreshold)
             {
                 Note[Zone.Res] = "Homes grow once houses are nearly full and food is stocked.";
+                return;
+            }
+            if (LastWater != null && LastWater.ShortHomes > 0)
+            {
+                Note[Zone.Res] = "Homes will not grow while homes are short of water. Build a well or a cistern near them.";
                 return;
             }
             var (site, wait) = Choose(Zone.Res);

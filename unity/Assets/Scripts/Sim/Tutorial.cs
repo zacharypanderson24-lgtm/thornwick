@@ -116,11 +116,17 @@ namespace CrownAndHearth.Sim
                 Body = "The Homes meter in the bottom bar says what the town wants: green and full means homes are wanted. Homes are wanted when houses are nearly full " +
                        "and food is stocked. Hover a zone tile: the panel on the left says why nothing grows yet.\n\nTry 4x speed and wait for a new home.",
                 Goal = "A new home grows", Count = s => s.Houses, By = 1 },
+            new Step { Id = "water", Title = "Water", Tool = "well",
+                Body = "Every villager drinks each day. The Town Hall's spring and cistern cover the first homes; carriers walk the roads a few tiles " +
+                       "from each source. Homes that go short stop the town growing, and after 15 days their people leave.\n\n" +
+                       "Open Water (8) and pick Well: the blue patches are groundwater. The tip shows what a well would add and whether " +
+                       "its patch would run down. Wells on one patch share its water.",
+                Goal = "Build a well on groundwater", Count = s => s.Wells, By = 1 },
             new Step { Id = "farmland", Title = "Food", Tool = "zoneFarm",
                 Body = "Villagers eat every day; with no food they starve and leave.\n\nOpen Farming (3) and pick Farmland. The shaded area is the " +
                        "farmhouse's reach: drag over fertile soil (the darker, olive ground) inside it. Farming also has more Farmhouses " +
                        "and Silos; the Farming menu above the build bar sets how much farmland grows wheat and how much flax. " +
-                       "Each farmer tends 2 fields, so give farms room.",
+                       "Sow in spring, harvest in summer, and store enough to reach the next harvest. Workers take other jobs when fields need no work.",
                 Goal = "Zone 6 Farmland tiles", Count = s => s.Farmland, By = 6 },
             new Step { Id = "workers", Title = "Workers",
                 Body = "Buildings only work when villagers staff them. Open Workers (bottom right): villagers fill the trades from the top down, " +
@@ -136,7 +142,7 @@ namespace CrownAndHearth.Sim
                        "Build one beside a road.",
                 Goal = "Build a Sawmill", Count = s => s.Sawmills, By = 1 },
             new Step { Id = "services", Title = "Crop storage", Tool = "silo",
-                Body = "Build a Silo (Farming, 3) beside a connected road to store 180 more wheat and 60 more flax.",
+                Body = $"Build a Silo (Farming, 3) beside a connected road to store {World.SiloFood} more wheat and {World.SiloFlax} more flax.",
                 Goal = "Build and connect a Silo", Count = s => s.Silos, By = 1 },
             new Step { Id = "stone", Title = "Stone and iron", Tool = "zoneMine",
                 Body = "Open Mining (5). Mining Zones go on rock and on hills and mountains.\n\n" +

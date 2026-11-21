@@ -5,12 +5,12 @@ namespace CrownAndHearth.Sim
 {
     public partial class Building
     {
-        public string T;          // type: road, house, farm, wood, quarry, mine, market, sawmill, forester, well, barracks, hall
+        public string T;          // type: road, house, farm, wood, quarry, mine, market, sawmill, forester, well, cistern, silo, barracks, hall
         public int X, Y;          // top-left (lowest x, lowest y) footprint tile
         public int Sz = 1;        // footprint size (1, 2 or 3)
         public double Prog;       // forester planting / barracks training progress
         public bool Served;       // connected to the Town Hall by road
-        public int Lvl = 1;       // house level (2 with a well in range)
+        public int Lvl = 1;       // house level (2 when watered, World.Water.cs)
         public int Var;           // hut look 1..8, sticky
         public int Face = -1;     // door direction (-1 = not decided yet)
         public bool Zoned;

@@ -20,9 +20,9 @@ namespace CrownAndHearth.Sim
             var got = new Dictionary<Res, double> { { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 } };
 
             // farms + foresters
-            var crops = FarmOutput();
-            food += crops.food;
-            ResAmt[Res.Flax] += crops.flax;
+            var crops = SeasonalFarming ? WorkSeasonalFields() : FarmOutput();
+            food += SeasonalFarming ? Math.Min(crops.food, Math.Max(0, CropStorage(Res.Food) - ResAmt[Res.Food])) : crops.food;
+            ResAmt[Res.Flax] += SeasonalFarming ? Math.Min(crops.flax, Math.Max(0, CropStorage(Res.Flax) - ResAmt[Res.Flax])) : crops.flax;
             foreach (var b in Blds.Where(b => b.T == "forester" && b.Served).ToList())
             {
                 if (b.Eff <= 0) continue;
@@ -46,8 +46,12 @@ namespace CrownAndHearth.Sim
             foreach (var k in SapT.Keys.ToList())
                 if (--SapT[k] <= 0) { SapT.Remove(k); int y = k / N, x = k % N; if (DecoMap[y, x] == Deco.Sapling) { DecoMap[y, x] = Deco.Tree; Touch(); } }
 
+            // drinking water (World.Water.cs): wells pump, cisterns fill or cover shortfalls, homes count days without enough
+            var water = StepWater();
+            double watered = water.Demand > 1e-9 ? 1 - water.Unmet / water.Demand : 1;
+
             // economy
-            double eat = (Peasants + Soldiers * 1.5) * 0.2;
+            double eat = DailyFoodDemand;
             ResAmt[Res.Food] += food - eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
             ResAmt[Res.Gold] += employed * 0.12 - Soldiers * 0.1;
             Starving = false;
@@ -59,7 +63,7 @@ namespace CrownAndHearth.Sim
             else
             {
                 double free = Math.Max(0, 1 - Peasants / (double)Math.Max(1, d.Civ));
-                double births = Peasants * 0.04 * free * (ResAmt[Res.Food] > 40 ? 1 : 0.5);
+                double births = Peasants * 0.04 * free * (ResAmt[Res.Food] > 40 ? 1 : 0.5) * watered;   // thirsty towns grow slower
                 PopAcc += births - Peasants * 0.004 + (Peasants < 2 ? 0.05 : 0);
                 while (PopAcc >= 1 && Peasants < d.Civ) { Peasants++; PopAcc -= 1; }
                 if (PopAcc > 0.99) PopAcc = 0.99;

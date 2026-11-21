@@ -53,11 +53,11 @@ namespace CrownAndHearth.Sim
             foreach (var (i, j) in b.Tiles())
             {
                 int k = Tk(i, j);
-                Grid[j, i] = b; DecoMap[j, i] = Deco.None; FlaxFields.Remove(k);
+                Grid[j, i] = b; DecoMap[j, i] = Deco.None; FlaxFields.Remove(k); _sownFields.Remove(k);
                 RockAmtMap.Remove(k); Dig.Remove(k); Elev.Remove(k); OreLeftMap.Remove(k); SapT.Remove(k);
                 if (t == "road") ZoneMap[j, i] = Zone.None;
             }
-            if (t == "hall") Hall = b;
+            if (t == "hall") { Hall = b; b.Water = WaterTuning.HallCistern; }   // the Town Hall starts with a full cistern
             if (t != "road") LevelFootprint(b);
             Touch();
             return b;
@@ -71,7 +71,7 @@ namespace CrownAndHearth.Sim
 
         public Result CanPlace(string type, int x, int y)
         {
-            if (type == "well") return Result.No("Wells are unavailable for new construction.");
+            if (type == "well" && AquiferAt(x, y) < 0) return Result.No("No groundwater here. Wells go on the blue patches");
             var fp = new Building { T = type, X = x, Y = y, Sz = PlacementSize(type) };
             foreach (var (tx, ty) in fp.Tiles())
             {
@@ -114,7 +114,7 @@ namespace CrownAndHearth.Sim
                 Touch(); Recalc();
                 return Result.Yes();
             }
-            if (ZoneMap[y, x] != Zone.None) { ZoneMap[y, x] = Zone.None; FlaxFields.Remove(k); Touch(); return Result.Yes(); }
+            if (ZoneMap[y, x] != Zone.None) { ZoneMap[y, x] = Zone.None; FlaxFields.Remove(k); _sownFields.Remove(k); Touch(); return Result.Yes(); }
             var d = DecoMap[y, x];
             if (d == Deco.None) return Result.No("Nothing to clear here");
             if (d == Deco.Tree) ResAmt[Res.Logs] = Math.Min(Storage, ResAmt[Res.Logs] + 2);
@@ -222,7 +222,7 @@ namespace CrownAndHearth.Sim
                 for (int x = Math.Max(0, Math.Min(ax, bx)); x <= Math.Min(N - 1, Math.Max(ax, bx)); x++)
                 {
                     if (Grid[y, x] != null || ZoneMap[y, x] == Zone.None) continue;
-                    ZoneMap[y, x] = Zone.None; FlaxFields.Remove(Tk(x, y)); cleared++;
+                    ZoneMap[y, x] = Zone.None; FlaxFields.Remove(Tk(x, y)); _sownFields.Remove(Tk(x, y)); cleared++;
                 }
             if (cleared > 0) Touch();
             return cleared;
@@ -232,6 +232,7 @@ namespace CrownAndHearth.Sim
         {
             var c = ZoneCheck(kind, x, y);
             if (!c.Ok || Grid[y, x] != null) return c;
+            if (kind != Zone.Farm) _sownFields.Remove(Tk(x, y));
             flax = kind == Zone.Farm && flax;
             int key = Tk(x, y);
             if (ZoneMap[y, x] == kind && (FlaxPercent.HasValue || FlaxFields.ContainsKey(key) == flax)) return c;
@@ -335,20 +336,22 @@ namespace CrownAndHearth.Sim
                 b.Face = FaceOf(b);
                 b.Served = b.T == "hall" || ServedAt(b, conn);
             }
-            var wells = Blds.Where(b => b.T == "well").ToList();
+            // a home reached by water and not past its grace is level 2 (World.Water.cs); one past its grace holds half its people
+            var cover = WaterCover(conn);
+            RefreshFarmJobs();
             int civ = HallCap, bunks = 0, jobs = 0;
             foreach (var b in Blds)
             {
                 if (b.T == "house")
                 {
-                    b.Lvl = b.Served && wells.Any(w => Building.Cheb(w, b) <= WellR) ? 2 : 1;
+                    b.Lvl = b.Served && cover.Contains(b) && b.ShortDays < WaterTuning.Grace ? 2 : 1;
                     if (b.Served)
                     {
-                        civ += b.Capacity;
+                        civ += b.Housing;
                     }
                 }
                 else if (b.T == "barracks") { if (b.Served) bunks += Bunks; }
-                else if (Defs.Jobs.ContainsKey(b.T) && b.Served) jobs += b.Jobs;
+                else if (Defs.Jobs.ContainsKey(b.T) && b.Served) jobs += ActiveJobs(b);
             }
 
             // Fill the jobs: villagers go to trades in priority order, and within a trade to the oldest buildings first.
@@ -360,7 +363,7 @@ namespace CrownAndHearth.Sim
                 foreach (var b in Blds)
                 {
                     if (!b.Served || !TradeOf.TryGetValue(b.T, out var tr) || tr != t) continue;
-                    int bj = b.Jobs, bw = Math.Min(bj, avail); avail -= bw;
+                    int bj = ActiveJobs(b), bw = Math.Min(bj, avail); avail -= bw;
                     b.Workers = bw; b.Eff = bj > 0 ? (double)bw / bj : 0;
                     w += bw; j += bj; n++; if (bw < bj) sh++;
                 }
