@@ -35,6 +35,7 @@ namespace CrownAndHearth.Sim
             StepCrews(got);
             food = got[Res.Food];
             StepFolk();
+            StepRaid();
             ResAmt[Res.Logs] += got[Res.Logs];
 
             // sawing: sawmills at full yield, then the Town Hall pit-saw at half yield
@@ -60,25 +61,25 @@ namespace CrownAndHearth.Sim
             if (ResAmt[Res.Food] <= 0)
             {
                 ResAmt[Res.Food] = 0; Starving = true;
-                if (Peasants > 0) Peasants--; else if (Soldiers > 0) Soldiers--;
+                if (Peasants > 0) Peasants--; else LoseSoldier();
             }
             else
             {
-                double free = Math.Max(0, 1 - Peasants / (double)Math.Max(1, d.Civ));
+                double free = Math.Max(0, 1 - (Peasants + Soldiers) / (double)Math.Max(1, d.Civ));
                 double births = Peasants * 0.04 * free * (ResAmt[Res.Food] > 40 ? 1 : 0.5) * watered;   // thirsty towns grow slower
                 PopAcc += births - Peasants * 0.004 + (Peasants < 2 ? 0.05 : 0);
-                while (PopAcc >= 1 && Peasants < d.Civ) { Peasants++; PopAcc -= 1; }
+                while (PopAcc >= 1 && Peasants + Soldiers < d.Civ) { Peasants++; PopAcc -= 1; }
                 if (PopAcc > 0.99) PopAcc = 0.99;
                 while (PopAcc <= -1 && Peasants > 0) { Peasants--; PopAcc += 1; }
             }
-            if (Peasants > d.Civ) Peasants--;
-            if (Soldiers > d.Bunks) Soldiers--;
+            if (Peasants + Soldiers > d.Civ) { if (Peasants > 0) Peasants--; else LoseSoldier(); }   // a standing army takes places in the population: its soldiers are not refilled by births
+            if (Soldiers > d.Bunks) LoseSoldier();
             foreach (var b in Blds.Where(b => b.T == "barracks" && b.Served))
             {
-                b.Prog = Math.Min(4, b.Prog + 1);
-                if (b.Prog >= 4 && Drafting && Soldiers < d.Bunks && Peasants >= 3 && ResAmt[Res.Wood] >= 2 && ResAmt[Res.Gold] >= 1 && ResAmt[Res.Ore] >= 1)
+                b.Prog = Math.Min(TrainDays, b.Prog + 1);
+                if (b.Prog >= TrainDays && Drafting && Soldiers < d.Bunks && Peasants >= 3 && CanAfford(NextRecruit))
                 {
-                    Soldiers++; Peasants--; Trained++; ResAmt[Res.Wood] -= 2; ResAmt[Res.Gold] -= 1; ResAmt[Res.Ore] -= 1; b.Prog = 0;
+                    TrainOne(NextRecruit); b.Prog = 0;
                 }
             }
             foreach (var k in ResAmt.Keys.ToList())

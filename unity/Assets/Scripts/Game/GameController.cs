@@ -39,7 +39,7 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Hunting, Label = "Hunting", Key = "5", Hotkey = Key.Digit5, Icon = "hunter", Desc = "Hunting lodges bring back food from the forest all year, even in winter." },
             new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "6", Hotkey = Key.Digit6, Icon = "mine", Desc = "Quarries for stone and mines for iron, and the Mining zones they work." },
             new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "7", Hotkey = Key.Digit7, Icon = "market", Desc = "Markets." },
-            new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Barracks that train soldiers." },
+            new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Barracks train infantry and archers. Choose the mix in the Troops menu." },
             new CatDef { Cat = Cat.Water, Label = "Water", Key = "9", Hotkey = Key.Digit9, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
             new CatDef { Cat = Cat.Land, Label = "Land", Key = "L", Hotkey = Key.L, Desc = "Your district is 64 x 64 tiles. claim the land beyond it, one 16 x 16 parcel at a time, for free." },
             new CatDef { Cat = Cat.Bulldoze, Label = "Bulldoze", Key = "0", Hotkey = Key.Digit0, Alt = Key.Delete, Desc = "Demolish buildings and roads, clear trees and rocks, or remove zones." },
@@ -77,7 +77,7 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "market", Cat = Cat.Trade, Label = "Market", Build = "market",
                 Desc = "Must touch a road. Trading is paused for now." },
             new ToolDef { Id = "barracks", Cat = Cat.Military, Label = "Barracks", Build = "barracks",
-                Desc = "Trains soldiers from your peasants. Soldiers eat more and do no other work. Must touch a road." },
+                Desc = "Trains infantry and archers from your peasants, one every 4 days (set the mix in the Troops menu). Troops eat more and do no other work. Must touch a road." },
             new ToolDef { Id = "well", Cat = Cat.Water, Label = "Well", Build = "well",
                 Desc = $"Pumps up to {WaterTuning.WellPump:0} water a day from the groundwater patch it stands on (the blue patches) into the town-wide supply: any home on a connected road can use it, however far away. Wells on one patch share its reserve and recharge: draw more than the recharge and the patch runs down." },
             new ToolDef { Id = "cistern", Cat = Cat.Water, Label = "Cistern", Build = "cistern",
@@ -111,6 +111,7 @@ namespace CrownAndHearth.Game
         GroundRenderer _ground; ObjectRenderer _objects; OverlayRenderer _overlay; AgentRenderer _agents;
         CameraRig _cam; Hud _hud;
         readonly Tutorial _tutorial = new Tutorial();
+        int _raidSig = -1;
         const string TutorialSeenKey = "crown-hearth-tutorial-seen";
 
         void Start()
@@ -300,6 +301,14 @@ namespace CrownAndHearth.Game
                 if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1);
                 _hud.ShowTutorial(_tutorial);
                 _progressVersion = -1;
+            }
+            var raid = World.Raid;
+            if (raid != null)
+            {
+                if (!raid.StartAnnounced) { raid.StartAnnounced = true; _hud.Toast($"Raiders! A band of {raid.Band} is coming in from the {raid.From}.", 6); }
+                if (raid.Over && !raid.EndAnnounced) { raid.EndAnnounced = true; _hud.Toast($"The raid is over: {raid.Killed} raiders cut down, {raid.Escaped} got away with {raid.Stolen.Values.Sum()} goods.", 8); }
+                int sig = raid.Killed * 10000 + raid.Escaped * 100 + raid.Active + (raid.Over ? 1000000 : 0);
+                if (sig != _raidSig) { _raidSig = sig; if (_tutorial.Active && !_tutorial.Finished && _tutorial.Current.Id == "raid") _hud.ShowTutorial(_tutorial); }
             }
             if (World.Version != _progressVersion) { _progressVersion = World.Version; _hud.SetTutorialProgress(_tutorial.Progress(World)); }
         }

@@ -35,8 +35,8 @@ namespace CrownAndHearth.Sim
                 // underground mining: what has been surveyed and taken (deposit sizes regenerate from the seed)
                 ["surveyed"] = new JArray(Enumerable.Range(0, N * N).Where(k => Surveyed[k])),
                 ["oreTaken"] = JObject.FromObject(OreTaken), ["minerDeaths"] = MinerDeaths, ["caveIns"] = CaveIns,
-                ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["trained"] = Trained,
-                ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["starving"] = Starving,
+                ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["archers"] = Archers, ["archerPercent"] = ArcherPercent, ["trained"] = Trained,
+                ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["militia"] = MilitiaFights, ["starving"] = Starving,
                 ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
                 ["res"] = JObject.FromObject(ResAmt.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["rate"] = JObject.FromObject(Rate.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
@@ -96,9 +96,11 @@ namespace CrownAndHearth.Sim
                 Day = save.Value<int?>("day") ?? 1,
                 Peasants = save.Value<int?>("peasants") ?? 6,
                 Soldiers = save.Value<int?>("soldiers") ?? 0,
+                Archers = Math.Min(save.Value<int?>("archers") ?? 0, save.Value<int?>("soldiers") ?? 0),
                 Trained = save.Value<int?>("trained") ?? 0,
                 PopAcc = save.Value<double?>("popAcc") ?? 0,
                 Drafting = save.Value<bool?>("drafting") ?? true,
+                MilitiaFights = save.Value<bool?>("militia") ?? true,
                 Starving = save.Value<bool?>("starving") ?? false,
             };
             var priority = save["prio"]?.ToObject<string[]>() ?? Array.Empty<string>();
@@ -221,6 +223,7 @@ namespace CrownAndHearth.Sim
             world.Recalc();
             if (save.Value<bool?>("farmFields") != true) world.AddStarterFarmFields();
             if (save.Value<int?>("flaxPercent") is int mix) world.SetFlaxPercent(mix);
+            world.SetArcherPercent(save.Value<int?>("archerPercent") ?? 0);
             world.SetShaftDepthLimit(save.Value<int?>("shaftDepthLimit") ?? MaxDepth);
             world.SetMineSupportsRequired(save.Value<bool?>("requireMineSupports") ?? false);
             world.LoadStatistics(save["statistics"] as JArray);

@@ -121,7 +121,7 @@ namespace CrownAndHearth.Game
 
             BuildBar(root);
             var townMenuBar = MakePanel(root, "TownMenuBar", Vector2.right, Vector2.right,
-                new Vector2(-439, BarH + 8), new Vector2(-8, BarH + 50));
+                new Vector2(-545, BarH + 8), new Vector2(-8, BarH + 50));
             BuildTownMenus(root, townMenuBar);
             BuildMap(root, townMenuBar);
 
@@ -399,7 +399,7 @@ namespace CrownAndHearth.Game
             var s = t.Current;
             _tutTitle.text = s.Title;
             _tutStep.text = $"{t.Index + 1} / {Tutorial.Steps.Count}";
-            _tutBody.text = s.Body;
+            _tutBody.text = t.BodyText;
             _tutGoal.text = "Goal: " + s.Goal + (s.Tool != null ? "  (the glowing button below)" : "");
             _tutGoalBase = _tutGoal.text;
             _tutNextLabel.text = s.Explanation ?(t.Index == Tutorial.Steps.Count - 1 ? "Finish" : "Next") : "Skip";
@@ -488,7 +488,7 @@ namespace CrownAndHearth.Game
         {
             _world = world;
             _day.text = world.SeasonalFarming ? $"{world.Season} {1 + (world.YearDay - 1) % World.SeasonLength} / Y{world.Year}" : world.Day.ToString();
-            _population.text = world.Starving ? "Starving" : $"{world.Peasants}/{world.D.Civ} · {world.D.Idle} idle";
+            _population.text = world.Starving ? "Starving" : world.Soldiers > 0 ? $"{world.Peasants} + {world.Soldiers} troops/{world.D.Civ} · {world.D.Idle} idle" : $"{world.Peasants}/{world.D.Civ} · {world.D.Idle} idle";
             var (stored, room) = world.WaterStored();
             var wp = world.LastWater;
             int shortHomes = wp?.ShortHomes ?? 0;

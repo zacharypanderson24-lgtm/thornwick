@@ -7,10 +7,10 @@ namespace CrownAndHearth.Game
 {
     public partial class Hud
     {
-        enum TownMenu { Closed, Farming, Mining, Statistics }
+        enum TownMenu { Closed, Farming, Mining, Troops, Statistics }
         TownMenu _townMenu;
-        readonly RectTransform[] _townPanels = new RectTransform[3];
-        readonly UnityEngine.UI.Image[] _townButtons = new UnityEngine.UI.Image[3];
+        readonly RectTransform[] _townPanels = new RectTransform[4];
+        readonly UnityEngine.UI.Image[] _townButtons = new UnityEngine.UI.Image[4];
         readonly UnityEngine.UI.Image[] _depthButtons = new UnityEngine.UI.Image[World.MaxDepth + 1];
         World _menuWorld;
         Text _cropTarget, _cropCount, _supportsLabel, _historyHeader, _resourceTitle, _dayValues, _populationScale, _resourceScale;
@@ -27,9 +27,9 @@ namespace CrownAndHearth.Game
 
         void BuildTownMenus(RectTransform root, RectTransform toolbar)
         {
-            string[] titles = { "Farming", "Mining", "Statistics" };
-            int[] widths = { 440, 392, 446 };
-            int[] heights = { 356, 208, 396 };
+            string[] titles = { "Farming", "Mining", "Troops", "Statistics" };
+            int[] widths = { 440, 392, 440, 446 };
+            int[] heights = { 356, 208, 330, 396 };
             for (int i = 0; i < titles.Length; i++)
             {
                 var menu = (TownMenu)(i + 1);
@@ -42,7 +42,8 @@ namespace CrownAndHearth.Game
             }
             BuildFarming(_townPanels[0]);
             BuildMining(_townPanels[1]);
-            BuildStatistics(_townPanels[2]);
+            BuildTroops(_townPanels[2]);
+            BuildStatistics(_townPanels[3]);
             ShowTownMenu(TownMenu.Closed);
         }
 
@@ -92,6 +93,34 @@ namespace CrownAndHearth.Game
                 () => { if (_menuWorld != null) _menuWorld.SetMineSupportsRequired(!_menuWorld.RequireMineSupports); });
             _supportsLabel = _supportsButton.GetComponentInChildren<Text>();
             PanelLabel(panel, "SafetyHelp", "With supports required, miners wait for timber before extracting ore from an unshored passage.", 14, 149, 192);
+        }
+
+        Text _troopCounts, _troopMix, _troopCosts, _troopNote;
+        UnityEngine.UI.Slider _troopSlider;
+        UnityEngine.UI.Image _draftButton;
+        UnityEngine.UI.Image _militiaButton;
+
+        void BuildTroops(RectTransform panel)
+        {
+            _troopCounts = PanelLabel(panel, "TroopCounts", "", 17, 42, 92);
+            _troopMix = PanelLabel(panel, "TroopMix", "", 17, 98, 124);
+            var track = MakePanel(panel, "ArcherPercent", Vector2.up, Vector2.one, new Vector2(20, -149), new Vector2(-20, -132));
+            track.GetComponent<UnityEngine.UI.Image>().color = Btn;
+            var knob = MakePanel(track, "Handle", Vector2.zero, Vector2.up, new Vector2(-7, -5), new Vector2(7, 5));
+            var knobImage = knob.GetComponent<UnityEngine.UI.Image>();
+            knobImage.color = BtnOn;
+            _troopSlider = track.gameObject.AddComponent<UnityEngine.UI.Slider>();
+            _troopSlider.targetGraphic = knobImage;
+            _troopSlider.handleRect = knob;
+            _troopSlider.maxValue = 100;
+            _troopSlider.wholeNumbers = true;
+            _troopSlider.onValueChanged.AddListener(value => _menuWorld?.SetArcherPercent((int)value));
+            _draftButton = MakeButton(panel, "", Vector2.up, new Vector2(115, -178), new Vector2(206, 30),
+                () => { if (_menuWorld != null) { _menuWorld.Drafting = !_menuWorld.Drafting; } });
+            _militiaButton = MakeButton(panel, "", Vector2.up, new Vector2(335, -178), new Vector2(206, 30),
+                () => { if (_menuWorld != null) { _menuWorld.MilitiaFights = !_menuWorld.MilitiaFights; } });
+            _troopCosts = PanelLabel(panel, "TroopCosts", "", 14, 198, 272);
+            _troopNote = PanelLabel(panel, "TroopNote", "", 14, 276, 324);
         }
 
         void BuildStatistics(RectTransform panel)
@@ -192,10 +221,30 @@ namespace CrownAndHearth.Game
                     _supportsButton.color = world.RequireMineSupports ? BtnOn : Btn;
                     _supportsLabel.text = world.RequireMineSupports ? "Require supports: On" : "Require supports: Off";
                     break;
+                case TownMenu.Troops:
+                    RefreshTroops(world);
+                    break;
                 case TownMenu.Statistics:
                     RefreshStatistics(world);
                     break;
             }
+        }
+
+        void RefreshTroops(World world)
+        {
+            _troopCounts.text = $"Infantry {world.Infantry}   |   Archers {world.Archers}\nBunks {world.Soldiers}/{world.D.Bunks} · peasants {world.Peasants}";
+            _troopSlider.SetValueWithoutNotify(world.ArcherPercent);
+            _troopMix.text = $"New recruits: Infantry {100 - world.ArcherPercent}%   |   Archers {world.ArcherPercent}%";
+            _draftButton.color = world.Drafting ? BtnOn : Btn;
+            _draftButton.GetComponentInChildren<Text>().text = world.Drafting ? "Training: On" : "Training: Off";
+            _militiaButton.color = world.MilitiaFights ? BtnOn : Btn;
+            _militiaButton.GetComponentInChildren<Text>().text = world.MilitiaFights ? "Militia fights: On" : "Militia fights: Off";
+            string Cost(Troop t) { var parts = new System.Collections.Generic.List<string>(); foreach (var (res, amount) in World.TrainCost(t)) parts.Add($"{amount} {res.ToString().ToLower()}"); return string.Join(", ", parts); }
+            _troopCosts.text = $"Infantry: {Cost(Troop.Infantry)}. Sword and mail.\nArchers: {Cost(Troop.Archer)}. Bow and string.\nOne recruit per barracks every {World.TrainDays} days; each soldier eats half as much again and costs 0.1 gold a day.";
+            int barracks = 0; foreach (var b in world.Blds) if (b.T == "barracks" && b.Served) barracks++;
+            _troopNote.text = barracks == 0 ? "Build a Barracks (Military, 8) beside a road to train troops."
+                : world.Soldiers >= world.D.Bunks ? "Bunks are full: more barracks or the Town Hall hold more."
+                : world.CanAfford(world.NextRecruit) ? $"Next recruit: {World.TroopName(world.NextRecruit)}." : $"Next recruit: {World.TroopName(world.NextRecruit)} (waiting for materials).";
         }
 
         void ChangeResource(int direction)
