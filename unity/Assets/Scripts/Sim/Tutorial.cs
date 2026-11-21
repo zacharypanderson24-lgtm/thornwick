@@ -103,7 +103,7 @@ namespace CrownAndHearth.Sim
                 Body = "One day passes every second. Space pauses; the 1x, 2x and 4x buttons speed things up while you wait for the town to grow.",
                 Goal = "Pause or change the speed", Done = (t, w) => t.SpeedChanged },
             new Step { Id = "road", Title = "Roads", Tool = "road",
-                Body = "Everything you build is in the bar along the bottom, grouped by job: Roads, Housing, Farming, Forestry, Mining and more. " +
+                Body = "Everything you build is in the bar along the bottom, grouped by job: Roads, Housing, Farming, Wood, Hunting, Mining and more. " +
                        "Hover a button to see what it does. Working buildings need a road back to the Town Hall.\n\n" +
                        "Pick Roads (1), press on a tile next to the street and drag: an L-shaped road follows the mouse and is built when you let go. " +
                        "Each tile costs 1 wood. Roads climb hills but not mountains, and cannot go through forest.",
@@ -121,7 +121,7 @@ namespace CrownAndHearth.Sim
                 Body = "Every villager drinks each day. The Town Hall's spring and cistern cover the first homes. Wells, the spring and cisterns feed " +
                        "one supply for every home on a connected road, however far away. If the town drinks more than it pumps, the cisterns run " +
                        "down, homes go short and, after 15 days, people leave.\n\n" +
-                       "Open Water (8) and pick Well: wells go on the blue groundwater patches and share one patch's water. The tip shows what a well adds and whether its patch runs down.",
+                       "Open Water (9) and pick Well: wells go on the blue groundwater patches and share one patch's water. The tip shows what a well adds and whether its patch runs down.",
                 Goal = "Build a well on groundwater", Count = s => s.Wells, By = 1 },
             new Step { Id = "farmland", Title = "Food", Tool = "zoneFarm",
                 Body = "Villagers eat every day; with no food they starve and leave.\n\nOpen Farming (3) and pick Farmland, then drag over fertile soil (the darker, olive ground) anywhere. " +
@@ -134,19 +134,19 @@ namespace CrownAndHearth.Sim
                        "farming first. Use Up and Dn to change who gets hands first; a row in red is short of workers.",
                 Goal = "Open the Workers panel", Done = (t, w) => t.WorkersOpened },
             new Step { Id = "lumber", Title = "Wood", Tool = "zoneWood",
-                Body = "Wood builds everything. Open Forestry (4): build a Woodcutter Lodge beside a road, then drag a Lumber Zone over forest within its shaded work area. " +
+                Body = "Wood builds everything. Open Wood (4): build a Woodcutter Lodge beside a road, then drag a Lumber Zone over forest within its shaded work area. " +
                        "Woodcutters walk out, nearest trees first, fell the marked trees and carry logs home; the lodge sets how many you can have, the zoned trees how many are needed. Felled land turns to stumps, then open ground.\n\n" +
-                       "A Forester (also in Forestry) replants saplings on Lumber-zoned open ground, so a forest can last.",
+                       "A Forester (also in Wood) replants saplings on Lumber-zoned open ground, so a forest can last.",
                 Goal = "Zone 6 Lumber tiles", Count = s => s.Lumber, By = 6 },
             new Step { Id = "sawmill", Title = "Logs into wood", Tool = "sawmill",
-                Body = "Logs must be sawn into wood. The Town Hall saws 1 log a day at half yield; a Sawmill (Forestry, 15 wood) saws 4 a day at full yield. " +
+                Body = "Logs must be sawn into wood. The Town Hall saws 1 log a day at half yield; a Sawmill (Wood, 15 wood) saws 4 a day at full yield. " +
                        "Build one beside a road.",
                 Goal = "Build a Sawmill", Count = s => s.Sawmills, By = 1 },
             new Step { Id = "services", Title = "Crop storage", Tool = "silo",
                 Body = $"Build a Silo (Farming, 3) beside a connected road to store {World.SiloFood} more wheat and {World.SiloFlax} more flax.",
                 Goal = "Build and connect a Silo", Count = s => s.Silos, By = 1 },
             new Step { Id = "stone", Title = "Stone and iron", Tool = "zoneMine",
-                Body = "Open Mining (5). Mining Zones go on rock and on hills and mountains.\n\n" +
+                Body = "Open Mining (6). Mining Zones go on rock and on hills and mountains.\n\n" +
                        "Stone: build a Quarry, then zone rock outcrops or a mountain's edge within its shaded work area; quarries dig hills down and cut into mountains.\n\n" +
                        "Iron lies hidden inside hills and mountains (orange-veined stones on the slopes hint at it). Zone the high ground and a lot at its " +
                        "foot, then place an Iron Mine. Its entrance faces away from the hill and needs the road right at that entrance.",
@@ -166,7 +166,7 @@ namespace CrownAndHearth.Sim
                 Goal = "Press Next" },
             new Step { Id = "land", Title = "Land", Tool = "claim",
                 Body = "You own a 64 x 64 district round the Town Hall: the brighter land. The rest of the 256 x 256 map is yours to see and walk, but not to build or work until you own it.\n\n" +
-                       "Open Land (9) and click a 16 x 16 parcel next to your land to buy it with gold. Each parcel costs a little more than the last.",
+                       "Open Land (L) and click a 16 x 16 parcel next to your land to buy it with gold. Each parcel costs a little more than the last.",
                 Goal = "Claim a parcel of land", Count = s => s.Parcels, By = 1 },
             new Step { Id = "save", Title = "Saving",
                 Body = "Save and Load (top right) keep one settlement on this computer. Hover or click any tile to learn what it is and what it needs.\n\n" +

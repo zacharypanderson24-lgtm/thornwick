@@ -15,7 +15,7 @@ namespace CrownAndHearth.Sim
         public const int StartParcels = (StartDistrict / ParcelSize) * (StartDistrict / ParcelSize);
         /// <summary>Gold for a parcel: this much, plus ParcelCostStep for every parcel already bought beyond the starting district.</summary>
         public const int ParcelBaseCost = 25, ParcelCostStep = 3;
-        public const string NotYours = "That land is not yours yet. Claim the parcel first (Land, 9)";
+        public const string NotYours = "That land is not yours yet. Claim the parcel first (Land, L)";
 
         readonly bool[] _claimed = new bool[ParcelsPerSide * ParcelsPerSide];
         public int ClaimedParcels { get; private set; }

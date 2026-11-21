@@ -362,3 +362,6 @@ unity open unity                                 # then open Assets/Scenes/Settl
 - Recompiling scripts while the game is in Play mode reloads the code and leaves `GameController` without its world (Unity does not
   call `Start()` again), so every frame throws a `NullReferenceException` until Play mode stops. Set Preferences > General > Script
   Changes While Playing to "Recompile After Finished Playing", or stop Play mode before recompiling.
+
+## Build bar by industry
+- Forestry is now **Wood** (4: woodcutter lodge, lumber zone, forester, sawmill) and the hunting lodge has its own **Hunting** button (5). Mining moved to 6, Trade 7, Military 8, Water 9, so the Land tool of the conquest-map branch needs another key. Each industry holds its buildings and zones together. Tutorial, README and tips updated.
