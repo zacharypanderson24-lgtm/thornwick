@@ -191,6 +191,31 @@ namespace CrownAndHearth.Tests
             CollectionAssert.AreEqual(before, after);
         }
 
+        [Test]
+        public void EmploymentAloneDoesNotGenerateGold()
+        {
+            var w = new World(7);
+            Assert.That(w.D.Employed, Is.GreaterThan(0));
+            double gold = w.ResAmt[Res.Gold];
+            w.Tick();
+            Assert.That(w.ResAmt[Res.Gold], Is.EqualTo(gold));
+        }
+
+        [Test]
+        public void WorkingMineDeliversGoldEvenWithFullIronStorage()
+        {
+            var (w, mine) = MineTown(wantOre: true);
+            Assume.That(mine != null, "no suitable mine site");
+            w.CaveInRiskScale = 0;
+            w.ResAmt[Res.Ore] = Defs.Storage;
+            w.ResAmt[Res.Gold] = 100;
+            for (int day = 0; day < 400 && w.OreTaken.Count == 0; day++) Day(w);
+            double extracted = w.OreTaken.Values.Sum();
+            Assert.That(extracted, Is.GreaterThan(0));
+            Assert.That(w.ResAmt[Res.Ore], Is.EqualTo(Defs.Storage));
+            Assert.That(w.ResAmt[Res.Gold], Is.EqualTo(100 + extracted / World.OrePerGold).Within(1e-9));
+        }
+
         [TestCase(0)]
         [TestCase(World.MaxDepth)]
         public void AMineAtTheFootSurveysDrivesAnAditAndBringsUpOre(int depthLimit)
