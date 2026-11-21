@@ -712,6 +712,16 @@ namespace CrownAndHearth.Game
         string PlaceWarning(string type, int x, int y)
         {
             var notes = new List<string>();
+            if (type == "mine")
+            {
+                int sz = PlacementSize(type), face = World.MineFaceAt(x, y, sz);
+                if (face < 0) notes.Add("No hill beside it: iron mines go at the foot of a hill or mountain, or they never find ore");
+                else
+                {
+                    var (ex, ey) = World.EntranceTile(x + (face == 3 ? sz - 1 : 0), y + (face == 0 ? sz - 1 : 0), face);
+                    if (World.Inb(ex, ey) && World.Grid[ey, ex]?.T != "road") notes.Add($"Its entrance faces away from the hill: a road must reach {ex},{ey}");
+                }
+            }
             if (!World.WouldConnect(type, x, y)) notes.Add("No connected road here: it stays idle until a road reaches it");
             int zoned = World.ZonedUnder(type, x, y);
             if (zoned > 0) notes.Add($"It covers {zoned} zoned tile{(zoned == 1 ? "" : "s")}");
@@ -827,7 +837,7 @@ namespace CrownAndHearth.Game
         {
             var w = World;
             if (!w.IsSurveyed(x, y))
-                return w.ZoneMap[y, x] == Zone.Mine ? "Underground: not surveyed yet (a mine's miners will survey it)" : "Underground: unknown. Zone it for mining (Mining, 5) to have it surveyed";
+                return w.ZoneMap[y, x] == Zone.Mine ? "Underground: not surveyed yet (a mine's miners will survey it)" : "Underground: unknown. Zone it for mining (Mining, 6) to have it surveyed";
             var parts = new List<string>();
             for (int l = 1; l <= World.MaxDepth; l++) { double o = w.KnownOre(x, y, l); parts.Add($"band {l} " + (o > 1e-9 ? $"{o:0} ore" : "none")); }
             return "Underground (surveyed): " + string.Join(", ", parts);
@@ -849,6 +859,13 @@ namespace CrownAndHearth.Game
                 }
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "mine") lines.Add(w.MineStatus(b));
+                if ((b.T == "wood" || b.T == "quarry") && b.Served && w.ActiveJobs(b) == 0)
+                    lines.Add(b.T == "wood" ? $"Nothing to fell: drag a Lumber Zone over trees within {WorkR} tiles (Wood, 4)" : $"Nothing to quarry: zone rock within {WorkR} tiles (Mining, 6)");
+                if (b.T == "wood" || b.T == "sawmill" || b.T == "hall")
+                {
+                    bool saw = w.Blds.Any(s => s.T == "sawmill" && s.Served);
+                    lines.Add($"Logs waiting to be sawn: {w.ResAmt[Res.Logs]:0}" + (saw ? "" : ". Build a Sawmill (Wood, 4): the Town Hall saws only 1 a day at half yield"));
+                }
                 if (b.T == "smithery")
                 {
                     lines.Add($"{OrePerMetal} iron ore per metal. Staffed capacity: {SmeltRate * b.Eff:0.##} metal/day.");

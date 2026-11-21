@@ -10,6 +10,8 @@ namespace CrownAndHearth.Sim
 {
     public partial class World
     {
+        bool _sawHinted;   // the one-time hint about unsawn logs (runtime only)
+
         public void Tick()
         {
             // sync
@@ -42,6 +44,12 @@ namespace CrownAndHearth.Sim
             foreach (var b in Blds.Where(b => b.T == "sawmill" && b.Served))
                 if (ResAmt[Res.Logs] > 0) { double c = Math.Min(ResAmt[Res.Logs], SawRate * b.Eff); ResAmt[Res.Logs] -= c; wood += c; }
             if (ResAmt[Res.Logs] > 0) { double c = Math.Min(ResAmt[Res.Logs], HallSaw); ResAmt[Res.Logs] -= c; wood += c * HallYield; }
+
+            if (!_sawHinted && ResAmt[Res.Logs] >= 30 && !Blds.Any(s => s.T == "sawmill" && s.Served))
+            {
+                _sawHinted = true;
+                Events.Add("Logs are piling up. Build a Sawmill (Wood menu): it turns logs into the wood you build with, the Town Hall saws only 1 a day at half yield.");
+            }
 
             // nature: stumps rot, saplings grow
             foreach (var k in StumpT.Keys.ToList())
