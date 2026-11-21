@@ -220,6 +220,9 @@ namespace CrownAndHearth.Sim
             return adit ? 0 : shaft != int.MaxValue && MineCanStart(b, b.Depth + 1, true) ? b.Depth + 1 : -1;
         }
 
+        /// <summary>Whether a miner could haul ore or dig the adit or shaft right now (so not everyone needs to survey).</summary>
+        bool KnownMineWork(Building b) => PickOre(b, out _, out _, out _, out _) || NextDig(b) >= 0;
+
         int UnsurveyedInReach(Building b)
         {
             int n = 0;
@@ -274,10 +277,11 @@ namespace CrownAndHearth.Sim
                     case CrewState.Home:
                     {
                         if (!b.Served || b.Closed > 0) break;
-                        // 1. survey the zone first, so the crew knows what lies inside
+                        // 1. survey the zone, so the crew knows what lies inside. Once something is known to dig or haul, only the first miner
+                        //    keeps surveying and the rest get to work, so ore arrives long before the whole zone is surveyed
                         _used.Clear();
                         foreach (var o in crew) if (o != a && o.St != CrewState.Home && o.Stand >= 0) _used.Add(o.Stand);
-                        if (CrewTarget(b, Deco.None, ai * 7 + Day, _used, a.Path, out a.Tx, out a.Ty, survey: true))
+                        if ((ai == 0 || !KnownMineWork(b)) && CrewTarget(b, Deco.None, ai * 7 + Day, _used, a.Path, out a.Tx, out a.Ty, survey: true))
                         {
                             a.Survey = true; a.Stand = a.Path[a.Path.Count - 1]; a.I = 0; a.Carry = 0;
                             if (a.Path.Count > 1) { a.I = 1; SetPos(a, a.Path[1]); }
@@ -391,18 +395,21 @@ namespace CrownAndHearth.Sim
                 var (ex, ey) = EntranceTile(b.X + (mf == 3 ? b.Sz - 1 : 0), b.Y + (mf == 0 ? b.Sz - 1 : 0), mf);
                 pre = $"Needs a road to the Town Hall along its entrance edge (at {ex},{ey}, facing away from the hill)\n";
             }
-            string s = pre + (b.Adit ? "Adit: driven into the high ground" + (b.AditShored ? ", shored" : $", UNSHORED (needs {AditWood} wood)")
-                     : b.AditProg > 0 ? $"Adit: {100 * b.AditProg / AditWork}% driven" : "Adit: none");
-            s += b.Depth > 0 ? $"\nShaft: level {b.Depth}, {b.Shored} shored" + (b.Shored < b.Depth ? $" (level {b.Shored + 1} needs {SupportWood[b.Shored + 1]} wood)" : "")
-                             : "\nShaft: none";
-            s += $"\nTown shaft limit: {ShaftDepthLimit}";
-            if (b.Depth < ShaftDepthLimit && b.DigProg > 0) s += $". Sinking to level {b.Depth + 1}: {100 * b.DigProg / DigWork[b.Depth + 1]}%";
-            if (b.Closed > 0) s += $"\nClosed for repairs after a cave-in: {b.Closed} days left";
             int unsurveyed = UnsurveyedInReach(b);
-            if (unsurveyed > 0) s += $"\n{unsurveyed} zone tiles still to survey";
-            else if (!HasOreInReach(b))
-                s += TookOreInReach(b) ? "\nWorked out: no ore left in this mine's zone. Zone fresh high ground nearby or remove the mine"
-                                       : "\nNo ore found in this mine's zone. Ore lies in hills and mountains";
+            bool hasOre = HasOreInReach(b);
+            string head = b.Closed > 0 ? $"CLOSED: cave-in, repairs take {b.Closed} more days"
+                : !b.Served ? "Waiting for a road"
+                : !hasOre && unsurveyed > 0 ? $"Surveying: {unsurveyed} zone tiles left to check for ore"
+                : !hasOre ? (TookOreInReach(b) ? "Worked out: no ore left in this mine's zone. Zone fresh high ground nearby or remove the mine"
+                                               : "No ore found in this mine's zone. Ore lies in hills and mountains" + (mf < 0 ? ". This mine has no hill beside it: build iron mines at the foot of a hill or mountain" : ""))
+                : !b.Adit ? (b.AditProg > 0 ? $"Digging the adit into the hill: {100 * b.AditProg / AditWork}%" : "Starting to dig the adit into the hill")
+                : unsurveyed > 0 ? $"Mining ore (and still surveying {unsurveyed} tiles)" : "Mining ore";
+            string s = pre + head + "\n";
+            s += b.Adit ? "Adit (the tunnel into the hill): dug" + (b.AditShored ? " and shored" : $", NOT shored (needs {AditWood} wood)") : "Adit (the tunnel into the hill): not dug yet";
+            s += b.Depth > 0 ? $"\nShaft: level {b.Depth}, {b.Shored} shored" + (b.Shored < b.Depth ? $" (level {b.Shored + 1} needs {SupportWood[b.Shored + 1]} wood)" : "")
+                             : "\nShaft: none (only needed for ore below the entrance)";
+            s += $"\nTown shaft limit: {ShaftDepthLimit} (Mining menu)";
+            if (b.Depth < ShaftDepthLimit && b.DigProg > 0) s += $". Sinking to level {b.Depth + 1}: {100 * b.DigProg / DigWork[b.Depth + 1]}%";
             if (b.CaveIns > 0) s += $"\nCave-ins so far: {b.CaveIns}";
             return s;
         }

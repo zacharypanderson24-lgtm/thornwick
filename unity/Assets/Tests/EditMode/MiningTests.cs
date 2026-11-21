@@ -46,7 +46,7 @@ namespace CrownAndHearth.Tests
         /// wantOre: the nearest lot at the foot of high ground with ore its adit can reach (a road is laid to it).
         /// Otherwise: a lowland lot in the town with no ore at any band anywhere in reach.
         /// </summary>
-        static (World w, Building mine) MineTown(bool wantOre)
+        internal static (World w, Building mine) MineTown(bool wantOre)
         {
             var w = new World(7);
             SimParityTests.Layout(w, 10);
@@ -320,6 +320,7 @@ namespace CrownAndHearth.Tests
             int need = miner.Need, peasants = w.Peasants;
             Assume.That(w.ShoredFor(mine, need), "the miner's workings were never shored");
             w.Events.Clear();
+            w.PopAcc = -3;   // no births today: the assert below is about the cave-in, not about growth
             w.CaveInRiskScale = 1e9;   // the next worker-day underground caves in
             Day(w);
             Assert.AreEqual(1, mine.CaveIns, "exactly one cave-in at this mine");

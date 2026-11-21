@@ -158,10 +158,10 @@ namespace CrownAndHearth.Sim
                 Body = "Open Mining (6). Mining Zones go on rock and on hills and mountains.\n\n" +
                        "Stone: build a Quarry, then zone rock outcrops or a mountain's edge within its shaded work area; quarries dig hills down and cut into mountains.\n\n" +
                        "Iron lies hidden inside hills and mountains (orange-veined stones on the slopes hint at it). Zone the high ground and a lot at its " +
-                       "foot, then place an Iron Mine. Its entrance faces away from the hill and needs the road right at that entrance.",
+                       "foot, then place an Iron Mine there. Its entrance faces away from the hill and needs a road right at it (the tip beside the mouse says where).",
                 Goal = "Zone 6 Mining tiles", Count = s => s.Mining, By = 6 },
             new Step { Id = "underground", Title = "Underground",
-                Body = "Press U for the underground view (U again for deeper bands). A mine's miners first survey its zone: orange shows the ore " +
+                Body = "Press U for the underground view (U again for deeper bands). A mine's miners survey its zone (one keeps surveying while the rest dig and haul once ore is found): orange shows the ore " +
                        "they found (brighter is richer), grey shows nothing, blue is not surveyed yet. Then they drive an adit into the hill and " +
                        "bring the ore up; ore below the mine's floor needs a shaft.",
                 Goal = "Press U", Done = (t, w) => t.UndergroundViewed },
