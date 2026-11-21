@@ -109,7 +109,7 @@ namespace CrownAndHearth.Tests
                     Assert.GreaterOrEqual(a.GenLevel(x, y), 1, $"showing at {x},{y} is not on a hill");
                 }
             Assert.Greater(showings, 20, "too few showings to find ore by");
-            Assert.Less(showings, 600, "showings should be hints, not a carpet");
+            Assert.Less(showings, 600 * (N / 128) * (N / 128), "showings should be hints, not a carpet");
             Assert.Greater(hidden, showings, "most ore has no surface showing");
             for (int l = 1; l <= World.Bands; l++) Assert.Greater(total[l], 0, $"no ore in band {l}");
             Assert.Greater(total[3], total[1], "the deepest band should hold the most ore");
@@ -148,6 +148,7 @@ namespace CrownAndHearth.Tests
         public void MiningZonesGoOnRockShowingsAndOpenGroundButNotForest()
         {
             var w = new World(7);
+            w.ClaimAll();   // the tiles picked below can lie anywhere on the map
             var open = AllTiles().First(t => w.Grid[t.y, t.x] == null && w.DecoMap[t.y, t.x] == Deco.None && !w.IsSolid(t.x, t.y));
             var tree = AllTiles().First(t => w.DecoMap[t.y, t.x] == Deco.Tree);
             var ore = AllTiles().First(t => w.DecoMap[t.y, t.x] == Deco.Ore);

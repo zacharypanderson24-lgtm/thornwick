@@ -109,6 +109,7 @@ namespace CrownAndHearth.Tests
         public void ZoningARectangleZonesEveryAllowedTileBetweenTheTwoCorners()
         {
             var w = new World(7);
+            w.ClaimAll();   // the blocks picked below can lie anywhere on the map
             // an open, unbuilt 6x4 block away from the town
             var (x0, y0) = Enumerable.Range(0, N * N).Select(k => (x: k % N, y: k / N))
                 .First(t => t.x + 5 < N && t.y + 3 < N && Math.Abs(t.x - Defs.Start) > 12 &&

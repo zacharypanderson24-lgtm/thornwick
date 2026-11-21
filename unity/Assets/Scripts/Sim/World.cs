@@ -74,6 +74,7 @@ namespace CrownAndHearth.Sim
             Seed = seed == 0 ? 7 : seed;
             Style = style; Relief = relief;
             if (!createSettlement) return;
+            ClaimStartDistrict();   // a 64 x 64 owned district round the Town Hall (World.Claims.cs); a save brings its own
             GenTerrain();
             GenAquifers();   // groundwater, World.Water.cs
             int c = Start;

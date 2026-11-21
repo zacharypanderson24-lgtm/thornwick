@@ -76,6 +76,7 @@ namespace CrownAndHearth.Sim
             foreach (var (tx, ty) in fp.Tiles())
             {
                 if (!Inb(tx, ty)) return Result.No("Outside the map");
+                if (!Claimed(tx, ty)) return Result.No(NotYours);
                 if (Grid[ty, tx] != null) return Result.No("That tile is already built on");
                 if (HasTree(tx, ty)) return Result.No(TreeMsg);
                 if (IsSolid(tx, ty))
@@ -103,6 +104,7 @@ namespace CrownAndHearth.Sim
         public Result Remove(int x, int y)
         {
             if (!Inb(x, y)) return Result.No("Outside the map");
+            if (!Claimed(x, y)) return Result.No(NotYours);
             var b = Grid[y, x];
             int k = Tk(x, y);
             if (b != null)
@@ -137,6 +139,7 @@ namespace CrownAndHearth.Sim
             foreach (var (x, y) in path)
             {
                 if (!Inb(x, y)) return Result.No("Outside the map", n);
+                if (!Claimed(x, y)) return Result.No(NotYours, n);
                 var g = Grid[y, x];
                 if (g != null && g.T == "road") continue;
                 if (g != null) return Result.No("A building is in the way", n);
@@ -173,6 +176,7 @@ namespace CrownAndHearth.Sim
         {
             if (kind == Zone.Comm) return Result.No("Place a market with the build tool.");
             if (!Inb(x, y)) return Result.No("Outside the map");
+            if (!Claimed(x, y)) return Result.No(NotYours);
             if (Grid[y, x] != null) return ZoneMap[y, x] == kind ? Result.Yes() : Result.No("That tile is already built on");
             var dc = DecoMap[y, x];
             if (kind == Zone.Wood)

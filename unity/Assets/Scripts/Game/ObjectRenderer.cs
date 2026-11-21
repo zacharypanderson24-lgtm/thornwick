@@ -20,15 +20,17 @@ namespace CrownAndHearth.Game
 
         public void Init(ArtLibrary art, Material mat) { _art = art; _mat = mat; _crops = new FarmCropArt(); }
 
-        public void Build(World w, int rot)
+        /// <summary>Build the sprites for the block of view tiles `win` only (the map is 256 x 256: the part near the camera is enough).</summary>
+        public void Build(World w, int rot, RectInt win)
         {
             _used = 0;
             _fields.Clear();
             _cropDay = w.Day;
             var fields = w.FarmFields();
-            for (int y = 0; y < N; y++)
-                for (int x = 0; x < N; x++)
+            for (int vy = win.yMin; vy < win.yMax; vy++)
+                for (int vx = win.xMin; vx < win.xMax; vx++)
                 {
+                    var wt = IsoView.FromView(vx, vy, rot); int x = wt.x, y = wt.y;
                     var b = w.Grid[y, x];
                     if (b != null)
                     {

@@ -49,6 +49,7 @@ namespace CrownAndHearth.Sim
         static (List<Ridge>, List<Massif>) RangeLayout(int seed, Relief relief)
         {
             var spec = SpecOf(relief);
+            int scale = Math.Max(1, N / 128);   // a range is as long as the map is wide and massifs fill area, so a bigger map gets proportionally more of them
             int n = 0;
             double Rnd() => Noise.Hash2(n++, 41, seed + 1300);
             var ridges = new List<Ridge>(); var massifs = new List<Massif>();
@@ -58,7 +59,7 @@ namespace CrownAndHearth.Sim
                 foreach (var r in ridges) foreach (var p in r.Pts) best = Math.Min(best, Noise.Hypot(p[0] - x, p[1] - y));
                 return best;
             }
-            for (int k = 0; k < spec.Ranges; k++)
+            for (int k = 0; k < spec.Ranges * scale; k++)
                 for (int attempt = 0; attempt < 300; attempt++)
                 {
                     double ang = Rnd() * Math.PI, dx = Math.Cos(ang), dy = Math.Sin(ang), nx = -dy, ny = dx;
@@ -94,7 +95,7 @@ namespace CrownAndHearth.Sim
                     ridges.Add(r);
                     break;
                 }
-            for (int k = 0; k < spec.Massifs; k++)
+            for (int k = 0; k < spec.Massifs * scale * scale; k++)
                 for (int attempt = 0; attempt < 300; attempt++)
                 {
                     double cx = 10 + Rnd() * (N - 20), cy = 10 + Rnd() * (N - 20), rad = spec.MassifR * (0.8 + Rnd() * 0.4);
