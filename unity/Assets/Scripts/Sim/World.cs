@@ -28,11 +28,11 @@ namespace CrownAndHearth.Sim
 
         public readonly Dictionary<Res, double> ResAmt = new Dictionary<Res, double>
         {
-            { Res.Food, 60 }, { Res.Wood, 120 }, { Res.Logs, 20 }, { Res.Stone, 30 }, { Res.Ore, 10 }, { Res.Gold, 80 }, { Res.Flax, 0 },
+            { Res.Food, 60 }, { Res.Wood, 120 }, { Res.Logs, 20 }, { Res.Stone, 30 }, { Res.Ore, 10 }, { Res.Gold, 80 }, { Res.Flax, 0 }, { Res.Metal, 0 },
         };
         public readonly Dictionary<Res, double> Rate = new Dictionary<Res, double>
         {
-            { Res.Food, 0 }, { Res.Wood, 0 }, { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 }, { Res.Gold, 0 }, { Res.Flax, 0 },
+            { Res.Food, 0 }, { Res.Wood, 0 }, { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 }, { Res.Gold, 0 }, { Res.Flax, 0 }, { Res.Metal, 0 },
         };
         public int Peasants = 6, Soldiers, Trained, Day = 1;
         public double PopAcc;

@@ -101,7 +101,7 @@ namespace CrownAndHearth.Game
             _water = MakeStat(stats, "Water");
             var waterCard = (RectTransform)_water.transform.parent;
             AddHover(waterCard.gameObject, on => { if (_world != null) ShowTip(on, waterCard, "Drinking water", WaterSummary(_world), "Build wells and cisterns in Water (9)."); });
-            foreach (Res resource in new[] { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Flax, Res.Gold })
+            foreach (Res resource in new[] { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Metal, Res.Flax, Res.Gold })
                 _stock[resource] = MakeStat(stats, resource.ToString());
 
             var top = MakePanel(root, "TimeAndSession", Vector2.one, Vector2.one,

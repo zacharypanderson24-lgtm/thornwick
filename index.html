@@ -140,6 +140,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
       <div class="stat" title="Wood"><span class="sw" style="background:#8a5a34"></span><span class="val" id="v-wood">0</span><span class="rate" id="r-wood"></span></div>
       <div class="stat" title="Logs (a sawmill turns them into wood)"><span class="sw" style="background:#b98a52"></span><span class="val" id="v-logs">0</span><span class="rate" id="r-logs"></span></div>
       <div class="stat" title="Stone"><span class="sw" style="background:#9fa2ad"></span><span class="val" id="v-stone">0</span><span class="rate" id="r-stone"></span></div>
+      <div class="stat" title="Refined metal"><span class="sw" style="background:#afb9c9"></span><span class="val" id="v-metal">0</span><span class="rate" id="r-metal"></span></div>
       <div class="stat" title="Iron ore"><span class="sw" style="background:#e0873a"></span><span class="val" id="v-ore">0</span><span class="rate" id="r-ore"></span></div>
       <div class="stat" title="Gold"><span class="sw" style="background:#f2c94c"></span><span class="val" id="v-gold">0</span><span class="rate" id="r-gold"></span></div>
     </div>
@@ -194,32 +195,34 @@ const N = 128;                    // a city map is N x N tiles (older 40x40 and 
 const OLD_N = 40, START = (N >> 1);   // START: the tile column/row the Town Hall is centred on
 const COST = {
   road: { wood: 1 }, house: { wood: 10 }, farm: { wood: 8 }, wood: { wood: 6 }, quarry: { wood: 10 }, mine: { wood: 12 },
-  market: { wood: 12 }, sawmill: { wood: 15 }, forester: { wood: 8 }, well: { wood: 5, stone: 5 }, barracks: { wood: 20, stone: 15, gold: 20 }
+  market: { wood: 12 }, smithery: { wood: 20, stone: 15 }, sawmill: { wood: 15 }, forester: { wood: 8 }, well: { wood: 5, stone: 5 }, barracks: { wood: 20, stone: 15, gold: 20 }
 };
 const NAMES = {
-  road: 'Dirt Road', house: 'Timber House', farm: 'Farm', wood: 'Woodcutter Lodge', quarry: 'Quarry', mine: 'Iron Mine', market: 'Market', sawmill: 'Sawmill', forester: 'Forester',
+  road: 'Dirt Road', house: 'Timber House', farm: 'Farm', wood: 'Woodcutter Lodge', quarry: 'Quarry', mine: 'Iron Mine', market: 'Market', sawmill: 'Sawmill', smithery: 'Smithery', forester: 'Forester',
   well: 'Well', barracks: 'Barracks', hall: 'Town Hall',
   zoneRes: 'Housing Zone', zoneFarm: 'Farm Zone', zoneComm: 'Commerce Zone', zoneWood: 'Lumber Zone', zoneMine: 'Mining Zone'
 };
 const ZONE_NAMES = { res: 'Housing zone', farm: 'Farm zone', comm: 'Commerce zone', wood: 'Lumber zone', mine: 'Mining zone' };
 const ZONE_KINDS = ['res', 'farm', 'comm', 'wood', 'mine'];
-const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2, sawmill: 3, forester: 2 };
+const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2, sawmill: 3, smithery: 3, forester: 2 };
 const HOUSE_CAP = [0, 4, 6];
 // Lumber chain: woodcutters fell designated trees into logs; a sawmill turns 1 log into 1 plank (wood). The Town Hall can pit-saw 1 log/tick at half yield.
 const SAW_RATE = 4, HALL_SAW = 1, HALL_YIELD = 0.5, STUMP_DAYS = 8;
 // Foresters replant open Lumber-zone tiles: one sapling per PLANT_EVERY days at full staffing, and a sapling grows into a tree after SAPLING_DAYS (three game years of 365 days; one day = one second at 1x).
 const PLANT_EVERY = 4, SAPLING_DAYS = 3 * 365, FORESTER_R = 4;
+const ORE_PER_METAL = 2, SMELT_RATE = 2;
 const BUNKS = 6, HALL_CAP = 6, WELL_R = 4, WORK_R = 3, MARKET_R = 5, STORAGE = 400;
 const NB = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const COST2 = { house: { wood: 30 }, farm: { wood: 24 }, market: { wood: 32 } };
+const placementSize = type => type === 'hall' ? 3 : (type === 'barracks' || type === 'smithery') ? 2 : 1;
 const costOf = (type, sz) => (sz === 2 && COST2[type]) ? COST2[type] : (COST[type] || {});
 const capOf = b => b.sz === 2 ? [0, 14, 20][b.lvl] : HOUSE_CAP[b.lvl];
 // Trades: which job buildings belong to which trade. Villagers fill jobs in priority order (default: food first), so each building ends up with its own
 // worker count (b.workers) and staffing share (b.eff = workers / jobs). Output scales with b.eff, never with one global ratio.
-const TRADE_OF = { farm: 'farming', wood: 'timber', forester: 'timber', sawmill: 'woodwork', quarry: 'quarrying', mine: 'mining', market: 'trade' };
-const TRADES = ['farming', 'timber', 'woodwork', 'quarrying', 'mining', 'trade'];
-const TRADE_NAMES = { farming: 'Farming', timber: 'Timber (felling, planting)', woodwork: 'Woodworking (sawmill)', quarrying: 'Quarrying', mining: 'Mining', trade: 'Trade (market)' };
-const jobsOf = b => Math.round((JOBS[b.t] || 0) * (b.sz === 2 ? 2.5 : 1));
+const TRADE_OF = { farm: 'farming', wood: 'timber', forester: 'timber', sawmill: 'woodwork', quarry: 'quarrying', mine: 'mining', smithery: 'smithing', market: 'trade' };
+const TRADES = ['farming', 'timber', 'woodwork', 'quarrying', 'mining', 'trade', 'smithing'];
+const TRADE_NAMES = { farming: 'Farming', timber: 'Timber (felling, planting)', woodwork: 'Woodworking (sawmill)', quarrying: 'Quarrying', mining: 'Mining', smithing: 'Smithing', trade: 'Trade (market)' };
+const jobsOf = b => Math.round((JOBS[b.t] || 0) * (b.sz === 2 && b.t !== 'smithery' ? 2.5 : 1));
 const foodOf = b => 3 * (b.sz === 2 ? 2.6 : 1);
 const marketR = b => b.sz === 2 ? 7 : 5;
 const nameOf = b => b.sz === 2 ? ({ house: 'Large House', farm: 'Large Farm', market: 'Bazaar' }[b.t] || NAMES[b.t]) : NAMES[b.t];
@@ -415,7 +418,7 @@ function createWorld(seed) {
   seed = seed || 7;
   const S = {
     seed, grid: [], deco: [], zone: [], fert: [], blds: [], hall: null,
-    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, gold: 0 }, hv: null, rockAmt: {}, elev: {}, stumpT: {}, dig: {}, oreLeft: {}, v2: true,
+    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, metal: 0, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, metal: 0, gold: 0 }, hv: null, rockAmt: {}, elev: {}, stumpT: {}, dig: {}, oreLeft: {}, v2: true,
     dem: { res: 0, farm: 0, comm: 0, wood: 0, mine: 0 }, note: { res: '', farm: '', comm: '', wood: '', mine: '' }, flags: {},
     peasants: 6, popAcc: 0, soldiers: 0, day: 1, drafting: true, starving: false, trained: 0, d: null
   };
@@ -465,7 +468,7 @@ function growSave(o) {
 function loadWorld(str) {
   let o = JSON.parse(str); if (!o || !o.blds || !o.deco) return null;
   o = growSave(o);
-  const S = Object.assign({}, o); S.grid = []; S.hall = null; S.d = null;
+  const S = Object.assign({}, o); S.res.metal ??= 0; S.rate.metal ??= 0; S.grid = []; S.hall = null; S.d = null;
   for (let y = 0; y < N; y++) S.grid.push(Array(N).fill(null));
   // Upgrade legacy one-tile barracks only when their 2x2 footprint is clear.
   // Crowded old saves keep the original 1x1 building instead of overwriting neighbours.
@@ -511,7 +514,7 @@ function pickHutVar(S, x, y) {
   return 1 + start;
 }
 function addBld(S, t, x, y, sz) {
-  const b = { t, x, y, sz: sz || (t === 'hall' ? 3 : t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
+  const b = { t, x, y, sz: sz || placementSize(t), prog: 0, served: false, lvl: 1 };
   if (t === 'house') b.var = pickHutVar(S, x, y);
   S.blds.push(b);
   for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (S.dig) delete S.dig[j * N + i]; if (S.elev) delete S.elev[j * N + i]; if (S.oreLeft) delete S.oreLeft[j * N + i]; if (S.sapT) delete S.sapT[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
@@ -548,7 +551,7 @@ function canAfford(S, type) {
   return { ok: true };
 }
 function canPlace(S, type, x, y) {
-  const footprint = { x, y, sz: type === 'hall' ? 3 : type === 'barracks' ? 2 : 1, t: type };
+  const footprint = { x, y, sz: placementSize(type), t: type };
   for (const [tx, ty] of tilesOf(footprint)) {
     if (!inb(tx, ty)) return { ok: false, reason: 'Outside the map' };
     if (!claimed(S, tx, ty)) return { ok: false, reason: 'That land is not yours yet' };
@@ -557,6 +560,7 @@ function canPlace(S, type, x, y) {
     if (isSolid(S, tx, ty))
       return { ok: false, reason: isMountain(S, tx, ty) ? 'You cannot build on a mountain. Hills and flat ground are fine' : pitDepth(S, tx, ty) > 0 ? 'A quarry pit is in the way. Pits cannot be filled in' : 'Ore blocks this tile. Zone it for mining to clear it' };
   }
+  if (type === 'smithery' && !nextToRoad(S, footprint)) return { ok: false, reason: 'Smithery must touch a road' };
   if (type === 'barracks' && !nextToRoad(S, footprint)) return { ok: false, reason: 'Barracks must touch a road' };
   return canAfford(S, type);
 }
@@ -1165,7 +1169,7 @@ function refreshD(S, C, prioSig) {
     C.tot = { civ, bunks, jobs, markets, houseCap, covCap };
   }
   // Fill the jobs: villagers go to trades in priority order, and within a trade to the oldest buildings first.
-  const prio = (Array.isArray(S.prio) && S.prio.length === TRADES.length && TRADES.every(t => S.prio.includes(t))) ? S.prio : TRADES;
+  const prio = Array.isArray(S.prio) ? [...new Set([...S.prio.filter(t => TRADES.includes(t)), ...TRADES])] : TRADES;
   let avail = S.peasants; const work = {};
   for (const t of prio) work[t] = { workers: 0, jobs: 0, blds: 0, short: 0 };
   for (const b of L.jobs) { b.workers = 0; b.eff = 0; }
@@ -1430,6 +1434,14 @@ schedule('economy', 'economy', 1, 0, (S, T) => {
   const trade = d.markets ? 0.04 * S.peasants * d.cov * d.mkEff : 0;
   const eat = (S.peasants + S.soldiers * 1.5) * 0.2;
   S.res.food += T.food - eat; S.res.wood += T.wood; S.res.stone += T.stone; S.res.ore += T.ore;
+  for (const b of listOf(cacheOf(S), 'smithery')) {
+    if (!b.served) continue;
+    const room = STORAGE - S.res.metal;
+    if (room <= 0 || S.res.ore <= 0) break;
+    const metal = Math.min(room, SMELT_RATE * b.eff, S.res.ore / ORE_PER_METAL);
+    S.res.ore -= metal * ORE_PER_METAL;
+    S.res.metal += metal;
+  }
   S.res.gold += T.employed * 0.12 + trade - S.soldiers * 0.1;
   S.starving = false;
   if (S.res.food <= 0) {
@@ -1478,6 +1490,7 @@ for (let i = 2; i <= 8; i++) addSlot('house_1_v' + i, 'Peasant hut variation ' +
 addSlot('house_2', 'Cottage (level 2)', 'Buildings (1 tile)', 1, 4, 'object', 'The same footprint as the hut but taller and tidier: fieldstone lower walls, cream plaster and timber framing above, a red clay-tile roof, a stone chimney, a glazed window and a small flower box. A well-kept home.');
 addSlot('farm', 'Farm', 'Buildings (1 tile)', 1, 4, 'object', 'A tilled field filling the tile: furrow rows in golden yellow and brown with green sprouts, a low wooden fence border, and a tiny red-brown timber barn with a hay door in one back corner.');
 addSlot('wood', 'Woodcutter lodge', 'Buildings (1 tile)', 1, 4, 'object', 'A small log cabin of dark round logs with a mossy green plank roof, an axe stuck in a chopping stump by the door, and a neat stack of cut logs beside it.');
+addSlot('smithery', 'Smithery', 'Buildings (2 tiles)', 2, 4, 'object', 'A timber and plaster workshop with a slate roof, a stone chimney, a glowing forge, and an anvil.');
 addSlot('sawmill', 'Sawmill', 'Buildings (1 tile)', 1, 4, 'object', 'A small open timber sawmill shed with a slate-grey roof, a big round saw blade and a trestle, a pile of logs on one side and neat stacks of cut pale planks on the other.');
 addSlot('forester', 'Forester lodge', 'Buildings (1 tile)', 1, 4, 'object', 'A small log cabin with a moss-green plank roof, a wheelbarrow of young saplings and a spade by the door, and a bundle of tied seedlings leaning on the wall.');
 addSlot('quarry', 'Quarry', 'Buildings (1 tile)', 1, 4, 'object', 'A shallow pit cut into pale grey rock, cut stone blocks stacked at the edge, a wooden hoist with rope, and a small hand cart. Light grey dust.');
@@ -2137,6 +2150,7 @@ function defaultSprite(name) {
   if ((m = /^(grass|grassfert|tree|rock|ore)_(\d)$/.exec(name))) return ({ grass: SPR.grass, grassfert: SPR.grassF, tree: SPR.tree, rock: SPR.rock, ore: SPR.ore })[m[1]][+m[2]];
   if (name === 'house_1') return SPR.house1; if (name === 'house_2') return SPR.house2;
   if (name === 'manor_1') return SPR.manor[0]; if (name === 'manor_2') return SPR.manor[1];
+  if (name === 'smithery') return SPR.barracks; // Placeholder until packaged artwork loads.
   return SPR[name];
 }
 function setRot(r) {
@@ -2158,6 +2172,7 @@ const TOOLS = [
   { id: 'inspect', label: 'Look', key: '1' },
   // Construction: things you place yourself, one at a time.
   { id: 'road', label: 'Road', key: '2', cat: 'build' }, { id: 'well', label: 'Well', key: '8', cat: 'build' }, { id: 'sawmill', label: 'Sawmill', key: 'x', cat: 'build' },
+  { id: 'smithery', label: 'Smithery', key: 'm', cat: 'build' },
   { id: 'forester', label: 'Forester', key: 'f', cat: 'build' }, { id: 'barracks', label: 'Barracks', key: '9', cat: 'build' },
   // Zoning: paint an area and buildings grow there by themselves.
   { id: 'zoneRes', label: 'Housing', key: '3', cat: 'zone' }, { id: 'zoneFarm', label: 'Farmland', key: '4', cat: 'zone' }, { id: 'zoneComm', label: 'Commerce', key: '5', cat: 'zone' },
@@ -2188,7 +2203,7 @@ function iconFor(id) {
     g.drawImage(SPR.grass[0], 0, -8); g.drawImage(SPR.sawmill, 0, -8);
   } else if (id === 'cat-zone') {
     g.drawImage(SPR.grass[0], 0, -8); g.drawImage(ZSPR('res'), 0, -8); g.drawImage(SPR.house1, 0, -8);
-  } else if (id === 'barracks') {
+  } else if (id === 'barracks' || id === 'smithery') {
     const sprite = spriteFor(id, null, 0);
     g.drawImage(sprite, 0, 0, sprite.width, sprite.height, 0, -3, 32, 44);
   } else {
@@ -2735,8 +2750,8 @@ function draw() {
     else {
       const c = canPlace(S, tool, hover.x, hover.y);
       ctx.globalAlpha = 0.7;
-      if (tool === 'barracks' || tool === 'hall') {
-        const footprint = { x: hover.x, y: hover.y, sz: tool === 'hall' ? 3 : 2, t: tool, lvl: 1 };
+      if (placementSize(tool) > 1) {
+        const footprint = { x: hover.x, y: hover.y, sz: placementSize(tool), t: tool, lvl: 1 };
         const views = tilesOf(footprint).filter(([x, y]) => inb(x, y)).map(([x, y]) => { const q = geo(x, y); return [q.sx, q.sy - q.base]; });
         const corner = views.reduce((best, pt) => (!best || pt[1] > best[1]) ? pt : best, null);
         const gs = spriteFor(tool, footprint, 0);
@@ -2762,6 +2777,7 @@ function updateHint() {
   else if (tool === 'zoneWood') t = 'Drag over forest to mark trees for felling. Woodcutters near a road cut them into logs and the land is left clear to build on. Logs need a sawmill. Also paint open ground next to a forester so it replants the woodlot.';
   else if (tool === 'zoneMine') t = 'Drag over rock to mark it for quarrying. Stone is limited and never grows back. Mountains hollow out but stay; hills dig down into pits.';
   else if (tool === 'forester') t = 'Place a forester beside a road, then paint a Lumber zone over open ground within 4 tiles. It plants saplings there; they grow into trees for woodcutters.';
+  else if (tool === 'smithery') t = 'Place a 2×2 Smithery beside a road. Workers smelt iron ore into metal.';
   else if (tool === 'sawmill') t = 'Place a sawmill beside a road. It turns logs into wood. Without one, the Town Hall saws slowly at half yield.';
   else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings only grow on zone tiles that touch a road, and their doors face it.';
   const el = $('hint'); if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
@@ -2773,7 +2789,7 @@ function crewLine(b) {
 function workLine(b) { return 'Workers: ' + (b.workers || 0) + '/' + jobsOf(b); }
 function updateHUD() {
   const d = S.d || recalc(S);
-  for (const k of ['food', 'wood', 'logs', 'stone', 'ore', 'gold']) {
+  for (const k of ['food', 'wood', 'logs', 'stone', 'ore', 'metal', 'gold']) {
     $('v-' + k).textContent = Math.floor(S.res[k]);
     const r = $('r-' + k); r.textContent = fmtRate(S.rate[k]); r.className = 'rate ' + (S.rate[k] > 0.05 ? 'up' : S.rate[k] < -0.05 ? 'down' : '');
   }
@@ -2850,6 +2866,8 @@ function describe(t) {
     let open = 0, grow = 0; for (let j = b.y - FORESTER_R; j <= b.y + FORESTER_R; j++) for (let i = b.x - FORESTER_R; i <= b.x + FORESTER_R; i++) if (inb(i, j) && S.zone[j][i] === 'wood') { if (S.deco[j][i] === 'sapling') grow++; else if (!S.deco[j][i] && !S.grid[j][i]) open++; }
     L.push(workLine(b) + ' · ' + open + ' open Lumber tiles in reach · ' + grow + ' saplings growing', open ? 'Plants a sapling every ' + (PLANT_EVERY / Math.max(0.01, b.eff || 0)).toFixed(0) + ' days at current staffing. Saplings take ' + (SAPLING_DAYS / 365) + ' years to become trees.' : 'Paint a Lumber zone over open ground within ' + FORESTER_R + ' tiles for it to plant.');
   }
+  if (b.t === 'smithery') L.push(workLine(b) + ' · capacity ' + (SMELT_RATE * (b.eff || 0)).toFixed(1) + ' metal per tick',
+    ORE_PER_METAL + ' iron ore per metal · Stockpile: ' + Math.floor(S.res.ore) + ' ore, ' + Math.floor(S.res.metal) + '/' + STORAGE + ' metal');
   if (b.t === 'sawmill') L.push(workLine(b) + ' · saws ' + (b.served ? (SAW_RATE * (b.eff || 0)).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
   if (b.t === 'mine') {
     let left = 0, n = 0; for (let j = b.y - 3; j <= b.y + 3; j++) for (let i = b.x - 3; i <= b.x + 3; i++) if (inb(i, j) && S.deco[j][i] === 'ore') { n++; left += oreLeft(S, i, j); }

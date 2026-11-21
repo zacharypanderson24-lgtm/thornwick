@@ -10,6 +10,14 @@ function snapshot(sim, S) {
   const crews = []; for (const b of S.blds) if (sim.CREW_KIND[b.t]) crews.push([idx.get(b), sim.crewOf(b).map(a => [a.st, a.x, a.y, a.px, a.py, a.i, a.t, a.carry, a.tx, a.ty, a.stand, a.path && a.path.length])]);
   const folk = sim.folkOf(S).map(w => [w.id, w.st, w.x, w.y, w.px, w.py, w.i, w.t, w.v, idx.get(w.home), w.path && w.path.length]);
   const dd = { civ: d.civ, bunks: d.bunks, jobs: d.jobs, idle: d.idle, employed: d.employed, mkEff: d.mkEff, markets: d.markets, houseCap: d.houseCap, covCap: d.covCap, cov: d.cov, ratio: d.ratio, work: d.work, prio: d.prio, conn: Array.from(d.conn).reduce((h, v, i) => v ? (Math.imul(h, 31) + i) | 0 : h, 7) };
+  // The frozen simulation predates smelting. Compare the original systems
+  // in worlds where the new industry has not been used.
+  if (!S.blds.some(b => b.t === 'smithery') && !o.res.metal && !o.rate.metal) {
+    delete o.res.metal; delete o.rate.metal;
+    if (o.prio) o.prio = o.prio.filter(t => t !== 'smithing');
+    dd.prio = dd.prio.filter(t => t !== 'smithing');
+    dd.work = { ...dd.work }; delete dd.work.smithing;
+  }
   return canon({ o, crews, folk, dd, dem: S.dem, note: S.note });
 }
 function firstDiff(a, b) { let i = 0; while (i < a.length && a[i] === b[i]) i++; return { at: i, a: a.slice(Math.max(0, i - 120), i + 120), b: b.slice(Math.max(0, i - 120), i + 120) }; }
@@ -32,7 +40,7 @@ function act(sim, S, R, N) {
     return ['zone', kind, x, y, w, h, ok];
   }
   if (r < 0.70) { const t = ['well', 'market', 'sawmill', 'forester', 'barracks'][pick(5)], [x, y] = near(); S.res.wood = Math.max(S.res.wood, 80); S.res.stone = Math.max(S.res.stone, 40); S.res.gold = Math.max(S.res.gold, 40); const res = sim.place(S, t, x, y); return ['place', t, x, y, res.ok]; }
-  if (r < 0.76) { const p = (S.d.prio).slice(), a = pick(p.length - 1); [p[a], p[a + 1]] = [p[a + 1], p[a]]; S.prio = p; sim.recalc(S); return ['prio', p.join()]; }
+  if (r < 0.76) { const p = S.d.prio.filter(t => t !== 'smithing'), a = pick(p.length - 1); [p[a], p[a + 1]] = [p[a + 1], p[a]]; S.prio = p; sim.recalc(S); return ['prio', p.join()]; }
   if (r < 0.79) { S.drafting = !S.drafting; return ['draft']; }
   if (r < 0.85) { const [x, y] = near(); const res = sim.remove(S, x, y); return ['clear', x, y, res.ok]; }
   if (r < 0.90) { sim.recalc(S); return ['recalc']; }

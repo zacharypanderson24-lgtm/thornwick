@@ -4,32 +4,34 @@ const N = 128;                    // a city map is N x N tiles (older 40x40 and 
 const OLD_N = 40, START = (N >> 1);   // START: the tile column/row the Town Hall is centred on
 const COST = {
   road: { wood: 1 }, house: { wood: 10 }, farm: { wood: 8 }, wood: { wood: 6 }, quarry: { wood: 10 }, mine: { wood: 12 },
-  market: { wood: 12 }, sawmill: { wood: 15 }, forester: { wood: 8 }, well: { wood: 5, stone: 5 }, barracks: { wood: 20, stone: 15, gold: 20 }
+  market: { wood: 12 }, smithery: { wood: 20, stone: 15 }, sawmill: { wood: 15 }, forester: { wood: 8 }, well: { wood: 5, stone: 5 }, barracks: { wood: 20, stone: 15, gold: 20 }
 };
 const NAMES = {
-  road: 'Dirt Road', house: 'Timber House', farm: 'Farm', wood: 'Woodcutter Lodge', quarry: 'Quarry', mine: 'Iron Mine', market: 'Market', sawmill: 'Sawmill', forester: 'Forester',
+  road: 'Dirt Road', house: 'Timber House', farm: 'Farm', wood: 'Woodcutter Lodge', quarry: 'Quarry', mine: 'Iron Mine', market: 'Market', sawmill: 'Sawmill', smithery: 'Smithery', forester: 'Forester',
   well: 'Well', barracks: 'Barracks', hall: 'Town Hall',
   zoneRes: 'Housing Zone', zoneFarm: 'Farm Zone', zoneComm: 'Commerce Zone', zoneWood: 'Lumber Zone', zoneMine: 'Mining Zone'
 };
 const ZONE_NAMES = { res: 'Housing zone', farm: 'Farm zone', comm: 'Commerce zone', wood: 'Lumber zone', mine: 'Mining zone' };
 const ZONE_KINDS = ['res', 'farm', 'comm', 'wood', 'mine'];
-const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2, sawmill: 3, forester: 2 };
+const JOBS = { farm: 4, wood: 3, quarry: 3, mine: 3, market: 2, sawmill: 3, smithery: 3, forester: 2 };
 const HOUSE_CAP = [0, 4, 6];
 // Lumber chain: woodcutters fell designated trees into logs; a sawmill turns 1 log into 1 plank (wood). The Town Hall can pit-saw 1 log/tick at half yield.
 const SAW_RATE = 4, HALL_SAW = 1, HALL_YIELD = 0.5, STUMP_DAYS = 8;
 // Foresters replant open Lumber-zone tiles: one sapling per PLANT_EVERY days at full staffing, and a sapling grows into a tree after SAPLING_DAYS (three game years of 365 days; one day = one second at 1x).
 const PLANT_EVERY = 4, SAPLING_DAYS = 3 * 365, FORESTER_R = 4;
+const ORE_PER_METAL = 2, SMELT_RATE = 2;
 const BUNKS = 6, HALL_CAP = 6, WELL_R = 4, WORK_R = 3, MARKET_R = 5, STORAGE = 400;
 const NB = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const COST2 = { house: { wood: 30 }, farm: { wood: 24 }, market: { wood: 32 } };
+const placementSize = type => type === 'hall' ? 3 : (type === 'barracks' || type === 'smithery') ? 2 : 1;
 const costOf = (type, sz) => (sz === 2 && COST2[type]) ? COST2[type] : (COST[type] || {});
 const capOf = b => b.sz === 2 ? [0, 14, 20][b.lvl] : HOUSE_CAP[b.lvl];
 // Trades: which job buildings belong to which trade. Villagers fill jobs in priority order (default: food first), so each building ends up with its own
 // worker count (b.workers) and staffing share (b.eff = workers / jobs). Output scales with b.eff, never with one global ratio.
-const TRADE_OF = { farm: 'farming', wood: 'timber', forester: 'timber', sawmill: 'woodwork', quarry: 'quarrying', mine: 'mining', market: 'trade' };
-const TRADES = ['farming', 'timber', 'woodwork', 'quarrying', 'mining', 'trade'];
-const TRADE_NAMES = { farming: 'Farming', timber: 'Timber (felling, planting)', woodwork: 'Woodworking (sawmill)', quarrying: 'Quarrying', mining: 'Mining', trade: 'Trade (market)' };
-const jobsOf = b => Math.round((JOBS[b.t] || 0) * (b.sz === 2 ? 2.5 : 1));
+const TRADE_OF = { farm: 'farming', wood: 'timber', forester: 'timber', sawmill: 'woodwork', quarry: 'quarrying', mine: 'mining', smithery: 'smithing', market: 'trade' };
+const TRADES = ['farming', 'timber', 'woodwork', 'quarrying', 'mining', 'trade', 'smithing'];
+const TRADE_NAMES = { farming: 'Farming', timber: 'Timber (felling, planting)', woodwork: 'Woodworking (sawmill)', quarrying: 'Quarrying', mining: 'Mining', smithing: 'Smithing', trade: 'Trade (market)' };
+const jobsOf = b => Math.round((JOBS[b.t] || 0) * (b.sz === 2 && b.t !== 'smithery' ? 2.5 : 1));
 const foodOf = b => 3 * (b.sz === 2 ? 2.6 : 1);
 const marketR = b => b.sz === 2 ? 7 : 5;
 const nameOf = b => b.sz === 2 ? ({ house: 'Large House', farm: 'Large Farm', market: 'Bazaar' }[b.t] || NAMES[b.t]) : NAMES[b.t];
@@ -225,7 +227,7 @@ function createWorld(seed) {
   seed = seed || 7;
   const S = {
     seed, grid: [], deco: [], zone: [], fert: [], blds: [], hall: null,
-    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, gold: 0 }, hv: null, rockAmt: {}, elev: {}, stumpT: {}, dig: {}, oreLeft: {}, v2: true,
+    res: { food: 60, wood: 120, logs: 20, stone: 30, ore: 10, metal: 0, gold: 80 }, rate: { food: 0, wood: 0, logs: 0, stone: 0, ore: 0, metal: 0, gold: 0 }, hv: null, rockAmt: {}, elev: {}, stumpT: {}, dig: {}, oreLeft: {}, v2: true,
     dem: { res: 0, farm: 0, comm: 0, wood: 0, mine: 0 }, note: { res: '', farm: '', comm: '', wood: '', mine: '' }, flags: {},
     peasants: 6, popAcc: 0, soldiers: 0, day: 1, drafting: true, starving: false, trained: 0, d: null
   };
@@ -275,7 +277,7 @@ function growSave(o) {
 function loadWorld(str) {
   let o = JSON.parse(str); if (!o || !o.blds || !o.deco) return null;
   o = growSave(o);
-  const S = Object.assign({}, o); S.grid = []; S.hall = null; S.d = null;
+  const S = Object.assign({}, o); S.res.metal ??= 0; S.rate.metal ??= 0; S.grid = []; S.hall = null; S.d = null;
   for (let y = 0; y < N; y++) S.grid.push(Array(N).fill(null));
   // Upgrade legacy one-tile barracks only when their 2x2 footprint is clear.
   // Crowded old saves keep the original 1x1 building instead of overwriting neighbours.
@@ -321,7 +323,7 @@ function pickHutVar(S, x, y) {
   return 1 + start;
 }
 function addBld(S, t, x, y, sz) {
-  const b = { t, x, y, sz: sz || (t === 'hall' ? 3 : t === 'barracks' ? 2 : 1), prog: 0, served: false, lvl: 1 };
+  const b = { t, x, y, sz: sz || placementSize(t), prog: 0, served: false, lvl: 1 };
   if (t === 'house') b.var = pickHutVar(S, x, y);
   S.blds.push(b);
   for (const [i, j] of tilesOf(b)) { S.grid[j][i] = b; S.deco[j][i] = null; if (S.rockAmt) delete S.rockAmt[j * N + i]; if (S.dig) delete S.dig[j * N + i]; if (S.elev) delete S.elev[j * N + i]; if (S.oreLeft) delete S.oreLeft[j * N + i]; if (S.sapT) delete S.sapT[j * N + i]; if (t === 'road') S.zone[j][i] = null; }
@@ -358,7 +360,7 @@ function canAfford(S, type) {
   return { ok: true };
 }
 function canPlace(S, type, x, y) {
-  const footprint = { x, y, sz: type === 'hall' ? 3 : type === 'barracks' ? 2 : 1, t: type };
+  const footprint = { x, y, sz: placementSize(type), t: type };
   for (const [tx, ty] of tilesOf(footprint)) {
     if (!inb(tx, ty)) return { ok: false, reason: 'Outside the map' };
     if (!claimed(S, tx, ty)) return { ok: false, reason: 'That land is not yours yet' };
@@ -367,6 +369,7 @@ function canPlace(S, type, x, y) {
     if (isSolid(S, tx, ty))
       return { ok: false, reason: isMountain(S, tx, ty) ? 'You cannot build on a mountain. Hills and flat ground are fine' : pitDepth(S, tx, ty) > 0 ? 'A quarry pit is in the way. Pits cannot be filled in' : 'Ore blocks this tile. Zone it for mining to clear it' };
   }
+  if (type === 'smithery' && !nextToRoad(S, footprint)) return { ok: false, reason: 'Smithery must touch a road' };
   if (type === 'barracks' && !nextToRoad(S, footprint)) return { ok: false, reason: 'Barracks must touch a road' };
   return canAfford(S, type);
 }

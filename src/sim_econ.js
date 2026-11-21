@@ -67,7 +67,7 @@ function refreshD(S, C, prioSig) {
     C.tot = { civ, bunks, jobs, markets, houseCap, covCap };
   }
   // Fill the jobs: villagers go to trades in priority order, and within a trade to the oldest buildings first.
-  const prio = (Array.isArray(S.prio) && S.prio.length === TRADES.length && TRADES.every(t => S.prio.includes(t))) ? S.prio : TRADES;
+  const prio = Array.isArray(S.prio) ? [...new Set([...S.prio.filter(t => TRADES.includes(t)), ...TRADES])] : TRADES;
   let avail = S.peasants; const work = {};
   for (const t of prio) work[t] = { workers: 0, jobs: 0, blds: 0, short: 0 };
   for (const b of L.jobs) { b.workers = 0; b.eff = 0; }

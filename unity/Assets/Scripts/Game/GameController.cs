@@ -37,7 +37,7 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Farming, Label = "Farming", Key = "3", Hotkey = Key.Digit3, Icon = "farm2", Desc = "Farmhouses, the wheat and flax fields they work, and silos to store the crop." },
             new CatDef { Cat = Cat.Forestry, Label = "Wood", Key = "4", Hotkey = Key.Digit4, Icon = "wood2", Desc = "Fell trees for logs, replant forests, and saw logs into wood." },
             new CatDef { Cat = Cat.Hunting, Label = "Hunting", Key = "5", Hotkey = Key.Digit5, Icon = "hunter", Desc = "Hunting lodges bring back food from the forest all year, even in winter." },
-            new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "6", Hotkey = Key.Digit6, Icon = "mine", Desc = "Quarries for stone and mines for iron, and the Mining zones they work." },
+            new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "6", Hotkey = Key.Digit6, Icon = "mine", Desc = "Quarries for stone, mines for iron ore, and smitheries for metal." },
             new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "7", Hotkey = Key.Digit7, Icon = "market", Desc = "Markets." },
             new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Barracks that train soldiers." },
             new CatDef { Cat = Cat.Water, Label = "Water", Key = "9", Hotkey = Key.Digit9, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
@@ -71,6 +71,8 @@ namespace CrownAndHearth.Game
                 Desc = $"Quarrymen dig stone from Mining zones within {WorkR} tiles, nearest first: rock outcrops, hills, and mountains from their edge inward. The quarry sets how many you can have; the zoned rock sets how many are needed. Needs a road." },
             new ToolDef { Id = "mine", Cat = Cat.Mining, Label = "Iron Mine", Build = "mine",
                 Desc = $"Miners survey Mining zones within {WorkR} tiles for iron, then tunnel into the hill. The mine sets how many miners you can have; the zoned tiles set how many are needed. Place it at the foot of high ground; its entrance faces away from the hill and needs a road there." },
+            new ToolDef { Id = "smithery", Cat = Cat.Mining, Label = "Smithery", Build = "smithery",
+                Desc = $"Smelts {OrePerMetal} iron ore into 1 metal. Makes up to {SmeltRate} metal a day with a full crew." },
             new ToolDef { Id = "zoneMine", Cat = Cat.Mining, Label = "Mining Zone", Zone = Zone.Mine,
                 Desc = "Drag over rock, hills and mountains for a nearby quarry or mine to work. The shaded area shows how far they work." },
             new ToolDef { Id = "market", Cat = Cat.Trade, Label = "Market", Build = "market",
@@ -770,6 +772,11 @@ namespace CrownAndHearth.Game
                 }
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "mine") lines.Add(w.MineStatus(b));
+                if (b.T == "smithery")
+                {
+                    lines.Add($"{OrePerMetal} iron ore per metal. Staffed capacity: {SmeltRate * b.Eff:0.##} metal/day.");
+                    lines.Add($"Stockpile: {w.ResAmt[Res.Ore]:0.##} ore · {w.ResAmt[Res.Metal]:0.##}/{Storage} metal");
+                }
                 if (b.T == "hunter") lines.Add($"Hunts mature forest within {World.HuntingRange} tiles in all seasons.");
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
                 if (b.T == "silo")
