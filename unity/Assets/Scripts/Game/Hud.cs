@@ -235,7 +235,7 @@ namespace CrownAndHearth.Game
                 Stretch(kind.rectTransform, new Vector2(68, 30), new Vector2(-6, -36));
                 FitText(kind, 9, 12);
                 var cost = MakeText(card, "Cost", 13, TextAnchor.MiddleLeft);
-                cost.text = t.Claim ? "Gold" : t.Build != null ? CostText(t.Build) : t.Road ? "1 wood a tile" : t.Zone != Zone.None ? "Free" : "";
+                cost.text = t.Claim ? "Free" : t.Build != null ? CostText(t.Build) : t.Road ? "1 wood a tile" : t.Zone != Zone.None ? "Free" : "";
                 Stretch(cost.rectTransform, new Vector2(68, 6), new Vector2(-6, -CardH + 30));
                 FitText(cost, 9, 13);
                 _cards[id] = img; _cardCost[id] = cost;

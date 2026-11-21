@@ -41,7 +41,7 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "7", Hotkey = Key.Digit7, Icon = "market", Desc = "Markets." },
             new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Barracks that train soldiers." },
             new CatDef { Cat = Cat.Water, Label = "Water", Key = "9", Hotkey = Key.Digit9, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
-            new CatDef { Cat = Cat.Land, Label = "Land", Key = "L", Hotkey = Key.L, Desc = "Your district is 64 x 64 tiles. Buy the land beyond it, one 16 x 16 parcel at a time, with gold." },
+            new CatDef { Cat = Cat.Land, Label = "Land", Key = "L", Hotkey = Key.L, Desc = "Your district is 64 x 64 tiles. claim the land beyond it, one 16 x 16 parcel at a time, for free." },
             new CatDef { Cat = Cat.Bulldoze, Label = "Bulldoze", Key = "0", Hotkey = Key.Digit0, Alt = Key.Delete, Desc = "Demolish buildings and roads, clear trees and rocks, or remove zones." },
         };
 
@@ -83,7 +83,7 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "cistern", Cat = Cat.Water, Label = "Cistern", Build = "cistern",
                 Desc = $"Stores {WaterTuning.CisternCap:0} water. Wells and the Town Hall's spring fill it with what the town does not drink, and it covers shortfalls for every home on a connected road. Anywhere on a road will do." },
             new ToolDef { Id = "claim", Cat = Cat.Land, Label = "Claim Land", Claim = true,
-                Desc = $"Click a 16 x 16 parcel next to land you own to buy it with gold: from {World.ParcelBaseCost}, a little more for each one bought. You can build, zone, clear and work only land you own. The whole map is 256 x 256 tiles." },
+                Desc = $"Click a 16 x 16 parcel next to land you own to claim it, free of charge. The tip tells you what lies on a parcel before you click. You can build, zone, clear and work only land you own. The whole map is 256 x 256 tiles." },
             new ToolDef { Id = "clear", Cat = Cat.Bulldoze, Label = "Demolish", Clear = true,
                 Desc = "Click or drag over buildings, roads, zones, trees and rocks to remove them. Buildings give back half their cost. The Town Hall stays." },
             new ToolDef { Id = "unzone", Cat = Cat.Bulldoze, Label = "Remove Zones", Unzone = true,
@@ -336,7 +336,7 @@ namespace CrownAndHearth.Game
             string hint = t.Build == "well" ? $"Well ({Hud.CostText(t.Build)}): click a blue groundwater patch. Light roads show the network its water travels.{stop}"
                 : t.Build == "cistern" ? $"Cistern ({Hud.CostText(t.Build)}): click beside a road. Light roads show the network its water travels.{stop}"
                 : t.Build != null ? $"{t.Label} ({Hud.CostText(t.Build)}): click a spot to build it." + (ReachOf(t.Build) > 0 ? " The shaded ring is the land it works." : "") + stop
-                : t.Claim ? $"Claim Land: click a 16 x 16 parcel next to your land to buy it with gold (green = you can, amber = not enough gold, red = not next to your land).{stop}"
+                : t.Claim ? $"Claim Land: click a 16 x 16 parcel next to your land for free (green = you can, red = not next to your land).{stop}"
                 : t.Road ? $"Road (1 wood a tile): press and drag from a road to lay one.{stop}"
                 : t.Zone != Zone.None ? $"{t.Label}: drag over the land, or click two corners. Green tiles will be zoned, red ones cannot be.{stop}"
                 : t.Unzone ? $"Remove Zones: drag over zoned land. Buildings stay.{stop}"
@@ -389,7 +389,7 @@ namespace CrownAndHearth.Game
                 {
                     var (cpx, cpy) = World.ParcelXY(World.ParcelOf(_hover.Value.x, _hover.Value.y));
                     var cr = World.ClaimParcel(cpx, cpy);
-                    _hud.Toast(cr.Ok ? $"Claimed a parcel. You own {World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} ({World.ClaimedParcels * World.ParcelSize * World.ParcelSize} tiles); the next costs {World.ParcelCost} gold." : cr.Reason, 5);
+                    _hud.Toast(cr.Ok ? $"Claimed a parcel. You own {World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} ({World.ClaimedParcels * World.ParcelSize * World.ParcelSize} tiles)." : cr.Reason, 5);
                 }
                 return;
             }
@@ -721,7 +721,7 @@ namespace CrownAndHearth.Game
                 if (World.ParcelClaimed(cpx, cpy)) return ($"Your land. You own {World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} parcels", false);
                 var cc = World.CanClaim(cpx, cpy);
                 if (!cc.Ok) { _tipWarn = World.ParcelTouchesYours(cpx, cpy); return (cc.Reason, !_tipWarn); }
-                return ($"Click to claim this 16 x 16 parcel for {World.ParcelCost} gold ({World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} owned)", false);
+                return ($"Click to claim this parcel (free): {World.DescribeParcel(cpx, cpy)} ({World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} owned)", false);
             }
             if (_tool.Road)
             {

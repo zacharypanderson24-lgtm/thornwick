@@ -3,7 +3,7 @@
 //
 // The land beyond your border is on the map, drawn and walkable, so nothing ever moves when the border grows; but you may only build, zone,
 // lay roads, clear land or work it (fell, quarry, mine) on land you own. Walking, roads that already exist and water never ask: unowned
-// land stays passable. A parcel costs gold, a little more for each one you have bought beyond the start.
+// land stays passable. Claiming a parcel is free: any parcel next to land you own.
 using System;
 using static CrownAndHearth.Sim.Defs;
 
@@ -13,8 +13,6 @@ namespace CrownAndHearth.Sim
     {
         public const int ParcelSize = 16, ParcelsPerSide = N / ParcelSize, StartDistrict = 64;
         public const int StartParcels = (StartDistrict / ParcelSize) * (StartDistrict / ParcelSize);
-        /// <summary>Gold for a parcel: this much, plus ParcelCostStep for every parcel already bought beyond the starting district.</summary>
-        public const int ParcelBaseCost = 25, ParcelCostStep = 3;
         public const string NotYours = "That land is not yours yet. Claim the parcel first (Land, L)";
 
         readonly bool[] _claimed = new bool[ParcelsPerSide * ParcelsPerSide];
@@ -57,19 +55,15 @@ namespace CrownAndHearth.Sim
             Touch(); Recalc();
         }
 
-        /// <summary>Gold for the next parcel.</summary>
-        public int ParcelCost => ParcelBaseCost + ParcelCostStep * Math.Max(0, ClaimedParcels - StartParcels);
-
         public bool ParcelTouchesYours(int px, int py) =>
             ParcelClaimed(px - 1, py) || ParcelClaimed(px + 1, py) || ParcelClaimed(px, py - 1) || ParcelClaimed(px, py + 1);
 
-        /// <summary>Whether the parcel can be bought now: inside the map, not yours, next to your land, and you have the gold.</summary>
+        /// <summary>Whether the parcel can be bought now: inside the map, not yours, next to your land, free.</summary>
         public Result CanClaim(int px, int py)
         {
             if (px < 0 || py < 0 || px >= ParcelsPerSide || py >= ParcelsPerSide) return Result.No("Outside the map");
             if (_claimed[py * ParcelsPerSide + px]) return Result.No("You already own this land");
             if (!ParcelTouchesYours(px, py)) return Result.No("Land must be next to land you own");
-            if (ResAmt[Res.Gold] < ParcelCost) return Result.No($"Not enough gold: this parcel costs {ParcelCost}");
             return Result.Yes();
         }
 
@@ -77,10 +71,42 @@ namespace CrownAndHearth.Sim
         {
             var c = CanClaim(px, py);
             if (!c.Ok) return c;
-            ResAmt[Res.Gold] -= ParcelCost;
             SetClaimed(px, py, true);
             Touch(); Recalc();
             return Result.Yes();
         }
+        // ---------- Looking before you claim ----------
+
+        /// <summary>What lies on one parcel: the things worth knowing before paying for it.</summary>
+        public struct ParcelInfo { public int Trees, Rock, Ore, Fertile, Groundwater, Built; }
+
+        public ParcelInfo SurveyParcel(int px, int py)
+        {
+            var r = new ParcelInfo();
+            for (int y = py * ParcelSize; y < (py + 1) * ParcelSize; y++)
+                for (int x = px * ParcelSize; x < (px + 1) * ParcelSize; x++)
+                {
+                    if (!Inb(x, y)) continue;
+                    switch (DecoMap[y, x]) { case Deco.Tree: r.Trees++; break; case Deco.Rock: r.Rock++; break; case Deco.Ore: r.Ore++; break; }
+                    if (Fert[y, x]) r.Fertile++;
+                    if (AquiferAt(x, y) >= 0) r.Groundwater++;
+                    if (Grid[y, x] != null) r.Built++;
+                }
+            return r;
+        }
+
+        /// <summary>One line for the cursor tip.</summary>
+        public string DescribeParcel(int px, int py)
+        {
+            var s = SurveyParcel(px, py);
+            var parts = new System.Collections.Generic.List<string>();
+            if (s.Trees > 0) parts.Add($"{s.Trees} trees");
+            if (s.Rock > 0) parts.Add($"{s.Rock} rock");
+            if (s.Ore > 0) parts.Add($"{s.Ore} ore");
+            if (s.Fertile > 0) parts.Add($"{s.Fertile} fertile");
+            if (s.Groundwater > 0) parts.Add($"{s.Groundwater} groundwater");
+            return parts.Count == 0 ? "bare ground" : string.Join(", ", parts);
+        }
+
     }
 }

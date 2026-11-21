@@ -166,7 +166,7 @@ namespace CrownAndHearth.Sim
                 Goal = "Press Next" },
             new Step { Id = "land", Title = "Land", Tool = "claim",
                 Body = "You own a 64 x 64 district round the Town Hall: the brighter land. The rest of the 256 x 256 map is yours to see and walk, but not to build or work until you own it.\n\n" +
-                       "Open Land (L) and click a 16 x 16 parcel next to your land to buy it with gold. Each parcel costs a little more than the last.",
+                       "Open Land (L) and click a 16 x 16 parcel next to your land to claim it. Land is free; claim what you need.",
                 Goal = "Claim a parcel of land", Count = s => s.Parcels, By = 1 },
             new Step { Id = "save", Title = "Saving",
                 Body = "Save and Load (top right) keep one settlement on this computer. Hover or click any tile to learn what it is and what it needs.\n\n" +
