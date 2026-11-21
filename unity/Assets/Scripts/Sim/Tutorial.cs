@@ -47,7 +47,7 @@ namespace CrownAndHearth.Sim
         {
             At = Snap(w);
             Panned = Zoomed = Rotated = SpeedChanged = WorkersOpened = UndergroundViewed = false;
-            if (Current != null && Current.Id == "raid" && !RaidDone) { RaidDone = true; Raid = w.Raid(RaidBand); }
+            if (Current != null && Current.Id == "raid" && !RaidDone) { RaidDone = true; Raid = w.BeginRaid(RaidBand); }
         }
 
         /// <summary>Advance when the current step's goal has been met. Returns the finished step (for a "well done" message), or null.</summary>
@@ -174,9 +174,10 @@ namespace CrownAndHearth.Sim
                        "so every one is a farmer or woodcutter you give up.",
                 Goal = "Press Next" },
             new Step { Id = "raid", Title = "Raiders!",
-                Body = "Smoke on the hills. A band of raiders storms the village and drives off with a big share of your stores: gold, food, wood, stone and ore. " +
-                       "Every soldier you have holds off one raider, and each soldier you keep cuts what they carry away. A settlement with no troops is an easy target.\n\n" +
-                       "Build a Barracks and train infantry and archers before the next band comes.",
+                Body = "Smoke on the hills. A band of raiders walks in over the border and heads for whatever is worth taking: the Town Hall and markets for gold, silos and farms for food, sawmills and lodges for wood, quarries for stone, mines for ore. " +
+                       "Watch them come: each takes one load and runs for home, and soldiers cut them down within reach of a barracks (infantry up close, archers from afar). " +
+                       "They avoid buildings your soldiers cover, so where you build matters.\n\n" +
+                       "Build a Barracks beside what you want to protect and train infantry and archers before the next band comes.",
                 Goal = "Press Next" },
             new Step { Id = "land", Title = "Land", Tool = "claim",
                 Body = "You own a 64 x 64 district round the Town Hall: the brighter land. The rest of the 256 x 256 map is yours to see and walk, but not to build or work until you own it.\n\n" +

@@ -35,6 +35,7 @@ namespace CrownAndHearth.Sim
             StepCrews(got);
             food = got[Res.Food];
             StepFolk();
+            StepRaid();
             ResAmt[Res.Logs] += got[Res.Logs];
 
             // sawing: sawmills at full yield, then the Town Hall pit-saw at half yield

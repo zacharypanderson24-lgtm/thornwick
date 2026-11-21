@@ -111,6 +111,7 @@ namespace CrownAndHearth.Game
         GroundRenderer _ground; ObjectRenderer _objects; OverlayRenderer _overlay; AgentRenderer _agents;
         CameraRig _cam; Hud _hud;
         readonly Tutorial _tutorial = new Tutorial();
+        int _raidSig = -1;
         const string TutorialSeenKey = "crown-hearth-tutorial-seen";
 
         void Start()
@@ -300,6 +301,14 @@ namespace CrownAndHearth.Game
                 if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1);
                 _hud.ShowTutorial(_tutorial);
                 _progressVersion = -1;
+            }
+            var raid = World.Raid;
+            if (raid != null)
+            {
+                if (!raid.StartAnnounced) { raid.StartAnnounced = true; _hud.Toast($"Raiders! A band of {raid.Band} is coming in from the {raid.From}.", 6); }
+                if (raid.Over && !raid.EndAnnounced) { raid.EndAnnounced = true; _hud.Toast($"The raid is over: {raid.Killed} raiders cut down, {raid.Escaped} got away with {raid.Stolen.Values.Sum()} goods.", 8); }
+                int sig = raid.Killed * 10000 + raid.Escaped * 100 + raid.Active + (raid.Over ? 1000000 : 0);
+                if (sig != _raidSig) { _raidSig = sig; if (_tutorial.Active && !_tutorial.Finished && _tutorial.Current.Id == "raid") _hud.ShowTutorial(_tutorial); }
             }
             if (World.Version != _progressVersion) { _progressVersion = World.Version; _hud.SetTutorialProgress(_tutorial.Progress(World)); }
         }
