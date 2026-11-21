@@ -108,7 +108,7 @@ namespace CrownAndHearth.Game
             if (b.Sz == 2)
             {
                 if (b.T == "house") return "manor_" + b.Lvl;
-                if (b.T == "wood" || b.T == "mine" || b.T == "quarry") return b.T + "2";
+                if (b.T == "wood" || b.T == "mine" || b.T == "quarry" || b.T == "forester" || b.T == "sawmill") return b.T + "2";
                 if (b.T == "farm") return "farm2";
                 if (b.T == "market") return "market2";
             }

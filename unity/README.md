@@ -27,11 +27,11 @@ button or card to see what it does, what it costs and what it needs:
 
 Clicking a category or pressing its key picks its last-used tool (else its first) and opens its cards; pressing the key again cycles through the category, clicking it again puts the tool away.
 Zones: press and drag over the land (or click two corners); green tiles will be zoned, red ones cannot be.
-Picking a building or a zone shades the land the work buildings reach (a farmhouse's fields, a lodge's forest).
+Picking a lodge, quarry, mine or forester (or its zone) shades the square around each of them they work (16 tiles). Farms have no radius: every Farmland tile is worked by the farmhouses together. A building's jobs are how many workers it can have; the zoned tiles decide how many it needs.
 A line beside the mouse says what a click will do there, or why it cannot (red). Amber means it will build but something is off: no connected road yet, or zoned land it would cover.
 Esc or a right-click (without dragging) cancels the road or rectangle being drawn, then puts the tool away.
 A mine's road must reach its downhill entrance.
-Water (8): homes need water every day, carried along connected roads from the Town Hall, wells and cisterns. Wells go on the blue groundwater patches; wells on one patch share its reserve. Placing a well or cistern shows the patches, short homes (red) and what it would reach; the tip says what water the town would really gain and whether the patch would run down.
+Water (8): homes need water every day. The Town Hall's spring, wells and cisterns are one town-wide supply for every home on a connected road, however far away. Wells go on the blue groundwater patches; wells on one patch share its reserve. Placing a well or cistern shows the patches, short homes (red) and the road network the water travels; the tip says what water the town would really gain and whether the patch would run down.
 **Workers** sets staffing priorities. **Tutorial** explains the controls.
 
 A staffed market sells one unit per worker per day. Flax earns two gold and

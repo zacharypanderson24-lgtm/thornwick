@@ -199,8 +199,8 @@ namespace CrownAndHearth.Sim
             {
                 if (b.T == "house" && b.Var == 0) b.Var = world.PickHutVar(b.X, b.Y);
                 if (!legacyZones || (b.T != "wood" && b.T != "quarry")) continue;
-                for (int y = b.Y - WorkR; y <= b.Y + WorkR; y++)
-                    for (int x = b.X - WorkR; x <= b.X + WorkR; x++)
+                for (int y = b.Y - LegacyZoneR; y <= b.Y + LegacyZoneR; y++)
+                    for (int x = b.X - LegacyZoneR; x <= b.X + LegacyZoneR; x++)
                     {
                         if (!Inb(x, y) || world.ZoneMap[y, x] != Zone.None) continue;
                         if (b.T == "wood" && world.DecoMap[y, x] == Deco.Tree) world.ZoneMap[y, x] = Zone.Wood;

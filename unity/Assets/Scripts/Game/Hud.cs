@@ -573,7 +573,7 @@ namespace CrownAndHearth.Game
 
         static string ArtSlot(string type)
         {
-            if (Defs.PlacementSize(type) == 2 && (type == "wood" || type == "mine" || type == "quarry" || type == "farm" || type == "market")) return type + "2";
+            if (Defs.PlacementSize(type) == 2 && (type == "wood" || type == "mine" || type == "quarry" || type == "farm" || type == "market" || type == "forester" || type == "sawmill")) return type + "2";
             return type;
         }
 

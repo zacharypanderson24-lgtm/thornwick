@@ -25,10 +25,12 @@ namespace CrownAndHearth.Sim
         public const double SnowLevel = 12;
 
         // Economy
-        public const int HallCap = 6, Bunks = 6, WorkR = 3, Storage = 400;   // water tuning: WaterTuning in World.Water.cs
+        // WorkR: how far (in tiles, a square around the building) woodcutters, quarrymen, miners and foresters can work. LegacyZoneR: how far an
+        // old browser save auto-zones around a lodge or quarry. FaceR: how far a mine looks for the hill its entrance turns away from.
+        public const int HallCap = 6, Bunks = 6, WorkR = 16, LegacyZoneR = 3, FaceR = 3, Storage = 400;   // water tuning: WaterTuning in World.Water.cs
         public const double SawRate = 4, HallSaw = 1, HallYield = 0.5;
         public const int StumpDays = 8;
-        public const int PlantEvery = 4, SaplingDays = 3 * 365, ForesterR = 4;
+        public const int PlantEvery = 4, SaplingDays = 3 * 365, ForesterR = WorkR;
 
         // Stone and ore are finite
         public const int DigU = 10, MountCap = 120, OreCap = 30;
@@ -89,7 +91,7 @@ namespace CrownAndHearth.Sim
         public static readonly string[] Trades = { "farming", "hunting", "timber", "woodwork", "quarrying", "mining" };
         public static readonly Dictionary<string, string> TradeNames = new Dictionary<string, string>
         {
-            { "farming", "Farming" }, { "timber", "Timber" }, { "woodwork", "Woodworking" }, { "quarrying", "Quarrying" }, { "mining", "Mining" },
+            { "farming", "Farming" }, { "hunting", "Hunting" }, { "timber", "Timber" }, { "woodwork", "Woodworking" }, { "quarrying", "Quarrying" }, { "mining", "Mining" },
         };
 
         /// <summary>Tree species: which tree_N variants each species uses, and its share of forests. tree_1 is retired (6 old oak takes its share).</summary>
@@ -108,7 +110,7 @@ namespace CrownAndHearth.Sim
         public static readonly int[,] FaceDirs = { { 0, 1 }, { -1, 0 }, { 0, -1 }, { 1, 0 } };
         public static readonly int[,] Nb = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
-        public static int PlacementSize(string type) => type == "wood" || type == "mine" || type == "quarry" || type == "hunter" ? 2 : DefaultSize(type);
+        public static int PlacementSize(string type) => type == "wood" || type == "mine" || type == "quarry" || type == "hunter" || type == "forester" || type == "sawmill" ? 2 : DefaultSize(type);
         public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "market" || type == "farm") ? 2 : 1;
     }
 }
