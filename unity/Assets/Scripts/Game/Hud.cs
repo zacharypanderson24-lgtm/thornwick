@@ -399,7 +399,7 @@ namespace CrownAndHearth.Game
             var s = t.Current;
             _tutTitle.text = s.Title;
             _tutStep.text = $"{t.Index + 1} / {Tutorial.Steps.Count}";
-            _tutBody.text = s.Body;
+            _tutBody.text = t.BodyText;
             _tutGoal.text = "Goal: " + s.Goal + (s.Tool != null ? "  (the glowing button below)" : "");
             _tutGoalBase = _tutGoal.text;
             _tutNextLabel.text = s.Explanation ?(t.Index == Tutorial.Steps.Count - 1 ? "Finish" : "Next") : "Skip";
