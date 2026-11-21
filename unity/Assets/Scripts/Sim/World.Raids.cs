@@ -31,7 +31,7 @@ namespace CrownAndHearth.Sim
     public sealed class RaidReport
     {
         public int Band, Defenders, Killed, Escaped, SoldiersLost, StartDay, PeasantsLost;
-        public readonly HashSet<string> Tools = new HashSet<string>();   // what the residents fought with when there was no military
+        public readonly HashSet<string> Tools = new HashSet<string>();   // what the residents fought with
         public string From = "";
         public bool Over, StartAnnounced, EndAnnounced;
         public readonly Dictionary<Res, int> Stolen = new Dictionary<Res, int>();   // what got away with the raiders
@@ -45,8 +45,9 @@ namespace CrownAndHearth.Sim
             var parts = new List<string>();
             foreach (var kv in Stolen) if (kv.Value > 0) parts.Add($"{kv.Value} {kv.Key.ToString().ToLower()}");
             string loot = parts.Count == 0 ? "nothing" : string.Join(", ", parts);
-            string defence = Defenders == 0 ? (Tools.Count > 0 ? $"With no soldiers the residents fought with their {string.Join(", ", Tools.OrderBy(t => t))}" + (PeasantsLost > 0 ? $" and {PeasantsLost} fell." : ".") : "You had no soldiers to stop them.")
-                : $"{Defenders} soldiers stood guard" + (SoldiersLost > 0 ? $" and {SoldiersLost} fell." : ".");
+            string folk = Tools.Count > 0 ? $"Residents fought with their {string.Join(", ", Tools.OrderBy(t => t))}" + (PeasantsLost > 0 ? $" and {PeasantsLost} fell." : ".") : "";
+            string defence = Defenders == 0 ? (Tools.Count > 0 ? "You had no soldiers. " + folk : "You had no soldiers to stop them.")
+                : $"{Defenders} soldiers stood guard" + (SoldiersLost > 0 ? $" and {SoldiersLost} fell." : ".") + (folk == "" ? "" : " " + folk);
             if (!Over) return $"{Band} raiders are coming from the {From}. {Active} still on the field, {Killed} cut down so far.\nThey have taken: {loot}.";
             return $"{Band} raiders came from the {From}: {Killed} cut down, {Escaped} escaped with loot. {defence}\nThey made off with: {loot}.";
         }
@@ -62,7 +63,7 @@ namespace CrownAndHearth.Sim
         double _wounds;
         double _militiaWounds;
 
-        /// <summary>With no military, the people at a work building fight with their trade's tool: (name, damage per worker per day, reach in tiles); far weaker than a soldier (0.5 a day), and they get hurt more.</summary>
+        /// <summary>When the militia is on (World.MilitiaFights), the people at a work building fight with their trade's tool: (name, damage per worker per day, reach in tiles); far weaker than a soldier (0.5 a day), and they get hurt more.</summary>
         public static (string tool, double dmg, int reach)? MilitiaTool(string type) => type switch
         {
             "farm" => ("pitchforks", 0.05, 4),
@@ -75,10 +76,10 @@ namespace CrownAndHearth.Sim
             _ => null,
         };
 
-        /// <summary>How much the working residents around this building would add to its defence when there is no military (soldier equivalents).</summary>
+        /// <summary>How much the working residents around this building would add to its defence when the militia fights (soldier equivalents).</summary>
         public double MilitiaPower(Building b)
         {
-            if (Soldiers > 0) return 0;
+            if (!MilitiaFights) return 0;
             double power = 0;
             foreach (var w in Blds)
             {
@@ -316,7 +317,7 @@ namespace CrownAndHearth.Sim
                 if (inMelee.Count > 0 && inf > 0) foreach (var a in inMelee) a.Hp -= 0.5 * inf / inMelee.Count;
                 if (inMelee.Count > 0 && inf + arc > 0) _wounds += 0.1 * inMelee.Count;
             }
-            if (Soldiers == 0) MilitiaFight(r);
+            if (MilitiaFights) MilitiaFight(r);
             foreach (var a in r.Raiders)
                 if (a.Hp <= 0 && a.St != RaiderState.Dead && a.St != RaiderState.Gone)
                 {

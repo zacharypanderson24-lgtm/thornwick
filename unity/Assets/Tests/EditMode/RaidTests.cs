@@ -65,7 +65,7 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void WithoutAMilitaryTheWorkersFightWithTheirToolsFarWeakerThanSoldiers()
+        public void TheMilitiaFightsWithTradeToolsFarWeakerThanSoldiersUnlessSwitchedOff()
         {
             var w = Town(false, 0, 0);
             w.Tick();
@@ -77,7 +77,14 @@ namespace CrownAndHearth.Tests
             double militia = w.MilitiaPower(farm);
             Assert.Greater(militia, 0);
             Assert.Less(militia, 1.0, "six farmers count for less than one soldier");
-            Assert.AreEqual(0, Town(true, 3, 0).MilitiaPower(farm), "soldiers replace the militia");
+            var backed = Town(true, 3, 0); backed.Tick();
+            var farm2 = backed.Blds.First(b => b.T == "farm"); farm2.Workers = 6;
+            Assert.Greater(backed.MilitiaPower(farm2), 0, "the militia still fights beside soldiers");
+            backed.MilitiaFights = false;
+            Assert.AreEqual(0, backed.MilitiaPower(farm2), "unless you switch it off");
+            var off = World.LoadJson(backed.SaveJson());
+            Assert.IsFalse(off.MilitiaFights, "the setting is saved");
+            Assert.IsTrue(World.LoadJson(w.SaveJson()).MilitiaFights);
             Assert.Less(World.MilitiaTool("farm").Value.dmg, 0.5 / 5, "a pitchfork is far weaker than a soldier");
             var r = w.BeginRaid(12);
             for (int day = 0; day < 600 && !r.Over; day++) { w.ResAmt[Res.Food] = 300; w.Tick(); }
