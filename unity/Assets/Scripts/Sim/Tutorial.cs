@@ -160,8 +160,8 @@ namespace CrownAndHearth.Sim
                 Body = "Mines take wood to shore up their tunnels. Unshored tunnels, deep shafts and crowded mines can cave in: the mine closes " +
                        "for repairs and a miner may die. Keep some wood in store while you mine. Click a mine to see its tunnels and supports.",
                 Goal = "Press Next" },
-            new Step { Id = "defence", Title = "Soldiers",
-                Body = "A Barracks (Military, 7) trains soldiers from your peasants, using wood, gold and iron ore. Soldiers eat half as much again and do no other work, " +
+            new Step { Id = "defence", Title = "Troops",
+                Body = "A Barracks (Military, 8) trains infantry (wood, gold, iron ore) and archers (wood, gold, flax) from your peasants. Pick the share of archers in the Troops menu. Troops are a standing army: each recruit leaves your workforce for good and keeps a place in the population, so births do not replace them. They eat half as much again and do no other work, " +
                        "so every one is a farmer or woodcutter you give up.",
                 Goal = "Press Next" },
             new Step { Id = "land", Title = "Land", Tool = "claim",

@@ -363,3 +363,8 @@ unity open unity                                 # then open Assets/Scenes/Settl
 
 ## Build bar by industry
 - Forestry is now **Wood** (4: woodcutter lodge, lumber zone, forester, sawmill) and the hunting lodge has its own **Hunting** button (5). Mining moved to 6, Trade 7, Military 8, Water 9, so the Land tool of the conquest-map branch needs another key. Each industry holds its buildings and zones together. Tutorial, README and tips updated.
+
+## Troops: infantry and archers
+- Two kinds of troops, trained from peasants at a served Barracks (one recruit every 4 days per barracks, bunks as before): **infantry** cost 2 wood, 1 gold, 1 iron ore; **archers** cost 3 wood, 1 gold, 1 flax. Both eat 1.5x and cost 0.1 gold upkeep a day. `World.Soldiers` is still the total; `World.Archers` counts archers, `Infantry` the rest. The new **Troops** menu (town menu bar) shows the counts and bunks, a slider for the share of archers among new recruits (`ArcherPercent`, default 0, so older games train infantry only exactly as before), and a Training on/off switch. Saves gain `archers` and `archerPercent`; old saves load as all infantry.
+- No combat yet: troops are counted, fed, paid and housed, ready for the siege and conquest work.
+- **Standing army:** each recruit leaves the workforce for good and keeps a place in the population (`Peasants + Soldiers <= Civ`), so births do not refill the workforce; housing demand counts soldiers; the population card reads "peasants + troops/capacity".

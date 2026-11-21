@@ -121,7 +121,7 @@ namespace CrownAndHearth.Game
 
             BuildBar(root);
             var townMenuBar = MakePanel(root, "TownMenuBar", Vector2.right, Vector2.right,
-                new Vector2(-439, BarH + 8), new Vector2(-8, BarH + 50));
+                new Vector2(-545, BarH + 8), new Vector2(-8, BarH + 50));
             BuildTownMenus(root, townMenuBar);
             BuildMap(root, townMenuBar);
 
@@ -488,7 +488,7 @@ namespace CrownAndHearth.Game
         {
             _world = world;
             _day.text = world.SeasonalFarming ? $"{world.Season} {1 + (world.YearDay - 1) % World.SeasonLength} / Y{world.Year}" : world.Day.ToString();
-            _population.text = world.Starving ? "Starving" : $"{world.Peasants}/{world.D.Civ} · {world.D.Idle} idle";
+            _population.text = world.Starving ? "Starving" : world.Soldiers > 0 ? $"{world.Peasants} + {world.Soldiers} troops/{world.D.Civ} · {world.D.Idle} idle" : $"{world.Peasants}/{world.D.Civ} · {world.D.Idle} idle";
             var (stored, room) = world.WaterStored();
             var wp = world.LastWater;
             int shortHomes = wp?.ShortHomes ?? 0;
