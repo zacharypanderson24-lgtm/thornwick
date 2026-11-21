@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: -3101834303360755281
-    second: ph_forester_0
+    second: silo_4
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -102,7 +102,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ph_forester_0
+      name: silo_4
       rect:
         serializedVersion: 2
         x: 2
