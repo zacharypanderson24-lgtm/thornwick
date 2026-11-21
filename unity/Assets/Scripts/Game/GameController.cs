@@ -1,6 +1,6 @@
 // Runs the settlement: owns the World, ticks it (1 day = 1 second at 1x, like the browser), redraws on change,
 // and turns mouse/keyboard into tools. Tools sit in build-bar categories (Cats, Tools): 1 Roads, 2 Housing, 3 Farming,
-// 4 Forestry, 5 Mining, 6 Trade, 7 Military, 8 Water, 0 or Delete Bulldoze; pressing a category key again picks its next tool.
+// 4 Wood, 5 Hunting, 6 Mining, 7 Trade, 8 Military, 9 Water, 0 or Delete Bulldoze; pressing a category key again picks its next tool.
 // Esc or a right-click (without dragging) cancels the half-drawn road or rectangle, then puts the tool away. Q/E rotate.
 // Homes are not placed by hand: they grow on Housing zones beside roads when there is demand (World.Develop).
 using System.Collections.Generic;
@@ -16,7 +16,7 @@ namespace CrownAndHearth.Game
     public class GameController : MonoBehaviour
     {
         /// <summary>Build bar categories, grouped by what the player is doing: each production building sits beside the zone it works.</summary>
-        public enum Cat { Inspect, Roads, Housing, Farming, Forestry, Mining, Trade, Military, Water, Bulldoze }
+        public enum Cat { Inspect, Roads, Housing, Farming, Forestry, Hunting, Mining, Trade, Military, Water, Bulldoze }
 
         public class CatDef
         {
@@ -35,11 +35,12 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Roads, Label = "Roads", Key = "1", Hotkey = Key.Digit1, Desc = "Roads link everything to the Town Hall." },
             new CatDef { Cat = Cat.Housing, Label = "Housing", Key = "2", Hotkey = Key.Digit2, Icon = "house_1", Desc = "Zone land where villagers build their own homes." },
             new CatDef { Cat = Cat.Farming, Label = "Farming", Key = "3", Hotkey = Key.Digit3, Icon = "farm2", Desc = "Farmhouses, the wheat and flax fields they work, and silos to store the crop." },
-            new CatDef { Cat = Cat.Forestry, Label = "Forestry", Key = "4", Hotkey = Key.Digit4, Icon = "wood2", Desc = "Hunt for food, fell trees for logs, replant forests, and saw logs into wood." },
-            new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "5", Hotkey = Key.Digit5, Icon = "mine", Desc = "Quarries for stone and mines for iron, and the Mining zones they work." },
-            new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "6", Hotkey = Key.Digit6, Icon = "market", Desc = "Markets." },
-            new CatDef { Cat = Cat.Military, Label = "Military", Key = "7", Hotkey = Key.Digit7, Icon = "barracks", Desc = "Barracks that train soldiers." },
-            new CatDef { Cat = Cat.Water, Label = "Water", Key = "8", Hotkey = Key.Digit8, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
+            new CatDef { Cat = Cat.Forestry, Label = "Wood", Key = "4", Hotkey = Key.Digit4, Icon = "wood2", Desc = "Fell trees for logs, replant forests, and saw logs into wood." },
+            new CatDef { Cat = Cat.Hunting, Label = "Hunting", Key = "5", Hotkey = Key.Digit5, Icon = "hunter", Desc = "Hunting lodges bring back food from the forest all year, even in winter." },
+            new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "6", Hotkey = Key.Digit6, Icon = "mine", Desc = "Quarries for stone and mines for iron, and the Mining zones they work." },
+            new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "7", Hotkey = Key.Digit7, Icon = "market", Desc = "Markets." },
+            new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Barracks that train soldiers." },
+            new CatDef { Cat = Cat.Water, Label = "Water", Key = "9", Hotkey = Key.Digit9, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
             new CatDef { Cat = Cat.Bulldoze, Label = "Bulldoze", Key = "0", Hotkey = Key.Digit0, Alt = Key.Delete, Desc = "Demolish buildings and roads, clear trees and rocks, or remove zones." },
         };
 
@@ -58,14 +59,14 @@ namespace CrownAndHearth.Game
                 Desc = $"Stores {World.SiloFood} more wheat and {World.SiloFlax} more flax. Needs a road to the Town Hall." },
             new ToolDef { Id = "lodge", Cat = Cat.Forestry, Label = "Woodcutter Lodge", Build = "wood",
                 Desc = $"Woodcutters walk out to trees in Lumber zones within {WorkR} tiles, nearest first, fell them and carry the logs home. The lodge sets how many woodcutters you can have; the zoned trees set how many are needed. Farther trees mean longer walks. Needs a road to the Town Hall." },
-            new ToolDef { Id = "hunter", Cat = Cat.Forestry, Label = "Hunting Lodge", Build = "hunter",
-                Desc = $"This 2×2 lodge sends two hunters to bring back food year-round from reachable mature forest within {World.HuntingRange} tiles. Each forest tile holds up to {World.ForestFoodReserve} food and recovers 1 every {World.HuntingRecoveryDays} days. Needs a road to the Town Hall." },
             new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Lumber Zone", Zone = Zone.Wood,
                 Desc = "Drag over forest to have it felled by a nearby lodge, or over open ground for a forester to replant. The shaded area shows how far lodges and foresters work." },
             new ToolDef { Id = "forester", Cat = Cat.Forestry, Label = "Forester", Build = "forester",
                 Desc = $"Plants saplings on Lumber-zoned open ground within {ForesterR} tiles, so the forest grows back." },
             new ToolDef { Id = "sawmill", Cat = Cat.Forestry, Label = "Sawmill", Build = "sawmill",
                 Desc = "Saws 4 logs a day into wood at full yield (the Town Hall saws 1 at half yield). Needs a road." },
+            new ToolDef { Id = "hunter", Cat = Cat.Hunting, Label = "Hunting Lodge", Build = "hunter",
+                Desc = $"This 2×2 lodge sends two hunters to bring back food year-round from reachable mature forest within {World.HuntingRange} tiles. Each forest tile holds up to {World.ForestFoodReserve} food and recovers 1 every {World.HuntingRecoveryDays} days. Needs a road to the Town Hall." },
             new ToolDef { Id = "quarry", Cat = Cat.Mining, Label = "Quarry", Build = "quarry",
                 Desc = $"Quarrymen dig stone from Mining zones within {WorkR} tiles, nearest first: rock outcrops, hills, and mountains from their edge inward. The quarry sets how many you can have; the zoned rock sets how many are needed. Needs a road." },
             new ToolDef { Id = "mine", Cat = Cat.Mining, Label = "Iron Mine", Build = "mine",
