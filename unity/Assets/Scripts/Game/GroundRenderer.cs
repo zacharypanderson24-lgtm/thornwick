@@ -144,7 +144,7 @@ namespace CrownAndHearth.Game
         static int CellFor(World w, int x, int y)
         {
             if (w.IsMountain(x, y)) return w.TileLevel(x, y) >= SnowLevel ? ArtLibrary.CellSnow : ArtLibrary.CellRock;
-            if (w.DecoMap[y, x] == Deco.Rock && w.PitDepth(x, y) > 0) return ArtLibrary.CellRock;
+            if (w.DecoMap[y, x] == Deco.Rock && w.RockLevel(x, y) <= 0) return ArtLibrary.CellWorkedStone;
             double h = Noise.Hash2(x, y, 5);
             return w.Fert[y, x] ? ArtLibrary.CellFert + (h < 0.5 ? 0 : 1) : ArtLibrary.CellGrass + (int)(h * 4);
         }
