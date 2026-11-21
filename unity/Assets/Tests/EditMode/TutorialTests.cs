@@ -120,5 +120,22 @@ namespace CrownAndHearth.Tests
             t.Start(w, IndexOf("farmland"));
             Assert.IsNull(t.Check(w), "zoning done before the step began does not finish it");
         }
+
+        [Test]
+        public void TheRaidStepSendsARealBandOnceAndReportsIt()
+        {
+            var w = new World(7);
+            var t = new Tutorial();
+            t.Start(w, IndexOf("raid") - 1);
+            Assert.IsNull(t.Raid);
+            t.Next(w);   // onto the raid step
+            Assert.IsNotNull(t.Raid);
+            Assert.AreEqual(Tutorial.RaidBand, t.Raid.Raiders.Count);
+            Assert.IsFalse(t.Raid.Over, "they are still on their way");
+            StringAssert.Contains("coming", t.BodyText);
+            var first = t.Raid;
+            t.Back(w); t.Next(w);
+            Assert.AreSame(first, t.Raid, "the raid comes once");
+        }
     }
 }

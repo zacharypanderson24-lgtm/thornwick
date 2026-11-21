@@ -14,7 +14,7 @@ namespace CrownAndHearth.Sim
 
     public static class Defs
     {
-        public const int N = 128;                 // a city map is N x N tiles
+        public const int N = 256;                 // a city map is N x N tiles (256 x 256 tiles of 8 m is about 2 km); you own a 64 x 64 district of it to start (World.Claims.cs)
         public const int Start = N >> 1;          // the Town Hall is centred here
 
         // Terrain heights

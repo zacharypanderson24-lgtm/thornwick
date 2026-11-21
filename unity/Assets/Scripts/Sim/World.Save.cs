@@ -35,8 +35,8 @@ namespace CrownAndHearth.Sim
                 // underground mining: what has been surveyed and taken (deposit sizes regenerate from the seed)
                 ["surveyed"] = new JArray(Enumerable.Range(0, N * N).Where(k => Surveyed[k])),
                 ["oreTaken"] = JObject.FromObject(OreTaken), ["minerDeaths"] = MinerDeaths, ["caveIns"] = CaveIns,
-                ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["trained"] = Trained,
-                ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["starving"] = Starving,
+                ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["archers"] = Archers, ["archerPercent"] = ArcherPercent, ["trained"] = Trained,
+                ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["militia"] = MilitiaFights, ["starving"] = Starving,
                 ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
                 ["res"] = JObject.FromObject(ResAmt.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["rate"] = JObject.FromObject(Rate.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
@@ -49,6 +49,8 @@ namespace CrownAndHearth.Sim
                 ["stumpT"] = JObject.FromObject(StumpT), ["sapT"] = JObject.FromObject(SapT),
                 ["chop"] = JObject.FromObject(Chop), ["dig"] = JObject.FromObject(Dig),
                 ["oreLeft"] = JObject.FromObject(OreLeftMap),
+                // land ownership (World.Claims.cs): the parcels you own, by index
+                ["claimed"] = new JArray(Enumerable.Range(0, _claimed.Length).Where(i => _claimed[i])),
                 ["gameRecoveryDay"] = JObject.FromObject(_gameRecoveryDay.Where(pair => pair.Value > Day)
                     .ToDictionary(pair => pair.Key, pair => pair.Value)),
                 // water (World.Water.cs): what each aquifer still holds, by id (the patches regenerate from the seed)
@@ -88,16 +90,17 @@ namespace CrownAndHearth.Sim
             bool unityTerrain = save["style"] != null;
             var style = unityTerrain && Enum.TryParse(save.Value<string>("style"), true, out TerrainStyle st) ? st : TerrainStyle.Classic;
             var relief = save["relief"] != null && Enum.TryParse(save.Value<string>("relief"), true, out Relief rl) ? rl : Relief.Upland;
-            if (unityTerrain && size != N) throw new InvalidDataException("Invalid map size in settlement save.");
             var world = new World(save.Value<int?>("seed") ?? 7, false, style, relief)
             {
                 BannerColor = save.Value<string>("banner"),
                 Day = save.Value<int?>("day") ?? 1,
                 Peasants = save.Value<int?>("peasants") ?? 6,
                 Soldiers = save.Value<int?>("soldiers") ?? 0,
+                Archers = Math.Min(save.Value<int?>("archers") ?? 0, save.Value<int?>("soldiers") ?? 0),
                 Trained = save.Value<int?>("trained") ?? 0,
                 PopAcc = save.Value<double?>("popAcc") ?? 0,
                 Drafting = save.Value<bool?>("drafting") ?? true,
+                MilitiaFights = save.Value<bool?>("militia") ?? true,
                 Starving = save.Value<bool?>("starving") ?? false,
             };
             var priority = save["prio"]?.ToObject<string[]>() ?? Array.Empty<string>();
@@ -171,20 +174,30 @@ namespace CrownAndHearth.Sim
             if (world.Hall == null) throw new InvalidDataException("Settlement save has no Town Hall.");
 
             world.RestoreHeights(save["hv"] as JArray, size, offset);
+            // ownership: a save from before land claims, or from a smaller map, keeps the whole city it had
+            if (save["claimed"] is JArray claimed)
+                foreach (var p in claimed.Select(t => t.Value<int>()))
+                {
+                    if (p < 0 || p >= ParcelsPerSide * ParcelsPerSide) throw new InvalidDataException("Invalid land parcel in settlement save.");
+                    world.SetClaimed(p % ParcelsPerSide, p / ParcelsPerSide, true);
+                }
+            else world.ClaimSquare(offset, offset, size);
             // underground ore: a Unity save regenerates the deposits it was made with (from the seed's untouched terrain); a browser
             // save has no mining yet, so its deposits follow the ground as loaded. Neither moves the saved ore showings.
             world.GenDeposits(unityTerrain ? (style == TerrainStyle.Classic ? GenHeights(world.Seed) : GenRangeHeights(world.Seed, relief)) : world.Hv, false);
             if (save["surveyed"] is JArray surveyed)
                 foreach (var k in surveyed.Select(t => t.Value<int>()))
                 {
-                    if (k < 0 || k >= N * N) throw new InvalidDataException("Invalid surveyed tile in settlement save.");
-                    world.Surveyed[k] = true;
+                    if (k < 0 || k >= size * size) throw new InvalidDataException("Invalid surveyed tile in settlement save.");
+                    world.Surveyed[Tk(k % size + offset, k / size + offset)] = true;   // saved as an index into the saved map: place it in the bigger one
                 }
             if (save["oreTaken"] is JObject taken)
                 foreach (var pair in taken.ToObject<Dictionary<int, double>>())
                 {
-                    if (pair.Key < N * N || pair.Key >= (Bands + 1) * N * N || pair.Value < 0) throw new InvalidDataException("Invalid mined ore in settlement save.");
-                    world.OreTaken[pair.Key] = pair.Value;
+                    int cells = size * size;
+                    if (pair.Key < cells || pair.Key >= (Bands + 1) * cells || pair.Value < 0) throw new InvalidDataException("Invalid mined ore in settlement save.");
+                    int band = pair.Key / cells, tile = pair.Key % cells;   // the key is band * (saved size)^2 + tile: re-key it for the bigger map
+                    world.OreTaken[OreKey(band, Tk(tile % size + offset, tile / size + offset))] = pair.Value;
                 }
             // groundwater: the patches come from the seed; older saves start with every aquifer full
             world.GenAquifers();
@@ -210,6 +223,7 @@ namespace CrownAndHearth.Sim
             world.Recalc();
             if (save.Value<bool?>("farmFields") != true) world.AddStarterFarmFields();
             if (save.Value<int?>("flaxPercent") is int mix) world.SetFlaxPercent(mix);
+            world.SetArcherPercent(save.Value<int?>("archerPercent") ?? 0);
             world.SetShaftDepthLimit(save.Value<int?>("shaftDepthLimit") ?? MaxDepth);
             world.SetMineSupportsRequired(save.Value<bool?>("requireMineSupports") ?? false);
             world.LoadStatistics(save["statistics"] as JArray);

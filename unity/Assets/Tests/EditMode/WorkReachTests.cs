@@ -64,7 +64,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void FarmlandAnywhereIsWorkedByAllServedFarmhousesInProportionToTheirJobs()
         {
-            var w = new World(7);
+            var w = new World(7); w.ClaimAll();   // these tests build far from the town
             var first = w.Blds.Single(b => b.T == "farm");
             int starter = w.FarmFields().Count;
             // fertile open land 30+ tiles from every farmhouse
@@ -92,7 +92,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void FarmersNeededFollowTheFieldsThatNeedWork()
         {
-            var w = new World(7);
+            var w = new World(7); w.ClaimAll();   // these tests build far from the town
             var farm = w.Blds.Single(b => b.T == "farm");
             Assert.AreEqual(10, farm.Jobs, "the 2x2 farmhouse allows 10 farmers");
             w.Tick();   // spring: the starting fields are sown
@@ -106,7 +106,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void ALodgeNeedsOnlyAsManyWoodcuttersAsThereAreMarkedTrees()
         {
-            var w = new World(7);
+            var w = new World(7); w.ClaimAll();   // these tests build far from the town
             var site = AllTiles().Where(t => Math.Abs(t.x - C) + Math.Abs(t.y - C) is > 14 and < 30 && Gentle(w, t.x, t.y, 12)).OrderBy(t => Math.Abs(t.x - C) + Math.Abs(t.y - C)).FirstOrDefault();
             Assume.That(site.x > 0, "open ground for a lodge");
             var lodge = w.AddBld("wood", site.x, site.y, 2);
@@ -132,7 +132,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void WoodcuttersWalkToTreesTenTilesAwayAndFellThem()
         {
-            var w = new World(7);
+            var w = new World(7); w.ClaimAll();   // these tests build far from the town
             var site = AllTiles().Where(t => Math.Abs(t.x - C) + Math.Abs(t.y - C) is > 14 and < 30 && Gentle(w, t.x, t.y, 12)).OrderBy(t => Math.Abs(t.x - C) + Math.Abs(t.y - C)).FirstOrDefault();
             Assume.That(site.x > 0, "open ground for a lodge");
             w.Prio = new[] { "timber", "farming", "woodwork", "quarrying", "mining" };
@@ -153,7 +153,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void AQuarryAndAMineNeedWorkersOnlyWhereTilesAreZoned()
         {
-            var w = new World(7);
+            var w = new World(7); w.ClaimAll();   // these tests build far from the town
             // a quarry beside rock: zone one rock tile, then none
             var rockSite = AllTiles().Where(t => w.DecoMap[t.y, t.x] == Deco.Rock && !w.IsMountain(t.x, t.y) && w.RockWorkable(t.x, t.y)).FirstOrDefault();
             Assume.That(rockSite.x > 0, "an outcrop");

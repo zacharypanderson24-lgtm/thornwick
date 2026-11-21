@@ -19,10 +19,18 @@ namespace CrownAndHearth.Sim
         }
 
         // what the world looked like when the current step began
-        public struct Snapshot { public int Roads, ResByRoad, Houses, Farmland, Lumber, Lodges, Sawmills, Wells, Comm, Silos, Mining; }
+        public struct Snapshot { public int Roads, ResByRoad, Houses, Farmland, Lumber, Lodges, Sawmills, Wells, Comm, Silos, Mining, Parcels; }
 
         // actions the world cannot show, reported by the game
         public bool Panned, Zoomed, Rotated, SpeedChanged, WorkersOpened, UndergroundViewed;
+
+        /// <summary>The raid step sends raiders once per tutorial: how many, and what happened.</summary>
+        public const int RaidBand = 12;
+        public bool RaidDone { get; private set; }
+        public RaidReport Raid { get; private set; }
+
+        /// <summary>The step text, with the raid report added on the raid step.</summary>
+        public string BodyText => Current == null ? "" : Current.Id == "raid" && Raid != null ? Current.Body + "\n\n" + Raid.Summary() : Current.Body;
 
         public bool Active { get; private set; }
         public int Index { get; private set; }
@@ -39,6 +47,7 @@ namespace CrownAndHearth.Sim
         {
             At = Snap(w);
             Panned = Zoomed = Rotated = SpeedChanged = WorkersOpened = UndergroundViewed = false;
+            if (Current != null && Current.Id == "raid" && !RaidDone) { RaidDone = true; Raid = w.BeginRaid(RaidBand); }
         }
 
         /// <summary>Advance when the current step's goal has been met. Returns the finished step (for a "well done" message), or null.</summary>
@@ -55,6 +64,7 @@ namespace CrownAndHearth.Sim
         public static Snapshot Snap(World w)
         {
             var n = new Snapshot();
+            n.Parcels = w.ClaimedParcels;
             foreach (var b in w.Blds)
             {
                 if (b.T == "road" && b.Served) n.Roads++;
@@ -159,12 +169,23 @@ namespace CrownAndHearth.Sim
                 Body = "Mines take wood to shore up their tunnels. Unshored tunnels, deep shafts and crowded mines can cave in: the mine closes " +
                        "for repairs and a miner may die. Keep some wood in store while you mine. Click a mine to see its tunnels and supports.",
                 Goal = "Press Next" },
-            new Step { Id = "defence", Title = "Soldiers",
-                Body = "A Barracks (Military, 7) trains soldiers from your peasants, using wood, gold and iron ore. Soldiers eat half as much again and do no other work, " +
+            new Step { Id = "defence", Title = "Troops",
+                Body = "A Barracks (Military, 8) trains infantry (wood, gold, iron ore) and archers (wood, gold, flax) from your peasants. Pick the share of archers in the Troops menu. Troops are a standing army: each recruit leaves your workforce for good and keeps a place in the population, so births do not replace them. They eat half as much again and do no other work, " +
                        "so every one is a farmer or woodcutter you give up.",
                 Goal = "Press Next" },
+            new Step { Id = "raid", Title = "Raiders!",
+                Body = "Smoke on the hills! Raiders walk in over the border and head for whatever is worth taking: gold, food, wood, stone or ore. " +
+                       "Each takes one load and runs for home. Soldiers cut them down near a barracks (infantry close, archers far), and raiders avoid what soldiers cover. " +
+                       "Your people fight too, with their tools, but far worse (the Troops menu can stop it).\n\n" +
+                       "Build a Barracks beside what you want to protect and train troops.",
+                Goal = "Press Next" },
+            new Step { Id = "land", Title = "Land", Tool = "claim",
+                Body = "You own a 64 x 64 district round the Town Hall: the brighter land. The rest of the 256 x 256 map is yours to see and walk, but not to build or work until you own it.\n\n" +
+                       "Open Land (L) and click a 16 x 16 parcel next to your land to claim it. Land is free; claim what you need.",
+                Goal = "Claim a parcel of land", Count = s => s.Parcels, By = 1 },
             new Step { Id = "save", Title = "Saving",
                 Body = "Save and Load (top right) keep one settlement on this computer. Hover or click any tile to learn what it is and what it needs.\n\n" +
+                       "The Map (M, or the Map button) shows the whole world: cold in the north, hot in the south. Your settlement is the gold marker.\n\n" +
                        "That's everything. Good luck with your town!",
                 Goal = "Press Next to finish" },
         };

@@ -11,6 +11,8 @@ namespace CrownAndHearth.Game
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class GroundRenderer : MonoBehaviour
     {
+        static bool Unowned(World w, int x, int y) => World.Inb(x, y) && !w.Claimed(x, y);
+
         Mesh _mesh;
         readonly List<Vector3> _v = new List<Vector3>(N * N * 4);
         readonly List<Vector2> _uv = new List<Vector2>(N * N * 4);
@@ -33,12 +35,13 @@ namespace CrownAndHearth.Game
             { Zone.Wood, new Color32(150, 230, 150, 255) }, { Zone.Mine, new Color32(230, 185, 185, 255) },
         };
 
-        public void Build(World w, int rot)
+        /// <summary>Build the ground for the block of view tiles `win` only (the map is 256 x 256: the part near the camera is enough).</summary>
+        public void Build(World w, int rot, RectInt win)
         {
             _v.Clear(); _uv.Clear(); _c.Clear(); _t.Clear();
             float cw = 1f / ArtLibrary.CellCount, inU = 0.5f / (ArtLibrary.CellCount * 32f), inV = 0.5f / 16f;
-            for (int vy = 0; vy < N; vy++)
-                for (int vx = 0; vx < N; vx++)
+            for (int vy = win.yMin; vy < win.yMax; vy++)
+                for (int vx = win.xMin; vx < win.xMax; vx++)
                 {
                     var wt = IsoView.FromView(vx, vy, rot); int x = wt.x, y = wt.y;
                     int cT = IsoView.VhView(w, vx, vy, rot), cR = IsoView.VhView(w, vx + 1, vy, rot), cL = IsoView.VhView(w, vx, vy + 1, rot), cB = IsoView.VhView(w, vx + 1, vy + 1, rot);
@@ -62,6 +65,9 @@ namespace CrownAndHearth.Game
                     Color32 tint = new Color32(255, 255, 255, 255);
                     var z = w.ZoneMap[y, x];
                     if (z != Zone.None && w.Grid[y, x] == null) tint = ZoneTint[z];
+                    if (!w.Claimed(x, y)) { tint = new Color32((byte)(tint.r * 0.74f), (byte)(tint.g * 0.76f), (byte)(tint.b * 0.82f), 255); }   // land you do not own yet is dimmer
+                    else if (Unowned(w, x - 1, y) || Unowned(w, x + 1, y) || Unowned(w, x, y - 1) || Unowned(w, x, y + 1))
+                        tint = new Color32((byte)Mathf.Min(255, tint.r * 1.0f), (byte)Mathf.Min(255, tint.g * 0.93f), (byte)(tint.b * 0.62f), 255);   // a golden line along the edge of your land
                     var col = new Color32((byte)(tint.r * f), (byte)(tint.g * f), (byte)(tint.b * f), 255);
                     _c.Add(col); _c.Add(col); _c.Add(col); _c.Add(col);
                     AddQuad(i0);

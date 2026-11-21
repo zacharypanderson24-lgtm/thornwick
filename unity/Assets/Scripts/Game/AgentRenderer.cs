@@ -13,6 +13,8 @@ namespace CrownAndHearth.Game
         Material _mat;
         Sprite[,,] _worker;  // [trade, carrying, step]
         Sprite[,] _folk;     // [tunic, frame]
+        Sprite[,] _raider;   // [carrying, step], drawn in code
+        Texture2D _raiderTex;
         readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
         int _used;
 
@@ -36,6 +38,13 @@ namespace CrownAndHearth.Game
                         Put(w, rot, _worker[k, a.St == CrewState.Back && a.Carry > 0 ? 1 : 0, step], a.Px, a.Py, a.X, a.Y, frac, jit, 0);
                     }
                 }
+                if (w.Raid != null && _raider != null)
+                    foreach (var a in w.Raid.Raiders)
+                    {
+                        if (a.St == RaiderState.Waiting || a.St == RaiderState.Dead || a.St == RaiderState.Gone) continue;
+                        int step = (a.Px != a.X || a.Py != a.Y) && frac >= 0.5f ? 1 : 0;
+                        Put(w, rot, _raider[a.Carry > 0 ? 1 : 0, step], a.Px, a.Py, a.X, a.Y, frac, (a.Id * 3) % 5 - 2, (a.Id * 7) % 3 - 1);
+                    }
                 foreach (var v in w.Folk)
                 {
                     if (v.St == FolkState.Home) continue;
@@ -77,6 +86,7 @@ namespace CrownAndHearth.Game
 
         void MakeSprites()
         {
+            MakeRaiderSprites();
             const int width = 8, height = 12, columns = 12;
             var atlas = Resources.Load<Texture2D>("Art/agents");
             if (atlas == null || atlas.width != width * columns || atlas.height != height * 2)
@@ -101,8 +111,40 @@ namespace CrownAndHearth.Game
                     _folk[tunic, step] = Frame(tunic * 2 + step, 0);
         }
 
+        /// <summary>Raiders: a hooded figure in a red cloak with a spear; with a sack on the back once they carry loot. 8 x 12, two walking frames.</summary>
+        void MakeRaiderSprites()
+        {
+            const int W = 8, H = 12;
+            _raiderTex = new Texture2D(W * 4, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = "raiders" };
+            var clear = new Color32(0, 0, 0, 0);
+            var px = new Color32[W * 4 * H];
+            for (int i = 0; i < px.Length; i++) px[i] = clear;
+            Color32 cloak = new Color32(155, 47, 42, 255), edge = new Color32(98, 28, 28, 255), skin = new Color32(224, 184, 138, 255), hood = new Color32(59, 42, 42, 255), steel = new Color32(190, 190, 196, 255), sack = new Color32(201, 160, 90, 255);
+            void P(int ox, int x, int y, Color32 c) { if (x >= 0 && x < W && y >= 0 && y < H) px[y * W * 4 + ox + x] = c; }
+            for (int carrying = 0; carrying < 2; carrying++)
+                for (int step = 0; step < 2; step++)
+                {
+                    int ox = (carrying * 2 + step) * W;
+                    for (int y = 3; y <= 8; y++) for (int x = 2; x <= 5; x++) P(ox, x, y, x == 2 || x == 5 ? edge : cloak);
+                    P(ox, 3, 9, skin); P(ox, 4, 9, skin); P(ox, 3, 10, skin); P(ox, 4, 10, skin);
+                    for (int x = 2; x <= 5; x++) P(ox, x, 11, hood);
+                    P(ox, 2, 10, hood); P(ox, 5, 10, hood);
+                    if (step == 0) { P(ox, 2, 2, hood); P(ox, 2, 1, hood); P(ox, 5, 2, hood); P(ox, 5, 1, hood); P(ox, 2, 0, hood); P(ox, 5, 0, hood); }
+                    else { P(ox, 3, 2, hood); P(ox, 3, 1, hood); P(ox, 4, 2, hood); P(ox, 4, 1, hood); P(ox, 3, 0, hood); P(ox, 4, 0, hood); }
+                    for (int y = 2; y <= 10; y++) P(ox, 6, y, y >= 9 ? steel : hood);
+                    P(ox, 7, 10, steel);
+                    if (carrying == 1) for (int y = 4; y <= 7; y++) for (int x = 0; x <= 1; x++) P(ox, x, y, sack);
+                }
+            _raiderTex.SetPixels32(px); _raiderTex.Apply();
+            _raider = new Sprite[2, 2];
+            for (int carrying = 0; carrying < 2; carrying++)
+                for (int step = 0; step < 2; step++)
+                    _raider[carrying, step] = Sprite.Create(_raiderTex, new Rect((carrying * 2 + step) * W, 0, W, H), new Vector2(0.5f, 0), IsoView.PPU, 0, SpriteMeshType.FullRect);
+        }
+
         void OnDestroy()
         {
+            if (_raider != null) { foreach (var sprite in _raider) Destroy(sprite); Destroy(_raiderTex); }
             if (_worker == null) return;
             foreach (var sprite in _worker) Destroy(sprite);
             foreach (var sprite in _folk) Destroy(sprite);

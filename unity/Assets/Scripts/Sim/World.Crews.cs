@@ -72,9 +72,6 @@ namespace CrownAndHearth.Sim
             return d >= 1.75 ? double.PositiveInfinity : 1 + d * 1.5;
         }
 
-        /// <summary>Land ownership seam (JS claimed): true everywhere until territories exist.</summary>
-        public bool Claimed(int x, int y) => true;
-
         bool CrewMatch(Deco kind, int x, int y, bool hunting = false)
         {
             if (!Claimed(x, y)) return false;

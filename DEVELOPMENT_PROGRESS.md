@@ -287,6 +287,55 @@ Water, farms and work buildings no longer use small radii:
   with one tree employs one. The building info shows "Workers 1/1 needed (3 jobs...)".
 - **Tuning**: `Defs.WorkR`, `World.CrewDepth`. Tests: `WorkReachTests`; the mining tests now zone a small patch (`PatchR`) around the mine.
 
+### Conquest map, first step: a generated world you can look at (`Sim/WorldMap.cs`, `Game/Hud.Map.cs`, `WorldMapTests.cs`)
+
+Scope for now (Zach): see a procedurally generated map through a map menu. Nothing on it is playable yet.
+
+- **The world**: 600 x 600 km as 600 x 600 strategic cells (1 km each; the vision doc's candidate is 250 m, kept coarser to stay cheap), cut into
+  24 x 24 = 576 regions of 25 km. Pure C# from the seed alone (same seed, same world; nothing is saved), about 0.15 s to generate.
+  Sequence follows `docs/GAME_VISION.md`: a campaign setting (northern temperate, central Asian, Mediterranean, monsoon: wetness, relief and
+  the prevailing wind), a continent with mountain chains, temperature and rainfall (a moist wind crosses the map: rain on windward slopes,
+  rain shadow behind ranges), hydrology (priority-flood fills depressions into lakes; flow accumulates into rivers that always reach the sea or
+  a lake), then the 16 primary biomes from temperature, rainfall, altitude and slope. Rivers, floodplains and coasts are overlays.
+- **Heat map (Zach's rule)**: temperature follows latitude on every map, -7 C at the top edge to 30 C at the bottom (`TNorthSea`/`TSouthSea`),
+  so tundra and boreal forest lie in the top bands, temperate land in the middle, and savanna, desert and tropical forest at the bottom;
+  altitude cools it further (6.5 C a km), so ranges are cold streaks and tropical highlands appear.
+- **Regions** have a name, dominant biome, climate, height, fertility, forest and mountain shares, river length, a `Relief` (what a city there
+  would be: the city's `World` can take it), and one candidate **city site** each. The **home region** is where the player's settlement
+  stands: mostly land, matching the city's relief, a good place to begin (fertile, wooded, mild) and near the middle of the world.
+- **The menu**: a Map button (bottom right) and **M** open a modal panel; the world is generated on a worker thread the first time (the
+  panel says so meanwhile) and again if a loaded save has another seed or relief. Zoom with the wheel (about the cursor), drag or W A S D to
+  pan, hover for the region (left) and cell, Terrain or Heat map layer, region borders on or off, Find my settlement, Whole world, legend of
+  the biomes present. Esc or M closes it; the game keeps running behind it, but the town takes no input while it is open.
+- **City size**: a city is now 256 x 256 tiles of 8 m (about 2 km, 2 x 2 map cells), of which you own 64 x 64 to start; see the next section.
+  `WorldMap.CityTilesStart` and `CityTilesMax` record both.
+- **Not done**: polities, borders, armies, roads between cities, loading a city from a map site, a chosen campaign setting in a new-game
+  screen, labels on the map, a finer grid.
+
+### City map 256 x 256 with land claims (Zach: 64 x 64 to start, expandable to 256 x 256; `Sim/World.Claims.cs`, `ClaimTests.cs`)
+
+- **The map is 256 x 256 tiles from the first day** (`Defs.N`; the Town Hall starts at 128, 128). The land beyond your border is on the map,
+  drawn and walkable, so no coordinate ever moves when the border grows. Terrain generators scale with the map: ranges and massifs
+  by length and area, aquifer patches by area, mountains keep about the same share of the land.
+- **You own a 64 x 64 district** (4 x 4 parcels of 16 x 16 tiles) centred on the Town Hall and claim more one parcel at a time, next to
+  land you already own, **for free** (Zach: land costs nothing). `World.Claimed(x, y)` is real now (it was the always-true seam): placing, zoning, laying roads, demolishing and
+  clearing all refuse land you do not own ("That land is not yours yet"), and work crews, quarries and mines only count owned tiles as
+  work. Walking, existing roads and water never ask.
+- **Land (L)** in the build bar: Claim Land. Unowned land is drawn dimmer and the edge of your land has a gold line; the tool highlights the parcel under the cursor (green: you can, red: not next to your land) and the cursor tip says what lies on it (trees, rock, ore, fertile tiles, groundwater); the toast says how many parcels you own.
+  New tutorial step "Land".
+- **Drawing**: only a window of view tiles round the camera (half a screen more on each side) is built, for ground and sprites
+  (`IsoView.TileWindow`), and rebuilt when the camera leaves it, the zoom changes it, the world changes or the view turns. `SortOrder` fits
+  a short on a 256-wide map (`(vx + vy) * 64 + vx / 4`). Measured in a built game: about 17 ms a frame (vsync) at the default zoom, 27 ms
+  with the whole map in view.
+- **Saves** store the owned parcels (`claimed`). A save from the 128 x 128 game, or the browser's smaller ones, is placed in the middle of
+  the 256 map (same world coordinates for its buildings), the land round it is generated, surveys and mined ore are re-keyed to the new
+  tile numbering, and the parcels that touch the old square are yours, so a city you already built stays entirely yours.
+- **Tests**: the browser-parity tests that compare terrain, tiles and the starting layout with the frozen 128 x 128 JS reference are
+  ignored (the maps differ now); Hash2 still matches. New `ClaimTests` (start district, ownership rules, buying, saving, loading a
+  128 x 128 save); the ore-showing cap scales with the map's area.
+- **Not done**: parcels are bought, never sold or lost; no fog or border markers beyond the dimming; no per-parcel terrain preview; the
+  world map does not yet say how much of a city's 256 x 256 is owned.
+
 ## Not done yet (next candidates)
 
 1. Saves: built by ChatGPT, in `unity-migration` (see Farming above).
@@ -314,3 +363,13 @@ unity open unity                                 # then open Assets/Scenes/Settl
 
 ## Build bar by industry
 - Forestry is now **Wood** (4: woodcutter lodge, lumber zone, forester, sawmill) and the hunting lodge has its own **Hunting** button (5). Mining moved to 6, Trade 7, Military 8, Water 9, so the Land tool of the conquest-map branch needs another key. Each industry holds its buildings and zones together. Tutorial, README and tips updated.
+
+## Troops: infantry and archers
+- Two kinds of troops, trained from peasants at a served Barracks (one recruit every 4 days per barracks, bunks as before): **infantry** cost 2 wood, 1 gold, 1 iron ore; **archers** cost 3 wood, 1 gold, 1 flax. Both eat 1.5x and cost 0.1 gold upkeep a day. `World.Soldiers` is still the total; `World.Archers` counts archers, `Infantry` the rest. The new **Troops** menu (town menu bar) shows the counts and bunks, a slider for the share of archers among new recruits (`ArcherPercent`, default 0, so older games train infantry only exactly as before), and a Training on/off switch. Saves gain `archers` and `archerPercent`; old saves load as all infantry.
+- No combat yet: troops are counted, fed, paid and housed, ready for the siege and conquest work.
+- **Standing army:** each recruit leaves the workforce for good and keeps a place in the population (`Peasants + Soldiers <= Civ`), so births do not refill the workforce; housing demand counts soldiers; the population card reads "peasants + troops/capacity".
+- **Tutorial raid:** a new "Raiders!" step (after Troops) sends a band of 12 raiders once per tutorial (`World.Raid`, `World.Raids.cs`): every soldier holds off one raider, the rest carry off 60% of each stockpile (gold, food, wood, logs, stone, ore, flax), a quarter of the defenders who fought fall. The step shows what was taken.
+
+- **Visible raids** (`World.Raids.cs`, runtime only, never saved): a band walks in from outside your land (side chosen by the day, staggered over a few days), each raider picks a building by loot and danger, walks to it, takes one bite (14 units) from its store and runs back the way it came; a raider cut down drops the loot back into the store. What they want depends on the buildings: Town Hall and markets gold, silos and farms food/flax, sawmills wood, lodges logs, quarries stone, mines and barracks ore; houses and wells are left alone. They prefer nearby loot and avoid buildings soldiers cover: infantry fight within 5 tiles of a barracks (Town Hall if none), archers shoot within 9, so a barracks beside your silo protects it. Drawn as hooded red figures (code-drawn sprites in `AgentRenderer`), toasts when they arrive and leave, and the tutorial Raiders! step now sends a real band and shows live results.
+- **Militia:** with no soldiers at all, the workers of farms (pitchforks), hunters (bows), lodges and sawmills (axes, saws), foresters (billhooks), quarries (hammers) and mines (picks) fight raiders near their building, but far weaker than soldiers (0.04 to 0.08 damage a day each against 0.5 for a soldier), they raise a building's danger a little and raiders kill them (peasants die) faster. The raid report says what they fought with.
+- **Militia switch:** the Troops menu has "Militia fights: On/Off" (`World.MilitiaFights`, default on, saved as `militia`). When on, working residents fight raiders with their tools even if you also have soldiers (still far weaker); when off, only soldiers fight.
