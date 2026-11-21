@@ -93,6 +93,49 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
+        public void SoldiersMarchOutAndFightRaidersWhereYouCanSeeIt()
+        {
+            var w = Town(true, 10, 6);
+            var r = w.BeginRaid(12);
+            Assert.AreEqual(16, r.Fighters.Count, "every soldier is a fighter waiting at its post");
+            Assert.IsTrue(r.Fighters.All(f => f.St == FighterState.Idle));
+            bool marched = false, swung = false, shot = false, raiderHurt = false;
+            int maxOut = 0;
+            for (int day = 0; day < 400 && !(r.Over && r.Fighters.All(f => f.St == FighterState.Idle || f.St == FighterState.Dead)); day++)
+            {
+                w.ResAmt[Res.Food] = 300; w.Tick();
+                maxOut = System.Math.Max(maxOut, r.Fighters.Count(f => f.St == FighterState.Engage));
+                marched |= r.Fighters.Any(f => f.St == FighterState.Engage && (f.X != f.Px || f.Y != f.Py));
+                swung |= r.Fighters.Any(f => f.Attacked && f.Kind == Troop.Infantry);
+                shot |= r.Fighters.Any(f => f.Shooting && f.Kind == Troop.Archer);
+                raiderHurt |= r.Raiders.Any(a => a.Hurt);
+            }
+            Assert.IsTrue(marched, "soldiers walk out to meet the raiders");
+            Assert.IsTrue(swung, "infantry swing at them");
+            Assert.IsTrue(shot, "archers loose arrows");
+            Assert.IsTrue(raiderHurt, "raiders are hit");
+            Assert.Greater(maxOut, 3, "a real force is out on the field");
+            Assert.IsTrue(r.Fighters.All(f => f.St == FighterState.Idle || f.St == FighterState.Dead), "the survivors are back at their posts");
+            Assert.Greater(r.Killed, 0);
+        }
+
+        [Test]
+        public void SoldiersWhoFallAreGoneFromYourArmy()
+        {
+            var w = Town(true, 2, 0);   // two infantry against a big band
+            RunRaid(w, 18);
+            Assert.Greater(w.Raid.SoldiersLost, 0, "some of the two fell");
+            Assert.AreEqual(2 - w.Raid.SoldiersLost, w.Soldiers);
+            Assert.AreEqual(w.Soldiers, w.Infantry + w.Archers);
+            Assert.GreaterOrEqual(w.Archers, 0);
+
+            var bow = Town(true, 0, 2);
+            RunRaid(bow, 18);
+            Assert.AreEqual(bow.Soldiers, bow.Archers, "archers lost come off the archer count too");
+            Assert.AreEqual(2 - bow.Raid.SoldiersLost, bow.Archers);
+        }
+
+        [Test]
         public void RaidersAreRuntimeOnlyAndNeverSaved()
         {
             var w = Town(false, 0, 0);

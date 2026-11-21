@@ -3,12 +3,16 @@
 // What the raiders do depends on what you built and where:
 //   - They go for buildings that hold something worth taking (RaidLoot): the Town Hall and markets hold gold, silos and farms food and flax,
 //     sawmills and lodges wood and logs, quarries stone, mines and barracks ore. Houses and wells hold nothing and are left alone.
-//   - They like the nearest loot (outlying buildings are hit first) and avoid buildings your soldiers cover (RaidDanger): infantry fight
-//     within MeleeR tiles of a barracks, archers shoot within BowR, so a barracks built beside your silo protects it and one built
-//     in a corner does not. The Town Hall garrisons the soldiers when there is no barracks.
+//   - They like the nearest loot (outlying buildings are hit first) and avoid buildings your soldiers cover (RaidDanger): soldiers answer
+//     within AlertR tiles of their post, so a barracks built beside your silo protects it and one built in a corner does not. The Town Hall
+//     is the post when there is no barracks.
 //   - Each raider takes one bite (RaidBite) from its target's store and flees back the way it came. A raider cut down on the way home drops
 //     the loot back into your store; one that gets away keeps it.
-// Raiders are runtime state like the work crews: never saved, gone after a load (what they already took stays taken).
+//   - The fighting is real and visible: every soldier is a Fighter with a position and hit points. When raiders come within AlertR of a post its
+//     soldiers march out (two tiles a day); infantry close in and hit in melee, archers stop and shoot from up to ArcherRange tiles. Raiders
+//     that find a soldier next to them stop and fight back. Soldiers who fall are gone from your army (Soldiers and Archers drop); when the
+//     raiders are dead or gone the survivors march home.
+// Raiders and fighters are runtime state like the work crews: never saved, gone after a load (what they already took stays taken).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,7 +29,23 @@ namespace CrownAndHearth.Sim
         public double Hp = World.RaiderHp;
         public Building Target;
         public Res LootRes; public double Carry;
+        public bool Hurt, Fighting;   // took a hit today / stopped to fight a soldier today (drawn red / swinging)
+        public int DeadDay;           // the body stays on the field for a few days
         public readonly List<int> Path = new List<int>();   // the way in, walked back when fleeing
+    }
+
+    public enum FighterState : byte { Idle, Engage, Return, Dead }
+
+    /// <summary>One soldier during a raid: marches out from its post, fights, and marches home.</summary>
+    public sealed class Fighter
+    {
+        public int Id, X, Y, Px, Py, DeadDay, ShotX, ShotY;
+        public Troop Kind;
+        public Building Post;
+        public FighterState St;
+        public double Hp;
+        public Raider Target;
+        public bool Hurt, Attacked, Shooting;   // took a hit / swung / loosed an arrow today
     }
 
     public sealed class RaidReport
@@ -36,7 +56,9 @@ namespace CrownAndHearth.Sim
         public bool Over, StartAnnounced, EndAnnounced;
         public readonly Dictionary<Res, int> Stolen = new Dictionary<Res, int>();   // what got away with the raiders
         public readonly List<Raider> Raiders = new List<Raider>();
+        public readonly List<Fighter> Fighters = new List<Fighter>();
         internal readonly Dictionary<Building, int[]> Fields = new Dictionary<Building, int[]>();
+        internal readonly Dictionary<Raider, int[]> Chase = new Dictionary<Raider, int[]>();   // steps to each raider, near it, refreshed daily
 
         public int Active => Raiders.Count(r => r.St != RaiderState.Dead && r.St != RaiderState.Gone);
 
@@ -55,12 +77,11 @@ namespace CrownAndHearth.Sim
 
     public partial class World
     {
-        public const int RaiderHp = 3, MeleeR = 5, BowR = 9;
-        public const double RaidBite = 14;
+        public const int RaiderHp = 3, AlertR = 14, ChaseR = 22, ArcherRange = 7, FighterSpeed = 2, BodyDays = 4;
+        public const double RaidBite = 14, InfantryHp = 5, ArcherHp = 3, InfantryHit = 1.2, ArcherHit = 0.8, RaiderHit = 0.8;
 
         /// <summary>The raid in progress, or the last one (null before any).</summary>
         public RaidReport Raid { get; private set; }
-        double _wounds;
         double _militiaWounds;
 
         /// <summary>When the militia is on (World.MilitiaFights), the people at a work building fight with their trade's tool: (name, damage per worker per day, reach in tiles); far weaker than a soldier (0.5 a day), and they get hurt more.</summary>
@@ -132,8 +153,7 @@ namespace CrownAndHearth.Sim
             foreach (var (g, inf, arc) in Garrisons())
             {
                 int d = Math.Max(0, Math.Max(Math.Abs(g.X - b.X), Math.Abs(g.Y - b.Y)) - 1);
-                if (d <= MeleeR) power += inf;
-                if (d <= BowR) power += arc;
+                if (d <= AlertR) power += inf + arc;
             }
             return Math.Min(1, (power + MilitiaPower(b)) / 6.0);
         }
@@ -154,7 +174,7 @@ namespace CrownAndHearth.Sim
         public RaidReport BeginRaid(int raiders)
         {
             var r = new RaidReport { Band = raiders, Defenders = Soldiers, StartDay = Day };
-            Raid = r; _wounds = 0;
+            Raid = r; _militiaWounds = 0;
             int side = (int)Math.Floor(Noise.Hash2(Day, Seed, 91) * 4);
             r.From = Sides[side];
             int minX = N, maxX = 0, minY = N, maxY = 0;
@@ -176,7 +196,35 @@ namespace CrownAndHearth.Sim
                 var (sx, sy) = NearestOpen(x, y);
                 r.Raiders.Add(new Raider { Id = i, Delay = i / 3, X = sx, Y = sy, Px = sx, Py = sy, St = RaiderState.Waiting });
             }
+            SpawnFighters(r);
             return r;
+        }
+
+        /// <summary>Every soldier becomes a Fighter waiting inside its barracks (or the Town Hall).</summary>
+        void SpawnFighters(RaidReport r)
+        {
+            int id = 0;
+            foreach (var (post, inf, arc) in Garrisons())
+            {
+                var (sx, sy) = StandBeside(post);
+                for (int i = 0; i < inf + arc; i++)
+                {
+                    var kind = i < inf ? Troop.Infantry : Troop.Archer;
+                    r.Fighters.Add(new Fighter { Id = id++, Kind = kind, Post = post, X = sx, Y = sy, Px = sx, Py = sy, St = FighterState.Idle, Hp = kind == Troop.Archer ? ArcherHp : InfantryHp });
+                }
+            }
+        }
+
+        /// <summary>An open tile next to a building, where its soldiers come out (nearest the map centre first).</summary>
+        (int x, int y) StandBeside(Building b)
+        {
+            for (int rad = 1; rad <= 3; rad++)
+                for (int dy = -rad; dy <= b.Sz - 1 + rad; dy++) for (int dx = -rad; dx <= b.Sz - 1 + rad; dx++)
+                {
+                    int x = b.X + dx, y = b.Y + dy;
+                    if (Inb(x, y) && Grid[y, x] == null && !IsSolid(x, y)) return (x, y);
+                }
+            return (b.X, b.Y);
         }
 
         (int x, int y) NearestOpen(int x, int y)
@@ -228,12 +276,23 @@ namespace CrownAndHearth.Sim
         void StepRaid()
         {
             var r = Raid;
-            if (r == null || r.Over) return;
+            if (r == null) return;
+            if (r.Over && r.Fighters.All(f => f.St == FighterState.Idle || f.St == FighterState.Dead)) return;
+            if (!r.Over) StepRaiders(r);
+            StepFighters(r);
+            if (!r.Over && r.Raiders.All(a => a.St == RaiderState.Dead || a.St == RaiderState.Gone)) r.Over = true;
+            if (r.Over && r.Fighters.All(f => f.St == FighterState.Idle || f.St == FighterState.Dead)) { r.Fields.Clear(); r.Chase.Clear(); }
+        }
+
+        static int Cheb(int ax, int ay, int bx, int by) => Math.Max(Math.Abs(ax - bx), Math.Abs(ay - by));
+
+        void StepRaiders(RaidReport r)
+        {
             int days = Day - r.StartDay;
             foreach (var a in r.Raiders)
             {
                 if (a.St == RaiderState.Dead || a.St == RaiderState.Gone) continue;
-                a.Px = a.X; a.Py = a.Y;
+                a.Px = a.X; a.Py = a.Y; a.Hurt = false; a.Fighting = false;
                 if (a.St == RaiderState.Waiting)
                 {
                     if (days < a.Delay) continue;
@@ -247,6 +306,8 @@ namespace CrownAndHearth.Sim
                     var dist = RaidField(r, a.Target);
                     int d = dist[a.Y * N + a.X];
                     if (d <= 1) { a.St = RaiderState.Loot; continue; }
+                    // a soldier right beside the raider: stop and fight instead of walking on
+                    if (r.Fighters.Any(f => f.St != FighterState.Dead && f.St != FighterState.Idle && Cheb(f.X, f.Y, a.X, a.Y) <= 1)) { a.Fighting = true; continue; }
                     int best = -1;
                     for (int k = 0; k < 4 && best < 0; k++)
                     {
@@ -278,13 +339,133 @@ namespace CrownAndHearth.Sim
                     int c = a.Path[a.Path.Count - 1]; a.X = c % N; a.Y = c / N;
                 }
             }
+        }
 
-            Fight(r);
+        static bool RaiderLive(Raider a) => a.St == RaiderState.Approach || a.St == RaiderState.Loot || a.St == RaiderState.Flee;
 
-            if (r.Raiders.All(a => a.St == RaiderState.Dead || a.St == RaiderState.Gone))
+        bool FighterPass(int x, int y) => Inb(x, y) && !IsSolid(x, y) && (Grid[y, x] == null || Grid[y, x].T == "road");
+
+        /// <summary>Steps from every tile within reach of a raider to that raider (BFS over ground soldiers can cross), -1 elsewhere.</summary>
+        int[] ChaseField(RaidReport r, Raider a)
+        {
+            if (!r.Chase.TryGetValue(a, out var dist)) { dist = new int[N * N]; r.Chase[a] = dist; }
+            for (int i = 0; i < dist.Length; i++) dist[i] = -1;
+            var queue = new Queue<int>();
+            dist[a.Y * N + a.X] = 0; queue.Enqueue(a.Y * N + a.X);
+            while (queue.Count > 0)
             {
-                r.Over = true; r.Fields.Clear();
+                int c = queue.Dequeue(), cx = c % N, cy = c / N;
+                if (dist[c] >= ChaseR + 4) continue;
+                for (int k = 0; k < 4; k++)
+                {
+                    int nx = cx + Nb[k, 0], ny = cy + Nb[k, 1];
+                    if (!Inb(nx, ny) || dist[ny * N + nx] >= 0 || !FighterPass(nx, ny)) continue;
+                    if (double.IsPositiveInfinity(WalkCost(cx, cy, nx, ny))) continue;
+                    dist[ny * N + nx] = dist[c] + 1; queue.Enqueue(ny * N + nx);
+                }
             }
+            return dist;
+        }
+
+        /// <summary>Move one step to the neighbour that is one nearer in the field. False when there is none.</summary>
+        static bool StepDown(Fighter f, int[] dist)
+        {
+            int d = dist[f.Y * N + f.X];
+            if (d <= 0) return false;
+            for (int k = 0; k < 4; k++)
+            {
+                int nx = f.X + Nb[k, 0], ny = f.Y + Nb[k, 1];
+                if (Inb(nx, ny) && dist[ny * N + nx] == d - 1) { f.X = nx; f.Y = ny; return true; }
+            }
+            return false;
+        }
+
+        /// <summary>The soldiers' day: pick a raider, march (2 tiles), then swing or shoot; raiders next to a soldier hit back; the fallen are removed.</summary>
+        void StepFighters(RaidReport r)
+        {
+            var live = r.Raiders.Where(RaiderLive).ToList();
+            var chase = new Dictionary<Raider, int[]>();
+            int[] FieldOf(Raider a) { if (!chase.TryGetValue(a, out var f)) chase[a] = f = ChaseField(r, a); return f; }
+            var hitRaider = new Dictionary<Raider, double>();
+            var hitFighter = new Dictionary<Fighter, double>();
+
+            foreach (var f in r.Fighters)
+            {
+                if (f.St == FighterState.Dead) continue;
+                f.Px = f.X; f.Py = f.Y; f.Hurt = f.Attacked = f.Shooting = false;
+                // pick a target: the nearest raider (those carrying loot count as nearer) inside the alert area of the post, or the current one while it stays in reach
+                if (f.Target != null && (!RaiderLive(f.Target) || Cheb(f.Post.X, f.Post.Y, f.Target.X, f.Target.Y) > ChaseR)) f.Target = null;
+                if (f.Target == null && live.Count > 0)
+                {
+                    int radius = f.St == FighterState.Idle ? AlertR : ChaseR;
+                    Raider best = null; double bestScore = double.MaxValue;
+                    foreach (var a in live)
+                    {
+                        int d = Cheb(f.Post.X, f.Post.Y, a.X, a.Y); if (d > radius) continue;
+                        double score = Cheb(f.X, f.Y, a.X, a.Y) - (a.Carry > 0 ? 6 : 0);
+                        if (score < bestScore || (score == bestScore && best != null && a.Id < best.Id)) { best = a; bestScore = score; }
+                    }
+                    f.Target = best;
+                }
+                if (f.Target == null)
+                {
+                    if (f.St == FighterState.Engage) f.St = FighterState.Return;
+                }
+                else if (f.St == FighterState.Idle || f.St == FighterState.Return) f.St = FighterState.Engage;
+
+                if (f.St == FighterState.Engage)
+                {
+                    var t = f.Target;
+                    int want = f.Kind == Troop.Archer ? ArcherRange - 1 : 1;
+                    var field = FieldOf(t);
+                    for (int s = 0; s < FighterSpeed && Cheb(f.X, f.Y, t.X, t.Y) > want; s++) if (!StepDown(f, field)) break;
+                    int range = f.Kind == Troop.Archer ? ArcherRange : 1;
+                    if (Cheb(f.X, f.Y, t.X, t.Y) <= range)
+                    {
+                        hitRaider[t] = hitRaider.GetValueOrDefault(t) + (f.Kind == Troop.Archer ? ArcherHit : InfantryHit);
+                        f.Attacked = true;
+                        if (f.Kind == Troop.Archer) { f.Shooting = true; f.ShotX = t.X; f.ShotY = t.Y; }
+                    }
+                }
+                else if (f.St == FighterState.Return)
+                {
+                    var home = RaidField(r, f.Post);
+                    for (int s = 0; s < FighterSpeed; s++) { if (home[f.Y * N + f.X] <= 1) break; if (!StepDown(f, home)) break; }
+                    if (home[f.Y * N + f.X] <= 1) { var (sx, sy) = StandBeside(f.Post); f.X = sx; f.Y = sy; f.St = FighterState.Idle; }
+                }
+            }
+
+            // raiders stopped beside a soldier hit the nearest one back
+            foreach (var a in live.Where(a => a.Fighting))
+            {
+                Fighter near = null; int nd = int.MaxValue;
+                foreach (var f in r.Fighters)
+                {
+                    if (f.St == FighterState.Dead || f.St == FighterState.Idle) continue;
+                    int d = Cheb(f.X, f.Y, a.X, a.Y); if (d <= 1 && (d < nd || (d == nd && f.Id < near.Id))) { near = f; nd = d; }
+                }
+                if (near != null) hitFighter[near] = hitFighter.GetValueOrDefault(near) + RaiderHit;
+            }
+
+            if (MilitiaFights) MilitiaFight(r);
+            foreach (var kv in hitRaider) { kv.Key.Hp -= kv.Value; kv.Key.Hurt = true; }
+            foreach (var kv in hitFighter) { kv.Key.Hp -= kv.Value; kv.Key.Hurt = true; }
+
+            foreach (var a in r.Raiders)
+                if (a.Hp <= 0 && RaiderLive(a))
+                {
+                    if (a.Carry > 0) { ResAmt[a.LootRes] += a.Carry; a.Carry = 0; }   // the loot drops where it fell and is carried back
+                    a.St = RaiderState.Dead; a.DeadDay = Day; r.Killed++;
+                }
+            foreach (var f in r.Fighters)
+                if (f.Hp <= 0 && f.St != FighterState.Dead)
+                {
+                    f.St = FighterState.Dead; f.DeadDay = Day; f.Target = null;
+                    if (Soldiers > 0) Soldiers--;
+                    if (f.Kind == Troop.Archer && Archers > 0) Archers--;
+                    r.SoldiersLost++;
+                }
+            r.Fighters.RemoveAll(f => f.St == FighterState.Dead && Day - f.DeadDay > BodyDays);
         }
 
         /// <summary>No military: the workers of each building fight raiders in reach with their tools, and raiders at the door hurt them back.</summary>
@@ -305,32 +486,5 @@ namespace CrownAndHearth.Sim
             if (Peasants <= 1) _militiaWounds = 0;
         }
 
-        /// <summary>Soldiers fire on raiders in range; raiders at the barracks wound the garrison.</summary>
-        void Fight(RaidReport r)
-        {
-            foreach (var (g, inf, arc) in Garrisons())
-            {
-                var active = r.Raiders.Where(a => a.St == RaiderState.Approach || a.St == RaiderState.Loot || a.St == RaiderState.Flee).ToList();
-                var inBow = active.Where(a => Reach(g, a.X, a.Y) <= BowR).ToList();
-                var inMelee = active.Where(a => Reach(g, a.X, a.Y) <= MeleeR).ToList();
-                if (inBow.Count > 0 && arc > 0) foreach (var a in inBow) a.Hp -= 0.5 * arc / inBow.Count;
-                if (inMelee.Count > 0 && inf > 0) foreach (var a in inMelee) a.Hp -= 0.5 * inf / inMelee.Count;
-                if (inMelee.Count > 0 && inf + arc > 0) _wounds += 0.1 * inMelee.Count;
-            }
-            if (MilitiaFights) MilitiaFight(r);
-            foreach (var a in r.Raiders)
-                if (a.Hp <= 0 && a.St != RaiderState.Dead && a.St != RaiderState.Gone)
-                {
-                    if (a.Carry > 0) { ResAmt[a.LootRes] += a.Carry; a.Carry = 0; }   // the loot drops where it fell and is carried back
-                    a.St = RaiderState.Dead; r.Killed++;
-                }
-            while (_wounds >= 1 && Soldiers > 0)
-            {
-                _wounds -= 1;
-                if (Infantry > 0) Soldiers--; else { Archers--; Soldiers--; }
-                r.SoldiersLost++;
-            }
-            if (Soldiers == 0) _wounds = 0;
-        }
     }
 }
