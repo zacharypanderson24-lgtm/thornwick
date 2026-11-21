@@ -35,7 +35,7 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Roads, Label = "Roads", Key = "1", Hotkey = Key.Digit1, Desc = "Roads link everything to the Town Hall." },
             new CatDef { Cat = Cat.Housing, Label = "Housing", Key = "2", Hotkey = Key.Digit2, Icon = "house_1", Desc = "Zone land where villagers build their own homes." },
             new CatDef { Cat = Cat.Farming, Label = "Farming", Key = "3", Hotkey = Key.Digit3, Icon = "farm2", Desc = "Farmhouses, the wheat and flax fields they work, and silos to store the crop." },
-            new CatDef { Cat = Cat.Forestry, Label = "Forestry", Key = "4", Hotkey = Key.Digit4, Icon = "wood2", Desc = "Woodcutter lodges and the forest they fell, foresters to replant, sawmills to turn logs into wood." },
+            new CatDef { Cat = Cat.Forestry, Label = "Forestry", Key = "4", Hotkey = Key.Digit4, Icon = "wood2", Desc = "Hunt for food, fell trees for logs, replant forests, and saw logs into wood." },
             new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "5", Hotkey = Key.Digit5, Icon = "mine", Desc = "Quarries for stone and mines for iron, and the Mining zones they work." },
             new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "6", Hotkey = Key.Digit6, Icon = "market", Desc = "Markets." },
             new CatDef { Cat = Cat.Military, Label = "Military", Key = "7", Hotkey = Key.Digit7, Icon = "barracks", Desc = "Barracks that train soldiers." },
@@ -58,6 +58,8 @@ namespace CrownAndHearth.Game
                 Desc = $"Stores {World.SiloFood} more wheat and {World.SiloFlax} more flax. Needs a road to the Town Hall." },
             new ToolDef { Id = "lodge", Cat = Cat.Forestry, Label = "Woodcutter Lodge", Build = "wood",
                 Desc = "Woodcutters walk out to trees in Lumber zones within 3 tiles, fell them and carry the logs home. Needs a road to the Town Hall." },
+            new ToolDef { Id = "hunter", Cat = Cat.Forestry, Label = "Hunting Lodge", Build = "hunter",
+                Desc = $"Two hunters bring back food year-round from reachable mature forest within {World.HuntingRange} tiles. Each forest tile has {World.ForestFoodReserve} food total. Needs a road to the Town Hall." },
             new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Lumber Zone", Zone = Zone.Wood,
                 Desc = "Drag over forest to have it felled by a nearby lodge, or over open ground for a forester to replant. The shaded area shows where lodges and foresters reach." },
             new ToolDef { Id = "forester", Cat = Cat.Forestry, Label = "Forester", Build = "forester",
@@ -444,7 +446,7 @@ namespace CrownAndHearth.Game
         /// tile (World.ForesterCovers); everything else from the footprint's edge (crews, mines, farm fields).</summary>
         static int ReachOf(string type) => type switch
         {
-            "farm" => World.FarmFieldRange, "wood" => WorkR, "quarry" => WorkR, "mine" => WorkR, "forester" => ForesterR, _ => 0,
+            "farm" => World.FarmFieldRange, "wood" => WorkR, "hunter" => World.HuntingRange, "quarry" => WorkR, "mine" => WorkR, "forester" => ForesterR, _ => 0,
         };
 
         void AddReach(string type, int bx, int by, int sz, Color32 col, HashSet<int> seen)
@@ -776,6 +778,7 @@ namespace CrownAndHearth.Game
                 if (b.Jobs > 0) lines.Add($"Workers {b.Workers}/{b.Jobs} ({b.Eff * 100:0}%)");
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "mine") lines.Add(w.MineStatus(b));
+                if (b.T == "hunter") lines.Add($"Hunts mature forest within {World.HuntingRange} tiles in all seasons.");
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
                 if (b.T == "silo")
                     lines.Add(b.Served ? $"+{World.SiloFood} wheat and +{World.SiloFlax} flax storage" : "Connect to the Town Hall to use its crop storage.");
@@ -787,7 +790,12 @@ namespace CrownAndHearth.Game
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");
             var d = w.DecoMap[y, x];
             // a short heading line of its own (the info panel shows the first line as its title), then the explanation
-            if (d == Deco.Tree) { lines.Add("FOREST"); lines.Add("Zone it for lumber (Forestry, 4) so a woodcutter lodge fells it."); }
+            if (d == Deco.Tree)
+            {
+                lines.Add("FOREST");
+                lines.Add($"Game remaining: {w.HuntFoodRemaining(x, y)}/{World.ForestFoodReserve} food.");
+                lines.Add("Hunting lodges hunt here without zoning. Lumber zoning lets woodcutters fell the trees.");
+            }
             if (d == Deco.Rock) { lines.Add(w.IsMountain(x, y) ? "MOUNTAIN" : "STONE OUTCROP"); lines.Add(w.IsMountain(x, y) ? $"Stone left {w.RockLeft(x, y):0}. Quarry it from the edge." : $"Stone left {w.RockLeft(x, y):0}."); }
             if (d == Deco.Ore) { lines.Add("IRON SHOWING"); lines.Add(w.IsSurveyed(x, y) ? "Ore shows at the surface here." : "Ore shows at the surface here; more lies inside the hill. Zone it for mining (Mining, 5) with the high ground, with a lot at the foot for the mine."); }
             var z = w.ZoneMap[y, x];

@@ -17,7 +17,7 @@ namespace CrownAndHearth.Sim
             var before = ResAmt.ToDictionary(kv => kv.Key, kv => kv.Value);
             int employed = d.Employed;
             double food = 0, wood = 0;
-            var got = new Dictionary<Res, double> { { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 } };
+            var got = new Dictionary<Res, double> { { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 }, { Res.Food, 0 } };
 
             // farms + foresters
             var crops = SeasonalFarming ? WorkSeasonalFields() : FarmOutput();
@@ -31,7 +31,9 @@ namespace CrownAndHearth.Sim
             }
 
             // crews, then deliver logs
+            got[Res.Food] = food;
             StepCrews(got);
+            food = got[Res.Food];
             StepFolk();
             ResAmt[Res.Logs] += got[Res.Logs];
 
