@@ -36,6 +36,8 @@ namespace CrownAndHearth.Sim
                 ["surveyed"] = new JArray(Enumerable.Range(0, N * N).Where(k => Surveyed[k])),
                 ["oreTaken"] = JObject.FromObject(OreTaken), ["minerDeaths"] = MinerDeaths, ["caveIns"] = CaveIns,
                 ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["archers"] = Archers, ["archerPercent"] = ArcherPercent, ["trained"] = Trained,
+                ["lastHunt"] = LastHuntingDeliveryDay, ["lastWheatHarvest"] = LastWheatHarvestDay,
+                ["lastStoneDelivery"] = LastStoneDeliveryDay, ["lastLogDelivery"] = LastLogDeliveryDay,
                 ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["militia"] = MilitiaFights, ["starving"] = Starving,
                 ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
                 ["res"] = JObject.FromObject(ResAmt.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
@@ -93,6 +95,10 @@ namespace CrownAndHearth.Sim
             var world = new World(save.Value<int?>("seed") ?? 7, false, style, relief)
             {
                 BannerColor = save.Value<string>("banner"),
+                LastHuntingDeliveryDay = save.Value<int?>("lastHunt") ?? 0,
+                LastWheatHarvestDay = save.Value<int?>("lastWheatHarvest") ?? 0,
+                LastStoneDeliveryDay = save.Value<int?>("lastStoneDelivery") ?? 0,
+                LastLogDeliveryDay = save.Value<int?>("lastLogDelivery") ?? 0,
                 Day = save.Value<int?>("day") ?? 1,
                 Peasants = save.Value<int?>("peasants") ?? 6,
                 Soldiers = save.Value<int?>("soldiers") ?? 0,
