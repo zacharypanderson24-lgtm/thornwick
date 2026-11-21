@@ -25,10 +25,12 @@ namespace CrownAndHearth.Sim
         public const double SnowLevel = 12;
 
         // Economy
-        public const int HallCap = 6, Bunks = 6, WorkR = 3, Storage = 400;   // water tuning: WaterTuning in World.Water.cs
+        // WorkR: how far (in tiles, a square around the building) woodcutters, quarrymen, miners and foresters can work. LegacyZoneR: how far an
+        // old browser save auto-zones around a lodge or quarry. FaceR: how far a mine looks for the hill its entrance turns away from.
+        public const int HallCap = 6, Bunks = 6, WorkR = 16, LegacyZoneR = 3, FaceR = 3, Storage = 400;   // water tuning: WaterTuning in World.Water.cs
         public const double SawRate = 4, HallSaw = 1, HallYield = 0.5;
         public const int StumpDays = 8;
-        public const int PlantEvery = 4, SaplingDays = 3 * 365, ForesterR = 4;
+        public const int PlantEvery = 4, SaplingDays = 3 * 365, ForesterR = WorkR;
 
         // Stone and ore are finite
         public const int DigU = 10, MountCap = 120, OreCap = 30;

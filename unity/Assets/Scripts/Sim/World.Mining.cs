@@ -150,8 +150,8 @@ namespace CrownAndHearth.Sim
         {
             double ux = 0, uy = 0, h0 = _genLevel[Tk(x, y)];
             double cx = x + (size - 1) * 0.5, cy = y + (size - 1) * 0.5;
-            for (int j = y - WorkR; j <= y + size - 1 + WorkR; j++)
-                for (int i = x - WorkR; i <= x + size - 1 + WorkR; i++)
+            for (int j = y - FaceR; j <= y + size - 1 + FaceR; j++)
+                for (int i = x - FaceR; i <= x + size - 1 + FaceR; i++)
                 {
                     if (!Inb(i, j) || (i >= x && i < x + size && j >= y && j < y + size)) continue;
                     double rise = _genLevel[Tk(i, j)] - h0; if (rise <= 0) continue;

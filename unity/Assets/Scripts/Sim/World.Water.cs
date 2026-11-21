@@ -5,16 +5,17 @@
 // out of the reserve; at an empty reserve their output falls to what recharges each day; when they draw less, the aquifer refills
 // up to its capacity. Example: 300 stored, 20 recharge, 60 drawn a day -> empty after 300 / (60 - 20) = 7.5 days.
 //
-// SURFACE DELIVERY is separate: water carriers walk from a source (the Town Hall's spring, a well) or a store (the Hall's cistern, a
-// Cistern) along Hall-connected roads, up to a few road tiles, to the homes there (ReachFrom). The routing takes a "closed" test for
-// road tiles water cannot pass, so a future closed gate can cut the deliveries from wells outside the walls while an inside well
-// still taps an aquifer that runs beneath them (ForecastClosure is the preview for that).
+// SURFACE DELIVERY is separate, and has no radius: every source (the Town Hall's spring, a well), every store (the Hall's cistern, a
+// Cistern) and every home on the road network connected to the Town Hall is one town-wide pool. Distance does not matter; being on
+// the network does (WaterNetwork). The network takes a "closed" test for road tiles water cannot pass, so a future closed gate cuts off
+// the wells and homes beyond it while an inside well still taps an aquifer that runs beneath the walls (ForecastClosure previews it).
 //
-// EACH DAY (StepWater): homes ask for water (villagers x PerHead). Sources pump only to meet that demand and to fill cistern space
-// they reach; springs are used before groundwater, so a spare well leaves the aquifer alone when demand is met and storage is full.
-// What the sources cannot deliver comes from stored water that reaches the home. Homes still short count days (Building.ShortDays):
+// EACH DAY (StepWater): homes ask for water (villagers x PerHead). Sources pump only to meet the town's demand and to fill free store
+// space; springs are used before groundwater, so a spare well leaves its aquifer alone when demand is met and storage is full. What
+// the sources cannot deliver comes from stored water; if that runs out too, every home on the network gets the same share. Surplus
+// supply builds the stores up (and an aquifer drawn below its recharge refills). Homes still short count days (Building.ShortDays):
 // while any home is short, house growth stops and births slow; after Grace days the home's capacity halves and residents leave.
-// A home that is fully watered (reached by water and not past its grace) is level 2: this replaces the old "well within 4 tiles" rule.
+// A served home keeps level 2 until it has been parched; this replaces the old "well within 4 tiles" rule.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,12 +29,9 @@ namespace CrownAndHearth.Sim
         public const double PerHead = 1;          // water a villager drinks a day
         public const double HallSpring = 24;      // the Town Hall's own spring, a day; never runs dry (covers the opening town of up to 18)
         public const double HallCistern = 150;    // the Town Hall's cistern
-        public const int HallReach = 8;           // road tiles the Hall's water carriers walk
         public const double WellPump = 30;        // one well's pumping limit a day
         public const double WellSeep = 6;         // a well off any aquifer (only from older saves) seeps this much a day, with no reserve
-        public const int WellReach = 6;
         public const double CisternCap = 120;
-        public const int CisternReach = 6;
         public const int Grace = 15;              // days a home can go short before its residents start to leave
         public const int StoreWarnDays = 8;       // warn when stored water covers a shortfall for fewer days than this
         public const double ReservePerTile = 5, RechargePerTile = 0.4;   // a 60-tile aquifer holds 300 and recharges 24 a day
@@ -44,7 +42,8 @@ namespace CrownAndHearth.Sim
         public const double RadiusMin = 3, RadiusMax = 7, Ragged = 0.6;
     }
 
-    public enum WaterWhy : byte { Ok, NoRoad, TooFar, NotEnough }
+    /// <summary>Why a home is short: no (open) road to the Town Hall's network, or the town's supply is below its demand.</summary>
+    public enum WaterWhy : byte { Ok, NoRoad, NotEnough }
 
     public sealed class Aquifer
     {
@@ -58,17 +57,9 @@ namespace CrownAndHearth.Sim
     public sealed class WaterSource
     {
         public Building B;        // null for a well that is only being previewed
-        public int X, Y, Sz, Reach, Aquifer = -1;
+        public int X, Y, Sz, Aquifer = -1;
         public double Pump;
         public bool Spring => Aquifer < 0;
-    }
-
-    /// <summary>Road tiles a water carrier reaches from one source or store, and the homes and stores beside them.</summary>
-    public sealed class WaterReach
-    {
-        public readonly HashSet<int> Roads = new HashSet<int>();
-        public readonly List<Building> Homes = new List<Building>();
-        public readonly List<Building> Stores = new List<Building>();
     }
 
     /// <summary>One day of water: who needs what, who gets it from where, and what is left. Made by PlanWater without changing the world.</summary>
@@ -83,8 +74,9 @@ namespace CrownAndHearth.Sim
         public readonly Dictionary<Building, double> Stocked = new Dictionary<Building, double>();   // from stores
         public readonly Dictionary<Building, WaterWhy> Why = new Dictionary<Building, WaterWhy>();
         public readonly Dictionary<WaterSource, double> Pumped = new Dictionary<WaterSource, double>();
-        public readonly Dictionary<WaterSource, WaterReach> SourceReach = new Dictionary<WaterSource, WaterReach>();
-        public readonly Dictionary<Building, WaterReach> StoreReach = new Dictionary<Building, WaterReach>();
+        /// <summary>Road tiles water can travel (the Hall-connected roads, minus any closed), and what is on that network.</summary>
+        public HashSet<int> Network = new HashSet<int>();
+        public readonly HashSet<Building> OnNetwork = new HashSet<Building>();
         public readonly Dictionary<Building, double> StoreAfter = new Dictionary<Building, double>();
         public double[] AqDraw = new double[0];
         public bool[] AqLimited = new bool[0];
@@ -188,89 +180,59 @@ namespace CrownAndHearth.Sim
         static bool IsHome(Building b) => b.T == "house" || b.T == "hall";
         static bool IsStore(Building b) => b.T == "hall" || b.T == "cistern";
         public static double StoreCapOf(Building b) => b.T == "hall" ? WaterTuning.HallCistern : b.T == "cistern" ? WaterTuning.CisternCap : 0;
-        public static int StoreReachOf(Building b) => b.T == "hall" ? WaterTuning.HallReach : WaterTuning.CisternReach;
 
         public WaterSource SourceFor(Building b)
         {
-            if (b.T == "hall") return new WaterSource { B = b, X = b.X, Y = b.Y, Sz = b.Sz, Pump = WaterTuning.HallSpring, Reach = WaterTuning.HallReach };
+            if (b.T == "hall") return new WaterSource { B = b, X = b.X, Y = b.Y, Sz = b.Sz, Pump = WaterTuning.HallSpring };
             if (b.T != "well") return null;
             int a = AquiferAt(b.X, b.Y);
-            return new WaterSource { B = b, X = b.X, Y = b.Y, Sz = b.Sz, Aquifer = a, Pump = a >= 0 ? WaterTuning.WellPump : WaterTuning.WellSeep, Reach = WaterTuning.WellReach };
+            return new WaterSource { B = b, X = b.X, Y = b.Y, Sz = b.Sz, Aquifer = a, Pump = a >= 0 ? WaterTuning.WellPump : WaterTuning.WellSeep };
         }
 
         /// <summary>A well that is not built yet, for the placement preview.</summary>
         public WaterSource PlannedWell(int x, int y) =>
-            new WaterSource { X = x, Y = y, Sz = 1, Aquifer = AquiferAt(x, y), Pump = AquiferAt(x, y) >= 0 ? WaterTuning.WellPump : 0, Reach = WaterTuning.WellReach };
+            new WaterSource { X = x, Y = y, Sz = 1, Aquifer = AquiferAt(x, y), Pump = AquiferAt(x, y) >= 0 ? WaterTuning.WellPump : 0 };
 
-        /// <summary>Road tiles within reach of a footprint, walking only Hall-connected roads that are not closed, and the homes and
-        /// stores beside them (or touching the footprint itself). conn: the connected-road map (Recalc's, or D.Conn).</summary>
-        public WaterReach ReachFrom(int fx, int fy, int sz, int reach, bool[] conn = null, Func<int, int, bool> closed = null)
+        // ---------- The road network water travels ----------
+        /// <summary>The road tiles water can travel: the Hall-connected roads, flooded outward from the Town Hall, skipping any tile
+        /// `closed` says is shut (a gate, later). There is no distance limit: anything touching this network is in the supply.</summary>
+        public HashSet<int> WaterNetwork(Func<int, int, bool> closed = null)
         {
-            conn = conn ?? D.Conn;
-            var r = new WaterReach();
-            var dist = new Dictionary<int, int>(); var q = new Queue<int>();
+            var net = new HashSet<int>(); var conn = D.Conn; var stack = new Stack<int>();
+            bool Open(int x, int y) => Inb(x, y) && conn[Tk(x, y)] && (closed == null || !closed(x, y));
+            foreach (var (hx, hy) in Hall.Tiles())
+                for (int n = 0; n < 4; n++)
+                {
+                    int x = hx + Nb[n, 0], y = hy + Nb[n, 1];
+                    if (Inb(x, y) && Grid[y, x] != Hall && Open(x, y) && net.Add(Tk(x, y))) stack.Push(Tk(x, y));
+                }
+            while (stack.Count > 0)
+            {
+                int k = stack.Pop(), cx = k % N, cy = k / N;
+                for (int n = 0; n < 4; n++)
+                {
+                    int x = cx + Nb[n, 0], y = cy + Nb[n, 1];
+                    if (Open(x, y) && net.Add(Tk(x, y))) stack.Push(Tk(x, y));
+                }
+            }
+            return net;
+        }
+
+        /// <summary>True when a footprint touches the network (the Town Hall is its root, so it always does).</summary>
+        public bool TouchesNetwork(int fx, int fy, int sz, HashSet<int> net)
+        {
             for (int j = fy; j < fy + sz; j++)
                 for (int i = fx; i < fx + sz; i++)
                     for (int n = 0; n < 4; n++)
                     {
                         int x = i + Nb[n, 0], y = j + Nb[n, 1];
                         if (!Inb(x, y) || (x >= fx && x < fx + sz && y >= fy && y < fy + sz)) continue;
-                        int k = Tk(x, y);
-                        if (!conn[k] || (closed != null && closed(x, y)) || dist.ContainsKey(k)) continue;
-                        dist[k] = 1; q.Enqueue(k);
+                        if (net.Contains(Tk(x, y))) return true;
                     }
-            while (q.Count > 0)
-            {
-                int k = q.Dequeue(), d = dist[k];
-                r.Roads.Add(k);
-                if (d >= reach) continue;
-                int x = k % N, y = k / N;
-                for (int n = 0; n < 4; n++)
-                {
-                    int i = x + Nb[n, 0], j = y + Nb[n, 1];
-                    if (!Inb(i, j)) continue;
-                    int kk = Tk(i, j);
-                    if (!conn[kk] || (closed != null && closed(i, j)) || dist.ContainsKey(kk)) continue;
-                    dist[kk] = d + 1; q.Enqueue(kk);
-                }
-            }
-            foreach (var b in Blds)
-            {
-                if (!IsHome(b) && !IsStore(b)) continue;
-                if (!Touches(b, r.Roads, fx, fy, sz)) continue;
-                if (IsHome(b)) r.Homes.Add(b);
-                if (IsStore(b)) r.Stores.Add(b);
-            }
-            return r;
-        }
-
-        static bool Touches(Building b, HashSet<int> roads, int fx, int fy, int sz)
-        {
-            // the building itself, or one beside the footprint, or beside a reached road tile
-            if (b.X < fx + sz && fx < b.X + b.Sz && b.Y < fy + sz && fy < b.Y + b.Sz) return true;
-            foreach (var (x, y) in b.Tiles())
-                for (int n = 0; n < 4; n++)
-                {
-                    int i = x + Nb[n, 0], j = y + Nb[n, 1];
-                    if (!Inb(i, j)) continue;
-                    if (roads.Contains(Tk(i, j))) return true;
-                    if (i >= fx && i < fx + sz && j >= fy && j < fy + sz) return true;
-                }
             return false;
         }
 
-        /// <summary>Homes any source or store reaches (Recalc: level 2 needs water).</summary>
-        HashSet<Building> WaterCover(bool[] conn)
-        {
-            var cover = new HashSet<Building>();
-            foreach (var b in Blds)
-            {
-                int reach = b.T == "well" ? WaterTuning.WellReach : IsStore(b) ? StoreReachOf(b) : -1;
-                if (reach < 0) continue;
-                foreach (var h in ReachFrom(b.X, b.Y, b.Sz, reach, conn).Homes) cover.Add(h);
-            }
-            return cover;
-        }
+        bool OnNetwork(Building b, HashSet<int> net) => b.T == "hall" || TouchesNetwork(b.X, b.Y, b.Sz, net);
 
         // ---------- The daily plan ----------
         /// <summary>Work out one day of water without changing anything. closed: road tiles water cannot pass (a shut gate, later);
@@ -280,23 +242,27 @@ namespace CrownAndHearth.Sim
             var p = new WaterPlan();
             int civ = Math.Max(1, D?.Civ ?? HallCap);
             double occ = Math.Min(1, Peasants / (double)civ);
+            var net = WaterNetwork(closed); p.Network = net;
             var homes = Blds.Where(IsHome).ToList();
+            double demandOn = 0;   // what the homes on the network ask for (the others cannot be reached at all)
             foreach (var h in homes)
             {
                 // a house with no road to the Hall houses nobody (Recalc), so it drinks nothing; it is still marked NoRoad below
                 double need = h.T == "hall" ? HallCap * occ * WaterTuning.PerHead : h.Served ? h.Housing * occ * WaterTuning.PerHead : 0;
                 p.Need[h] = need; p.Got[h] = 0; p.Stocked[h] = 0; p.Demand += need;
+                if (OnNetwork(h, net)) { p.OnNetwork.Add(h); demandOn += need; }
             }
-            foreach (var b in Blds) { var s = SourceFor(b); if (s != null) p.Sources.Add(s); }
-            if (extra != null) p.Sources.Add(extra);
-            foreach (var s in p.Sources) { p.SourceReach[s] = ReachFrom(s.X, s.Y, s.Sz, s.Reach, null, closed); p.Pumped[s] = 0; }
+            foreach (var b in Blds) { var s = SourceFor(b); if (s != null && OnNetwork(b, net)) p.Sources.Add(s); }
+            if (extra != null && TouchesNetwork(extra.X, extra.Y, extra.Sz, net)) p.Sources.Add(extra);
+            foreach (var s in p.Sources) p.Pumped[s] = 0;
             var stores = Blds.Where(IsStore).ToList();
             var level = new Dictionary<Building, double>();
+            var storesOn = new List<Building>();
             foreach (var st in stores)
             {
                 level[st] = Math.Max(0, Math.Min(StoreCapOf(st), st.Water));
-                p.StoreReach[st] = ReachFrom(st.X, st.Y, st.Sz, StoreReachOf(st), null, closed);
                 p.StoreCap += StoreCapOf(st);
+                if (OnNetwork(st, net)) { storesOn.Add(st); p.OnNetwork.Add(st); }
             }
             var budget = Aquifers.Select(a => a.Reserve + a.Recharge).ToArray();
             p.AqDraw = new double[Aquifers.Count]; p.AqLimited = new bool[Aquifers.Count];
@@ -313,36 +279,35 @@ namespace CrownAndHearth.Sim
                 return got;
             }
             // springs first, then the wells whose aquifers are fullest: groundwater is the last resort
-            IEnumerable<WaterSource> Order(IEnumerable<WaterSource> list) => list
+            IEnumerable<WaterSource> Order() => p.Sources
                 .OrderBy(s => s.Spring ? 0 : 1)
                 .ThenByDescending(s => s.Aquifer >= 0 && Aquifers[s.Aquifer].Cap > 0 ? Aquifers[s.Aquifer].Reserve / Aquifers[s.Aquifer].Cap : 1)
                 .ThenByDescending(s => rem[s]);
 
-            var reachHome = homes.ToDictionary(h => h, h => p.Sources.Where(s => p.SourceReach[s].Homes.Contains(h)).ToList());
-            // homes with the fewest sources first, so a well shared by two quarters serves the one that has nothing else
-            foreach (var h in homes.OrderBy(h => reachHome[h].Count).ThenBy(h => h.Y).ThenBy(h => h.X))
+            // 1. the sources pump only what the town drinks today
+            double want = demandOn;
+            foreach (var s in Order().ToList())
             {
-                double need = p.Need[h];
-                foreach (var s in Order(reachHome[h]))
-                {
-                    if (need <= 1e-9) break;
-                    double got = Take(s, need); need -= got; p.Got[h] += got; p.Delivered += got;
-                }
+                if (want <= 1e-9) break;
+                double got = Take(s, want); want -= got; p.Delivered += got;
             }
-            // stored water covers what the sources could not, where it reaches
-            foreach (var h in homes)
+            // 2. stored water covers what is still missing
+            double missing = demandOn - p.Delivered;
+            foreach (var st in storesOn.OrderByDescending(st => level[st]))
             {
-                double need = p.Need[h] - p.Got[h];
-                if (need <= 1e-9) continue;
-                foreach (var st in stores.Where(st => p.StoreReach[st].Homes.Contains(h)).OrderByDescending(st => level[st]))
-                {
-                    if (need <= 1e-9) break;
-                    double got = Math.Min(need, level[st]); level[st] -= got; need -= got; p.Stocked[h] += got; p.FromStore += got;
-                }
+                if (missing <= 1e-9) break;
+                double got = Math.Min(missing, level[st]); level[st] -= got; missing -= got; p.FromStore += got;
             }
-            // then the sources fill the cisterns they reach (only as much as there is room for)
-            foreach (var st in stores)
-                foreach (var s in Order(p.Sources.Where(s => p.SourceReach[s].Stores.Contains(st))))
+            // 3. what is still missing is shared out evenly: every home on the network gets the same fraction
+            if (demandOn > 1e-9)
+                foreach (var h in homes.Where(p.OnNetwork.Contains))
+                {
+                    p.Got[h] = p.Need[h] * p.Delivered / demandOn;
+                    p.Stocked[h] = p.Need[h] * p.FromStore / demandOn;
+                }
+            // 4. spare pumping fills the stores up (only as much as there is room for): this is the reserve building up
+            foreach (var st in storesOn)
+                foreach (var s in Order().ToList())
                 {
                     double room = StoreCapOf(st) - level[st];
                     if (room <= 1e-9) break;
@@ -350,11 +315,8 @@ namespace CrownAndHearth.Sim
                 }
             foreach (var st in stores) { p.StoreAfter[st] = level[st]; p.Stored += level[st]; }
             foreach (var h in homes)
-            {
-                bool covered = p.Sources.Any(s => p.SourceReach[s].Homes.Contains(h)) || stores.Any(st => p.StoreReach[st].Homes.Contains(h));
-                p.Why[h] = h.T != "hall" && !h.Served ? WaterWhy.NoRoad
-                    : p.Need[h] - p.Got[h] - p.Stocked[h] <= 1e-6 ? WaterWhy.Ok : !covered ? WaterWhy.TooFar : WaterWhy.NotEnough;
-            }
+                p.Why[h] = h.T != "hall" && !h.Served || !p.OnNetwork.Contains(h) ? WaterWhy.NoRoad
+                    : p.Need[h] - p.Got[h] - p.Stocked[h] <= 1e-6 ? WaterWhy.Ok : WaterWhy.NotEnough;
             return p;
         }
 
@@ -405,9 +367,8 @@ namespace CrownAndHearth.Sim
 
         public static string WhyText(WaterWhy w) => w switch
         {
-            WaterWhy.NoRoad => "no road to the Town Hall",
-            WaterWhy.TooFar => "too far along the roads from any well or cistern",
-            WaterWhy.NotEnough => "the wells there cannot pump enough",
+            WaterWhy.NoRoad => "no open road to the Town Hall",
+            WaterWhy.NotEnough => "the town's wells and spring cannot pump enough for everyone",
             _ => "watered",
         };
 
@@ -418,7 +379,7 @@ namespace CrownAndHearth.Sim
             public double MaxPump, ToHomes, ToStorage, AqDraw, AqRecharge, AqReserve, AqCap;
             public string Trend;
             public double? DaysLeft;
-            public WaterReach Reach;
+            public bool Connected;   // the well would touch a road connected to the Town Hall (otherwise its water goes nowhere)
             public int HomesGaining;
         }
 
@@ -428,7 +389,7 @@ namespace CrownAndHearth.Sim
         {
             var well = PlannedWell(x, y);
             var before = PlanWater(); var after = PlanWater(null, well);
-            var f = new WellForecast { Aquifer = well.Aquifer, MaxPump = well.Pump, Reach = after.SourceReach[well] };
+            var f = new WellForecast { Aquifer = well.Aquifer, MaxPump = well.Pump, Connected = after.Sources.Contains(well) };
             f.ToHomes = Math.Max(0, after.Delivered + after.FromStore - before.Delivered - before.FromStore);
             f.ToStorage = Math.Max(0, after.Stored - before.Stored);
             foreach (var h in before.Need.Keys) if (after.Got[h] + after.Stocked[h] > before.Got[h] + before.Stocked[h] + 1e-6) f.HomesGaining++;
@@ -444,7 +405,8 @@ namespace CrownAndHearth.Sim
 
         public sealed class ClosureForecast
         {
-            public readonly List<Building> HomesLosingService = new List<Building>();
+            public readonly List<Building> HomesLosingService = new List<Building>();   // any drop in their water
+            public readonly List<Building> HomesCutOff = new List<Building>();          // no longer on the network at all
             public double GroundwaterBefore, GroundwaterAfter, ShortfallAfter, StoredAfter, StoreDrawAfter;
             /// <summary>How long the stored water lasts covering what it can reach of the shortfall that follows the closure.</summary>
             public double? StoreDays => StoreDrawAfter > 1e-6 ? StoredAfter / StoreDrawAfter : (double?)null;
@@ -458,9 +420,14 @@ namespace CrownAndHearth.Sim
             var f = new ClosureForecast
             {
                 GroundwaterBefore = before.GroundwaterDraw, GroundwaterAfter = after.GroundwaterDraw,
-                ShortfallAfter = after.Shortfall, StoredAfter = before.Stored, StoreDrawAfter = after.FromStore,
+                ShortfallAfter = after.Shortfall, StoreDrawAfter = after.FromStore,
+                StoredAfter = Blds.Where(b => IsStore(b) && after.OnNetwork.Contains(b)).Sum(b => Math.Min(b.Water, StoreCapOf(b))),   // what is still reachable
             };
-            foreach (var h in before.Need.Keys) if (after.Got[h] < before.Got[h] - 1e-6) f.HomesLosingService.Add(h);
+            foreach (var h in before.Need.Keys)
+            {
+                if (after.Got[h] + after.Stocked[h] < before.Got[h] + before.Stocked[h] - 1e-6) f.HomesLosingService.Add(h);
+                if (before.OnNetwork.Contains(h) && !after.OnNetwork.Contains(h)) f.HomesCutOff.Add(h);
+            }
             return f;
         }
 

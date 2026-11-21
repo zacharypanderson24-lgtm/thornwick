@@ -44,7 +44,7 @@ namespace CrownAndHearth.Sim
 
     public partial class World
     {
-        public const int WorkT = 2, CrewDepth = 10, ReachW = 2 * CrewDepth + 1;
+        public const int WorkT = 2, CrewDepth = 2 * WorkR + 4, ReachW = 2 * CrewDepth + 1;   // a crew walks up to CrewDepth steps (a corner of the work area is 2 x WorkR away)
         public const int FolkMax = 90, FolkDepth = 40, FolkVariants = 6;
         public const double FolkPerPeasant = 0.6;
 

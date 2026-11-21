@@ -135,32 +135,62 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual("Stable", aq.Trend);
         }
 
+        /// <summary>Homes along a new road south of the starting street, both sides, so the town drinks more than the Hall's spring gives.</summary>
+        static List<Building> Crowd(World w, int count)
+        {
+            int fromY = C + 8;
+            Road(w, World.LPath(C, C + 7, C, fromY + count));
+            var homes = new List<Building>();
+            for (int y = fromY; y < fromY + count && homes.Count < count; y++)
+                foreach (int x in new[] { C - 1, C + 1 }) if (homes.Count < count && w.Grid[y, x] == null) homes.Add(Put(w, "house", x, y));
+            w.Recalc();
+            w.Peasants = w.D.Civ;
+            return homes;
+        }
+
         [Test]
-        public void HomesKnowWhyTheyAreShort()
+        public void DistanceDoesNotMatterOnlyBeingOnTheNetwork()
+        {
+            var w = new World(7);
+            // a home 40 tiles down the road drinks exactly like one beside the Hall, and one with no road at all is the only one cut off
+            Road(w, World.LPath(C, C + 7, C, C + 40));
+            var near = Put(w, "house", C + 1, C + 8);
+            var distant = Put(w, "house", C + 1, C + 40);
+            var cutOff = Put(w, "house", C + 6, C - 6);
+            w.Peasants = w.D.Civ;
+            var p = w.PlanWater();
+            Assert.AreEqual(WaterWhy.Ok, p.Why[near]);
+            Assert.AreEqual(WaterWhy.Ok, p.Why[distant], "no radius: any home on a connected road is in the supply");
+            Assert.AreEqual(WaterWhy.NoRoad, p.Why[cutOff]);
+            Assert.AreEqual(p.Need[near], p.Got[near] + p.Stocked[near], 1e-9);
+            Assert.AreEqual(p.Need[distant], p.Got[distant] + p.Stocked[distant], 1e-9);
+            Assert.IsFalse(p.OnNetwork.Contains(cutOff));
+            Assert.IsTrue(p.OnNetwork.Contains(distant));
+        }
+
+        [Test]
+        public void ShortSupplyIsSharedEvenlyAfterStorageRunsOut()
         {
             var w = new World(7);
             w.ResAmt[Res.Wood] = 1000;
-            // three more homes on the starting street (watered by the Hall) and a crowd to fill them: more than the spring gives
-            foreach (var (x, y) in new[] { (C - 1, C + 5), (C + 1, C + 5), (C + 1, C + 6) }) if (w.Grid[y, x] == null) Put(w, "house", x, y);
-            // a home on a road beyond every source's reach, and one with no road at all
-            var far = World.LPath(C, C + 7, C, C + 20).ToList();
-            Road(w, far);
-            var distant = Put(w, "house", C + 1, C + 20);
-            var cutOff = Put(w, "house", C + 6, C - 6);
+            var homes = Crowd(w, 6);
             w.Hall.Water = 0;   // nothing in store to make up the difference
-            w.Peasants = w.D.Civ;
             var p = w.PlanWater();
-            Assert.AreEqual(WaterWhy.TooFar, p.Why[distant]);
-            Assert.AreEqual(WaterWhy.NoRoad, p.Why[cutOff]);
             Assert.That(p.Demand, Is.GreaterThan(WaterTuning.HallSpring));
-            Assert.That(p.Why.Values.Count(v => v == WaterWhy.NotEnough), Is.GreaterThan(0), "homes the Hall reaches but cannot fully supply");
             Assert.AreEqual(WaterTuning.HallSpring, p.Delivered, 1e-9, "the spring gives everything it can, no more");
-            // with the cistern full again, stored water makes up the shortfall for the homes it reaches
+            Assert.AreEqual(0, p.FromStore, 1e-9);
+            double share = p.Delivered / p.Demand;
+            foreach (var h in homes.Concat(new[] { w.Hall }))
+            {
+                Assert.AreEqual(WaterWhy.NotEnough, p.Why[h]);
+                Assert.AreEqual(p.Need[h] * share, p.Got[h], 1e-9, "every home gets the same share");
+            }
+            Assert.AreEqual(homes.Count + 1 + w.Blds.Count(b => b.T == "house" && !homes.Contains(b)), p.ShortHomes);
+            // with the cistern full again, stored water makes up the shortfall for everyone
             w.Hall.Water = WaterTuning.HallCistern;
             var q = w.PlanWater();
             Assert.That(q.FromStore, Is.GreaterThan(0));
-            Assert.That(q.Why.Values.Count(v => v == WaterWhy.NotEnough), Is.EqualTo(0), "storage covers the homes it reaches");
-            Assert.AreEqual(WaterWhy.TooFar, q.Why[distant], "but not homes it does not reach");
+            Assert.AreEqual(0, q.ShortHomes, "storage covers the town");
             Assert.That(q.StoreDays.Value, Is.EqualTo(q.Stored / q.FromStore).Within(1e-9), "days the store lasts at the rate it is drawn");
         }
 
@@ -168,42 +198,41 @@ namespace CrownAndHearth.Tests
         public void ShortHomesStopGrowthThenLosePeopleAfterTheirGrace()
         {
             var w = new World(7);
-            var far = World.LPath(C, C + 7, C, C + 20).ToList();
-            Road(w, far);
-            var distant = Put(w, "house", C + 1, C + 20);
-            w.ZoneMap[C + 19, C + 1] = Zone.Res;
-            Assert.AreEqual(1, distant.Lvl, "a home no water reaches stays level 1");
-            w.Peasants = w.D.Civ;
-            for (int day = 1; day < WaterTuning.Grace; day++) { w.ResAmt[Res.Food] = 300; w.ResAmt[Res.Wood] = 300; w.Tick(); }
-            Assert.AreEqual(WaterTuning.Grace - 1, distant.ShortDays);
-            Assert.IsFalse(distant.Parched);
+            w.ResAmt[Res.Wood] = 1000;
+            var homes = Crowd(w, 6);
+            w.ZoneMap[C + 7, C + 1] = Zone.Res;
+            w.Hall.Water = 0;
+            var first = homes[0];
+            for (int day = 1; day < WaterTuning.Grace; day++) { w.ResAmt[Res.Food] = 300; w.ResAmt[Res.Wood] = 300; w.Hall.Water = 0; w.Tick(); }
+            Assert.AreEqual(WaterTuning.Grace - 1, first.ShortDays);
+            Assert.IsFalse(first.Parched);
             StringAssert.Contains("short of water", w.Note[Zone.Res], "house growth stops while homes are short");
-            Assert.IsNull(w.Grid[C + 19, C + 1], "no home grows meanwhile");
+            Assert.IsNull(w.Grid[C + 7, C + 1], "no home grows meanwhile");
             int civ = w.D.Civ;
-            w.ResAmt[Res.Food] = 300; w.Tick();
-            Assert.IsTrue(distant.Parched, "past its grace");
-            Assert.AreEqual(civ - (distant.Capacity - distant.Housing), w.D.Civ, "it now holds half its people");
-            Assert.AreEqual(distant.Capacity / 2, distant.Housing);
+            w.ResAmt[Res.Food] = 300; w.Hall.Water = 0; w.Tick();
+            Assert.IsTrue(first.Parched, "past its grace");
+            Assert.AreEqual(1, first.Lvl, "a parched home drops to level 1");
+            Assert.That(w.D.Civ, Is.LessThan(civ), "it now holds fewer people");
+            Assert.AreEqual(first.Capacity / 2, first.Housing);
         }
 
         [Test]
-        public void ARoadOutOfReachIsNotEnoughButACisternBridgesIt()
+        public void ACisternAnywhereOnTheNetworkBuildsTheTownsReserve()
         {
             var w = new World(7);
-            // the Hall's carriers reach 8 road tiles: the street's end is at 5, so (C, C+9) is the last tile they reach
-            Road(w, World.LPath(C, C + 7, C, C + 14));
-            var distant = Put(w, "house", C + 1, C + 13);
-            w.Peasants = w.D.Civ;
-            Assert.AreEqual(WaterWhy.TooFar, w.PlanWater().Why[distant]);
-            // a cistern at the edge of the Hall's reach: the Hall fills it, and it covers the far home from storage
-            var cistern = Put(w, "cistern", C + 1, C + 9);
+            Road(w, World.LPath(C, C + 7, C, C + 45));
+            var cistern = Put(w, "cistern", C + 1, C + 45);   // forty tiles from the Town Hall
+            Assert.AreEqual(0, cistern.Water);
             for (int day = 0; day < 3; day++) w.StepWater();
-            Assert.That(cistern.Water, Is.GreaterThan(0), "the Hall's spring fills a cistern it reaches");
-            var p = w.PlanWater();
-            Assert.AreEqual(WaterWhy.Ok, p.Why[distant]);
-            Assert.That(p.Stocked[distant], Is.GreaterThan(0), "the far home drinks from the cistern");
-            w.Recalc();
-            Assert.AreEqual(2, distant.Lvl, "reached by water, so level 2");
+            Assert.That(cistern.Water, Is.GreaterThan(0), "the Hall's spare spring water reaches a cistern however far away");
+            var before = w.WaterStored();
+            for (int day = 0; day < 40; day++) w.StepWater();
+            Assert.AreEqual(WaterTuning.CisternCap, cistern.Water, 1e-6, "supply above demand keeps building the reserve up to capacity");
+            Assert.That(w.WaterStored().stored, Is.GreaterThan(before.stored));
+            // a cistern with no road is left empty: it is not on the network
+            var lone = Put(w, "cistern", C + 8, C - 8);
+            for (int day = 0; day < 5; day++) w.StepWater();
+            Assert.AreEqual(0, lone.Water);
         }
 
         [Test]
@@ -265,8 +294,15 @@ namespace CrownAndHearth.Tests
             int gx = w1.X + 2, gy = w1.Y + 1;
             var f = w.ForecastClosure((x, y) => x == gx && y == gy);
             Assert.That(f.HomesLosingService.Count, Is.GreaterThan(0), "homes beyond the closed tile lose the wells' water");
+            CollectionAssert.AreEquivalent(homes, f.HomesCutOff, "they are cut off from the network altogether");
             Assert.That(f.GroundwaterAfter, Is.LessThanOrEqualTo(f.GroundwaterBefore));
             Assert.AreEqual(w.PlanWater().Delivered, before.Delivered, 1e-9, "a forecast changes nothing");
+            // closing the road near the Town Hall cuts the wells off entirely: the town falls back on its own spring and cisterns
+            var g = w.ForecastClosure((x, y) => x == C && y == C + 8);
+            Assert.That(before.GroundwaterDraw, Is.GreaterThan(0), "the wells were needed before");
+            Assert.AreEqual(0, g.GroundwaterAfter, 1e-9, "wells outside the closed tile pump nothing");
+            Assert.That(g.HomesCutOff.Count, Is.GreaterThanOrEqualTo(homes.Count));
+            Assert.That(aq.Reserve, Is.EqualTo(aq.Cap), "the aquifer itself is untouched by a forecast");
         }
 
         [Test]

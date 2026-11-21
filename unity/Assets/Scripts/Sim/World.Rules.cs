@@ -336,15 +336,16 @@ namespace CrownAndHearth.Sim
                 b.Face = FaceOf(b);
                 b.Served = b.T == "hall" || ServedAt(b, conn);
             }
-            // a home reached by water and not past its grace is level 2 (World.Water.cs); one past its grace holds half its people
-            var cover = WaterCover(conn);
+            _farmFieldCache = null;   // which farmhouse works which field depends on which farmhouses are served
             RefreshFarmJobs();
+            RefreshWorkTiles();
             int civ = HallCap, bunks = 0, jobs = 0;
             foreach (var b in Blds)
             {
                 if (b.T == "house")
                 {
-                    b.Lvl = b.Served && cover.Contains(b) && b.ShortDays < WaterTuning.Grace ? 2 : 1;
+                    // a served home is level 2 until it has been parched (World.Water.cs): it then holds half its people
+                    b.Lvl = b.Served && b.ShortDays < WaterTuning.Grace ? 2 : 1;
                     if (b.Served)
                     {
                         civ += b.Housing;
