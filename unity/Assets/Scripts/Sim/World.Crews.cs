@@ -49,13 +49,17 @@ namespace CrownAndHearth.Sim
         public const int FolkMax = 90, FolkDepth = 40, FolkVariants = 6;
         public const double FolkPerPeasant = 0.6;
 
-        public const int HuntingRange = 4, ForestFoodReserve = 12, HuntingLoad = 3;
-        readonly Dictionary<int, int> _gameTaken = new Dictionary<int, int>();
+        public const int HuntingRange = 4, ForestFoodReserve = 12, HuntingLoad = 3, HuntingRecoveryDays = 30;
+        // Only harvested tiles have an entry. Each date is when the reserve will be full again.
+        readonly Dictionary<int, int> _gameRecoveryDay = new Dictionary<int, int>();
 
-        public int HuntFoodRemaining(int x, int y) =>
-            Inb(x, y) && DecoMap[y, x] == Deco.Tree
-                ? Math.Max(0, ForestFoodReserve - _gameTaken.GetValueOrDefault(Tk(x, y)))
-                : 0;
+        public int HuntFoodRemaining(int x, int y)
+        {
+            if (!Inb(x, y) || DecoMap[y, x] != Deco.Tree) return 0;
+            int daysToFull = Math.Max(0, _gameRecoveryDay.GetValueOrDefault(Tk(x, y)) - Day);
+            int missingFood = (daysToFull + HuntingRecoveryDays - 1) / HuntingRecoveryDays;
+            return Math.Max(0, ForestFoodReserve - missingFood);
+        }
 
         public static Deco CrewKind(string t) => t == "wood" || t == "hunter" ? Deco.Tree : t == "quarry" ? Deco.Rock : t == "mine" ? Deco.Ore : Deco.None;
         static Res CrewRes(string type, Deco kind) => type == "hunter" ? Res.Food : kind == Deco.Tree ? Res.Logs : kind == Deco.Rock ? Res.Stone : Res.Ore;
@@ -199,7 +203,9 @@ namespace CrownAndHearth.Sim
                             int key = Tk(a.Tx, a.Ty);
                             int room = (int)Math.Floor(Math.Max(0, CropStorage(res) - ResAmt[res] - got[res]));
                             int delivered = Math.Min((int)a.Carry, Math.Min(room, HuntFoodRemaining(a.Tx, a.Ty)));
-                            if (delivered > 0) _gameTaken[key] = _gameTaken.GetValueOrDefault(key) + delivered;
+                            if (delivered > 0)
+                                _gameRecoveryDay[key] = Math.Max(Day, _gameRecoveryDay.GetValueOrDefault(key))
+                                    + delivered * HuntingRecoveryDays;
                             a.Carry = delivered;
                         }
                         got[res] += a.Carry; a.Carry = 0; a.St = CrewState.Home; a.Path.Clear(); a.Stand = -1; a.X = b.X; a.Y = b.Y;

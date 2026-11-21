@@ -59,7 +59,7 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "lodge", Cat = Cat.Forestry, Label = "Woodcutter Lodge", Build = "wood",
                 Desc = "Woodcutters walk out to trees in Lumber zones within 3 tiles, fell them and carry the logs home. Needs a road to the Town Hall." },
             new ToolDef { Id = "hunter", Cat = Cat.Forestry, Label = "Hunting Lodge", Build = "hunter",
-                Desc = $"Two hunters bring back food year-round from reachable mature forest within {World.HuntingRange} tiles. Each forest tile has {World.ForestFoodReserve} food total. Needs a road to the Town Hall." },
+                Desc = $"Two hunters bring back food year-round from reachable mature forest within {World.HuntingRange} tiles. Each forest tile holds up to {World.ForestFoodReserve} food and recovers 1 every {World.HuntingRecoveryDays} days. Needs a road to the Town Hall." },
             new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Lumber Zone", Zone = Zone.Wood,
                 Desc = "Drag over forest to have it felled by a nearby lodge, or over open ground for a forester to replant. The shaded area shows where lodges and foresters reach." },
             new ToolDef { Id = "forester", Cat = Cat.Forestry, Label = "Forester", Build = "forester",
@@ -793,7 +793,7 @@ namespace CrownAndHearth.Game
             if (d == Deco.Tree)
             {
                 lines.Add("FOREST");
-                lines.Add($"Game remaining: {w.HuntFoodRemaining(x, y)}/{World.ForestFoodReserve} food.");
+                lines.Add($"Game remaining: {w.HuntFoodRemaining(x, y)}/{World.ForestFoodReserve} food. Recovers 1 every {World.HuntingRecoveryDays} days.");
                 lines.Add("Hunting lodges hunt here without zoning. Lumber zoning lets woodcutters fell the trees.");
             }
             if (d == Deco.Rock) { lines.Add(w.IsMountain(x, y) ? "MOUNTAIN" : "STONE OUTCROP"); lines.Add(w.IsMountain(x, y) ? $"Stone left {w.RockLeft(x, y):0}. Quarry it from the edge." : $"Stone left {w.RockLeft(x, y):0}."); }

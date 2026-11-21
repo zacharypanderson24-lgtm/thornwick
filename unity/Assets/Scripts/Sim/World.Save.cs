@@ -48,7 +48,9 @@ namespace CrownAndHearth.Sim
                 ["sownFields"] = JObject.FromObject(_sownFields), ["flaxFields"] = JObject.FromObject(FlaxFields), ["rockAmt"] = JObject.FromObject(RockAmtMap), ["elev"] = JObject.FromObject(Elev),
                 ["stumpT"] = JObject.FromObject(StumpT), ["sapT"] = JObject.FromObject(SapT),
                 ["chop"] = JObject.FromObject(Chop), ["dig"] = JObject.FromObject(Dig),
-                ["oreLeft"] = JObject.FromObject(OreLeftMap), ["gameTaken"] = JObject.FromObject(_gameTaken),
+                ["oreLeft"] = JObject.FromObject(OreLeftMap),
+                ["gameRecoveryDay"] = JObject.FromObject(_gameRecoveryDay.Where(pair => pair.Value > Day)
+                    .ToDictionary(pair => pair.Key, pair => pair.Value)),
                 // water (World.Water.cs): what each aquifer still holds, by id (the patches regenerate from the seed)
                 ["aquifers"] = new JArray(Aquifers.Select(a => Math.Round(a.Reserve, 3))),
                 ["blds"] = new JArray(Blds.Select(SaveBuilding)),
@@ -113,7 +115,15 @@ namespace CrownAndHearth.Sim
             ReadTiles(save["chop"], world.Chop, size, offset);
             ReadTiles(save["dig"], world.Dig, size, offset);
             ReadTiles(save["oreLeft"], world.OreLeftMap, size, offset);
-            ReadTiles(save["gameTaken"], world._gameTaken, size, offset);
+            ReadTiles(save["gameRecoveryDay"], world._gameRecoveryDay, size, offset);
+            if (save["gameRecoveryDay"] == null && save["gameTaken"] != null)
+            {
+                var harvested = new Dictionary<int, int>();
+                ReadTiles(save["gameTaken"], harvested, size, offset);
+                foreach (var pair in harvested)
+                    if (pair.Value > 0)
+                        world._gameRecoveryDay[pair.Key] = world.Day + Math.Min(pair.Value, ForestFoodReserve) * HuntingRecoveryDays;
+            }
             foreach (Res resource in Enum.GetValues(typeof(Res)))
             {
                 string key = SaveKey(resource);

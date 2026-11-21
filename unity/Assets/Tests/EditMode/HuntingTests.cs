@@ -26,11 +26,15 @@ namespace CrownAndHearth.Tests
             Assert.That(world.HuntFoodRemaining(forestX, y), Is.EqualTo(World.ForestFoodReserve));
 
             double collected = 0;
+            int firstDelivery = 0;
             for (int day = 0; day < 24; day++)
             {
                 double before = world.ResAmt[Res.Food], meals = world.DailyFoodDemand;
+                int date = world.Day;
                 world.Tick();
-                collected += world.ResAmt[Res.Food] - before + meals;
+                double delivered = world.ResAmt[Res.Food] - before + meals;
+                if (firstDelivery == 0 && delivered > 0.01) firstDelivery = date;
+                collected += delivered;
             }
 
             Assert.That(collected, Is.EqualTo(World.ForestFoodReserve).Within(1e-6));
@@ -39,6 +43,15 @@ namespace CrownAndHearth.Tests
             var loaded = World.LoadJson(world.SaveJson());
             Assert.That(loaded.Grid[y, x].T, Is.EqualTo("hunter"));
             Assert.That(loaded.HuntFoodRemaining(forestX, y), Is.Zero);
+
+            loaded.Day = firstDelivery + World.HuntingRecoveryDays - 1;
+            Assert.That(loaded.HuntFoodRemaining(forestX, y), Is.Zero);
+            loaded.Day++;
+            Assert.That(loaded.HuntFoodRemaining(forestX, y), Is.EqualTo(1));
+
+            loaded.Day = firstDelivery + World.HuntingRecoveryDays * World.ForestFoodReserve;
+            loaded = World.LoadJson(loaded.SaveJson());
+            Assert.That(loaded.HuntFoodRemaining(forestX, y), Is.EqualTo(World.ForestFoodReserve));
         }
     }
 }
