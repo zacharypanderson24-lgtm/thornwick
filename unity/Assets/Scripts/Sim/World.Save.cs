@@ -36,7 +36,7 @@ namespace CrownAndHearth.Sim
                 ["surveyed"] = new JArray(Enumerable.Range(0, N * N).Where(k => Surveyed[k])),
                 ["oreTaken"] = JObject.FromObject(OreTaken), ["minerDeaths"] = MinerDeaths, ["caveIns"] = CaveIns,
                 ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["archers"] = Archers, ["archerPercent"] = ArcherPercent, ["trained"] = Trained,
-                ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["starving"] = Starving,
+                ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["militia"] = MilitiaFights, ["starving"] = Starving,
                 ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
                 ["res"] = JObject.FromObject(ResAmt.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["rate"] = JObject.FromObject(Rate.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
@@ -100,6 +100,7 @@ namespace CrownAndHearth.Sim
                 Trained = save.Value<int?>("trained") ?? 0,
                 PopAcc = save.Value<double?>("popAcc") ?? 0,
                 Drafting = save.Value<bool?>("drafting") ?? true,
+                MilitiaFights = save.Value<bool?>("militia") ?? true,
                 Starving = save.Value<bool?>("starving") ?? false,
             };
             var priority = save["prio"]?.ToObject<string[]>() ?? Array.Empty<string>();

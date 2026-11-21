@@ -98,6 +98,7 @@ namespace CrownAndHearth.Game
         Text _troopCounts, _troopMix, _troopCosts, _troopNote;
         UnityEngine.UI.Slider _troopSlider;
         UnityEngine.UI.Image _draftButton;
+        UnityEngine.UI.Image _militiaButton;
 
         void BuildTroops(RectTransform panel)
         {
@@ -116,6 +117,8 @@ namespace CrownAndHearth.Game
             _troopSlider.onValueChanged.AddListener(value => _menuWorld?.SetArcherPercent((int)value));
             _draftButton = MakeButton(panel, "", Vector2.up, new Vector2(115, -178), new Vector2(206, 30),
                 () => { if (_menuWorld != null) { _menuWorld.Drafting = !_menuWorld.Drafting; } });
+            _militiaButton = MakeButton(panel, "", Vector2.up, new Vector2(335, -178), new Vector2(206, 30),
+                () => { if (_menuWorld != null) { _menuWorld.MilitiaFights = !_menuWorld.MilitiaFights; } });
             _troopCosts = PanelLabel(panel, "TroopCosts", "", 14, 198, 272);
             _troopNote = PanelLabel(panel, "TroopNote", "", 14, 276, 324);
         }
@@ -234,6 +237,8 @@ namespace CrownAndHearth.Game
             _troopMix.text = $"New recruits: Infantry {100 - world.ArcherPercent}%   |   Archers {world.ArcherPercent}%";
             _draftButton.color = world.Drafting ? BtnOn : Btn;
             _draftButton.GetComponentInChildren<Text>().text = world.Drafting ? "Training: On" : "Training: Off";
+            _militiaButton.color = world.MilitiaFights ? BtnOn : Btn;
+            _militiaButton.GetComponentInChildren<Text>().text = world.MilitiaFights ? "Militia fights: On" : "Militia fights: Off";
             string Cost(Troop t) { var parts = new System.Collections.Generic.List<string>(); foreach (var (res, amount) in World.TrainCost(t)) parts.Add($"{amount} {res.ToString().ToLower()}"); return string.Join(", ", parts); }
             _troopCosts.text = $"Infantry: {Cost(Troop.Infantry)}. Sword and mail.\nArchers: {Cost(Troop.Archer)}. Bow and string.\nOne recruit per barracks every {World.TrainDays} days; each soldier eats half as much again and costs 0.1 gold a day.";
             int barracks = 0; foreach (var b in world.Blds) if (b.T == "barracks" && b.Served) barracks++;

@@ -176,7 +176,7 @@ namespace CrownAndHearth.Sim
             new Step { Id = "raid", Title = "Raiders!",
                 Body = "Smoke on the hills! Raiders walk in over the border and head for whatever is worth taking: gold, food, wood, stone or ore. " +
                        "Each takes one load and runs for home. Soldiers cut them down near a barracks (infantry close, archers far), and raiders avoid what soldiers cover. " +
-                       "With no soldiers your people fight with their tools, but far worse.\n\n" +
+                       "Your people fight too, with their tools, but far worse (the Troops menu can stop it).\n\n" +
                        "Build a Barracks beside what you want to protect and train troops.",
                 Goal = "Press Next" },
             new Step { Id = "land", Title = "Land", Tool = "claim",
