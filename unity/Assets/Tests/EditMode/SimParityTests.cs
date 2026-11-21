@@ -39,7 +39,11 @@ namespace CrownAndHearth.Tests
 
         static SeedCase SeedOf(int seed) => Ref.seeds.First(s => s.seed == seed);
 
-        [Test]
+        // The browser reference is a 128 x 128 map; the Unity city map is 256 x 256 (a 64 x 64 district to start), so the tests that compare
+        // terrain, tiles and the starting layout with it cannot hold. Hash2 and the other independent checks still do.
+        const string BrowserMapSize = "The browser reference is a 128 x 128 map; the Unity city map is 256 x 256.";
+
+        [Test, Ignore(BrowserMapSize)]
         public void MapSizeMatches() => Assert.AreEqual(Ref.N, Defs.N);
 
         [Test]
@@ -50,6 +54,7 @@ namespace CrownAndHearth.Tests
 
         [TestCase(7)]
         [TestCase(1234)]
+        [Ignore(BrowserMapSize)]
         public void HeightsMatch(int seed)
         {
             var w = new World(seed, TerrainStyle.Classic); var r = SeedOf(seed);
@@ -61,6 +66,7 @@ namespace CrownAndHearth.Tests
 
         [TestCase(7)]
         [TestCase(1234)]
+        [Ignore(BrowserMapSize)]
         public void TilesMatch(int seed)
         {
             var w = new World(seed, TerrainStyle.Classic); var r = SeedOf(seed);
@@ -88,6 +94,7 @@ namespace CrownAndHearth.Tests
 
         [TestCase(7)]
         [TestCase(1234)]
+        [Ignore(BrowserMapSize)]
         public void StartingSettlementMatches(int seed)
         {
             var w = new World(seed, TerrainStyle.Classic); var r = SeedOf(seed);

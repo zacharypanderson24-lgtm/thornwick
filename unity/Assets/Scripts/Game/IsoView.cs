@@ -70,7 +70,27 @@ namespace CrownAndHearth.Game
             return new Vector3(sx / PPU, -sy / PPU, 0);
         }
 
-        /// <summary>Painter's order for something whose front tile is view (vx, vy). Fits in a sortingOrder (max ~32.6k).</summary>
-        public static int SortOrder(int vx, int vy) => (vx + vy) * 128 + vx;
+        /// <summary>Painter's order for something whose front tile is view (vx, vy): by diagonal first, then across it. A sortingOrder is a short
+        /// (max 32767) and a 256-wide map has 511 diagonals, so each diagonal gets 64 steps and tiles share one when they are 4 apart across it
+        /// (they sit side by side on screen, so their order hardly matters). The largest value is 510 * 64 + 63 = 32703.</summary>
+        public static int SortOrder(int vx, int vy) => (vx + vy) * 64 + (vx >> 2);
+
+        /// <summary>The block of view tiles that can show anywhere inside a world-space rectangle (Unity units). The margins, in pixels, allow for
+        /// wide sprites (sideways), for ground that sits lower than its flat position (above) and for tall sprites and high ground (below).</summary>
+        public static RectInt TileWindow(Rect world, float marginX = 100f, float marginTop = 64f, float marginBottom = 260f)
+        {
+            float sx0 = world.xMin * PPU - marginX, sx1 = world.xMax * PPU + marginX;
+            float sy0 = -world.yMax * PPU - marginTop, sy1 = -world.yMin * PPU + marginBottom;   // screen y grows downwards
+            float amin = float.MaxValue, amax = float.MinValue, bmin = float.MaxValue, bmax = float.MinValue;
+            foreach (var (sx, sy) in new[] { (sx0, sy0), (sx1, sy0), (sx0, sy1), (sx1, sy1) })
+            {
+                // a tile (a, b) on flat ground sits at sx = (a - b) * 16, sy = (a + b) * 8
+                float a = (sx / 16f + sy / 8f) / 2f, b = (sy / 8f - sx / 16f) / 2f;
+                amin = Mathf.Min(amin, a); amax = Mathf.Max(amax, a); bmin = Mathf.Min(bmin, b); bmax = Mathf.Max(bmax, b);
+            }
+            int x0 = Mathf.Clamp(Mathf.FloorToInt(amin) - 1, 0, N - 1), x1 = Mathf.Clamp(Mathf.CeilToInt(amax) + 1, 0, N - 1);
+            int y0 = Mathf.Clamp(Mathf.FloorToInt(bmin) - 1, 0, N - 1), y1 = Mathf.Clamp(Mathf.CeilToInt(bmax) + 1, 0, N - 1);
+            return new RectInt(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+        }
     }
 }

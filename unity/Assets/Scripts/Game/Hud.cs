@@ -121,8 +121,9 @@ namespace CrownAndHearth.Game
 
             BuildBar(root);
             var townMenuBar = MakePanel(root, "TownMenuBar", Vector2.right, Vector2.right,
-                new Vector2(-333, BarH + 8), new Vector2(-8, BarH + 50));
+                new Vector2(-439, BarH + 8), new Vector2(-8, BarH + 50));
             BuildTownMenus(root, townMenuBar);
+            BuildMap(root, townMenuBar);
 
             // left info panel
             _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -417), new Vector2(330, -68)).gameObject;
@@ -230,11 +231,11 @@ namespace CrownAndHearth.Game
                 Stretch(name.rectTransform, new Vector2(68, CardH - 36), new Vector2(-6, -4));
                 FitText(name, 10, 15);
                 var kind = MakeText(card, "Kind", 12, TextAnchor.MiddleLeft); kind.color = Dim;
-                kind.text = t.Zone != Zone.None ? "Zone: drag an area" : t.Unzone ? "Drag an area" : t.Clear ? "Click or drag" : t.Road ? "Drag a line" : $"{Defs.PlacementSize(t.Build)}x{Defs.PlacementSize(t.Build)} building";
+                kind.text = t.Claim ? "Click a 16x16 parcel" : t.Zone != Zone.None ? "Zone: drag an area" : t.Unzone ? "Drag an area" : t.Clear ? "Click or drag" : t.Road ? "Drag a line" : $"{Defs.PlacementSize(t.Build)}x{Defs.PlacementSize(t.Build)} building";
                 Stretch(kind.rectTransform, new Vector2(68, 30), new Vector2(-6, -36));
                 FitText(kind, 9, 12);
                 var cost = MakeText(card, "Cost", 13, TextAnchor.MiddleLeft);
-                cost.text = t.Build != null ? CostText(t.Build) : t.Road ? "1 wood a tile" : t.Zone != Zone.None ? "Free" : "";
+                cost.text = t.Claim ? "Gold" : t.Build != null ? CostText(t.Build) : t.Road ? "1 wood a tile" : t.Zone != Zone.None ? "Free" : "";
                 Stretch(cost.rectTransform, new Vector2(68, 6), new Vector2(-6, -CardH + 30));
                 FitText(cost, 9, 13);
                 _cards[id] = img; _cardCost[id] = cost;
@@ -583,6 +584,7 @@ namespace CrownAndHearth.Game
             if (t.Zone != Zone.None) return Glyph("zone", ZoneColor(t.Zone));
             if (t.Road) return Glyph("road", new Color(0.55f, 0.42f, 0.28f));
             if (t.Unzone) return Glyph("unzone", new Color(0.85f, 0.85f, 0.85f));
+            if (t.Claim) return Glyph("claim", new Color(0.95f, 0.78f, 0.25f));
             if (t.Clear) return Glyph("cross", new Color(0.85f, 0.30f, 0.25f));
             return Glyph("lens", Ink);
         }
@@ -628,6 +630,7 @@ namespace CrownAndHearth.Game
                             float d = Vector2.Distance(new Vector2(x, y), new Vector2(18, 19));
                             if (d < 9 && d > 6) v = col; else if (d <= 6) v = new Color32(120, 160, 200, 160);
                             if (x - y > -2 && x - y < 2 && x < 13 && x > 4) v = col; break;
+                        case "claim": if (InDiamond(x, y)) v = Mathf.Abs(x - 15.5f) / 13f + Mathf.Abs(y - 15.5f) / 6.5f > 1f ? col : new Color32(70, 98, 56, 255); break;
                         case "cross": if ((Mathf.Abs(x - y) < 3 || Mathf.Abs(x + y - 31) < 3) && x > 4 && x < 27) v = col; break;
                     }
                     Set(x, y, v);

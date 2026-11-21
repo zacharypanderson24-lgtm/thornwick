@@ -16,7 +16,7 @@ namespace CrownAndHearth.Game
     public class GameController : MonoBehaviour
     {
         /// <summary>Build bar categories, grouped by what the player is doing: each production building sits beside the zone it works.</summary>
-        public enum Cat { Inspect, Roads, Housing, Farming, Forestry, Mining, Trade, Military, Water, Bulldoze }
+        public enum Cat { Inspect, Roads, Housing, Farming, Forestry, Mining, Trade, Military, Water, Land, Bulldoze }
 
         public class CatDef
         {
@@ -26,7 +26,7 @@ namespace CrownAndHearth.Game
         public class ToolDef
         {
             public string Id, Label, Desc; public Cat Cat;
-            public string Build; public Zone Zone; public bool Road, Clear, Unzone;
+            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Claim;
         }
 
         public static readonly CatDef[] Cats =
@@ -40,6 +40,7 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "6", Hotkey = Key.Digit6, Icon = "market", Desc = "Markets." },
             new CatDef { Cat = Cat.Military, Label = "Military", Key = "7", Hotkey = Key.Digit7, Icon = "barracks", Desc = "Barracks that train soldiers." },
             new CatDef { Cat = Cat.Water, Label = "Water", Key = "8", Hotkey = Key.Digit8, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
+            new CatDef { Cat = Cat.Land, Label = "Land", Key = "9", Hotkey = Key.Digit9, Desc = "Your district is 64 x 64 tiles. Buy the land beyond it, one 16 x 16 parcel at a time, with gold." },
             new CatDef { Cat = Cat.Bulldoze, Label = "Bulldoze", Key = "0", Hotkey = Key.Digit0, Alt = Key.Delete, Desc = "Demolish buildings and roads, clear trees and rocks, or remove zones." },
         };
 
@@ -80,6 +81,8 @@ namespace CrownAndHearth.Game
                 Desc = $"Pumps up to {WaterTuning.WellPump:0} water a day from the groundwater patch it stands on (the blue patches) into the town-wide supply: any home on a connected road can use it, however far away. Wells on one patch share its reserve and recharge: draw more than the recharge and the patch runs down." },
             new ToolDef { Id = "cistern", Cat = Cat.Water, Label = "Cistern", Build = "cistern",
                 Desc = $"Stores {WaterTuning.CisternCap:0} water. Wells and the Town Hall's spring fill it with what the town does not drink, and it covers shortfalls for every home on a connected road. Anywhere on a road will do." },
+            new ToolDef { Id = "claim", Cat = Cat.Land, Label = "Claim Land", Claim = true,
+                Desc = $"Click a 16 x 16 parcel next to land you own to buy it with gold: from {World.ParcelBaseCost}, a little more for each one bought. You can build, zone, clear and work only land you own. The whole map is 256 x 256 tiles." },
             new ToolDef { Id = "clear", Cat = Cat.Bulldoze, Label = "Demolish", Clear = true,
                 Desc = "Click or drag over buildings, roads, zones, trees and rocks to remove them. Buildings give back half their cost. The Town Hall stays." },
             new ToolDef { Id = "unzone", Cat = Cat.Bulldoze, Label = "Remove Zones", Unzone = true,
@@ -94,7 +97,9 @@ namespace CrownAndHearth.Game
 
         public World World { get; private set; }
         int _rot, _drawnVersion = -1, _drawnRot = -1, _speed = 1;
+        Rect _builtRect;   // the part of the world the renderers last built (in world units)
         int _progressVersion = -1;   // world version the tutorial's progress line was last counted at
+        WorldMap _worldMap; System.Threading.Tasks.Task<WorldMap> _worldMapTask;   // the conquest map, made on a background thread the first time the Map opens
         int _ugLevel;   // underground view: 0 off, else the level shown (U cycles)
         float _dayAcc;
         ToolDef _tool = Tools[0];
@@ -141,6 +146,7 @@ namespace CrownAndHearth.Game
             _hud.TutorialBack += () => { _tutorial.Back(World); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
             _hud.TutorialClose += () => { _tutorial.Close(); PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
             _hud.SavePicked += SaveSettlement;
+            _hud.MapToggled += open => { if (open) EnsureWorldMap(); };
             _hud.LoadPicked += LoadSettlement;
             SetTool(_tool); _hud.SetSpeed(_speed);
             // the tutorial opens by itself until the player has finished or closed it once (the Tutorial button brings it back)
@@ -196,6 +202,7 @@ namespace CrownAndHearth.Game
             _hud.SetSpeed(_speed);
             _cam.CenterOn(IsoView.TileCenter(World, loaded.Hall.X + 1, loaded.Hall.Y + 1, _rot));
             _hud.Toast("Settlement loaded and paused.");
+            if (_hud.MapOpen) EnsureWorldMap();   // a different save can have a different world
         }
 
         void SetBanner(string hex)
@@ -216,6 +223,25 @@ namespace CrownAndHearth.Game
             _drawnVersion = -1;
         }
 
+        /// <summary>Make the world for this settlement's seed and relief if the map does not have it yet. It takes a moment, so it runs on a worker thread.</summary>
+        void EnsureWorldMap()
+        {
+            int seed = World.Seed; var relief = World.Relief;
+            if (_worldMap != null && _worldMap.Seed == seed && _worldMap.HomeRelief == relief) { _hud.SetWorldMap(_worldMap); return; }
+            if (_worldMapTask != null && !_worldMapTask.IsCompleted) return;
+            _hud.SetMapGenerating();
+            _worldMapTask = System.Threading.Tasks.Task.Run(() => WorldMap.Generate(seed, relief));
+        }
+
+        void PollWorldMap()
+        {
+            if (_worldMapTask == null || !_worldMapTask.IsCompleted) return;
+            var task = _worldMapTask; _worldMapTask = null;
+            if (task.IsFaulted) { Debug.LogError("World map generation failed: " + task.Exception?.GetBaseException()); _hud.Toast("Could not generate the world map.", 6); return; }
+            _worldMap = task.Result;
+            if (_hud.MapOpen) EnsureWorldMap();   // the save may have changed while it was being made
+        }
+
         void OnDestroy() => _art?.SetBanner(null);
 
         void Update()
@@ -230,10 +256,10 @@ namespace CrownAndHearth.Game
             HandleKeys();
             bool overUi = _hud.PointerOverUi;
             var camBefore = _cam.Center; int zoomBefore = _cam.ZoomIndex;
-            _cam.Tick(!overUi, !_hud.EditingBanner);
+            _cam.Tick(!overUi && !_hud.MapOpen, !_hud.EditingBanner && !_hud.MapOpen);
             if ((_cam.Center - camBefore).sqrMagnitude > 1e-6f) _tutorial.Panned = true;
             if (_cam.ZoomIndex != zoomBefore) _tutorial.Zoomed = true;
-            HandleMouse(overUi);
+            HandleMouse(overUi || _hud.MapOpen);
 
             if (_speed > 0)
             {
@@ -243,9 +269,16 @@ namespace CrownAndHearth.Game
                 if (_dayAcc > 1f) _dayAcc = 0;
             }
 
-            if (World.Version != _drawnVersion || _rot != _drawnRot)
+            // the map is 256 x 256: draw the part round the camera (half a screen more on every side), and redraw it when the camera leaves that
+            // part, the zoom changes it, the world changes or the view turns
+            var camera = _cam.Cam; float halfH = camera.orthographicSize, halfW = halfH * camera.aspect; Vector2 at = camera.transform.position;
+            var visible = new Rect(at.x - halfW, at.y - halfH, halfW * 2, halfH * 2);
+            if (World.Version != _drawnVersion || _rot != _drawnRot || !_builtRect.Contains(visible.min) || !_builtRect.Contains(visible.max)
+                || _builtRect.width > visible.width * 3.5f)   // zoomed back in after being zoomed right out: do not keep drawing the whole map
             {
-                _ground.Build(World, _rot); _objects.Build(World, _rot);
+                _builtRect = new Rect(visible.x - visible.width * 0.5f, visible.y - visible.height * 0.5f, visible.width * 2f, visible.height * 2f);
+                var window = IsoView.TileWindow(_builtRect);
+                _ground.Build(World, _rot, window); _objects.Build(World, _rot, window);
                 _drawnVersion = World.Version; _drawnRot = _rot;
             }
             _agents.Draw(World, _rot, Mathf.Clamp01(_dayAcc), _cam.Zoom <= 0.5f);
@@ -257,6 +290,7 @@ namespace CrownAndHearth.Game
             _hud.SetInfo(_hover.HasValue ? TileInfo(_hover.Value.x, _hover.Value.y) : "");
             _hud.RefreshWorkforce(World);
             _hud.RefreshTownMenus(World);
+            PollWorldMap();
             if (World.Events.Count > 0) { _hud.Toast(World.Events[World.Events.Count - 1], 8); World.Events.Clear(); }   // cave-ins, new levels, empty surveys
             var done = _tutorial.Check(World);
             if (done != null)
@@ -272,6 +306,14 @@ namespace CrownAndHearth.Game
         void HandleKeys()
         {
             var kb = Keyboard.current; if (kb == null || _hud.EditingBanner) return;
+            if (kb.mKey.wasPressedThisFrame) { _hud.ToggleMap(); return; }
+            if (_hud.MapOpen)
+            {
+                // the map is modal: Esc closes it, Space still pauses, nothing else reaches the town
+                if (kb.escapeKey.wasPressedThisFrame) _hud.CloseMap();
+                if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
+                return;
+            }
             if (kb.escapeKey.wasPressedThisFrame) Cancel();
             foreach (var c in Cats)
                 if (c.Cat != Cat.Inspect && (kb[c.Hotkey].wasPressedThisFrame || (c.Alt != Key.None && kb[c.Alt].wasPressedThisFrame))) _hud.CategoryKey(c.Cat);
@@ -293,6 +335,7 @@ namespace CrownAndHearth.Game
             string hint = t.Build == "well" ? $"Well ({Hud.CostText(t.Build)}): click a blue groundwater patch. Light roads show the network its water travels.{stop}"
                 : t.Build == "cistern" ? $"Cistern ({Hud.CostText(t.Build)}): click beside a road. Light roads show the network its water travels.{stop}"
                 : t.Build != null ? $"{t.Label} ({Hud.CostText(t.Build)}): click a spot to build it." + (ReachOf(t.Build) > 0 ? " The shaded ring is the land it works." : "") + stop
+                : t.Claim ? $"Claim Land: click a 16 x 16 parcel next to your land to buy it with gold (green = you can, amber = not enough gold, red = not next to your land).{stop}"
                 : t.Road ? $"Road (1 wood a tile): press and drag from a road to lay one.{stop}"
                 : t.Zone != Zone.None ? $"{t.Label}: drag over the land, or click two corners. Green tiles will be zoned, red ones cannot be.{stop}"
                 : t.Unzone ? $"Remove Zones: drag over zoned land. Buildings stay.{stop}"
@@ -339,6 +382,16 @@ namespace CrownAndHearth.Game
                 _rightDown = null;
             }
 
+            if (_tool.Claim)
+            {
+                if (mouse.leftButton.wasPressedThisFrame && _hover.HasValue && !overUi)
+                {
+                    var (cpx, cpy) = World.ParcelXY(World.ParcelOf(_hover.Value.x, _hover.Value.y));
+                    var cr = World.ClaimParcel(cpx, cpy);
+                    _hud.Toast(cr.Ok ? $"Claimed a parcel. You own {World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} ({World.ClaimedParcels * World.ParcelSize * World.ParcelSize} tiles); the next costs {World.ParcelCost} gold." : cr.Reason, 5);
+                }
+                return;
+            }
             if (_tool.Zone != Zone.None || _tool.Unzone)
             {
                 // zoning: press, drag and let go to zone the rectangle; or click one corner, then click the opposite corner
@@ -499,6 +552,13 @@ namespace CrownAndHearth.Game
                     bool ok = World.RoadPathCheck(path).Ok;
                     foreach (var (x, y) in path) _overlay.AddTile(World, x, y, _rot, ok ? Ok : Bad);
                 }
+                else if (_tool.Claim)
+                {
+                    var (cpx, cpy) = World.ParcelXY(World.ParcelOf(h.x, h.y));
+                    var cc = World.CanClaim(cpx, cpy);
+                    var col = World.ParcelClaimed(cpx, cpy) ? Hover : cc.Ok ? Ok : !World.ParcelTouchesYours(cpx, cpy) ? Bad : Warn;
+                    for (int j = 0; j < World.ParcelSize; j++) for (int i = 0; i < World.ParcelSize; i++) _overlay.AddTile(World, cpx * World.ParcelSize + i, cpy * World.ParcelSize + j, _rot, col);
+                }
                 else if (_tool.Build != null)
                 {
                     bool ok = World.CanPlace(_tool.Build, h.x, h.y).Ok;
@@ -654,6 +714,14 @@ namespace CrownAndHearth.Game
             _tipWarn = false;
             if (!_hover.HasValue || _tool.Id == "look") return (null, false);
             var h = _hover.Value;
+            if (_tool.Claim)
+            {
+                var (cpx, cpy) = World.ParcelXY(World.ParcelOf(h.x, h.y));
+                if (World.ParcelClaimed(cpx, cpy)) return ($"Your land. You own {World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} parcels", false);
+                var cc = World.CanClaim(cpx, cpy);
+                if (!cc.Ok) { _tipWarn = World.ParcelTouchesYours(cpx, cpy); return (cc.Reason, !_tipWarn); }
+                return ($"Click to claim this 16 x 16 parcel for {World.ParcelCost} gold ({World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} owned)", false);
+            }
             if (_tool.Road)
             {
                 var path = World.LPath((_roadAnchor ?? h).x, (_roadAnchor ?? h).y, h.x, h.y);

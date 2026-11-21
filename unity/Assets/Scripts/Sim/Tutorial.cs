@@ -19,7 +19,7 @@ namespace CrownAndHearth.Sim
         }
 
         // what the world looked like when the current step began
-        public struct Snapshot { public int Roads, ResByRoad, Houses, Farmland, Lumber, Lodges, Sawmills, Wells, Comm, Silos, Mining; }
+        public struct Snapshot { public int Roads, ResByRoad, Houses, Farmland, Lumber, Lodges, Sawmills, Wells, Comm, Silos, Mining, Parcels; }
 
         // actions the world cannot show, reported by the game
         public bool Panned, Zoomed, Rotated, SpeedChanged, WorkersOpened, UndergroundViewed;
@@ -55,6 +55,7 @@ namespace CrownAndHearth.Sim
         public static Snapshot Snap(World w)
         {
             var n = new Snapshot();
+            n.Parcels = w.ClaimedParcels;
             foreach (var b in w.Blds)
             {
                 if (b.T == "road" && b.Served) n.Roads++;
@@ -163,8 +164,13 @@ namespace CrownAndHearth.Sim
                 Body = "A Barracks (Military, 7) trains soldiers from your peasants, using wood, gold and iron ore. Soldiers eat half as much again and do no other work, " +
                        "so every one is a farmer or woodcutter you give up.",
                 Goal = "Press Next" },
+            new Step { Id = "land", Title = "Land", Tool = "claim",
+                Body = "You own a 64 x 64 district round the Town Hall: the brighter land. The rest of the 256 x 256 map is yours to see and walk, but not to build or work until you own it.\n\n" +
+                       "Open Land (9) and click a 16 x 16 parcel next to your land to buy it with gold. Each parcel costs a little more than the last.",
+                Goal = "Claim a parcel of land", Count = s => s.Parcels, By = 1 },
             new Step { Id = "save", Title = "Saving",
                 Body = "Save and Load (top right) keep one settlement on this computer. Hover or click any tile to learn what it is and what it needs.\n\n" +
+                       "The Map (M, or the Map button) shows the whole world: cold in the north, hot in the south. Your settlement is the gold marker.\n\n" +
                        "That's everything. Good luck with your town!",
                 Goal = "Press Next to finish" },
         };

@@ -13,8 +13,8 @@ namespace CrownAndHearth.Tests
             int x = Defs.Start + 1, y = Defs.Start + 4;
             int forestX = x + 2;
             Array.Clear(world.Hv, 0, world.Hv.Length);
-            for (int row = y - World.HuntingRange; row <= y + World.HuntingRange + 3; row++)
-                for (int column = x - World.HuntingRange; column <= x + World.HuntingRange; column++)
+            for (int row = y - World.HuntingRange - 1; row <= y + World.HuntingRange + 4; row++)
+                for (int column = x - World.HuntingRange - 1; column <= x + World.HuntingRange + 2; column++)
                     world.DecoMap[row, column] = Deco.None;
 
             world.DecoMap[y, forestX] = Deco.Tree;
