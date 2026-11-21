@@ -174,10 +174,10 @@ namespace CrownAndHearth.Sim
                        "so every one is a farmer or woodcutter you give up.",
                 Goal = "Press Next" },
             new Step { Id = "raid", Title = "Raiders!",
-                Body = "Smoke on the hills. A band of raiders walks in over the border and heads for whatever is worth taking: the Town Hall and markets for gold, silos and farms for food, sawmills and lodges for wood, quarries for stone, mines for ore. " +
-                       "Watch them come: each takes one load and runs for home, and soldiers cut them down within reach of a barracks (infantry up close, archers from afar). " +
-                       "They avoid buildings your soldiers cover, so where you build matters.\n\n" +
-                       "Build a Barracks beside what you want to protect and train infantry and archers before the next band comes.",
+                Body = "Smoke on the hills! Raiders walk in over the border and head for whatever is worth taking: gold, food, wood, stone or ore. " +
+                       "Each takes one load and runs for home. Soldiers cut them down near a barracks (infantry close, archers far), and raiders avoid what soldiers cover. " +
+                       "With no soldiers your people fight with their tools, but far worse.\n\n" +
+                       "Build a Barracks beside what you want to protect and train troops.",
                 Goal = "Press Next" },
             new Step { Id = "land", Title = "Land", Tool = "claim",
                 Body = "You own a 64 x 64 district round the Town Hall: the brighter land. The rest of the 256 x 256 map is yours to see and walk, but not to build or work until you own it.\n\n" +

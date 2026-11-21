@@ -30,7 +30,8 @@ namespace CrownAndHearth.Sim
 
     public sealed class RaidReport
     {
-        public int Band, Defenders, Killed, Escaped, SoldiersLost, StartDay;
+        public int Band, Defenders, Killed, Escaped, SoldiersLost, StartDay, PeasantsLost;
+        public readonly HashSet<string> Tools = new HashSet<string>();   // what the residents fought with when there was no military
         public string From = "";
         public bool Over, StartAnnounced, EndAnnounced;
         public readonly Dictionary<Res, int> Stolen = new Dictionary<Res, int>();   // what got away with the raiders
@@ -44,7 +45,7 @@ namespace CrownAndHearth.Sim
             var parts = new List<string>();
             foreach (var kv in Stolen) if (kv.Value > 0) parts.Add($"{kv.Value} {kv.Key.ToString().ToLower()}");
             string loot = parts.Count == 0 ? "nothing" : string.Join(", ", parts);
-            string defence = Defenders == 0 ? "You had no soldiers to stop them."
+            string defence = Defenders == 0 ? (Tools.Count > 0 ? $"With no soldiers the residents fought with their {string.Join(", ", Tools.OrderBy(t => t))}" + (PeasantsLost > 0 ? $" and {PeasantsLost} fell." : ".") : "You had no soldiers to stop them.")
                 : $"{Defenders} soldiers stood guard" + (SoldiersLost > 0 ? $" and {SoldiersLost} fell." : ".");
             if (!Over) return $"{Band} raiders are coming from the {From}. {Active} still on the field, {Killed} cut down so far.\nThey have taken: {loot}.";
             return $"{Band} raiders came from the {From}: {Killed} cut down, {Escaped} escaped with loot. {defence}\nThey made off with: {loot}.";
@@ -59,6 +60,34 @@ namespace CrownAndHearth.Sim
         /// <summary>The raid in progress, or the last one (null before any).</summary>
         public RaidReport Raid { get; private set; }
         double _wounds;
+        double _militiaWounds;
+
+        /// <summary>With no military, the people at a work building fight with their trade's tool: (name, damage per worker per day, reach in tiles); far weaker than a soldier (0.5 a day), and they get hurt more.</summary>
+        public static (string tool, double dmg, int reach)? MilitiaTool(string type) => type switch
+        {
+            "farm" => ("pitchforks", 0.05, 4),
+            "hunter" => ("bows", 0.08, 8),
+            "wood" => ("axes", 0.06, 4),
+            "forester" => ("billhooks", 0.04, 4),
+            "sawmill" => ("saws and axes", 0.05, 4),
+            "quarry" => ("hammers", 0.07, 4),
+            "mine" => ("picks", 0.07, 4),
+            _ => null,
+        };
+
+        /// <summary>How much the working residents around this building would add to its defence when there is no military (soldier equivalents).</summary>
+        public double MilitiaPower(Building b)
+        {
+            if (Soldiers > 0) return 0;
+            double power = 0;
+            foreach (var w in Blds)
+            {
+                var t = MilitiaTool(w.T); if (t == null || w.Workers <= 0) continue;
+                int d = Math.Max(0, Math.Max(Math.Abs(w.X - b.X), Math.Abs(w.Y - b.Y)) - 1);
+                if (d <= t.Value.reach) power += w.Workers * t.Value.dmg * 2;
+            }
+            return power;
+        }
 
         // ---------- what raiders want ----------
 
@@ -105,7 +134,7 @@ namespace CrownAndHearth.Sim
                 if (d <= MeleeR) power += inf;
                 if (d <= BowR) power += arc;
             }
-            return Math.Min(1, power / 6.0);
+            return Math.Min(1, (power + MilitiaPower(b)) / 6.0);
         }
 
         double RaidScore(Building b, int fromX, int fromY)
@@ -257,6 +286,24 @@ namespace CrownAndHearth.Sim
             }
         }
 
+        /// <summary>No military: the workers of each building fight raiders in reach with their tools, and raiders at the door hurt them back.</summary>
+        void MilitiaFight(RaidReport r)
+        {
+            var active = r.Raiders.Where(a => a.St == RaiderState.Approach || a.St == RaiderState.Loot || a.St == RaiderState.Flee).ToList();
+            if (active.Count == 0) return;
+            foreach (var b in Blds)
+            {
+                var t = MilitiaTool(b.T); if (t == null || b.Workers <= 0) continue;
+                var near = active.Where(a => Reach(b, a.X, a.Y) <= t.Value.reach).ToList();
+                if (near.Count == 0) continue;
+                foreach (var a in near) a.Hp -= b.Workers * t.Value.dmg / near.Count;
+                r.Tools.Add(t.Value.tool);
+                _militiaWounds += 0.08 * near.Count * Math.Min(1, b.Workers / 2.0);
+            }
+            while (_militiaWounds >= 1 && Peasants > 1) { _militiaWounds -= 1; Peasants--; r.PeasantsLost++; }
+            if (Peasants <= 1) _militiaWounds = 0;
+        }
+
         /// <summary>Soldiers fire on raiders in range; raiders at the barracks wound the garrison.</summary>
         void Fight(RaidReport r)
         {
@@ -269,6 +316,7 @@ namespace CrownAndHearth.Sim
                 if (inMelee.Count > 0 && inf > 0) foreach (var a in inMelee) a.Hp -= 0.5 * inf / inMelee.Count;
                 if (inMelee.Count > 0 && inf + arc > 0) _wounds += 0.1 * inMelee.Count;
             }
+            if (Soldiers == 0) MilitiaFight(r);
             foreach (var a in r.Raiders)
                 if (a.Hp <= 0 && a.St != RaiderState.Dead && a.St != RaiderState.Gone)
                 {

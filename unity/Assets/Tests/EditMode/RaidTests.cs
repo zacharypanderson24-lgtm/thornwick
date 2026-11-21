@@ -65,6 +65,27 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
+        public void WithoutAMilitaryTheWorkersFightWithTheirToolsFarWeakerThanSoldiers()
+        {
+            var w = Town(false, 0, 0);
+            w.Tick();
+            var farm = w.Blds.First(b => b.T == "farm");
+            farm.Workers = 6;
+            Assert.AreEqual("pitchforks", World.MilitiaTool("farm").Value.tool);
+            Assert.AreEqual("bows", World.MilitiaTool("hunter").Value.tool);
+            Assert.IsNull(World.MilitiaTool("house"));
+            double militia = w.MilitiaPower(farm);
+            Assert.Greater(militia, 0);
+            Assert.Less(militia, 1.0, "six farmers count for less than one soldier");
+            Assert.AreEqual(0, Town(true, 3, 0).MilitiaPower(farm), "soldiers replace the militia");
+            Assert.Less(World.MilitiaTool("farm").Value.dmg, 0.5 / 5, "a pitchfork is far weaker than a soldier");
+            var r = w.BeginRaid(12);
+            for (int day = 0; day < 600 && !r.Over; day++) { w.ResAmt[Res.Food] = 300; w.Tick(); }
+            Assert.IsTrue(r.Over);
+            Assert.AreEqual(0, r.SoldiersLost);
+        }
+
+        [Test]
         public void RaidersAreRuntimeOnlyAndNeverSaved()
         {
             var w = Town(false, 0, 0);
