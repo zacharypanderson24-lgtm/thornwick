@@ -27,7 +27,7 @@ namespace CrownAndHearth.Game
         public Sprite Building(string slot, int view)
         {
             var source = Find(slot + "_" + (view + 1)) ?? Find(slot) ?? Find("ph_" + slot);
-            if (source == null && slot == "hunter") return Building("wood", view);
+            if (source == null && slot == "hunter") return Building("wood2", view);
             if (source == null || !_bannerColor.HasValue || (slot != "hall" && slot != "barracks") || !source.texture.isReadable)
                 return source;
             if (_banners.TryGetValue(source, out var tinted)) return tinted;

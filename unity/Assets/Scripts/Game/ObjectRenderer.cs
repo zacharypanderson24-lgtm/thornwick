@@ -104,6 +104,7 @@ namespace CrownAndHearth.Game
         /// <summary>The art slot for a building (JS slotName + the hut-variant rule).</summary>
         public static string SlotName(Building b)
         {
+            if (b.T == "hunter" && b.Sz == 1) return "wood";   // pre-release hunting saves
             if (b.Sz == 2)
             {
                 if (b.T == "house") return "manor_" + b.Lvl;

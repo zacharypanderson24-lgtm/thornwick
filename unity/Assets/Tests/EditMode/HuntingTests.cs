@@ -10,10 +10,10 @@ namespace CrownAndHearth.Tests
         public void WinterHuntersShareOneFiniteForestReserveAndSaveItsDepletion()
         {
             var world = new World(7);
-            int x = Defs.Start + 1, y = Defs.Start + 5;
+            int x = Defs.Start + 1, y = Defs.Start + 4;
             int forestX = x + 2;
             Array.Clear(world.Hv, 0, world.Hv.Length);
-            for (int row = y - World.HuntingRange; row <= y + World.HuntingRange + 1; row++)
+            for (int row = y - World.HuntingRange; row <= y + World.HuntingRange + 3; row++)
                 for (int column = x - World.HuntingRange; column <= x + World.HuntingRange; column++)
                     world.DecoMap[row, column] = Deco.None;
 
@@ -21,8 +21,9 @@ namespace CrownAndHearth.Tests
             world.Day = 271;
             world.ResAmt[Res.Food] = 130;
             Assert.That(world.Place("hunter", x, y).Ok, Is.True);
-            Assert.That(world.Place("hunter", x, y + 1).Ok, Is.True);
-            Assert.That(world.Grid[y, x].Served && world.Grid[y + 1, x].Served, Is.True);
+            Assert.That(world.Place("hunter", x, y + 2).Ok, Is.True);
+            Assert.That(world.Grid[y, x].Sz, Is.EqualTo(2));
+            Assert.That(world.Grid[y, x].Served && world.Grid[y + 2, x].Served, Is.True);
             Assert.That(world.HuntFoodRemaining(forestX, y), Is.EqualTo(World.ForestFoodReserve));
 
             double collected = 0;

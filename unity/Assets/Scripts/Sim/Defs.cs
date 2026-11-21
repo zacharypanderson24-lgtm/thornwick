@@ -108,7 +108,7 @@ namespace CrownAndHearth.Sim
         public static readonly int[,] FaceDirs = { { 0, 1 }, { -1, 0 }, { 0, -1 }, { 1, 0 } };
         public static readonly int[,] Nb = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
-        public static int PlacementSize(string type) => type == "wood" || type == "mine" || type == "quarry" ? 2 : DefaultSize(type);
+        public static int PlacementSize(string type) => type == "wood" || type == "mine" || type == "quarry" || type == "hunter" ? 2 : DefaultSize(type);
         public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "market" || type == "farm") ? 2 : 1;
     }
 }
