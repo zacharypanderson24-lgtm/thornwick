@@ -53,7 +53,7 @@ namespace CrownAndHearth.Sim
         public int Band, Defenders, Killed, Escaped, SoldiersLost, StartDay, PeasantsLost;
         public readonly HashSet<string> Tools = new HashSet<string>();   // what the residents fought with
         public string From = "";
-        public bool Over, StartAnnounced, EndAnnounced;
+        public bool Over, StartAnnounced, EndAnnounced, Alarm;   // Alarm: a raider got within 5 tiles of a civilian and the soldiers were called out
         public readonly Dictionary<Res, int> Stolen = new Dictionary<Res, int>();   // what got away with the raiders
         public readonly List<Raider> Raiders = new List<Raider>();
         public readonly List<Fighter> Fighters = new List<Fighter>();
@@ -341,6 +341,21 @@ namespace CrownAndHearth.Sim
             }
         }
 
+        /// <summary>Civilians are the people in homes, at work or on the road. A raider this close to any of them raises the alarm.</summary>
+        public const int AlarmR = 5;
+
+        bool NearCivilian(Raider a)
+        {
+            foreach (var b in Blds)
+            {
+                if (b.T != "house" && b.T != "hall" && b.Workers <= 0) continue;
+                if (Reach(b, a.X, a.Y) <= AlarmR) return true;
+                foreach (var w in b.Crew) if (w.St != CrewState.Home && w.St != CrewState.Down && Cheb(w.X, w.Y, a.X, a.Y) <= AlarmR) return true;
+            }
+            foreach (var v in Folk) if (v.St != FolkState.Home && Cheb(v.X, v.Y, a.X, a.Y) <= AlarmR) return true;
+            return false;
+        }
+
         static bool RaiderLive(Raider a) => a.St == RaiderState.Approach || a.St == RaiderState.Loot || a.St == RaiderState.Flee;
 
         bool FighterPass(int x, int y) => Inb(x, y) && !IsSolid(x, y) && (Grid[y, x] == null || Grid[y, x].T == "road");
@@ -384,6 +399,11 @@ namespace CrownAndHearth.Sim
         void StepFighters(RaidReport r)
         {
             var live = r.Raiders.Where(RaiderLive).ToList();
+            if (!r.Alarm && live.Any(NearCivilian))
+            {
+                r.Alarm = true;
+                Events.Add("Raiders are among your people! The barracks sounds the alarm and the soldiers march out.");
+            }
             var chase = new Dictionary<Raider, int[]>();
             int[] FieldOf(Raider a) { if (!chase.TryGetValue(a, out var f)) chase[a] = f = ChaseField(r, a); return f; }
             var hitRaider = new Dictionary<Raider, double>();
@@ -394,10 +414,10 @@ namespace CrownAndHearth.Sim
                 if (f.St == FighterState.Dead) continue;
                 f.Px = f.X; f.Py = f.Y; f.Hurt = f.Attacked = f.Shooting = false;
                 // pick a target: the nearest raider (those carrying loot count as nearer) inside the alert area of the post, or the current one while it stays in reach
-                if (f.Target != null && (!RaiderLive(f.Target) || Cheb(f.Post.X, f.Post.Y, f.Target.X, f.Target.Y) > ChaseR)) f.Target = null;
+                if (f.Target != null && (!RaiderLive(f.Target) || (!r.Alarm && Cheb(f.Post.X, f.Post.Y, f.Target.X, f.Target.Y) > ChaseR))) f.Target = null;
                 if (f.Target == null && live.Count > 0)
                 {
-                    int radius = f.St == FighterState.Idle ? AlertR : ChaseR;
+                    int radius = r.Alarm ? int.MaxValue : f.St == FighterState.Idle ? AlertR : ChaseR;
                     Raider best = null; double bestScore = double.MaxValue;
                     foreach (var a in live)
                     {
