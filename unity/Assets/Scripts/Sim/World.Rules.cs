@@ -85,6 +85,7 @@ namespace CrownAndHearth.Sim
                         : "Too steep to build on");
             }
             if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
+            if (type == "smithery" && !NextToRoad(fp)) return Result.No("Smithery must touch a road");
             if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");
             return CanAfford(type);
         }

@@ -55,6 +55,15 @@ namespace CrownAndHearth.Sim
             // economy
             double eat = DailyFoodDemand;
             ResAmt[Res.Food] += food - eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
+            // Newly delivered ore is available to road-linked smiths on the same day.
+            foreach (var b in Blds.Where(b => b.T == "smithery" && b.Served))
+            {
+                double room = Storage - ResAmt[Res.Metal];
+                if (room <= 0 || ResAmt[Res.Ore] <= 0) break;
+                double metal = Math.Min(Math.Min(room, SmeltRate * b.Eff), ResAmt[Res.Ore] / OrePerMetal);
+                ResAmt[Res.Ore] -= metal * OrePerMetal;
+                ResAmt[Res.Metal] += metal;
+            }
             ResAmt[Res.Gold] += employed * 0.12 - Soldiers * 0.1;
             Starving = false;
             if (ResAmt[Res.Food] <= 0)

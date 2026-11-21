@@ -27,6 +27,37 @@ const hline = (x0, x1, y) => { const a = []; for (let x = x0; x <= x1; x++) a.pu
 const vline = (x, y0, y1) => { const a = []; for (let y = y0; y <= y1; y++) a.push([x, y]); return a; };
 const connAt = (S, x, y) => S.d.conn[y * N + x];
 
+test('Smithery occupies four tiles, smelts ore, and respects stockpile and road access', () => {
+  const S = clean();
+  const x = C0 + 1, y = C0 + 4;
+  for (let row = C0 + 2; row <= C0 + 6; row++) sim.remove(S, C0, row);
+  eq(sim.canPlace(S, 'smithery', x, y).ok, false, 'requires a road');
+  road(S, vline(C0, C0 + 2, C0 + 5));
+  S.deco[y + 1][x + 1] = 'ore';
+  eq(sim.canPlace(S, 'smithery', x, y).ok, false, 'checks the entire footprint');
+  S.deco[y + 1][x + 1] = null;
+  ok(sim.place(S, 'smithery', x, y).ok, 'builds at the road');
+  const b = S.grid[y][x];
+  eq(S.grid[y + 1][x + 1], b);
+  eq(b.workers, 3);
+  S.res.ore = 10;
+  sim.tick(S); eq(S.res.ore, 6); eq(S.res.metal, 2);
+  S.res.metal = 399.5;
+  sim.tick(S); eq(S.res.ore, 5); eq(S.res.metal, 400);
+  sim.tick(S); eq(S.res.ore, 5, 'full output storage preserves ore');
+  const loaded = sim.loadWorld(sim.saveWorld(S));
+  eq(loaded.res.metal, 400);
+  eq(loaded.grid[y][x].sz, 2);
+  sim.remove(loaded, C0, C0 + 2);
+  loaded.res.metal = 0;
+  sim.tick(loaded);
+  eq(loaded.res.metal, 0, 'disconnecting the road stops production');
+  eq(loaded.res.ore, 5);
+  const legacy = JSON.parse(sim.saveWorld(clean()));
+  delete legacy.res.metal;
+  delete legacy.rate.metal;
+  eq(sim.loadWorld(JSON.stringify(legacy)).res.metal, 0);
+});
 test('1. road connection and disconnection', () => {
   const S = clean(); const h = C0 + 2;
   road(S, hline(C0 + 2, C0 + 8, C0));                  // starts touching the Hall's east edge

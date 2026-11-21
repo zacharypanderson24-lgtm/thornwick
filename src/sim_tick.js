@@ -41,6 +41,14 @@ schedule('economy', 'economy', 1, 0, (S, T) => {
   const trade = d.markets ? 0.04 * S.peasants * d.cov * d.mkEff : 0;
   const eat = (S.peasants + S.soldiers * 1.5) * 0.2;
   S.res.food += T.food - eat; S.res.wood += T.wood; S.res.stone += T.stone; S.res.ore += T.ore;
+  for (const b of listOf(cacheOf(S), 'smithery')) {
+    if (!b.served) continue;
+    const room = STORAGE - S.res.metal;
+    if (room <= 0 || S.res.ore <= 0) break;
+    const metal = Math.min(room, SMELT_RATE * b.eff, S.res.ore / ORE_PER_METAL);
+    S.res.ore -= metal * ORE_PER_METAL;
+    S.res.metal += metal;
+  }
   S.res.gold += T.employed * 0.12 + trade - S.soldiers * 0.1;
   S.starving = false;
   if (S.res.food <= 0) {

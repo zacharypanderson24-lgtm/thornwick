@@ -365,6 +365,7 @@ function defaultSprite(name) {
   if ((m = /^(grass|grassfert|tree|rock|ore)_(\d)$/.exec(name))) return ({ grass: SPR.grass, grassfert: SPR.grassF, tree: SPR.tree, rock: SPR.rock, ore: SPR.ore })[m[1]][+m[2]];
   if (name === 'house_1') return SPR.house1; if (name === 'house_2') return SPR.house2;
   if (name === 'manor_1') return SPR.manor[0]; if (name === 'manor_2') return SPR.manor[1];
+  if (name === 'smithery') return SPR.barracks; // Placeholder until packaged artwork loads.
   return SPR[name];
 }
 function setRot(r) {
@@ -386,6 +387,7 @@ const TOOLS = [
   { id: 'inspect', label: 'Look', key: '1' },
   // Construction: things you place yourself, one at a time.
   { id: 'road', label: 'Road', key: '2', cat: 'build' }, { id: 'well', label: 'Well', key: '8', cat: 'build' }, { id: 'sawmill', label: 'Sawmill', key: 'x', cat: 'build' },
+  { id: 'smithery', label: 'Smithery', key: 'm', cat: 'build' },
   { id: 'forester', label: 'Forester', key: 'f', cat: 'build' }, { id: 'barracks', label: 'Barracks', key: '9', cat: 'build' },
   // Zoning: paint an area and buildings grow there by themselves.
   { id: 'zoneRes', label: 'Housing', key: '3', cat: 'zone' }, { id: 'zoneFarm', label: 'Farmland', key: '4', cat: 'zone' }, { id: 'zoneComm', label: 'Commerce', key: '5', cat: 'zone' },
@@ -416,7 +418,7 @@ function iconFor(id) {
     g.drawImage(SPR.grass[0], 0, -8); g.drawImage(SPR.sawmill, 0, -8);
   } else if (id === 'cat-zone') {
     g.drawImage(SPR.grass[0], 0, -8); g.drawImage(ZSPR('res'), 0, -8); g.drawImage(SPR.house1, 0, -8);
-  } else if (id === 'barracks') {
+  } else if (id === 'barracks' || id === 'smithery') {
     const sprite = spriteFor(id, null, 0);
     g.drawImage(sprite, 0, 0, sprite.width, sprite.height, 0, -3, 32, 44);
   } else {
@@ -963,8 +965,8 @@ function draw() {
     else {
       const c = canPlace(S, tool, hover.x, hover.y);
       ctx.globalAlpha = 0.7;
-      if (tool === 'barracks' || tool === 'hall') {
-        const footprint = { x: hover.x, y: hover.y, sz: tool === 'hall' ? 3 : 2, t: tool, lvl: 1 };
+      if (placementSize(tool) > 1) {
+        const footprint = { x: hover.x, y: hover.y, sz: placementSize(tool), t: tool, lvl: 1 };
         const views = tilesOf(footprint).filter(([x, y]) => inb(x, y)).map(([x, y]) => { const q = geo(x, y); return [q.sx, q.sy - q.base]; });
         const corner = views.reduce((best, pt) => (!best || pt[1] > best[1]) ? pt : best, null);
         const gs = spriteFor(tool, footprint, 0);
@@ -990,6 +992,7 @@ function updateHint() {
   else if (tool === 'zoneWood') t = 'Drag over forest to mark trees for felling. Woodcutters near a road cut them into logs and the land is left clear to build on. Logs need a sawmill. Also paint open ground next to a forester so it replants the woodlot.';
   else if (tool === 'zoneMine') t = 'Drag over rock to mark it for quarrying. Stone is limited and never grows back. Mountains hollow out but stay; hills dig down into pits.';
   else if (tool === 'forester') t = 'Place a forester beside a road, then paint a Lumber zone over open ground within 4 tiles. It plants saplings there; they grow into trees for woodcutters.';
+  else if (tool === 'smithery') t = 'Place a 2×2 Smithery beside a road. Workers smelt iron ore into metal.';
   else if (tool === 'sawmill') t = 'Place a sawmill beside a road. It turns logs into wood. Without one, the Town Hall saws slowly at half yield.';
   else if (ZONE[tool]) t = 'Drag across an area to zone it. Buildings only grow on zone tiles that touch a road, and their doors face it.';
   const el = $('hint'); if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
@@ -1001,7 +1004,7 @@ function crewLine(b) {
 function workLine(b) { return 'Workers: ' + (b.workers || 0) + '/' + jobsOf(b); }
 function updateHUD() {
   const d = S.d || recalc(S);
-  for (const k of ['food', 'wood', 'logs', 'stone', 'ore', 'gold']) {
+  for (const k of ['food', 'wood', 'logs', 'stone', 'ore', 'metal', 'gold']) {
     $('v-' + k).textContent = Math.floor(S.res[k]);
     const r = $('r-' + k); r.textContent = fmtRate(S.rate[k]); r.className = 'rate ' + (S.rate[k] > 0.05 ? 'up' : S.rate[k] < -0.05 ? 'down' : '');
   }
@@ -1078,6 +1081,8 @@ function describe(t) {
     let open = 0, grow = 0; for (let j = b.y - FORESTER_R; j <= b.y + FORESTER_R; j++) for (let i = b.x - FORESTER_R; i <= b.x + FORESTER_R; i++) if (inb(i, j) && S.zone[j][i] === 'wood') { if (S.deco[j][i] === 'sapling') grow++; else if (!S.deco[j][i] && !S.grid[j][i]) open++; }
     L.push(workLine(b) + ' · ' + open + ' open Lumber tiles in reach · ' + grow + ' saplings growing', open ? 'Plants a sapling every ' + (PLANT_EVERY / Math.max(0.01, b.eff || 0)).toFixed(0) + ' days at current staffing. Saplings take ' + (SAPLING_DAYS / 365) + ' years to become trees.' : 'Paint a Lumber zone over open ground within ' + FORESTER_R + ' tiles for it to plant.');
   }
+  if (b.t === 'smithery') L.push(workLine(b) + ' · capacity ' + (SMELT_RATE * (b.eff || 0)).toFixed(1) + ' metal per tick',
+    ORE_PER_METAL + ' iron ore per metal · Stockpile: ' + Math.floor(S.res.ore) + ' ore, ' + Math.floor(S.res.metal) + '/' + STORAGE + ' metal');
   if (b.t === 'sawmill') L.push(workLine(b) + ' · saws ' + (b.served ? (SAW_RATE * (b.eff || 0)).toFixed(1) : '0') + ' logs into wood per second', 'Logs in store: ' + Math.floor(S.res.logs) + '. Without a sawmill the Town Hall saws 1 log per second at half yield.');
   if (b.t === 'mine') {
     let left = 0, n = 0; for (let j = b.y - 3; j <= b.y + 3; j++) for (let i = b.x - 3; i <= b.x + 3; i++) if (inb(i, j) && S.deco[j][i] === 'ore') { n++; left += oreLeft(S, i, j); }
