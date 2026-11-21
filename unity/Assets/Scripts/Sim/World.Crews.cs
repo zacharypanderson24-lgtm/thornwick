@@ -2,6 +2,7 @@
 // Crews: woodcutters, quarrymen and miners live at their building, walk out to a marked tile, work, and carry the load home. Output only counts when a
 // load is delivered, so farther sites make slower trips. Townsfolk: ambient villagers who stroll the roads; purely cosmetic, the economy never reads them.
 // Both are runtime only (never saved): after a load everybody starts at home, as in the browser game.
+using System;
 using System.Collections.Generic;
 using static CrownAndHearth.Sim.Defs;
 
@@ -48,8 +49,20 @@ namespace CrownAndHearth.Sim
         public const int FolkMax = 90, FolkDepth = 40, FolkVariants = 6;
         public const double FolkPerPeasant = 0.6;
 
-        public static Deco CrewKind(string t) => t == "wood" ? Deco.Tree : t == "quarry" ? Deco.Rock : t == "mine" ? Deco.Ore : Deco.None;
-        static Res CrewRes(Deco kind) => kind == Deco.Tree ? Res.Logs : kind == Deco.Rock ? Res.Stone : Res.Ore;
+        public const int HuntingRange = 4, ForestFoodReserve = 12, HuntingLoad = 3, HuntingRecoveryDays = 30;
+        // Only harvested tiles have an entry. Each date is when the reserve will be full again.
+        readonly Dictionary<int, int> _gameRecoveryDay = new Dictionary<int, int>();
+
+        public int HuntFoodRemaining(int x, int y)
+        {
+            if (!Inb(x, y) || DecoMap[y, x] != Deco.Tree) return 0;
+            int daysToFull = Math.Max(0, _gameRecoveryDay.GetValueOrDefault(Tk(x, y)) - Day);
+            int missingFood = (daysToFull + HuntingRecoveryDays - 1) / HuntingRecoveryDays;
+            return Math.Max(0, ForestFoodReserve - missingFood);
+        }
+
+        public static Deco CrewKind(string t) => t == "wood" || t == "hunter" ? Deco.Tree : t == "quarry" ? Deco.Rock : t == "mine" ? Deco.Ore : Deco.None;
+        static Res CrewRes(string type, Deco kind) => type == "hunter" ? Res.Food : kind == Deco.Tree ? Res.Logs : kind == Deco.Rock ? Res.Stone : Res.Ore;
 
         /// <summary>Movement rule (JS walkCost): blocked into or out of solid tiles and across steps of 1.75 levels or more; slopes cost extra.</summary>
         public double WalkCost(int x, int y, int nx, int ny)
@@ -62,9 +75,10 @@ namespace CrownAndHearth.Sim
         /// <summary>Land ownership seam (JS claimed): true everywhere until territories exist.</summary>
         public bool Claimed(int x, int y) => true;
 
-        bool CrewMatch(Deco kind, int x, int y)
+        bool CrewMatch(Deco kind, int x, int y, bool hunting = false)
         {
             if (!Claimed(x, y)) return false;
+            if (hunting) return HuntFoodRemaining(x, y) > 0;
             var dc = DecoMap[y, x];
             if (kind == Deco.Tree) return dc == Deco.Tree && ZoneMap[y, x] == Zone.Wood;
             if (kind == Deco.Rock) return dc == Deco.Rock && ZoneMap[y, x] == Zone.Mine && RockWorkable(x, y);
@@ -100,15 +114,17 @@ namespace CrownAndHearth.Sim
             return R;
         }
 
-        /// <summary>Nearest-by-walking marked tile within WorkR of the building (JS crewTarget). Fills path (building -> standing tile).</summary>
+        /// <summary>Nearest reachable work tile within the building’s work range. Fills path (building -> standing tile).</summary>
         bool CrewTarget(Building b, Deco kind, int salt, List<int> used, List<int> path, out int tx, out int ty, bool survey = false)
         {
             var R = Reach(b); var dist = R.Dist; int ox = R.Ox, oy = R.Oy;
             int bi = -1, bj = -1, bn = -1; double bs = 1e9;
-            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
+            bool hunting = b.T == "hunter";
+            int range = hunting ? HuntingRange : WorkR;
+            for (int j = b.Y - range; j <= b.Y + b.Sz - 1 + range; j++)
+                for (int i = b.X - range; i <= b.X + b.Sz - 1 + range; i++)
                 {
-                    if (!Inb(i, j) || !(survey ? ZoneMap[j, i] == Zone.Mine && !Surveyed[Tk(i, j)] && Claimed(i, j) : CrewMatch(kind, i, j))) continue;
+                    if (!Inb(i, j) || !(survey ? ZoneMap[j, i] == Zone.Mine && !Surveyed[Tk(i, j)] && Claimed(i, j) : CrewMatch(kind, i, j, hunting))) continue;
                     for (int k = 0; k < 4; k++)
                     {
                         int nx = i + Nb[k, 0], ny = j + Nb[k, 1]; if (!Inb(nx, ny)) continue;
@@ -147,7 +163,8 @@ namespace CrownAndHearth.Sim
             for (int bi = 0; bi < Blds.Count; bi++)
             {
                 var b = Blds[bi]; var kind = CrewKind(b.T); if (kind == Deco.None) continue;
-                var crew = b.Crew; int want = b.Workers; var res = CrewRes(kind);
+                var crew = b.Crew; int want = b.Workers; var res = CrewRes(b.T, kind);
+                bool hunting = res == Res.Food;
                 for (int i = crew.Count - 1; i >= 0 && crew.Count > want; i--) if (crew[i].St == CrewState.Home) crew.RemoveAt(i);   // resting surplus leaves; those out finish first
                 while (crew.Count < want) crew.Add(new Worker { St = CrewState.Home, X = b.X, Y = b.Y, Px = b.X, Py = b.Y });
                 if (b.T == "mine") { StepMine(b, crew, got); continue; }   // underground mining, World.Mining.cs
@@ -158,6 +175,7 @@ namespace CrownAndHearth.Sim
                     if (a.St == CrewState.Home)
                     {
                         if (!b.Served) continue;
+                        if (hunting && CropStorage(res) - ResAmt[res] - got[res] < 1) continue;
                         if (kind != Deco.Tree && ResAmt[res] + got[res] >= Storage) continue;   // full stockpile: stay home, keep the reserve in the ground
                         _used.Clear();
                         foreach (var o in crew) if (o != a && o.St != CrewState.Home && o.Stand >= 0) _used.Add(o.Stand);
@@ -173,11 +191,23 @@ namespace CrownAndHearth.Sim
                     }
                     else if (a.St == CrewState.Work)
                     {
-                        if (--a.T <= 0) { a.Carry = CrewAct(kind, a); a.Path.Reverse(); a.I = 0; a.St = CrewState.Back; }
+                        if (--a.T <= 0) { a.Carry = hunting ? Math.Min(HuntingLoad, HuntFoodRemaining(a.Tx, a.Ty)) : CrewAct(kind, a); a.Path.Reverse(); a.I = 0; a.St = CrewState.Back; }
                     }
                     else if (a.I < a.Path.Count - 1) { a.I++; SetPos(a, a.Path[a.I]); }
                     if (a.St == CrewState.Back && a.I >= a.Path.Count - 1)
                     {
+                        if (hunting && a.Carry > 0)
+                        {
+                            // Claims settle at delivery so concurrent hunters share the reserve
+                            // and saving mid-trip cannot spend undelivered game.
+                            int key = Tk(a.Tx, a.Ty);
+                            int room = (int)Math.Floor(Math.Max(0, CropStorage(res) - ResAmt[res] - got[res]));
+                            int delivered = Math.Min((int)a.Carry, Math.Min(room, HuntFoodRemaining(a.Tx, a.Ty)));
+                            if (delivered > 0)
+                                _gameRecoveryDay[key] = Math.Max(Day, _gameRecoveryDay.GetValueOrDefault(key))
+                                    + delivered * HuntingRecoveryDays;
+                            a.Carry = delivered;
+                        }
                         got[res] += a.Carry; a.Carry = 0; a.St = CrewState.Home; a.Path.Clear(); a.Stand = -1; a.X = b.X; a.Y = b.Y;
                     }
                 }

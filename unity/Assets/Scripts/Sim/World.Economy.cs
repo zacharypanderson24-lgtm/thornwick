@@ -17,7 +17,7 @@ namespace CrownAndHearth.Sim
             var before = ResAmt.ToDictionary(kv => kv.Key, kv => kv.Value);
             int employed = d.Employed;
             double food = 0, wood = 0;
-            var got = new Dictionary<Res, double> { { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 } };
+            var got = new Dictionary<Res, double> { { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 }, { Res.Food, 0 } };
 
             // farms + foresters
             var crops = SeasonalFarming ? WorkSeasonalFields() : FarmOutput();
@@ -27,11 +27,13 @@ namespace CrownAndHearth.Sim
             {
                 if (b.Eff <= 0) continue;
                 b.Prog += b.Eff;
-                if (b.Prog >= PlantEvery) b.Prog = PlantSapling(b.X, b.Y, ForesterR) ? 0 : PlantEvery;
+                if (b.Prog >= PlantEvery) b.Prog = PlantSapling(b) ? 0 : PlantEvery;
             }
 
             // crews, then deliver logs
+            got[Res.Food] = food;
             StepCrews(got);
+            food = got[Res.Food];
             StepFolk();
             ResAmt[Res.Logs] += got[Res.Logs];
 
@@ -105,7 +107,8 @@ namespace CrownAndHearth.Sim
             return best;
         }
 
-        bool ForesterCovers(int x, int y) => Blds.Any(b => b.T == "forester" && Math.Max(Math.Abs(b.X - x), Math.Abs(b.Y - y)) <= ForesterR);
+        bool ForesterCovers(int x, int y) => Blds.Any(b => b.T == "forester" && x >= b.X - ForesterR && x < b.X + b.Sz + ForesterR &&
+            y >= b.Y - ForesterR && y < b.Y + b.Sz + ForesterR);
 
         void FellAt(int x, int y)
         {
@@ -116,10 +119,11 @@ namespace CrownAndHearth.Sim
             Touch();
         }
 
-        bool PlantSapling(int x, int y, int r)
+        bool PlantSapling(Building b)
         {
+            int x = b.X, y = b.Y, r = ForesterR;
             (int x, int y)? best = null; int bd = int.MaxValue;
-            for (int j = y - r; j <= y + r; j++) for (int i = x - r; i <= x + r; i++)
+            for (int j = y - r; j < y + b.Sz + r; j++) for (int i = x - r; i < x + b.Sz + r; i++)
             {
                 if (!Inb(i, j) || ZoneMap[j, i] != Zone.Wood || Grid[j, i] != null || DecoMap[j, i] != Deco.None) continue;
                 if (IsSolid(i, j) || TileSpread(i, j) >= 2) continue;

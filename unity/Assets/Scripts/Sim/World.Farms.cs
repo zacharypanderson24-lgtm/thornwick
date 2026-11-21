@@ -161,7 +161,7 @@ namespace CrownAndHearth.Sim
             _workTilesVersion = Version; _workTiles.Clear();
             foreach (var b in Blds)
             {
-                var kind = CrewKind(b.T); if (kind == Deco.None) continue;
+                var kind = CrewKind(b.T); if (kind == Deco.None || b.T == "hunter") continue;
                 int n = 0;
                 for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
                     for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
