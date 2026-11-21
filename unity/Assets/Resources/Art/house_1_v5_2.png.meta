@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: 5370648753681936513
-    second: house_1_v5_2_0
+    second: house_1_v5_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -102,7 +102,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: house_1_v5_2_0
+      name: house_1_v5_2
       rect:
         serializedVersion: 2
         x: 3

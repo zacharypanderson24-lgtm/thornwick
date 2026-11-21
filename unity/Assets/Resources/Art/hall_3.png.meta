@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: 1138186109124088024
-    second: hall_3_0
+    second: hall_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -102,7 +102,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: hall_3_0
+      name: hall_3
       rect:
         serializedVersion: 2
         x: 2

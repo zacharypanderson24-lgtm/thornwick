@@ -36,6 +36,32 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
+        public void NewForestersAndSawmillsReserveTwoTilesPerSideAndLegacyFootprintsSurvive()
+        {
+            var w = new World(7);
+            Array.Clear(w.Hv, 0, w.Hv.Length);
+            int x = C + 1, y = C + 4;
+            for (int row = y; row < y + 4; row++)
+                for (int column = x; column < x + 5; column++)
+                    w.DecoMap[row, column] = Deco.None;
+
+            Assert.That(w.Place("forester", x, y).Ok, Is.True);
+            Assert.That(w.Place("sawmill", x, y + 2).Ok, Is.True);
+            Assert.That(w.Grid[y + 1, x + 1], Is.SameAs(w.Grid[y, x]));
+            Assert.That(w.Grid[y + 3, x + 1], Is.SameAs(w.Grid[y + 2, x]));
+            Assert.That(w.Grid[y, x].Served && w.Grid[y + 2, x].Served, Is.True);
+            Assert.That(Defs.PlacementSize("well"), Is.EqualTo(1));
+
+            w.AddBld("forester", x + 3, y, 1);
+            w.AddBld("sawmill", x + 3, y + 2, 1);
+            var saved = World.LoadJson(w.SaveJson());
+            Assert.That(saved.Grid[y, x].Sz, Is.EqualTo(2));
+            Assert.That(saved.Grid[y + 2, x].Sz, Is.EqualTo(2));
+            Assert.That(saved.Grid[y, x + 3].Sz, Is.EqualTo(1));
+            Assert.That(saved.Grid[y + 2, x + 3].Sz, Is.EqualTo(1));
+        }
+
+        [Test]
         public void FarmlandAnywhereIsWorkedByAllServedFarmhousesInProportionToTheirJobs()
         {
             var w = new World(7); w.ClaimAll();   // these tests build far from the town
