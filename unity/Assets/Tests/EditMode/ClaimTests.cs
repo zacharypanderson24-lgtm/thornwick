@@ -63,23 +63,18 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void ParcelsAreBoughtNextToYourLandForGoldAndCostMoreEachTime()
+        public void ParcelsAreClaimedForFreeNextToYourLand()
         {
             var w = new World(7);
             int lo = (C - 32) / World.ParcelSize;   // the first parcel column of the district
-            Assert.AreEqual(25, w.ParcelCost, "the first parcel costs the base price");
             Assert.IsFalse(w.CanClaim(lo - 2, lo).Ok);
             StringAssert.Contains("next to", w.CanClaim(lo - 2, lo).Reason);
             Assert.IsFalse(w.CanClaim(lo, lo).Ok, "already yours");
-            w.ResAmt[Res.Gold] = 10;
-            StringAssert.Contains("Not enough gold", w.CanClaim(lo - 1, lo).Reason);
-            w.ResAmt[Res.Gold] = 100;
             Assert.IsTrue(w.CanClaim(lo - 1, lo).Ok);
             int before = w.Version;
             Assert.IsTrue(w.ClaimParcel(lo - 1, lo).Ok);
             Assert.AreEqual(17, w.ClaimedParcels);
-            Assert.AreEqual(75, w.ResAmt[Res.Gold], "25 gold paid");
-            Assert.AreEqual(28, w.ParcelCost, "each parcel costs 3 more");
+            Assert.AreEqual(80, w.ResAmt[Res.Gold], "claiming costs no gold");
             Assert.That(w.Version, Is.GreaterThan(before), "the world reports the change so it is redrawn");
             Assert.IsTrue(w.Claimed((lo - 1) * 16 + 3, lo * 16 + 3));
             Assert.IsTrue(w.CanClaim(lo - 2, lo).Ok, "the new parcel is now a border");
@@ -111,7 +106,6 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(19, loaded.ClaimedParcels);
             for (int y = 0; y < Defs.N; y += 8) for (int x = 0; x < Defs.N; x += 8) Assert.AreEqual(w.Claimed(x, y), loaded.Claimed(x, y), $"{x},{y}");
             Assert.AreEqual(w.SaveJson(), loaded.SaveJson());
-            Assert.AreEqual(w.ParcelCost, loaded.ParcelCost);
         }
 
         /// <summary>A save as the 128 x 128 game wrote it: the middle 128 x 128 of this world, every index in the old numbering, no land parcels.</summary>
@@ -181,5 +175,17 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(64, again.ClaimedParcels);
             Assert.AreEqual(loaded.SaveJson(), again.SaveJson());
         }
+        [Test]
+        public void SurveyTellsWhatLiesOnAParcel()
+        {
+            var w = new World(7);
+            int lo = (C - 32) / World.ParcelSize;
+            var s = w.SurveyParcel(lo - 1, lo);
+            Assert.GreaterOrEqual(s.Trees + s.Rock + s.Ore + s.Fertile + s.Groundwater + s.Built, 0);
+            Assert.IsFalse(string.IsNullOrEmpty(w.DescribeParcel(lo - 1, lo)));
+            w.DecoMap[lo * 16 + 2, (lo - 1) * 16 + 2] = Deco.Tree;
+            Assert.IsTrue(w.SurveyParcel(lo - 1, lo).Trees >= 1);
+        }
+
     }
 }

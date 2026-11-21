@@ -18,12 +18,13 @@ button or card to see what it does, what it costs and what it needs:
 | 1 | Roads | Dirt road (press and drag) |
 | 2 | Housing | Housing zone (homes grow on it by themselves) |
 | 3 | Farming | Farmhouse, farmland (wheat and flax mix set in the Farming menu), silo |
-| 4 | Forestry | Woodcutter lodge, lumber zone, forester, sawmill |
-| 5 | Mining | Quarry, iron mine, mining zone |
-| 6 | Trade | Market |
-| 7 | Military | Barracks |
-| 8 | Water | Well (on the blue groundwater patches), cistern |
-| 9 | Land | Claim Land: buy a 16 x 16 parcel next to your land with gold |
+| 4 | Wood | Woodcutter lodge, lumber zone, forester, sawmill |
+| 5 | Hunting | Hunting lodge |
+| 6 | Mining | Quarry, iron mine, mining zone |
+| 7 | Trade | Market |
+| 8 | Military | Barracks |
+| 9 | Water | Well (on the blue groundwater patches), cistern |
+| L | Land | Claim Land: claim a 16 x 16 parcel next to your land, free |
 | 0 / Delete | Bulldoze | Demolish, remove zones |
 
 Clicking a category or pressing its key picks its last-used tool (else its first) and opens its cards; pressing the key again cycles through the category, clicking it again puts the tool away.
@@ -32,9 +33,9 @@ Picking a lodge, quarry, mine or forester (or its zone) shades the square around
 A line beside the mouse says what a click will do there, or why it cannot (red). Amber means it will build but something is off: no connected road yet, or zoned land it would cover.
 Esc or a right-click (without dragging) cancels the road or rectangle being drawn, then puts the tool away.
 A mine's road must reach its downhill entrance.
-The city map is 256 x 256 tiles; you own a 64 x 64 district round the Town Hall to start and buy more land (Land, 9) one 16 x 16 parcel at a time, next to what you own. You can build, zone, clear and work only land you own; unowned land is drawn dimmer.
+The city map is 256 x 256 tiles; you own a 64 x 64 district round the Town Hall to start and claim more land for free (Land, L) one 16 x 16 parcel at a time, next to what you own. You can build, zone, clear and work only land you own; unowned land is drawn dimmer.
 The **Map** button (bottom right) or **M** opens the world map: a procedurally generated 600 x 600 km world of 576 regions, cold at the top and hot at the bottom, with your settlement as the gold marker. Scroll to zoom, drag or W A S D to pan, hover for the region and cell, switch between Terrain and Heat map, Esc or M closes it.
-Water (8): homes need water every day. The Town Hall's spring, wells and cisterns are one town-wide supply for every home on a connected road, however far away. Wells go on the blue groundwater patches; wells on one patch share its reserve. Placing a well or cistern shows the patches, short homes (red) and the road network the water travels; the tip says what water the town would really gain and whether the patch would run down.
+Water (9): homes need water every day. The Town Hall's spring, wells and cisterns are one town-wide supply for every home on a connected road, however far away. Wells go on the blue groundwater patches; wells on one patch share its reserve. Placing a well or cistern shows the patches, short homes (red) and the road network the water travels; the tip says what water the town would really gain and whether the patch would run down.
 **Workers** sets staffing priorities. **Tutorial** explains the controls.
 
 A staffed market sells one unit per worker per day. Flax earns two gold and

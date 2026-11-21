@@ -317,13 +317,11 @@ Scope for now (Zach): see a procedurally generated map through a map menu. Nothi
 - **The map is 256 x 256 tiles from the first day** (`Defs.N`; the Town Hall starts at 128, 128). The land beyond your border is on the map,
   drawn and walkable, so no coordinate ever moves when the border grows. Terrain generators scale with the map: ranges and massifs
   by length and area, aquifer patches by area, mountains keep about the same share of the land.
-- **You own a 64 x 64 district** (4 x 4 parcels of 16 x 16 tiles) centred on the Town Hall and buy more one parcel at a time, next to
-  land you already own: 25 gold, plus 3 for every parcel bought beyond the start (`ParcelBaseCost`, `ParcelCostStep`); all 256 parcels
-  cost about 92,000 gold. `World.Claimed(x, y)` is real now (it was the always-true seam): placing, zoning, laying roads, demolishing and
+- **You own a 64 x 64 district** (4 x 4 parcels of 16 x 16 tiles) centred on the Town Hall and claim more one parcel at a time, next to
+  land you already own, **for free** (Zach: land costs nothing). `World.Claimed(x, y)` is real now (it was the always-true seam): placing, zoning, laying roads, demolishing and
   clearing all refuse land you do not own ("That land is not yours yet"), and work crews, quarries and mines only count owned tiles as
   work. Walking, existing roads and water never ask.
-- **Land (9)** in the build bar: Claim Land. Unowned land is drawn dimmer; the tool highlights the parcel under the cursor (green: you can,
-  amber: not enough gold, red: not next to your land), the cursor tip gives the price, and the toast says how many parcels you own.
+- **Land (L)** in the build bar: Claim Land. Unowned land is drawn dimmer and the edge of your land has a gold line; the tool highlights the parcel under the cursor (green: you can, red: not next to your land) and the cursor tip says what lies on it (trees, rock, ore, fertile tiles, groundwater); the toast says how many parcels you own.
   New tutorial step "Land".
 - **Drawing**: only a window of view tiles round the camera (half a screen more on each side) is built, for ground and sprites
   (`IsoView.TileWindow`), and rebuilt when the camera leaves it, the zoom changes it, the world changes or the view turns. `SortOrder` fits
@@ -362,3 +360,6 @@ unity open unity                                 # then open Assets/Scenes/Settl
 - Recompiling scripts while the game is in Play mode reloads the code and leaves `GameController` without its world (Unity does not
   call `Start()` again), so every frame throws a `NullReferenceException` until Play mode stops. Set Preferences > General > Script
   Changes While Playing to "Recompile After Finished Playing", or stop Play mode before recompiling.
+
+## Build bar by industry
+- Forestry is now **Wood** (4: woodcutter lodge, lumber zone, forester, sawmill) and the hunting lodge has its own **Hunting** button (5). Mining moved to 6, Trade 7, Military 8, Water 9, so the Land tool of the conquest-map branch needs another key. Each industry holds its buildings and zones together. Tutorial, README and tips updated.

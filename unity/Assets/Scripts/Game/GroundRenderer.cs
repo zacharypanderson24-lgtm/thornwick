@@ -11,6 +11,8 @@ namespace CrownAndHearth.Game
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class GroundRenderer : MonoBehaviour
     {
+        static bool Unowned(World w, int x, int y) => World.Inb(x, y) && !w.Claimed(x, y);
+
         Mesh _mesh;
         readonly List<Vector3> _v = new List<Vector3>(N * N * 4);
         readonly List<Vector2> _uv = new List<Vector2>(N * N * 4);
@@ -64,6 +66,8 @@ namespace CrownAndHearth.Game
                     var z = w.ZoneMap[y, x];
                     if (z != Zone.None && w.Grid[y, x] == null) tint = ZoneTint[z];
                     if (!w.Claimed(x, y)) { tint = new Color32((byte)(tint.r * 0.74f), (byte)(tint.g * 0.76f), (byte)(tint.b * 0.82f), 255); }   // land you do not own yet is dimmer
+                    else if (Unowned(w, x - 1, y) || Unowned(w, x + 1, y) || Unowned(w, x, y - 1) || Unowned(w, x, y + 1))
+                        tint = new Color32((byte)Mathf.Min(255, tint.r * 1.0f), (byte)Mathf.Min(255, tint.g * 0.93f), (byte)(tint.b * 0.62f), 255);   // a golden line along the edge of your land
                     var col = new Color32((byte)(tint.r * f), (byte)(tint.g * f), (byte)(tint.b * f), 255);
                     _c.Add(col); _c.Add(col); _c.Add(col); _c.Add(col);
                     AddQuad(i0);
