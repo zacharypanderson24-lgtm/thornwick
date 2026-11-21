@@ -28,6 +28,13 @@ namespace CrownAndHearth.Sim
     public partial class World
     {
         public const int Bands = 3, MaxDepth = 3;
+        public const int OrePerGold = 4;
+
+        double MiningStorageRoom(Dictionary<Res, double> got, Res resource) =>
+            Math.Max(0, Storage - ResAmt[resource] - got[resource]);
+
+        double MiningExtractionRoom(Dictionary<Res, double> got) =>
+            Math.Max(MiningStorageRoom(got, Res.Ore), MiningStorageRoom(got, Res.Gold) * OrePerGold);
         /// <summary>Ore a miner brings up per trip from band 1..3 (index 0 unused). Band 1 matches the old surface mine load.</summary>
         public static readonly int[] MineLoad = { 0, 4, 6, 8 };
         /// <summary>Days underground per trip, by band: about 0.5 / 0.6 / 0.67 ore per worker-day.</summary>
@@ -284,7 +291,7 @@ namespace CrownAndHearth.Sim
                             a.St = a.I == a.Path.Count - 1 ? CrewState.Work : CrewState.Out; if (a.St == CrewState.Work) a.T = WorkT;
                             break;
                         }
-                        if (ResAmt[Res.Ore] + got[Res.Ore] >= Storage) break;   // full stockpile: the ore stays in the ground
+                        if (MiningExtractionRoom(got) <= 1e-9) break;   // both stockpiles are full
                         // 2. bring up the richest ore the adit or shaft reaches
                         if (PickOre(b, out a.Tx, out a.Ty, out int band, out int need))
                         {
@@ -319,7 +326,12 @@ namespace CrownAndHearth.Sim
                             }
                         }
                         if (--a.T > 0) break;
-                        if (!a.Dig) got[Res.Ore] += TakeOre(a.Tx, a.Ty, a.Level, MineLoad[a.Level]);
+                        if (!a.Dig)
+                        {
+                            double extracted = TakeOre(a.Tx, a.Ty, a.Level, Math.Min(MineLoad[a.Level], MiningExtractionRoom(got)));
+                            got[Res.Ore] += Math.Min(extracted, MiningStorageRoom(got, Res.Ore));
+                            got[Res.Gold] += Math.Min(extracted / OrePerGold, MiningStorageRoom(got, Res.Gold));
+                        }
                         a.St = CrewState.Home;
                         break;
                     }

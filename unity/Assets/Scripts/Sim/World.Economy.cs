@@ -15,9 +15,8 @@ namespace CrownAndHearth.Sim
             // sync
             var d = Recalc();
             var before = ResAmt.ToDictionary(kv => kv.Key, kv => kv.Value);
-            int employed = d.Employed;
             double food = 0, wood = 0;
-            var got = new Dictionary<Res, double> { { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 }, { Res.Food, 0 } };
+            var got = new Dictionary<Res, double> { { Res.Logs, 0 }, { Res.Stone, 0 }, { Res.Ore, 0 }, { Res.Food, 0 }, { Res.Gold, 0 } };
 
             // farms + foresters
             var crops = SeasonalFarming ? WorkSeasonalFields() : FarmOutput();
@@ -55,7 +54,7 @@ namespace CrownAndHearth.Sim
             // economy
             double eat = DailyFoodDemand;
             ResAmt[Res.Food] += food - eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
-            ResAmt[Res.Gold] += employed * 0.12 - Soldiers * 0.1;
+            ResAmt[Res.Gold] += got[Res.Gold] - Soldiers * 0.1;
             Starving = false;
             if (ResAmt[Res.Food] <= 0)
             {
