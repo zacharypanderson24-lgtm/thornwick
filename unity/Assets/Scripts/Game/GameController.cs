@@ -51,33 +51,33 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "zoneRes", Cat = Cat.Housing, Label = "Housing Zone", Zone = Zone.Res,
                 Desc = "Drag over land to mark it for homes. Villagers build houses here by themselves, on tiles touching a connected road, when the town needs room." },
             new ToolDef { Id = "farmhouse", Cat = Cat.Farming, Label = "Farmhouse", Build = "farm",
-                Desc = "Its farmers work the wheat and flax fields within 3 tiles. Each farmer tends 2 fields. Needs a road to the Town Hall." },
+                Desc = "Its jobs are how many farmers you can have. All your Farmland is worked by the farmhouses together, wherever it lies: the fields decide the crops and how many farmers are needed. Needs a road to the Town Hall." },
             new ToolDef { Id = "zoneFarm", Cat = Cat.Farming, Label = "Farmland", Zone = Zone.Farm,
-                Desc = "Drag over fertile land near a farmhouse. Set the wheat and flax percentages in the Farming menu above the build bar." },
+                Desc = "Drag over fertile land anywhere. Every farmhouse with a road works it. Set the wheat and flax percentages in the Farming menu above the build bar." },
             new ToolDef { Id = "silo", Cat = Cat.Farming, Label = "Silo", Build = "silo",
                 Desc = $"Stores {World.SiloFood} more wheat and {World.SiloFlax} more flax. Needs a road to the Town Hall." },
             new ToolDef { Id = "lodge", Cat = Cat.Forestry, Label = "Woodcutter Lodge", Build = "wood",
-                Desc = "Woodcutters walk out to trees in Lumber zones within 3 tiles, fell them and carry the logs home. Needs a road to the Town Hall." },
+                Desc = $"Woodcutters walk out to trees in Lumber zones within {WorkR} tiles, nearest first, fell them and carry the logs home. The lodge sets how many woodcutters you can have; the zoned trees set how many are needed. Farther trees mean longer walks. Needs a road to the Town Hall." },
             new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Lumber Zone", Zone = Zone.Wood,
-                Desc = "Drag over forest to have it felled by a nearby lodge, or over open ground for a forester to replant. The shaded area shows where lodges and foresters reach." },
+                Desc = "Drag over forest to have it felled by a nearby lodge, or over open ground for a forester to replant. The shaded area shows how far lodges and foresters work." },
             new ToolDef { Id = "forester", Cat = Cat.Forestry, Label = "Forester", Build = "forester",
-                Desc = "Plants saplings on Lumber-zoned open ground within 4 tiles, so the forest grows back." },
+                Desc = $"Plants saplings on Lumber-zoned open ground within {ForesterR} tiles, so the forest grows back." },
             new ToolDef { Id = "sawmill", Cat = Cat.Forestry, Label = "Sawmill", Build = "sawmill",
                 Desc = "Saws 4 logs a day into wood at full yield (the Town Hall saws 1 at half yield). Needs a road." },
             new ToolDef { Id = "quarry", Cat = Cat.Mining, Label = "Quarry", Build = "quarry",
-                Desc = "Quarrymen dig stone from Mining zones within 3 tiles: rock outcrops, hills, and mountains from their edge inward. Needs a road." },
+                Desc = $"Quarrymen dig stone from Mining zones within {WorkR} tiles, nearest first: rock outcrops, hills, and mountains from their edge inward. The quarry sets how many you can have; the zoned rock sets how many are needed. Needs a road." },
             new ToolDef { Id = "mine", Cat = Cat.Mining, Label = "Iron Mine", Build = "mine",
-                Desc = "Miners survey Mining zones within 3 tiles for iron, then tunnel into the hill. Place it at the foot of high ground; its entrance faces away from the hill and needs a road there." },
+                Desc = $"Miners survey Mining zones within {WorkR} tiles for iron, then tunnel into the hill. The mine sets how many miners you can have; the zoned tiles set how many are needed. Place it at the foot of high ground; its entrance faces away from the hill and needs a road there." },
             new ToolDef { Id = "zoneMine", Cat = Cat.Mining, Label = "Mining Zone", Zone = Zone.Mine,
-                Desc = "Drag over rock, hills and mountains for a nearby quarry or mine to work. The shaded area shows where they reach." },
+                Desc = "Drag over rock, hills and mountains for a nearby quarry or mine to work. The shaded area shows how far they work." },
             new ToolDef { Id = "market", Cat = Cat.Trade, Label = "Market", Build = "market",
                 Desc = "Must touch a road. Trading is paused for now." },
             new ToolDef { Id = "barracks", Cat = Cat.Military, Label = "Barracks", Build = "barracks",
                 Desc = "Trains soldiers from your peasants. Soldiers eat more and do no other work. Must touch a road." },
             new ToolDef { Id = "well", Cat = Cat.Water, Label = "Well", Build = "well",
-                Desc = $"Pumps up to {WaterTuning.WellPump:0} water a day from the groundwater patch it stands on (the blue patches); carriers take it along connected roads to homes within {WaterTuning.WellReach} road tiles. Wells on one patch share its reserve and recharge: draw more than the recharge and the patch runs down." },
+                Desc = $"Pumps up to {WaterTuning.WellPump:0} water a day from the groundwater patch it stands on (the blue patches) into the town-wide supply: any home on a connected road can use it, however far away. Wells on one patch share its reserve and recharge: draw more than the recharge and the patch runs down." },
             new ToolDef { Id = "cistern", Cat = Cat.Water, Label = "Cistern", Build = "cistern",
-                Desc = $"Stores {WaterTuning.CisternCap:0} water. Sources that reach it along the roads fill it with what homes do not need; it covers shortfalls for homes within {WaterTuning.CisternReach} road tiles." },
+                Desc = $"Stores {WaterTuning.CisternCap:0} water. Wells and the Town Hall's spring fill it with what the town does not drink, and it covers shortfalls for every home on a connected road. Anywhere on a road will do." },
             new ToolDef { Id = "clear", Cat = Cat.Bulldoze, Label = "Demolish", Clear = true,
                 Desc = "Click or drag over buildings, roads, zones, trees and rocks to remove them. Buildings give back half their cost. The Town Hall stays." },
             new ToolDef { Id = "unzone", Cat = Cat.Bulldoze, Label = "Remove Zones", Unzone = true,
@@ -288,8 +288,8 @@ namespace CrownAndHearth.Game
         void SetTool(ToolDef t)
         {
             const string stop = "   ·   Right-click or Esc to stop";
-            string hint = t.Build == "well" ? $"Well ({Hud.CostText(t.Build)}): click a blue groundwater patch. Light roads show where its water would go.{stop}"
-                : t.Build == "cistern" ? $"Cistern ({Hud.CostText(t.Build)}): click beside a road. Light roads show the homes it would cover.{stop}"
+            string hint = t.Build == "well" ? $"Well ({Hud.CostText(t.Build)}): click a blue groundwater patch. Light roads show the network its water travels.{stop}"
+                : t.Build == "cistern" ? $"Cistern ({Hud.CostText(t.Build)}): click beside a road. Light roads show the network its water travels.{stop}"
                 : t.Build != null ? $"{t.Label} ({Hud.CostText(t.Build)}): click a spot to build it." + (ReachOf(t.Build) > 0 ? " The shaded ring is the land it works." : "") + stop
                 : t.Road ? $"Road (1 wood a tile): press and drag from a road to lay one.{stop}"
                 : t.Zone != Zone.None ? $"{t.Label}: drag over the land, or click two corners. Green tiles will be zoned, red ones cannot be.{stop}"
@@ -441,10 +441,10 @@ namespace CrownAndHearth.Game
         static readonly Color32 Reach = new Color32(110, 190, 255, 55), ReachNew = new Color32(255, 230, 120, 70), Unzone = new Color32(255, 150, 60, 110);
 
         /// <summary>How far a work building reaches, in tiles around its footprint (0 = it has no reach). Foresters count from their own
-        /// tile (World.ForesterCovers); everything else from the footprint's edge (crews, mines, farm fields).</summary>
+        /// tile (World.ForesterCovers); everything else from the footprint's edge (crews, mines).</summary>
         static int ReachOf(string type) => type switch
         {
-            "farm" => World.FarmFieldRange, "wood" => WorkR, "quarry" => WorkR, "mine" => WorkR, "forester" => ForesterR, _ => 0,
+            "wood" => WorkR, "quarry" => WorkR, "mine" => WorkR, "forester" => ForesterR, _ => 0,
         };
 
         void AddReach(string type, int bx, int by, int sz, Color32 col, HashSet<int> seen)
@@ -459,10 +459,9 @@ namespace CrownAndHearth.Game
                 }
         }
 
-        /// <summary>The buildings whose reach matters to this zone tool: farmhouses for fields, lodges and foresters for lumber, quarries and mines for mining.</summary>
+        /// <summary>The buildings whose reach matters to this zone tool: lodges and foresters for lumber, quarries and mines for mining.</summary>
         static bool Works(Zone z, string type) => z switch
         {
-            Zone.Farm => type == "farm",
             Zone.Wood => type == "wood" || type == "forester",
             Zone.Mine => type == "quarry" || type == "mine",
             _ => false,
@@ -479,17 +478,16 @@ namespace CrownAndHearth.Game
             _overlay.Clear();
             if (_ugLevel > 0) DrawUnderground();
             // zone tools: shade where the buildings that work this zone can reach, so the player knows where to paint
-            if (_tool.Zone == Zone.Farm || _tool.Zone == Zone.Wood || _tool.Zone == Zone.Mine)
+            if (_tool.Zone == Zone.Wood || _tool.Zone == Zone.Mine)
             {
                 var seen = new HashSet<int>();
                 foreach (var b in World.Blds) if (Works(_tool.Zone, b.T)) AddReach(b.T, b.X, b.Y, b.Sz, Reach, seen);
             }
-            // water tools, or inspecting a water building or a home: groundwater patches, short homes, and the roads water reaches
+            // water tools, or inspecting a water building or a home: groundwater patches, short homes, and the road network water travels
             var hb = _hover.HasValue ? World.Grid[_hover.Value.y, _hover.Value.x] : null;
-            if (_tool.Build == "well" || _tool.Build == "cistern")
-                DrawWater(_hover, _hover.HasValue ? (_tool.Build == "well" ? WaterTuning.WellReach : WaterTuning.CisternReach) : 0);
+            if (_tool.Build == "well" || _tool.Build == "cistern") DrawWater(_hover, null);
             else if (_tool.Id == "look" && hb != null && (hb.T == "well" || hb.T == "cistern" || hb.T == "hall" || hb.T == "house"))
-                DrawWater(_hover, 0, hb);
+                DrawWater(_hover, hb);
             if (_hover.HasValue)
             {
                 var h = _hover.Value;
@@ -531,11 +529,19 @@ namespace CrownAndHearth.Game
             _overlay.Apply();
         }
 
-        static readonly Color32 ReachRoad = new Color32(210, 245, 255, 120), HomeGain = new Color32(120, 255, 160, 120), HomeShort = new Color32(255, 80, 70, 130);
+        static readonly Color32 NetRoad = new Color32(210, 245, 255, 110), HomeShort = new Color32(255, 80, 70, 130);
+
+        // the connected road network, worked out once per world change rather than every frame
+        HashSet<int> _netTiles; int _netVersion = -1;
+        HashSet<int> NetworkTiles()
+        {
+            if (_netTiles == null || _netVersion != World.Version) { _netTiles = World.WaterNetwork(); _netVersion = World.Version; }
+            return _netTiles;
+        }
 
         /// <summary>Groundwater as blue patches (fainter as they run down, brighter under the cursor), homes short of water in red, and
-        /// the road tiles and homes reached from the hovered spot (a well or cistern being placed: reach &gt; 0) or by an inspected building.</summary>
-        void DrawWater(Vector2Int? hover, int reach, Building inspected = null)
+        /// the road network the town's water travels (water has no radius: anything on these roads is in the one supply).</summary>
+        void DrawWater(Vector2Int? hover, Building inspected)
         {
             var w = World;
             int under = hover.HasValue ? w.AquiferAt(hover.Value.x, hover.Value.y) : -1;
@@ -552,12 +558,7 @@ namespace CrownAndHearth.Game
             if (w.LastWater != null)
                 foreach (var kv in w.LastWater.Why)
                     if (kv.Value != WaterWhy.Ok) foreach (var (x, y) in kv.Key.Tiles()) _overlay.AddTile(w, x, y, _rot, HomeShort);
-            WaterReach r = null;
-            if (reach > 0 && hover.HasValue) r = w.ReachFrom(hover.Value.x, hover.Value.y, 1, reach);
-            else if (inspected != null && inspected.T != "house") r = w.ReachFrom(inspected.X, inspected.Y, inspected.Sz, inspected.T == "well" ? WaterTuning.WellReach : World.StoreReachOf(inspected));
-            if (r == null) return;
-            foreach (int k in r.Roads) _overlay.AddTile(w, k % N, k / N, _rot, ReachRoad);
-            foreach (var home in r.Homes) foreach (var (x, y) in home.Tiles()) _overlay.AddTile(w, x, y, _rot, HomeGain);
+            foreach (int k in NetworkTiles()) _overlay.AddTile(w, k % N, k / N, _rot, NetRoad);
         }
 
         // the well preview is worked out once per tile and world state, not every frame
@@ -571,26 +572,13 @@ namespace CrownAndHearth.Game
             return _forecast;
         }
 
-        Vector2Int _cisternAt = new Vector2Int(-1, -1); int _cisternVersion = -1; string _cisternTip;
-        /// <summary>What a cistern here would hold, how many homes it would cover and how many sources would fill it.</summary>
+        /// <summary>What a cistern would add: room for the town's spare water. Any spot touching a connected road joins the one supply.</summary>
         string CisternTip(Vector2Int h)
         {
-            if (_cisternTip != null && h == _cisternAt && World.Version == _cisternVersion) return _cisternTip;
-            var r = World.ReachFrom(h.x, h.y, 1, WaterTuning.CisternReach);
-            int fillers = 0;
-            foreach (var b in World.Blds)
-            {
-                var s = World.SourceFor(b); if (s == null) continue;
-                var sr = World.ReachFrom(s.X, s.Y, s.Sz, s.Reach);
-                bool reaches = false;
-                for (int n = 0; n < 4 && !reaches; n++) reaches = sr.Roads.Contains(World.Tk(h.x + Nb[n, 0], h.y + Nb[n, 1]));
-                if (reaches) fillers++;
-            }
-            int homes = r.Homes.Count(b => b.T == "house");
-            _cisternTip = $"Stores {WaterTuning.CisternCap:0}; covers {homes} home{(homes == 1 ? "" : "s")}; " +
-                (fillers == 0 ? "no well or spring reaches it to fill it" : $"filled by {fillers} source{(fillers == 1 ? "" : "s")}");
-            _cisternAt = h; _cisternVersion = World.Version;
-            return _cisternTip;
+            var (stored, room) = World.WaterStored();
+            bool joins = World.WouldConnect("cistern", h.x, h.y);
+            return $"Stores {WaterTuning.CisternCap:0}: the town's reserve would go from {stored:0}/{room:0} to {stored:0}/{room + WaterTuning.CisternCap:0}.\n" +
+                (joins ? "Spare water from wells and the spring fills it, and it covers any shortfall in the town." : "It must touch a connected road to join the supply.");
         }
 
         /// <summary>An aquifer in plain words: what it holds, its recharge, what its wells draw, its trend and how long it lasts.</summary>
@@ -624,7 +612,6 @@ namespace CrownAndHearth.Game
                 else yield return $"Short of water: {World.WhyText(b.WaterWhy)} (got {b.WaterGot + b.WaterStocked:0.#} of {b.WaterNeed:0.#}).";
                 if (b.Parched) yield return $"No water for {b.ShortDays} days: residents are leaving.";
                 else if (b.ShortDays > 0) yield return $"Short for {b.ShortDays} day{(b.ShortDays == 1 ? "" : "s")}: residents leave after {WaterTuning.Grace}.";
-                else if (b.Lvl == 2) yield return "Watered, so it is a level 2 home.";
             }
             else if (b.T == "house") yield return $"Short of water: {World.WhyText(WaterWhy.NoRoad)}.";
         }
@@ -638,6 +625,7 @@ namespace CrownAndHearth.Game
                 : $"the town gets +{f.ToHomes:0.#} a day to homes" + (f.ToStorage > 0.05 ? $" and +{f.ToStorage:0.#} into storage" : "");
             string aq = f.Aquifer < 0 ? "" : $"\nGroundwater {f.AqReserve:0}/{f.AqCap:0}, recharge {f.AqRecharge:0.#}, draw would be {f.AqDraw:0.#}: {f.Trend}"
                 + (f.DaysLeft is double d ? $", empty in about {System.Math.Floor(d)} days" + (f.ToStorage > 0.05 ? " (the draw drops once storage is full)" : "") : "");
+            if (!f.Connected) return $"Pumps up to {f.MaxPump:0} a day, but this spot does not touch a road connected to the Town Hall, so none of it would reach the town.{aq}";
             return $"Pumps up to {f.MaxPump:0} a day; {gain}.{aq}";
         }
 
@@ -773,7 +761,11 @@ namespace CrownAndHearth.Game
                 lines.Add(b.Name.ToUpper());
                 lines.Add(b.Served ? "Connected to the Town Hall" : "Not connected: needs a road to the Town Hall");
                 if (b.T == "house") lines.Add($"Homes {b.Capacity} villagers. Level {b.Lvl}");
-                if (b.Jobs > 0) lines.Add($"Workers {b.Workers}/{b.Jobs} ({b.Eff * 100:0}%)");
+                if (b.Jobs > 0)
+                {
+                    int need = w.ActiveJobs(b);
+                    lines.Add(need < b.Jobs ? $"Workers {b.Workers}/{need} needed ({b.Jobs} jobs; " + (b.T == "farm" ? "farmers are needed when fields need sowing or harvesting)" : "more are needed as more tiles are marked or zoned)") : $"Workers {b.Workers}/{b.Jobs} ({b.Eff * 100:0}%)");
+                }
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "mine") lines.Add(w.MineStatus(b));
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");

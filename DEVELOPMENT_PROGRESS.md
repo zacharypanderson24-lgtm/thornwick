@@ -242,31 +242,50 @@ Water is a daily service that replaces the old "a well within 4 tiles makes a le
   Town Hall, generated from the seed alone so a save gets the same patches back. Each holds 5 water a tile and recharges 0.4 a tile
   a day (a 60-tile patch: 300 and 24 a day). Every well on a patch shares its reserve and recharge; each well pumps at most 30 a day.
   Draw above the recharge comes out of the reserve; at zero the wells give only the recharge; below it the patch refills to its cap.
-- **Delivery** is separate from groundwater: carriers walk Hall-connected roads from a source (the Town Hall's spring, 24 a day, reach
-  8; a well, reach 6) or a store (the Hall's cistern 150, a Cistern 120, reach 6) to the homes beside them. `ReachFrom` takes a
-  "closed tile" test so a future gate can cut deliveries; `ForecastClosure` is the preview a gate will need (homes losing service,
-  groundwater before and after, how long stored water lasts).
+- **Delivery** is separate from groundwater and has no radius: every source (the Town Hall's spring, 24 a day; wells), store (the Hall's
+  cistern 150; Cisterns 120) and home on the road network connected to the Town Hall is one town-wide pool, however far apart.
+  `WaterNetwork` floods that network from the Hall and takes a "closed tile" test so a future gate can cut off the wells and homes
+  beyond it; `ForecastClosure` is the preview a gate will need (homes cut off or losing water, groundwater before and after, how
+  long the still-reachable stored water lasts).
 - **Each day** (`StepWater`, before the economy): homes ask for villagers x 1; springs are used before groundwater; sources pump
-  only for demand and free cistern space, so a spare well leaves its aquifer alone. Stored water covers what the sources cannot,
-  where it reaches. A home short of water says why: no road, too far along the roads, or not enough supply.
+  only for demand and free store space, so a spare well leaves its aquifer alone and surplus supply builds the cisterns up. Stored
+  water covers what the sources cannot; if that runs out too, every home on the network gets the same share. A home short of
+  water says why: no open road to the Town Hall, or the town's supply is below its demand.
 - **Shortages**: while any home is short, houses stop growing and births slow by the unmet share; after 15 days a house's capacity
   halves and residents leave. Warnings come as messages: the first shortage, stored water running out within 8 days, a patch run dry,
-  residents leaving. A watered home is level 2 (level 2 huts keep their hut art until real `house_2` art exists).
+  residents leaving. A served home is level 2 until it is parched (level 2 huts keep their hut art until real `house_2` art exists).
 - **Build bar**: a Water category (8) with Well (only on groundwater) and Cistern. Placing either shows the blue patches (fainter as
-  they run down), short homes in red and the roads and homes it would reach; the well tip separates its pumping limit from the extra
+  they run down), short homes in red and the road network the water travels; the well tip separates its pumping limit from the extra
   water the town would really get (to homes and into storage) and shows the patch's trend (Refilling, Stable, Drawing down, Dry) and
   days until empty. Inspecting a well, cistern, Hall or house shows its water; the top bar has a Water card (stored, short homes)
   whose tooltip shows demand, delivery and how many days storage covers a shortfall.
 - **Saves** keep each aquifer's reserve (by id), stored water and each home's short days; older saves load with full aquifers, a
   full Town Hall cistern and no shortage, and their existing wells keep working (a well off any patch seeps 6 a day).
 - **Tests**: shared reserve and the 300 / 20 / 60 = 7.5 days example, running dry and refilling to the cap, spare wells leaving the
-  aquifer alone, the opening town watered by the Hall, the three shortage reasons, storage covering only homes it reaches, a cistern
-  bridging an out-of-reach home, the grace period, wells only on groundwater, the well preview, a closed road tile cutting
+  aquifer alone, the opening town watered by the Hall, no distance limit, even sharing of a short supply, a cistern anywhere on the network building
+  the reserve, the grace period, wells only on groundwater, the well preview, a closed road tile cutting
   deliveries, and save round trips including pre-water saves. `StartingSettlementMatches` now expects watered huts at level 2
   (a deliberate change from the browser).
 - **Not done (sieges)**: walls and gates do not exist yet. When they do: make gate tiles return true from the `closed` test in
   `PlanWater`/`StepWater` while a gate is shut, and show `ForecastClosure` in the gate's preview. Groundwater already ignores roads,
   so an inside well keeps tapping a patch that runs under the walls.
+
+### Work areas: buildings set the workers you can have, zoned tiles set the workers you need
+
+Water, farms and work buildings no longer use small radii:
+
+- **Farms have no radius.** A farmhouse's jobs are how many farmers you can have (4, or 10 for the 2x2). Every Farmland tile on the map
+  is worked by the road-served farmhouses together (`World.FarmFields`, cached per world change): fields are shared out so each
+  farmhouse's share stays in proportion to its jobs. The fields decide the crops and, through the seasons, how many farmers are
+  needed that day (`ActiveJobs`).
+- **Lodges, quarries, mines and foresters work a much larger square**: `Defs.WorkR` is 16 tiles (was 3), measured from the building's
+  edge; `ForesterR` follows it. Crews still walk (nearest by walking first, so far trees mean slow trips and the forest is eaten from
+  the lodge outwards); `CrewDepth` is 2 x WorkR + 4 steps. Mines use the same square to survey, pick ore and dig, but a mine still
+  turns its entrance away from the hill within `FaceR` (3) tiles, and old browser saves still auto-zone only `LegacyZoneR` (3).
+- **Jobs from zoned tiles**: `ActiveJobs` caps a lodge, quarry or mine at the work in its square (a lodge: marked trees; a quarry: zoned,
+  workable rock; a mine: zoned tiles still to survey or holding known ore), so a lodge with no marked trees employs nobody and one
+  with one tree employs one. The building info shows "Workers 1/1 needed (3 jobs...)".
+- **Tuning**: `Defs.WorkR`, `World.CrewDepth`. Tests: `WorkReachTests`; the mining tests now zone a small patch (`PatchR`) around the mine.
 
 ## Not done yet (next candidates)
 

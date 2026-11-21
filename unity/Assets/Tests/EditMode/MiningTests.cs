@@ -17,6 +17,11 @@ namespace CrownAndHearth.Tests
         {
             for (int j = y - Defs.WorkR; j <= y + Defs.WorkR; j++) for (int i = x - Defs.WorkR; i <= x + Defs.WorkR; i++) if (World.Inb(i, j)) yield return (i, j);
         }
+        const int PatchR = 3;   // the Mining zone these tests paint around a mine (a mine itself can work much farther, Defs.WorkR)
+        static IEnumerable<(int x, int y)> Patch(int x, int y)
+        {
+            for (int j = y - PatchR; j <= y + PatchR; j++) for (int i = x - PatchR; i <= x + PatchR; i++) if (World.Inb(i, j)) yield return (i, j);
+        }
         static bool OreUnder(World w, int x, int y) => Enumerable.Range(1, World.Bands).Any(l => w.OreAt(x, y, l) > 0);
 
         /// <summary>Lay a road along World.LPath from the start settlement's street to (x, y), clearing trees on the way, never over
@@ -37,7 +42,7 @@ namespace CrownAndHearth.Tests
         }
 
         /// <summary>
-        /// The test town (SimParityTests.Layout), miners hired first, and one mine with its reach painted as a Mining zone.
+        /// The test town (SimParityTests.Layout), miners hired first, and one mine with a small patch around it painted as a Mining zone.
         /// wantOre: the nearest lot at the foot of high ground with ore its adit can reach (a road is laid to it).
         /// Otherwise: a lowland lot in the town with no ore at any band anywhere in reach.
         /// </summary>
@@ -53,7 +58,7 @@ namespace CrownAndHearth.Tests
             foreach (var (x, y) in sites)
             {
                 if (!w.CanPlace("mine", x, y).Ok || w.GenLevel(x, y) >= 1) continue;   // the mine stands at the foot, not on the hill
-                var reach = Reach(x, y).ToList();
+                var reach = Patch(x, y).ToList();
                 if (wantOre)
                 {
                     var probe = new Building { T = "mine", X = x, Y = y };
@@ -240,7 +245,7 @@ namespace CrownAndHearth.Tests
             var (bx, by) = World.EntranceTile(mine.X, mine.Y, (f + 2) % 4);   // the tile behind it
             Assert.Less(w.GenLevel(ex, ey), w.GenLevel(bx, by), "the entrance faces downhill, the back faces the hill");
             // the uphill side holds more high ground than the entrance side
-            double Side(int dx, int dy) { double s = 0; for (int k = 1; k <= Defs.WorkR; k++) if (World.Inb(mine.X + dx * k, mine.Y + dy * k)) s += w.GenLevel(mine.X + dx * k, mine.Y + dy * k); return s; }
+            double Side(int dx, int dy) { double s = 0; for (int k = 1; k <= Defs.FaceR; k++) if (World.Inb(mine.X + dx * k, mine.Y + dy * k)) s += w.GenLevel(mine.X + dx * k, mine.Y + dy * k); return s; }
             Assert.Greater(Side(-Defs.FaceDirs[f, 0], -Defs.FaceDirs[f, 1]), Side(Defs.FaceDirs[f, 0], Defs.FaceDirs[f, 1]));
         }
 

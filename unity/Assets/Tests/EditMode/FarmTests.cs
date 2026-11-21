@@ -82,6 +82,7 @@ namespace CrownAndHearth.Tests
             farm.Workers = 10;
             Assert.AreEqual(plots.Length * 0.4, w.FarmFood(), 1e-9, "plenty of farmers: the plots are the limit");
             w.ZoneMap[plots[0] / N, plots[0] % N] = Zone.None;
+            w.Touch();   // direct edits must report themselves (the field list is cached per world change)
             Assert.AreEqual((plots.Length - 1) * 0.4, w.FarmFood(), 1e-9, "an unzoned tile is no longer a plot");
             Assert.IsFalse(w.FarmFields().ContainsKey(plots[0]));
         }
@@ -133,13 +134,14 @@ namespace CrownAndHearth.Tests
         {
             var w = new World(7);
             var farm = w.Blds.Single(b => b.T == "farm");
-            int x0 = farm.X - World.FarmFieldRange, y0 = farm.Y - World.FarmFieldRange;
-            int x1 = farm.X + farm.Sz - 1 + World.FarmFieldRange, y1 = farm.Y + farm.Sz - 1 + World.FarmFieldRange;
+            const int starterRange = 3;   // the starting plots lie within 3 tiles of the starting farmhouse (farms themselves have no radius)
+            int x0 = farm.X - starterRange, y0 = farm.Y - starterRange;
+            int x1 = farm.X + farm.Sz - 1 + starterRange, y1 = farm.Y + farm.Sz - 1 + starterRange;
             int before = w.FarmFields().Count; Assert.Greater(before, 0);
             int blds = w.Blds.Count;
             int cleared = w.ClearZoneRect(x1, y1, x0, y0);   // corners in either order
             Assert.Greater(cleared, 0);
-            Assert.AreEqual(0, w.FarmFields().Count, "every field in reach of the farmhouse is unzoned");
+            Assert.AreEqual(0, w.FarmFields().Count, "every starting field is unzoned");
             Assert.AreEqual(blds, w.Blds.Count, "no building is removed");
             Assert.AreEqual(0, w.ClearZoneRect(x0, y0, x1, y1), "unzoning it again changes nothing");
             Assert.AreEqual(0, w.ClearZoneRect(-5, -5, -1, -1), "off the map is ignored");

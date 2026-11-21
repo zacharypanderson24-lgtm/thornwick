@@ -117,15 +117,15 @@ namespace CrownAndHearth.Sim
                        "and food is stocked. Hover a zone tile: the panel on the left says why nothing grows yet.\n\nTry 4x speed and wait for a new home.",
                 Goal = "A new home grows", Count = s => s.Houses, By = 1 },
             new Step { Id = "water", Title = "Water", Tool = "well",
-                Body = "Every villager drinks each day. The Town Hall's spring and cistern cover the first homes; carriers walk the roads a few tiles " +
-                       "from each source. Homes that go short stop the town growing, and after 15 days their people leave.\n\n" +
-                       "Open Water (8) and pick Well: the blue patches are groundwater. The tip shows what a well would add and whether " +
-                       "its patch would run down. Wells on one patch share its water.",
+                Body = "Every villager drinks each day. The Town Hall's spring and cistern cover the first homes. Wells, the spring and cisterns feed " +
+                       "one supply for every home on a connected road, however far away. If the town drinks more than it pumps, the cisterns run " +
+                       "down, homes go short and, after 15 days, people leave.\n\n" +
+                       "Open Water (8) and pick Well: wells go on the blue groundwater patches and share one patch's water. The tip shows what a well adds and whether its patch runs down.",
                 Goal = "Build a well on groundwater", Count = s => s.Wells, By = 1 },
             new Step { Id = "farmland", Title = "Food", Tool = "zoneFarm",
-                Body = "Villagers eat every day; with no food they starve and leave.\n\nOpen Farming (3) and pick Farmland. The shaded area is the " +
-                       "farmhouse's reach: drag over fertile soil (the darker, olive ground) inside it. Farming also has more Farmhouses " +
-                       "and Silos; the Farming menu above the build bar sets how much farmland grows wheat and how much flax. " +
+                Body = "Villagers eat every day; with no food they starve and leave.\n\nOpen Farming (3) and pick Farmland, then drag over fertile soil (the darker, olive ground) anywhere. " +
+                       "Farmhouses have no radius: their jobs are how many farmers you can have, and your fields decide the crops and how many are needed. " +
+                       "The Farming menu above the build bar sets the wheat and flax mix. " +
                        "Sow in spring, harvest in summer, and store enough to reach the next harvest. Workers take other jobs when fields need no work.",
                 Goal = "Zone 6 Farmland tiles", Count = s => s.Farmland, By = 6 },
             new Step { Id = "workers", Title = "Workers",
@@ -133,8 +133,8 @@ namespace CrownAndHearth.Sim
                        "farming first. Use Up and Dn to change who gets hands first; a row in red is short of workers.",
                 Goal = "Open the Workers panel", Done = (t, w) => t.WorkersOpened },
             new Step { Id = "lumber", Title = "Wood", Tool = "zoneWood",
-                Body = "Wood builds everything. Open Forestry (4): build a Woodcutter Lodge beside a road, then drag a Lumber Zone over forest in its shaded reach. " +
-                       "Woodcutters walk out, fell the marked trees and carry logs home. Felled land turns to stumps, then open ground.\n\n" +
+                Body = "Wood builds everything. Open Forestry (4): build a Woodcutter Lodge beside a road, then drag a Lumber Zone over forest within its shaded work area. " +
+                       "Woodcutters walk out, nearest trees first, fell the marked trees and carry logs home; the lodge sets how many you can have, the zoned trees how many are needed. Felled land turns to stumps, then open ground.\n\n" +
                        "A Forester (also in Forestry) replants saplings on Lumber-zoned open ground, so a forest can last.",
                 Goal = "Zone 6 Lumber tiles", Count = s => s.Lumber, By = 6 },
             new Step { Id = "sawmill", Title = "Logs into wood", Tool = "sawmill",
@@ -146,7 +146,7 @@ namespace CrownAndHearth.Sim
                 Goal = "Build and connect a Silo", Count = s => s.Silos, By = 1 },
             new Step { Id = "stone", Title = "Stone and iron", Tool = "zoneMine",
                 Body = "Open Mining (5). Mining Zones go on rock and on hills and mountains.\n\n" +
-                       "Stone: build a Quarry, then zone rock outcrops or a mountain's edge inside its shaded reach; quarries dig hills down and cut into mountains.\n\n" +
+                       "Stone: build a Quarry, then zone rock outcrops or a mountain's edge within its shaded work area; quarries dig hills down and cut into mountains.\n\n" +
                        "Iron lies hidden inside hills and mountains (orange-veined stones on the slopes hint at it). Zone the high ground and a lot at its " +
                        "foot, then place an Iron Mine. Its entrance faces away from the hill and needs the road right at that entrance.",
                 Goal = "Zone 6 Mining tiles", Count = s => s.Mining, By = 6 },

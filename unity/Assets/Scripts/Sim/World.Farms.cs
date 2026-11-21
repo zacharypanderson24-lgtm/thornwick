@@ -7,7 +7,7 @@ namespace CrownAndHearth.Sim
 {
     public partial class World
     {
-        public const int FarmFieldRange = 3;
+        const int StarterFieldRange = 3;   // only where the starting farm gets its first fields; farms have no work radius
         const int FieldsPerWorker = 2;
         const double FoodPerField = 0.4;   // two plots a farmer: about 0.8 food a farmer a day, as the old farms gave
         const int StarterFields = 8;
@@ -66,23 +66,33 @@ namespace CrownAndHearth.Sim
             ZoneMap[y, x] == Zone.Farm && Fert[y, x] && DecoMap[y, x] == Deco.None &&
             !IsSolid(x, y);
 
-        // A field belongs to the nearest road-served farm. Equal distances favor the earlier building.
+        // Farms have no work radius. The farmhouses decide how many farmers there can be (their jobs); the Farmland tiles decide the crops
+        // and how many farmers are needed. Every field on the map is worked by the road-served farmhouses together: the fields are
+        // shared out so each farmhouse's share stays in proportion to its jobs (a farmhouse with twice the jobs gets twice the fields).
+        Dictionary<int, Building> _farmFieldCache; int _farmFieldVersion = -1;
         public Dictionary<int, Building> FarmFields()
         {
+            if (_farmFieldCache != null && _farmFieldVersion == Version) return _farmFieldCache;
+            var farms = Blds.Where(f => f.T == "farm" && f.Served).ToList();
             var fields = new Dictionary<int, Building>();
-            foreach (var farm in Blds)
+            if (farms.Count > 0)
             {
-                if (farm.T != "farm" || !farm.Served) continue;
-                for (int y = farm.Y - FarmFieldRange; y < farm.Y + farm.Sz + FarmFieldRange; y++)
-                    for (int x = farm.X - FarmFieldRange; x < farm.X + farm.Sz + FarmFieldRange; x++)
+                var load = new int[farms.Count];
+                for (int y = 0; y < N; y++)
+                    for (int x = 0; x < N; x++)
                     {
                         if (!IsFarmField(x, y)) continue;
-                        int key = Tk(x, y);
-                        if (!fields.TryGetValue(key, out var previous) ||
-                            ChebPt(farm, x, y) < ChebPt(previous, x, y))
-                            fields[key] = farm;
+                        int best = 0; double bestScore = double.MaxValue;
+                        for (int i = 0; i < farms.Count; i++)
+                        {
+                            double score = (load[i] + 1.0) / farms[i].Jobs;
+                            if (score < bestScore - 1e-9) { bestScore = score; best = i; }
+                        }
+                        load[best]++;
+                        fields[Tk(x, y)] = farms[best];
                     }
             }
+            _farmFieldCache = fields; _farmFieldVersion = Version;
             return fields;
         }
 
@@ -132,10 +142,37 @@ namespace CrownAndHearth.Sim
             }
         }
 
-        int ActiveJobs(Building b) =>
-            SeasonalFarming && b.T == "farm"
-                ? (_fieldJobs.TryGetValue(b, out var jobs) ? Math.Min(b.Jobs, jobs.Count) : 0)
-                : b.Jobs;
+        /// <summary>How many workers a building really needs: its jobs (what its size allows) capped by the work there is. Farms: the fields
+        /// that need sowing or harvesting today. Lodges, quarries and mines: the marked or zoned tiles within their reach. Everything
+        /// else: all its jobs.</summary>
+        public int ActiveJobs(Building b)
+        {
+            if (SeasonalFarming && b.T == "farm") return _fieldJobs.TryGetValue(b, out var jobs) ? Math.Min(b.Jobs, jobs.Count) : 0;
+            return _workTiles.TryGetValue(b, out int tiles) ? Math.Min(b.Jobs, tiles) : b.Jobs;
+        }
+
+        // Tiles a lodge, quarry or mine could work right now, within WorkR of the building (World.Crews.cs, World.Mining.cs).
+        readonly Dictionary<Building, int> _workTiles = new Dictionary<Building, int>();
+        int _workTilesVersion = -1;
+
+        void RefreshWorkTiles()
+        {
+            if (_workTilesVersion == Version) return;
+            _workTilesVersion = Version; _workTiles.Clear();
+            foreach (var b in Blds)
+            {
+                var kind = CrewKind(b.T); if (kind == Deco.None) continue;
+                int n = 0;
+                for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
+                    for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
+                    {
+                        if (!Inb(i, j)) continue;
+                        // a mine's work: Mining-zone tiles still to survey or holding known ore; the others: what a crew can fell or cut
+                        if (b.T == "mine" ? InMineReach(i, j) && (!Surveyed[Tk(i, j)] || HasKnownOre(i, j)) : CrewMatch(kind, i, j)) n++;
+                    }
+                _workTiles[b] = n;
+            }
+        }
 
         (double food, double flax) WorkSeasonalFields()
         {
@@ -251,8 +288,8 @@ namespace CrownAndHearth.Sim
             // Keep the starting farm productive even on seeds with sparse fertile ground.
             var farm = Grid[Start + 5, Start - 1];
             if (farm?.T != "farm") return;
-            int planted = FarmFields().Values.Count(owner => owner == farm);
-            for (int radius = 1; radius <= FarmFieldRange && planted < StarterFields; radius++)
+            int planted = FarmFields().Count;
+            for (int radius = 1; radius <= StarterFieldRange && planted < StarterFields; radius++)
                 for (int y = farm.Y - radius; y <= farm.Y + farm.Sz - 1 + radius && planted < StarterFields; y++)
                     for (int x = farm.X - radius; x <= farm.X + farm.Sz - 1 + radius && planted < StarterFields; x++)
                     {
@@ -262,6 +299,7 @@ namespace CrownAndHearth.Sim
                         ZoneMap[y, x] = Zone.Farm;
                         planted++;
                     }
+            _farmFieldCache = null;
         }
     }
 }
