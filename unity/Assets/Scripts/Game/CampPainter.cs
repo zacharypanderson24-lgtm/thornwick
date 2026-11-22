@@ -129,11 +129,12 @@ namespace CrownAndHearth.Game
         {
             if (p.Amount <= 0) return;
             int x0 = p.X * Tile, y0 = p.Y * Tile;
-            for (int dy = 0; dy < 7; dy++) for (int dx = -5; dx <= 5; dx++)
-                if (dx * dx / 3.3f + (dy - 6) * (dy - 6) * 0.9f <= 7) Set(px, x0 + Tile / 2 + dx, y0 + 5 + dy, new Color32(130, 100, 62, 255));
             var c = ResourceColour(p.Res);
-            Rect(px, x0 + Tile / 2 - 2, y0 + 5, 5, 4, c);
-            Rect(px, x0 + Tile / 2 - 1, y0 + 4, 3, 1, c);
+            var light = new Color32((byte)Math.Min(255, c.r + 40), (byte)Math.Min(255, c.g + 40), (byte)Math.Min(255, c.b + 40), 255);
+            Rect(px, x0 + 2, y0 + 5, 10, 8, new Color32(80, 58, 36, 255));   // a crate
+            Rect(px, x0 + 3, y0 + 6, 8, 6, c);
+            Rect(px, x0 + 3, y0 + 6, 8, 1, light);
+            Rect(px, x0 + 6, y0 + 7, 2, 4, new Color32(80, 58, 36, 255));   // the slat
         }
 
         static (Color32 body, Color32 head, Color32 accent) Palette(BKind k) => k switch
