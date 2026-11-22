@@ -69,8 +69,8 @@ function stroke(b,a,d,c,width=1) {
 }
 const roles = [
   {name:'raider',label:'Raider',coat:['39282a','653332','904943','bc6a51'],head:'hood',weapon:'spear',legs:'4b3430'},
-  {name:'infantry',label:'Infantry',coat:['263938','3a5757','557c78','84a59a'],head:'helm',weapon:'sword',shield:true,legs:'3d4c49'},
-  {name:'archer',label:'Archer',coat:['283a42','415972','6c89a3','b1c9c9'],head:'cap',weapon:'bow',legs:'39494a'},
+  {name:'infantry',label:'Infantry',coat:['372f26','635b4a','8a806b','afa28b'],head:'kettle',weapon:'sword',shield:true,legs:'514032'},
+  {name:'archer',label:'Archer',coat:['303730','4d5748','687461','87907a'],head:'brim',weapon:'bow',legs:'9e743b'},
   {name:'militia_farmer',label:'Farm militia',coat:['47392b','6b5238','a17a4e','c8ab73'],head:'bare',weapon:'fork',legs:'574535'},
   {name:'militia_hunter',label:'Hunter militia',coat:['2b3c30','3f5940','5c7853','87986e'],head:'hood',weapon:'bow',legs:'454538'},
   {name:'militia_woodcutter',label:'Woodcutter militia',coat:['463127','76513c','a26d48','cf9866'],head:'bare',weapon:'axe',legs:'594238'},
@@ -146,10 +146,11 @@ function drawWeapon(b,kind,x,y,v) {
       break;
   }
 }
-function drawBow(b,x,y,drawn,release) {
-  const top=[x-2,y-5], mid=[x+1,y], base=[x-2,y+5];
-  stroke(b,top,[x,y-3],wood[1]); stroke(b,[x,y-3],mid,wood[3]);
-  stroke(b,mid,[x,y+3],wood[2]); stroke(b,[x,y+3],base,wood[1]);
+function drawBow(b,x,y,drawn,release,longbow=false) {
+  const reach=longbow?8:5, bend=longbow?5:3;
+  const top=[x-2,y-reach], mid=[x+1,y], base=[x-2,y+reach];
+  stroke(b,top,[x,y-bend],wood[1]); stroke(b,[x,y-bend],mid,longbow?'e3ce9a':wood[3]);
+  stroke(b,mid,[x,y+bend],longbow?'bc9962':wood[2]); stroke(b,[x,y+bend],base,wood[1]);
   const pull=[x-2-drawn,y];
   stroke(b,top,pull,'b5ae89');stroke(b,pull,base,'b5ae89');
   if(drawn>0&&!release) {
@@ -180,6 +181,7 @@ function drawUnit(role,direction,state,frame) {
   const b=Buffer.alloc(W*H*4);
   const rear=direction[0]==='n', mirror=direction[1]==='w';
   const raider=role.name==='raider';
+  const infantry=role.name==='infantry', archer=role.name==='archer';
   const mo=motion(state,frame,raider), x=15+mo.dx, y=mo.dy;
   const coat=role.coat, crouch=state==='loot'&&frame>=2&&frame<=3;
   const bodyY=y+(crouch?1:0), headY=bodyY+5;
@@ -194,6 +196,13 @@ function drawUnit(role,direction,state,frame) {
   stroke(b,[x+1,bodyY+17],[footB[0],footB[1]-2],role.legs,2);
   box(b,footB[0]-1,footB[1]-2,4,2,leather[1]);
   pixel(b,footB[0]+1,footB[1]-2,leather[2]);
+  if(infantry) {
+    for(const [fx,fy] of [footA,footB]) {
+      stroke(b,[fx,fy-6],[fx,fy-3],metal[1],2);
+      stroke(b,[fx,fy-6],[fx,fy-4],metal[3]);
+      pixel(b,fx,fy-2,metal[2]);
+    }
+  }
 
   if(role.name==='raider') {
     polygon(b,[[x-3,bodyY+10],[x+3,bodyY+11],[x+3,bodyY+18],[x-2,bodyY+20],[x-6+(Math.abs(mo.legs[0])>0?-1:0),bodyY+17]],coat[0]);
@@ -210,6 +219,22 @@ function drawUnit(role,direction,state,frame) {
   stroke(b,[x-3,bodyY+12],[x,bodyY+12],coat[3]);
   stroke(b,[x-3,bodyY+16],[x+3,bodyY+17],leather[1]);
   pixel(b,x+2,bodyY+16,rear?leather[3]:'d5b273');
+  if(infantry || archer) {
+    polygon(b,[[x-4,bodyY+15],[x+3,bodyY+15],[x+4,bodyY+19],[x+1,bodyY+20],[x-4,bodyY+19]],coat[1]);
+    stroke(b,[x-3,bodyY+17],[x+2,bodyY+18],coat[2]);
+    stroke(b,[x-4,bodyY+15],[x+3,bodyY+16],leather[1]);
+    if(infantry) {
+      stroke(b,[x-2,bodyY+10],[x+2,bodyY+11],leather[0],2);
+      stroke(b,[x-4,bodyY+12],[x-3,bodyY+12],metal[1],2);
+      pixel(b,x-4,bodyY+11,metal[3]);
+    } else {
+      polygon(b,[[x-4,bodyY+10],[x+1,bodyY+9],[x+4,bodyY+12],[x+1,bodyY+13],[x-4,bodyY+12]],'63594d');
+      stroke(b,[x-4,bodyY+10],[x-1,bodyY+10],'91816f');
+      stroke(b,[x-2,bodyY+11],[x+2,bodyY+15],leather[3]);
+      box(b,x-4,bodyY+15,3,3,leather[2]);
+      pixel(b,x-3,bodyY+16,leather[0]);
+    }
+  }
   if(role.head==='helm') {
     for(const [dx,dy] of [[-3,12],[-2,13],[-3,14],[2,13],[3,14],[-2,18],[0,18]])pixel(b,x+dx,bodyY+dy,metal[2]);
     if(!rear)stroke(b,[x-2,bodyY+12],[x+1,bodyY+15],'9bb0a1');
@@ -228,7 +253,22 @@ function drawUnit(role,direction,state,frame) {
 
   // Headwear, lit on the upper-left and separately drawn from the face.
   polygon(b,[[x-2,headY],[x+2,headY],[x+4,headY+2],[x+4,headY+5],[x+1,headY+7],[x-3,headY+6],[x-4,headY+3]],ink);
-  if(role.head==='helm') {
+  if(role.head==='kettle') {
+    box(b,x-2,headY+4,5,2,rear?metal[1]:skin[1]);
+    if(!rear)box(b,x,headY+4,3,2,skin[2]);
+    polygon(b,[[x-3,headY+3],[x-3,headY+1],[x-1,headY],[x+2,headY],[x+3,headY+3]],metal[2]);
+    stroke(b,[x-2,headY+1],[x-1,headY+3],metal[3]);
+    stroke(b,[x-4,headY+3],[x+4,headY+4],metal[0],2);
+    stroke(b,[x-4,headY+2],[x+4,headY+3],metal[2]);
+  } else if(role.head==='brim') {
+    box(b,x-3,headY+3,3,4,leather[1]);
+    stroke(b,[x-2,headY+4],[x-3,headY+7],leather[2]);
+    if(!rear)box(b,x,headY+4,3,2,skin[2]);
+    polygon(b,[[x-3,headY+3],[x-2,headY],[x+1,headY],[x+3,headY+2],[x+2,headY+4]],'483831');
+    stroke(b,[x-2,headY+1],[x+1,headY+2],'665048');
+    stroke(b,[x-4,headY+2],[x+4,headY+5],'2c2421',2);
+    stroke(b,[x-3,headY+2],[x+3,headY+4],'55423a');
+  } else if(role.head==='helm') {
     polygon(b,[[x-2,headY],[x+2,headY],[x+3,headY+2],[x+2,headY+4],[x-3,headY+4],[x-3,headY+2]],metal[1]);
     stroke(b,[x-2,headY+1],[x+1,headY+1],metal[2]);
     box(b,x+1,headY+3,2,3,metal[0]);
@@ -250,7 +290,14 @@ function drawUnit(role,direction,state,frame) {
     else box(b,x-2,headY+3,4,2,leather[2]);
   }
 
-  if(role.shield) {
+  if(infantry) {
+    const sx=x+(rear?-4:-5), sy=bodyY+15;
+    polygon(b,[[sx-2,sy-4],[sx+1,sy-4],[sx+3,sy-2],[sx+3,sy+1],[sx+1,sy+3],[sx-2,sy+3],[sx-3,sy+1],[sx-3,sy-2]],metal[0]);
+    polygon(b,[[sx-1,sy-3],[sx+1,sy-3],[sx+2,sy-1],[sx+2,sy+1],[sx,sy+2],[sx-2,sy+1],[sx-2,sy-1]],metal[2]);
+    box(b,sx-1,sy-1,3,2,metal[1]);
+    pixel(b,sx,sy-1,metal[3]);
+    pixel(b,sx-2,sy-2,metal[3]);
+  } else if(role.shield) {
     const shieldX=x+(rear?-3:-4);
     polygon(b,[[shieldX-3,bodyY+12],[shieldX+1,bodyY+11],[shieldX+3,bodyY+13],[shieldX+2,bodyY+18],[shieldX,bodyY+20],[shieldX-3,bodyY+17]],'303c39');
     polygon(b,[[shieldX-2,bodyY+13],[shieldX+1,bodyY+12],[shieldX+2,bodyY+13],[shieldX+1,bodyY+18],[shieldX,bodyY+19],[shieldX-2,bodyY+17]],coat[2]);
@@ -277,10 +324,15 @@ function drawUnit(role,direction,state,frame) {
     stroke(b,[x+2,bodyY+12],[x+5+move,bodyY+14],coat[2],2);
     pixel(b,x+5+move,bodyY+14,skin[2]);
     if(pull)stroke(b,[x+2,bodyY+13],[x+5+move-pull,bodyY+14],skin[1]);
-    drawBow(b,x+6+move,bodyY+14,pull,frame>=4);
+    drawBow(b,x+6+move,bodyY+14,pull,frame>=4,archer);
   } else {
     stroke(b,[x+2,bodyY+12],hands,coat[0],3);
-    stroke(b,[x+2,bodyY+12],hands,coat[2],2);
+    stroke(b,[x+2,bodyY+12],hands,infantry?metal[1]:coat[2],2);
+    if(infantry) {
+      box(b,x+2,bodyY+11,3,2,metal[2]);
+      pixel(b,x+2,bodyY+11,metal[3]);
+      pixel(b,hands[0]-1,hands[1]-1,metal[2]);
+    }
     const length=role.weapon==='spear'||role.weapon==='fork'?7:5;
     const vec=state==='attack'?[[2,-length],[-3,-length],[2,-length],[Math.ceil(length*.64),-1],[Math.ceil(length*.64),2],[2,-length]][frame]:[2,-length];
     if(state==='carry') { vec[0]=1; vec[1]=-length; }
