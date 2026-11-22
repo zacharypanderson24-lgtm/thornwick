@@ -51,6 +51,16 @@ namespace CrownAndHearth.Sim
                 ["oreLeft"] = JObject.FromObject(OreLeftMap),
                 // land ownership (World.Claims.cs): the parcels you own, by index
                 ["claimed"] = new JArray(Enumerable.Range(0, _claimed.Length).Where(i => _claimed[i])),
+                // raider camps (World.Camps.cs): which you have destroyed, and the armies still on the road home
+                ["camps"] = new JObject
+                {
+                    ["destroyed"] = new JArray(DestroyedCamps.OrderBy(i => i)),
+                    ["expeditions"] = new JArray(Expeditions.Select(e => new JObject
+                    {
+                        ["camp"] = e.CampId, ["infantry"] = e.Infantry, ["archers"] = e.Archers, ["returnDay"] = e.ReturnDay,
+                        ["loot"] = new JObject(e.Loot.Select(kv => new JProperty(kv.Key.ToString(), kv.Value))),
+                    })),
+                },
                 ["gameRecoveryDay"] = JObject.FromObject(_gameRecoveryDay.Where(pair => pair.Value > Day)
                     .ToDictionary(pair => pair.Key, pair => pair.Value)),
                 // water (World.Water.cs): what each aquifer still holds, by id (the patches regenerate from the seed)
@@ -224,6 +234,16 @@ namespace CrownAndHearth.Sim
             if (save.Value<bool?>("farmFields") != true) world.AddStarterFarmFields();
             if (save.Value<int?>("flaxPercent") is int mix) world.SetFlaxPercent(mix);
             world.SetArcherPercent(save.Value<int?>("archerPercent") ?? 0);
+            if (save["camps"] is JObject campsSave)
+            {
+                foreach (var id in campsSave["destroyed"] as JArray ?? new JArray()) world.DestroyedCamps.Add((int)id);
+                foreach (var token in campsSave["expeditions"] as JArray ?? new JArray())
+                {
+                    var e = new Expedition { CampId = (int)token["camp"], Infantry = (int)token["infantry"], Archers = (int)token["archers"], ReturnDay = (int)token["returnDay"] };
+                    foreach (var p in (token["loot"] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>()) if (Enum.TryParse<Res>(p.Name, out var res)) e.Loot[res] = (int)p.Value;
+                    world.Expeditions.Add(e);
+                }
+            }
             world.SetShaftDepthLimit(save.Value<int?>("shaftDepthLimit") ?? MaxDepth);
             world.SetMineSupportsRequired(save.Value<bool?>("requireMineSupports") ?? false);
             world.LoadStatistics(save["statistics"] as JArray);
