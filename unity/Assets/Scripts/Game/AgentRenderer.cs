@@ -13,12 +13,11 @@ namespace CrownAndHearth.Game
         Material _mat;
         Sprite[,,] _worker;  // [trade, carrying, step]
         Sprite[,] _folk;     // [tunic, frame]
-        Sprite[,] _raider;   // [carrying, step], drawn in code
-        Texture2D _raiderTex;
+        BattleArt _battle;
         readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
         int _used;
 
-        public void Init(Material mat) { _mat = mat; MakeSprites(); }
+        public void Init(Material mat) { _mat = mat; MakeSprites(); _battle = new BattleArt(); }
 
         /// <summary>Place every crew worker and villager who is out. frac = how far through the current day (0..1).</summary>
         public void Draw(World w, int rot, float frac, bool lod)
@@ -38,13 +37,7 @@ namespace CrownAndHearth.Game
                         Put(w, rot, _worker[k, a.St == CrewState.Back && a.Carry > 0 ? 1 : 0, step], a.Px, a.Py, a.X, a.Y, frac, jit, 0);
                     }
                 }
-                if (w.Raid != null && _raider != null)
-                    foreach (var a in w.Raid.Raiders)
-                    {
-                        if (a.St == RaiderState.Waiting || a.St == RaiderState.Dead || a.St == RaiderState.Gone) continue;
-                        int step = (a.Px != a.X || a.Py != a.Y) && frac >= 0.5f ? 1 : 0;
-                        Put(w, rot, _raider[a.Carry > 0 ? 1 : 0, step], a.Px, a.Py, a.X, a.Y, frac, (a.Id * 3) % 5 - 2, (a.Id * 7) % 3 - 1);
-                    }
+                if (w.Raid != null) DrawBattle(w, w.Raid, rot, frac);
                 foreach (var v in w.Folk)
                 {
                     if (v.St == FolkState.Home) continue;
@@ -55,7 +48,104 @@ namespace CrownAndHearth.Game
             for (int i = _used; i < _pool.Count; i++) if (_pool[i].enabled) _pool[i].enabled = false;
         }
 
-        void Put(World w, int rot, Sprite s, int px, int py, int x, int y, float frac, int jit, int jy)
+        void DrawBattle(World w, RaidReport raid, int rot, float frac)
+        {
+            foreach (var a in raid.Raiders)
+            {
+                if (a.St == RaiderState.Waiting || a.St == RaiderState.Gone) continue;
+                int x = a.X, y = a.Y, px = a.Px, py = a.Py;
+                bool moving = x != px || y != py;
+                int tx = a.Opponent?.X ?? a.Target?.X ?? x, ty = a.Opponent?.Y ?? a.Target?.Y ?? y;
+                int facing = Facing(rot, moving ? x - px : tx - x, moving ? y - py : ty - y);
+                bool dead = a.St == RaiderState.Dead;
+                if (dead && w.Day - a.DeadDay > World.BodyDays) continue;
+                bool recoiling = a.Hurt && frac < 0.30f;
+                string pose = dead ? "fall" : recoiling ? "hurt" : a.Fighting ? "attack" : a.St == RaiderState.Loot ? "loot" :
+                    a.St == RaiderState.Flee ? (a.Carry > 0 ? "carry" : "run") : moving ? "walk" : "idle";
+                float phase = dead ? w.Day - a.DeadDay - 1 + frac : HitPhase(a.Hurt, frac);
+                Put(w, rot, _battle.Pose("raider", pose, facing, w.Day, phase, a.Id),
+                    dead ? x : px, dead ? y : py, x, y, frac, Jitter(a.Id), (a.Id * 7) % 3 - 1, true);
+                if (!dead) DrawBattleEffects(w, rot, px, py, x, y, frac, a.Hurt, pose == "run" || pose == "carry");
+            }
+
+            foreach (var f in raid.Fighters)
+            {
+                if (f.St == FighterState.Idle) continue;
+                bool dead = f.St == FighterState.Dead;
+                if (dead && w.Day - f.DeadDay > World.BodyDays) continue;
+                bool moving = f.X != f.Px || f.Y != f.Py;
+                int tx = f.Shooting ? f.ShotX : f.Target?.X ?? f.X, ty = f.Shooting ? f.ShotY : f.Target?.Y ?? f.Y;
+                int facing = Facing(rot, moving ? f.X - f.Px : tx - f.X, moving ? f.Y - f.Py : ty - f.Y);
+                string actor = f.Kind == Troop.Archer ? "archer" : "infantry";
+                bool recoiling = f.Hurt && !f.Shooting && frac < 0.30f;
+                string pose = dead ? "fall" : f.Shooting ? "attack" : recoiling ? "hurt" : f.Attacked ? "attack" :
+                    moving ? (f.St == FighterState.Engage ? "run" : "walk") : "idle";
+                float phase = dead ? w.Day - f.DeadDay - 1 + frac : HitPhase(f.Hurt && !f.Shooting, frac);
+                Put(w, rot, _battle.Pose(actor, pose, facing, w.Day, phase, f.Id),
+                    dead ? f.X : f.Px, dead ? f.Y : f.Py, f.X, f.Y, frac, Jitter(f.Id), (f.Id * 7) % 3 - 1, true);
+                if (f.Shooting && !dead) DrawArrow(w, rot, f.X, f.Y, f.ShotX, f.ShotY, frac);
+                if (!dead) DrawBattleEffects(w, rot, f.Px, f.Py, f.X, f.Y, frac, f.Hurt, pose == "run");
+            }
+
+            if (!w.MilitiaFights) return;
+            foreach (var (trade, x, y, target) in raid.MilitiaActions)
+            {
+                string actor = trade switch
+                {
+                    "farm" => "militia_farmer",
+                    "hunter" => "militia_hunter",
+                    "wood" => "militia_woodcutter",
+                    "forester" => "militia_forester",
+                    "sawmill" => "militia_sawyer",
+                    "quarry" => "militia_quarry",
+                    "mine" => "militia_miner",
+                    _ => null
+                };
+                if (actor == null) continue;
+                int facing = Facing(rot, target.X - x, target.Y - y);
+                Put(w, rot, _battle.Pose(actor, "attack", facing, w.Day, frac, x + y), x, y, x, y, 0, 0, 0, true);
+                if (trade == "hunter") DrawArrow(w, rot, x, y, target.X, target.Y, frac);
+            }
+        }
+
+        static float HitPhase(bool hurt, float fraction) => !hurt ? fraction :
+            fraction < 0.30f ? fraction / 0.30f : (fraction - 0.30f) / 0.70f;
+
+        static int Jitter(int id) => (id * 3) % 5 - 2;
+
+        static (int x, int y) ScreenDelta(int rot, int x, int y)
+        {
+            var (u, v) = rot switch { 1 => (-y, x), 2 => (-x, -y), 3 => (y, -x), _ => (x, y) };
+            return ((u - v) * 16, (u + v) * 8);
+        }
+
+        static int Facing(int rot, int x, int y)
+        {
+            var (sx, sy) = ScreenDelta(rot, x, y);
+            return (sy < 0 ? 2 : 0) + (sx < 0 ? 1 : 0);
+        }
+
+        void DrawArrow(World w, int rot, int x, int y, int targetX, int targetY, float frac)
+        {
+            const float release = 0.54f, impact = 0.89f;
+            if (frac < release || frac >= impact) return;
+            float flight = (frac - release) / (impact - release);
+            var (sx, sy) = ScreenDelta(rot, targetX - x, targetY - y);
+            sy -= Mathf.RoundToInt(((float)w.TileLevel(targetX, targetY) - (float)w.TileLevel(x, y)) * LvlPx);
+            int direction = (Mathf.RoundToInt(Mathf.Atan2(sy, sx) / (Mathf.PI / 4f)) + 8) % 8;
+            int arc = Mathf.RoundToInt(4f * flight * (1f - flight));
+            Put(w, rot, _battle.Fx("arrow", direction), x, y, targetX, targetY, flight, 0, -9 - arc, true);
+        }
+
+        void DrawBattleEffects(World w, int rot, int x, int y, int targetX, int targetY, float frac, bool hurt, bool running)
+        {
+            if (hurt && frac < 0.4f)
+                Put(w, rot, _battle.Fx("hit", (int)(frac * 10)), x, y, targetX, targetY, frac, 4, -12, true);
+            else if (running && (x != targetX || y != targetY) && frac < 0.35f)
+                Put(w, rot, _battle.Fx("dust", (int)(frac * 14)), x, y, x, y, 0, 0, 0, true);
+        }
+
+        void Put(World w, int rot, Sprite s, int px, int py, int x, int y, float frac, int jit, int jy, bool authoredFacing = false)
         {
             float wx = px + (x - px) * frac, wy = py + (y - py) * frac;
             // view coordinates of the lerped point (JS toView on fractional tiles)
@@ -78,15 +168,14 @@ namespace CrownAndHearth.Game
             _used++;
             int dx = x - px, dy = y - py;
             int screenStep = rot switch { 1 => -dy - dx, 2 => dy - dx, 3 => dy + dx, _ => dx - dy };
-            r.flipX = screenStep < 0;
-            r.sprite = s; r.sortingOrder = IsoView.SortOrder(near.x, near.y); r.enabled = true;
+            r.flipX = !authoredFacing && screenStep < 0;
+            r.sprite = s; r.color = Color.white; r.sortingOrder = IsoView.SortOrder(near.x, near.y); r.enabled = true;
             // same painter's slot as the tile's tree or building; a hair nearer the camera so the walker draws after it (JS draws crews last per tile)
             r.transform.localPosition = new Vector3(sx / IsoView.PPU, -sy / IsoView.PPU, -0.01f);
         }
 
         void MakeSprites()
         {
-            MakeRaiderSprites();
             const int width = 8, height = 12, columns = 12;
             var atlas = Resources.Load<Texture2D>("Art/agents");
             if (atlas == null || atlas.width != width * columns || atlas.height != height * 2)
@@ -111,40 +200,9 @@ namespace CrownAndHearth.Game
                     _folk[tunic, step] = Frame(tunic * 2 + step, 0);
         }
 
-        /// <summary>Raiders: a hooded figure in a red cloak with a spear; with a sack on the back once they carry loot. 8 x 12, two walking frames.</summary>
-        void MakeRaiderSprites()
-        {
-            const int W = 8, H = 12;
-            _raiderTex = new Texture2D(W * 4, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = "raiders" };
-            var clear = new Color32(0, 0, 0, 0);
-            var px = new Color32[W * 4 * H];
-            for (int i = 0; i < px.Length; i++) px[i] = clear;
-            Color32 cloak = new Color32(155, 47, 42, 255), edge = new Color32(98, 28, 28, 255), skin = new Color32(224, 184, 138, 255), hood = new Color32(59, 42, 42, 255), steel = new Color32(190, 190, 196, 255), sack = new Color32(201, 160, 90, 255);
-            void P(int ox, int x, int y, Color32 c) { if (x >= 0 && x < W && y >= 0 && y < H) px[y * W * 4 + ox + x] = c; }
-            for (int carrying = 0; carrying < 2; carrying++)
-                for (int step = 0; step < 2; step++)
-                {
-                    int ox = (carrying * 2 + step) * W;
-                    for (int y = 3; y <= 8; y++) for (int x = 2; x <= 5; x++) P(ox, x, y, x == 2 || x == 5 ? edge : cloak);
-                    P(ox, 3, 9, skin); P(ox, 4, 9, skin); P(ox, 3, 10, skin); P(ox, 4, 10, skin);
-                    for (int x = 2; x <= 5; x++) P(ox, x, 11, hood);
-                    P(ox, 2, 10, hood); P(ox, 5, 10, hood);
-                    if (step == 0) { P(ox, 2, 2, hood); P(ox, 2, 1, hood); P(ox, 5, 2, hood); P(ox, 5, 1, hood); P(ox, 2, 0, hood); P(ox, 5, 0, hood); }
-                    else { P(ox, 3, 2, hood); P(ox, 3, 1, hood); P(ox, 4, 2, hood); P(ox, 4, 1, hood); P(ox, 3, 0, hood); P(ox, 4, 0, hood); }
-                    for (int y = 2; y <= 10; y++) P(ox, 6, y, y >= 9 ? steel : hood);
-                    P(ox, 7, 10, steel);
-                    if (carrying == 1) for (int y = 4; y <= 7; y++) for (int x = 0; x <= 1; x++) P(ox, x, y, sack);
-                }
-            _raiderTex.SetPixels32(px); _raiderTex.Apply();
-            _raider = new Sprite[2, 2];
-            for (int carrying = 0; carrying < 2; carrying++)
-                for (int step = 0; step < 2; step++)
-                    _raider[carrying, step] = Sprite.Create(_raiderTex, new Rect((carrying * 2 + step) * W, 0, W, H), new Vector2(0.5f, 0), IsoView.PPU, 0, SpriteMeshType.FullRect);
-        }
-
         void OnDestroy()
         {
-            if (_raider != null) { foreach (var sprite in _raider) Destroy(sprite); Destroy(_raiderTex); }
+            _battle?.Dispose();
             if (_worker == null) return;
             foreach (var sprite in _worker) Destroy(sprite);
             foreach (var sprite in _folk) Destroy(sprite);

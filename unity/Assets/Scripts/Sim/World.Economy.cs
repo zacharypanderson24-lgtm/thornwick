@@ -12,6 +12,11 @@ namespace CrownAndHearth.Sim
     {
         bool _sawHinted;   // the one-time hint about unsawn logs (runtime only)
 
+        public int LastHuntingDeliveryDay { get; private set; }
+        public int LastWheatHarvestDay { get; private set; }
+        public int LastStoneDeliveryDay { get; private set; }
+        public int LastLogDeliveryDay { get; private set; }
+
         public void Tick()
         {
             // sync
@@ -24,6 +29,7 @@ namespace CrownAndHearth.Sim
             // farms + foresters
             var crops = SeasonalFarming ? WorkSeasonalFields() : FarmOutput();
             food += SeasonalFarming ? Math.Min(crops.food, Math.Max(0, CropStorage(Res.Food) - ResAmt[Res.Food])) : crops.food;
+            if (SeasonalFarming && food > 0) LastWheatHarvestDay = Day;
             ResAmt[Res.Flax] += SeasonalFarming ? Math.Min(crops.flax, Math.Max(0, CropStorage(Res.Flax) - ResAmt[Res.Flax])) : crops.flax;
             foreach (var b in Blds.Where(b => b.T == "forester" && b.Served).ToList())
             {
@@ -35,6 +41,9 @@ namespace CrownAndHearth.Sim
             // crews, then deliver logs
             got[Res.Food] = food;
             StepCrews(got);
+            if (got[Res.Food] > food) LastHuntingDeliveryDay = Day;
+            if (got[Res.Stone] > 0) LastStoneDeliveryDay = Day;
+            if (got[Res.Logs] > 0) LastLogDeliveryDay = Day;
             food = got[Res.Food];
             StepFolk();
             StepRaid();

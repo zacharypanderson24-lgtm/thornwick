@@ -1,0 +1,2919 @@
+fileFormatVersion: 2
+guid: 00ce9d9414dfa3142aff8b9b6760fb7f
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -3787370909245086252
+    second: militia_quarry_0
+  - first:
+      213: 1684507833078242533
+    second: militia_quarry_1
+  - first:
+      213: 5021431259452551510
+    second: militia_quarry_2
+  - first:
+      213: -115568902931377882
+    second: militia_quarry_3
+  - first:
+      213: -8027166955474034924
+    second: militia_quarry_4
+  - first:
+      213: -4953692380911731901
+    second: militia_quarry_5
+  - first:
+      213: -4975499163279028242
+    second: militia_quarry_6
+  - first:
+      213: -8050403357423286209
+    second: militia_quarry_7
+  - first:
+      213: 1811995486195766857
+    second: militia_quarry_8
+  - first:
+      213: -6234844511408831559
+    second: militia_quarry_9
+  - first:
+      213: -8742449477268301085
+    second: militia_quarry_10
+  - first:
+      213: 938745457260443483
+    second: militia_quarry_11
+  - first:
+      213: -3460692252700178495
+    second: militia_quarry_12
+  - first:
+      213: 6613529462037714071
+    second: militia_quarry_13
+  - first:
+      213: -2779130576749709326
+    second: militia_quarry_14
+  - first:
+      213: -5661575001798407652
+    second: militia_quarry_15
+  - first:
+      213: 6583893528603900523
+    second: militia_quarry_16
+  - first:
+      213: -222125155351570261
+    second: militia_quarry_17
+  - first:
+      213: 9029476694671706387
+    second: militia_quarry_18
+  - first:
+      213: 4265084738080344206
+    second: militia_quarry_19
+  - first:
+      213: 4342062930529411855
+    second: militia_quarry_20
+  - first:
+      213: -4993364919568564842
+    second: militia_quarry_21
+  - first:
+      213: -6268606632252179541
+    second: militia_quarry_22
+  - first:
+      213: -3604041224075267991
+    second: militia_quarry_23
+  - first:
+      213: -78939125214937770
+    second: militia_quarry_24
+  - first:
+      213: 3069940730139928956
+    second: militia_quarry_25
+  - first:
+      213: 2507747384942786794
+    second: militia_quarry_26
+  - first:
+      213: 5050767873848978753
+    second: militia_quarry_27
+  - first:
+      213: -5051573084249581371
+    second: militia_quarry_28
+  - first:
+      213: 3112327635023420348
+    second: militia_quarry_29
+  - first:
+      213: -7489040775357640450
+    second: militia_quarry_30
+  - first:
+      213: 8387068244318229213
+    second: militia_quarry_31
+  - first:
+      213: -1831954306601667431
+    second: militia_quarry_32
+  - first:
+      213: 7456641460645594174
+    second: militia_quarry_33
+  - first:
+      213: -4927564605383844609
+    second: militia_quarry_34
+  - first:
+      213: -2185081298182031133
+    second: militia_quarry_35
+  - first:
+      213: -6102608343246410072
+    second: militia_quarry_36
+  - first:
+      213: 4426851782538020890
+    second: militia_quarry_37
+  - first:
+      213: 7517078021158532896
+    second: militia_quarry_38
+  - first:
+      213: -5727600392195554559
+    second: militia_quarry_39
+  - first:
+      213: -6409853771604240692
+    second: militia_quarry_40
+  - first:
+      213: 1606282147907372308
+    second: militia_quarry_41
+  - first:
+      213: 2343282537849746652
+    second: militia_quarry_42
+  - first:
+      213: -7546753550886728854
+    second: militia_quarry_43
+  - first:
+      213: 592943521133526734
+    second: militia_quarry_44
+  - first:
+      213: -6158684282797971816
+    second: militia_quarry_45
+  - first:
+      213: 2351508349799006980
+    second: militia_quarry_46
+  - first:
+      213: -8447668628922125249
+    second: militia_quarry_47
+  - first:
+      213: 1281340261761328250
+    second: militia_quarry_48
+  - first:
+      213: 992388347592980659
+    second: militia_quarry_49
+  - first:
+      213: 8793020097354306348
+    second: militia_quarry_50
+  - first:
+      213: -1646110040450033951
+    second: militia_quarry_51
+  - first:
+      213: -6418520907198070908
+    second: militia_quarry_52
+  - first:
+      213: -5067210779380764478
+    second: militia_quarry_53
+  - first:
+      213: 3745948511839188094
+    second: militia_quarry_54
+  - first:
+      213: 444004956332580785
+    second: militia_quarry_55
+  - first:
+      213: 9055729765404414991
+    second: militia_quarry_56
+  - first:
+      213: -1176434188818773905
+    second: militia_quarry_57
+  - first:
+      213: -6298198137978677456
+    second: militia_quarry_58
+  - first:
+      213: -967594306891629402
+    second: militia_quarry_59
+  - first:
+      213: 148826279908738351
+    second: militia_quarry_60
+  - first:
+      213: -8365614924675519439
+    second: militia_quarry_61
+  - first:
+      213: 8345435948281550687
+    second: militia_quarry_62
+  - first:
+      213: -3077321752226853239
+    second: militia_quarry_63
+  - first:
+      213: -5311475239303884045
+    second: militia_quarry_64
+  - first:
+      213: 1657165366780620627
+    second: militia_quarry_65
+  - first:
+      213: 6094913268550417283
+    second: militia_quarry_66
+  - first:
+      213: 7070567819064731075
+    second: militia_quarry_67
+  - first:
+      213: 1467347219550219363
+    second: militia_quarry_68
+  - first:
+      213: 2801273785525940328
+    second: militia_quarry_69
+  - first:
+      213: 2177541777286270138
+    second: militia_quarry_70
+  - first:
+      213: -5139444996158692567
+    second: militia_quarry_71
+  - first:
+      213: -4011508397379353522
+    second: militia_quarry_72
+  - first:
+      213: 8927295442615660955
+    second: militia_quarry_73
+  - first:
+      213: 8060313149281698951
+    second: militia_quarry_74
+  - first:
+      213: 2052426333094866658
+    second: militia_quarry_75
+  - first:
+      213: 3135789025613923223
+    second: militia_quarry_76
+  - first:
+      213: 3393892531376795411
+    second: militia_quarry_77
+  - first:
+      213: 7199469913704855326
+    second: militia_quarry_78
+  - first:
+      213: -7012282201425314465
+    second: militia_quarry_79
+  - first:
+      213: 2255922751897103378
+    second: militia_quarry_80
+  - first:
+      213: -4043723642085331385
+    second: militia_quarry_81
+  - first:
+      213: 6775366978333391973
+    second: militia_quarry_82
+  - first:
+      213: -620195497181757553
+    second: militia_quarry_83
+  - first:
+      213: -503006440242365140
+    second: militia_quarry_84
+  - first:
+      213: 4201178462844199653
+    second: militia_quarry_85
+  - first:
+      213: -5829903186466663983
+    second: militia_quarry_86
+  - first:
+      213: -8757273486429796676
+    second: militia_quarry_87
+  - first:
+      213: -1217589207953156082
+    second: militia_quarry_88
+  - first:
+      213: -4213234981444222787
+    second: militia_quarry_89
+  - first:
+      213: -6943668608580719541
+    second: militia_quarry_90
+  - first:
+      213: 4504700373252785548
+    second: militia_quarry_91
+  - first:
+      213: 356023100262182601
+    second: militia_quarry_92
+  - first:
+      213: 7595607484079082987
+    second: militia_quarry_93
+  - first:
+      213: -2728689809211579475
+    second: militia_quarry_94
+  - first:
+      213: 3137821985632149810
+    second: militia_quarry_95
+  - first:
+      213: 9128309553909338816
+    second: militia_quarry_96
+  - first:
+      213: -8101257470150706262
+    second: militia_quarry_97
+  - first:
+      213: -3569112731439075945
+    second: militia_quarry_98
+  - first:
+      213: -3029768943964660986
+    second: militia_quarry_99
+  - first:
+      213: 808458953640806263
+    second: militia_quarry_100
+  - first:
+      213: 2176320507722184945
+    second: militia_quarry_101
+  - first:
+      213: 188785283781469736
+    second: militia_quarry_102
+  - first:
+      213: 1050087924211572748
+    second: militia_quarry_103
+  - first:
+      213: -201292769870098008
+    second: militia_quarry_104
+  - first:
+      213: -3652998463294307685
+    second: militia_quarry_105
+  - first:
+      213: -2893983816018323740
+    second: militia_quarry_106
+  - first:
+      213: 6560421509742546517
+    second: militia_quarry_107
+  - first:
+      213: 7006726003246684830
+    second: militia_quarry_108
+  - first:
+      213: -6669942320554439035
+    second: militia_quarry_109
+  - first:
+      213: -8623328520680093143
+    second: militia_quarry_110
+  - first:
+      213: 5039323330356019738
+    second: militia_quarry_111
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 9
+  spritePivot: {x: 0.5, y: 0}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: militia_quarry_0
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4d56cc1793e807bc0800000000000000
+      internalID: -3787370909245086252
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_1
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 74
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5ecddf303f2906710800000000000000
+      internalID: 1684507833078242533
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 65136b33025bfa540800000000000000
+      internalID: 5021431259452551510
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_3
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62191b1f1ba656ef0800000000000000
+      internalID: -115568902931377882
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_4
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 74
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 41f573a0f26c99090800000000000000
+      internalID: -8027166955474034924
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_5
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 34b723d7603f04bb0800000000000000
+      internalID: -4953692380911731901
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_6
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eef00805fd973fab0800000000000000
+      internalID: -4975499163279028242
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_7
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 74
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f384c2e9cc8374090800000000000000
+      internalID: -8050403357423286209
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_8
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 74
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9465f495b40852910800000000000000
+      internalID: 1811995486195766857
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_9
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 74
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b3cea353f16979a0800000000000000
+      internalID: -6234844511408831559
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_10
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 74
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3ea9f9815849ca680800000000000000
+      internalID: -8742449477268301085
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_11
+      rect:
+        serializedVersion: 2
+        x: 316
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b57358a0508170d00800000000000000
+      internalID: 938745457260443483
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_12
+      rect:
+        serializedVersion: 2
+        x: 344
+        y: 74
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1c70cd05bb629ffc0800000000000000
+      internalID: -3460692252700178495
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_13
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 74
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7949658710af7cb50800000000000000
+      internalID: 6613529462037714071
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_14
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 74
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2f73864077b8e69d0800000000000000
+      internalID: -2779130576749709326
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_15
+      rect:
+        serializedVersion: 2
+        x: 427
+        y: 74
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c1a039c388b0e61b0800000000000000
+      internalID: -5661575001798407652
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_16
+      rect:
+        serializedVersion: 2
+        x: 456
+        y: 74
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b6abd630840be5b50800000000000000
+      internalID: 6583893528603900523
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_17
+      rect:
+        serializedVersion: 2
+        x: 485
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba8579b195adaecf0800000000000000
+      internalID: -222125155351570261
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_18
+      rect:
+        serializedVersion: 2
+        x: 513
+        y: 74
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 319439da6352f4d70800000000000000
+      internalID: 9029476694671706387
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_19
+      rect:
+        serializedVersion: 2
+        x: 540
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e88083ec8ff903b30800000000000000
+      internalID: 4265084738080344206
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_20
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f03e896ea3b124c30800000000000000
+      internalID: 4342062930529411855
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_21
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 69df737cf0104bab0800000000000000
+      internalID: -4993364919568564842
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_22
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bab73fffa7f6109a0800000000000000
+      internalID: -6268606632252179541
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_23
+      rect:
+        serializedVersion: 2
+        x: 652
+        y: 74
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 960312b0a9fdbfdc0800000000000000
+      internalID: -3604041224075267991
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_24
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 74
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 65dfeaaa84d87eef0800000000000000
+      internalID: -78939125214937770
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_25
+      rect:
+        serializedVersion: 2
+        x: 706
+        y: 74
+        width: 19
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c796e7d24de9a9a20800000000000000
+      internalID: 3069940730139928956
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_26
+      rect:
+        serializedVersion: 2
+        x: 734
+        y: 74
+        width: 19
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ae8fde1c5fe4dc220800000000000000
+      internalID: 2507747384942786794
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_27
+      rect:
+        serializedVersion: 2
+        x: 763
+        y: 74
+        width: 18
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 14d29b30f9ee71640800000000000000
+      internalID: 5050767873848978753
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_28
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c811645b0535e9b0800000000000000
+      internalID: -5051573084249581371
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_29
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 50
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cbbd3368e75313b20800000000000000
+      internalID: 3112327635023420348
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_30
+      rect:
+        serializedVersion: 2
+        x: 60
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef0546ce715911890800000000000000
+      internalID: -7489040775357640450
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_31
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd21c81b12ad46470800000000000000
+      internalID: 8387068244318229213
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_32
+      rect:
+        serializedVersion: 2
+        x: 116
+        y: 50
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 994b246a3479396e0800000000000000
+      internalID: -1831954306601667431
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_33
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e340b37c6ef4b7760800000000000000
+      internalID: 7456641460645594174
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_34
+      rect:
+        serializedVersion: 2
+        x: 172
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ffcde484916cd9bb0800000000000000
+      internalID: -4927564605383844609
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_35
+      rect:
+        serializedVersion: 2
+        x: 200
+        y: 50
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3e8b288e2280da1e0800000000000000
+      internalID: -2185081298182031133
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_36
+      rect:
+        serializedVersion: 2
+        x: 228
+        y: 50
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8ae66797b0e2f4ba0800000000000000
+      internalID: -6102608343246410072
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_37
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 50
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a18cb73ed365f6d30800000000000000
+      internalID: 4426851782538020890
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_38
+      rect:
+        serializedVersion: 2
+        x: 284
+        y: 50
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 027fc0012a6025860800000000000000
+      internalID: 7517078021158532896
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_39
+      rect:
+        serializedVersion: 2
+        x: 312
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 103cbc71ac97380b0800000000000000
+      internalID: -5727600392195554559
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_40
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 50
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cc6d451a4ff9b07a0800000000000000
+      internalID: -6409853771604240692
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_41
+      rect:
+        serializedVersion: 2
+        x: 368
+        y: 50
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 41502136a19aa4610800000000000000
+      internalID: 1606282147907372308
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_42
+      rect:
+        serializedVersion: 2
+        x: 395
+        y: 50
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cd4f8ec8d03058020800000000000000
+      internalID: 2343282537849746652
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_43
+      rect:
+        serializedVersion: 2
+        x: 429
+        y: 50
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a6b8aff31ab844790800000000000000
+      internalID: -7546753550886728854
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_44
+      rect:
+        serializedVersion: 2
+        x: 450
+        y: 50
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ece780dadfe8a3800800000000000000
+      internalID: 592943521133526734
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_45
+      rect:
+        serializedVersion: 2
+        x: 478
+        y: 50
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 896ab006645f78aa0800000000000000
+      internalID: -6158684282797971816
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_46
+      rect:
+        serializedVersion: 2
+        x: 506
+        y: 50
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4038224a26c32a020800000000000000
+      internalID: 2351508349799006980
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_47
+      rect:
+        serializedVersion: 2
+        x: 536
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f34b2e0c32ad3ca80800000000000000
+      internalID: -8447668628922125249
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_48
+      rect:
+        serializedVersion: 2
+        x: 565
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a74a0b2ed2c38c110800000000000000
+      internalID: 1281340261761328250
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_49
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3b83489b1fba5cd00800000000000000
+      internalID: 992388347592980659
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_50
+      rect:
+        serializedVersion: 2
+        x: 621
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c239cade035170a70800000000000000
+      internalID: 8793020097354306348
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_51
+      rect:
+        serializedVersion: 2
+        x: 647
+        y: 50
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1e695c1c3a7d729e0800000000000000
+      internalID: -1646110040450033951
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_52
+      rect:
+        serializedVersion: 2
+        x: 675
+        y: 50
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48f7a0fdd35dce6a0800000000000000
+      internalID: -6418520907198070908
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_53
+      rect:
+        serializedVersion: 2
+        x: 702
+        y: 50
+        width: 20
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2c0baf4b4a6ada9b0800000000000000
+      internalID: -5067210779380764478
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_54
+      rect:
+        serializedVersion: 2
+        x: 731
+        y: 50
+        width: 19
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e74f31b13584cf330800000000000000
+      internalID: 3745948511839188094
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_55
+      rect:
+        serializedVersion: 2
+        x: 758
+        y: 50
+        width: 19
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1bf57b4c72c692600800000000000000
+      internalID: 444004956332580785
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_56
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f049cd80e3a6cad70800000000000000
+      internalID: 9055729765404414991
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_57
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 26
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f6805d996577cafe0800000000000000
+      internalID: -1176434188818773905
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_58
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 03711cca92e4898a0800000000000000
+      internalID: -6298198137978677456
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_59
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6acb80bba1a6292f0800000000000000
+      internalID: -967594306891629402
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_60
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 26
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f25043b86bcb01200800000000000000
+      internalID: 148826279908738351
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_61
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 13c62078c8d57eb80800000000000000
+      internalID: -8365614924675519439
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_62
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f57d81967c1f0d370800000000000000
+      internalID: 8345435948281550687
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_63
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 26
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 98e8fe2bb282b45d0800000000000000
+      internalID: -3077321752226853239
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_64
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 26
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3f252084969d946b0800000000000000
+      internalID: -5311475239303884045
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_65
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 26
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 35fe90dfe1f6ff610800000000000000
+      internalID: 1657165366780620627
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_66
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 26
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 38b33c4535b759450800000000000000
+      internalID: 6094913268550417283
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_67
+      rect:
+        serializedVersion: 2
+        x: 316
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3c569af48f3bf1260800000000000000
+      internalID: 7070567819064731075
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_68
+      rect:
+        serializedVersion: 2
+        x: 344
+        y: 26
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 36ca27795801d5410800000000000000
+      internalID: 1467347219550219363
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_69
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 26
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 86033e88aaf10e620800000000000000
+      internalID: 2801273785525940328
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_70
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 26
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: abc88b695be283e10800000000000000
+      internalID: 2177541777286270138
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_71
+      rect:
+        serializedVersion: 2
+        x: 427
+        y: 26
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9236d4581060da8b0800000000000000
+      internalID: -5139444996158692567
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_72
+      rect:
+        serializedVersion: 2
+        x: 456
+        y: 26
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e4405b0dd524458c0800000000000000
+      internalID: -4011508397379353522
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_73
+      rect:
+        serializedVersion: 2
+        x: 485
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b91f11ef7ef14eb70800000000000000
+      internalID: 8927295442615660955
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_74
+      rect:
+        serializedVersion: 2
+        x: 513
+        y: 26
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 78488599a1cfbdf60800000000000000
+      internalID: 8060313149281698951
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_75
+      rect:
+        serializedVersion: 2
+        x: 540
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2eee6cf20eeab7c10800000000000000
+      internalID: 2052426333094866658
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_76
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7934942318f848b20800000000000000
+      internalID: 3135789025613923223
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_77
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 31fa0929647891f20800000000000000
+      internalID: 3393892531376795411
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_78
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e177d79fdb7a9e360800000000000000
+      internalID: 7199469913704855326
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_79
+      rect:
+        serializedVersion: 2
+        x: 652
+        y: 26
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f5dff3f8d7e5fae90800000000000000
+      internalID: -7012282201425314465
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_80
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 26
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 21c6c8b5ac5ae4f10800000000000000
+      internalID: 2255922751897103378
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_81
+      rect:
+        serializedVersion: 2
+        x: 706
+        y: 26
+        width: 19
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 74ea7a7a5cec1e7c0800000000000000
+      internalID: -4043723642085331385
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_82
+      rect:
+        serializedVersion: 2
+        x: 734
+        y: 26
+        width: 19
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 56c397e8e50f60e50800000000000000
+      internalID: 6775366978333391973
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_83
+      rect:
+        serializedVersion: 2
+        x: 763
+        y: 26
+        width: 18
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f8f3f233b7f9467f0800000000000000
+      internalID: -620195497181757553
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_84
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c2dbe91ce46f409f0800000000000000
+      internalID: -503006440242365140
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_85
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 2
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5e2a9db9d859d4a30800000000000000
+      internalID: 4201178462844199653
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_86
+      rect:
+        serializedVersion: 2
+        x: 60
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1d19cb7a0f5081fa0800000000000000
+      internalID: -5829903186466663983
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_87
+      rect:
+        serializedVersion: 2
+        x: 88
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cb6c760892ae77680800000000000000
+      internalID: -8757273486429796676
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_88
+      rect:
+        serializedVersion: 2
+        x: 116
+        y: 2
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e085a9101114a1fe0800000000000000
+      internalID: -1217589207953156082
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_89
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: db084c76b159785c0800000000000000
+      internalID: -4213234981444222787
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_90
+      rect:
+        serializedVersion: 2
+        x: 172
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b4ce38b803223af90800000000000000
+      internalID: -6943668608580719541
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_91
+      rect:
+        serializedVersion: 2
+        x: 200
+        y: 2
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c854d4f5f19e38e30800000000000000
+      internalID: 4504700373252785548
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_92
+      rect:
+        serializedVersion: 2
+        x: 228
+        y: 2
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9cee5f69f19d0f400800000000000000
+      internalID: 356023100262182601
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_93
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 2
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bed05d573c4096960800000000000000
+      internalID: 7595607484079082987
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_94
+      rect:
+        serializedVersion: 2
+        x: 284
+        y: 2
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: da327b3631fb12ad0800000000000000
+      internalID: -2728689809211579475
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_95
+      rect:
+        serializedVersion: 2
+        x: 312
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 231e3069878cb8b20800000000000000
+      internalID: 3137821985632149810
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_96
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 2
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0c21298ec254eae70800000000000000
+      internalID: 9128309553909338816
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_97
+      rect:
+        serializedVersion: 2
+        x: 368
+        y: 2
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aabffa1d04d829f80800000000000000
+      internalID: -8101257470150706262
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_98
+      rect:
+        serializedVersion: 2
+        x: 395
+        y: 2
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 79def3771e6f77ec0800000000000000
+      internalID: -3569112731439075945
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_99
+      rect:
+        serializedVersion: 2
+        x: 429
+        y: 2
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 60bd977a23914f5d0800000000000000
+      internalID: -3029768943964660986
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_100
+      rect:
+        serializedVersion: 2
+        x: 450
+        y: 2
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7778e3b8229383b00800000000000000
+      internalID: 808458953640806263
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_101
+      rect:
+        serializedVersion: 2
+        x: 478
+        y: 2
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1f8bd2c98f7d33e10800000000000000
+      internalID: 2176320507722184945
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_102
+      rect:
+        serializedVersion: 2
+        x: 506
+        y: 2
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 826ad922733be9200800000000000000
+      internalID: 188785283781469736
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_103
+      rect:
+        serializedVersion: 2
+        x: 536
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c00ee894769a29e00800000000000000
+      internalID: 1050087924211572748
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_104
+      rect:
+        serializedVersion: 2
+        x: 565
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8a1d904da4dd43df0800000000000000
+      internalID: -201292769870098008
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_105
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b928b468041fd4dc0800000000000000
+      internalID: -3652998463294307685
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_106
+      rect:
+        serializedVersion: 2
+        x: 621
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4e69f746d0186d7d0800000000000000
+      internalID: -2893983816018323740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_107
+      rect:
+        serializedVersion: 2
+        x: 647
+        y: 2
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 55e4901ca9c4b0b50800000000000000
+      internalID: 6560421509742546517
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_108
+      rect:
+        serializedVersion: 2
+        x: 675
+        y: 2
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e9ad20e3d24ec3160800000000000000
+      internalID: 7006726003246684830
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_109
+      rect:
+        serializedVersion: 2
+        x: 702
+        y: 2
+        width: 20
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 58e020f5cca9f63a0800000000000000
+      internalID: -6669942320554439035
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_110
+      rect:
+        serializedVersion: 2
+        x: 731
+        y: 2
+        width: 19
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 92a4e571668c35880800000000000000
+      internalID: -8623328520680093143
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_quarry_111
+      rect:
+        serializedVersion: 2
+        x: 758
+        y: 2
+        width: 19
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a1285369ed54fe540800000000000000
+      internalID: 5039323330356019738
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable: {}
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -1,0 +1,820 @@
+{
+  "width": 28,
+  "height": 24,
+  "foot": 21,
+  "actors": [
+    {
+      "name": "raider",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        },
+        {
+          "name": "loot",
+          "firstColumn": 28,
+          "frameMs": [
+            95,
+            130,
+            115,
+            100,
+            130
+          ],
+          "loop": false
+        },
+        {
+          "name": "carry",
+          "firstColumn": 33,
+          "frameMs": [
+            92,
+            92,
+            92,
+            92,
+            92,
+            92
+          ],
+          "loop": true
+        }
+      ]
+    },
+    {
+      "name": "infantry",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "name": "archer",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "name": "militia_farmer",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "name": "militia_hunter",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "name": "militia_woodcutter",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "name": "militia_forester",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "name": "militia_sawyer",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "name": "militia_quarry",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "name": "militia_miner",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "name": "arrow",
+      "firstColumn": 0,
+      "frames": 8,
+      "pivotPixelsFromTop": [
+        16,
+        14
+      ]
+    },
+    {
+      "name": "hit",
+      "firstColumn": 8,
+      "frames": 4,
+      "pivotPixelsFromTop": [
+        16,
+        14
+      ]
+    },
+    {
+      "name": "dust",
+      "firstColumn": 12,
+      "frames": 5,
+      "pivotPixelsFromTop": [
+        16,
+        14
+      ]
+    },
+    {
+      "name": "sack",
+      "firstColumn": 17,
+      "frames": 1,
+      "pivotPixelsFromTop": [
+        16,
+        14
+      ]
+    }
+  ]
+}

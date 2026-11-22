@@ -12,7 +12,7 @@ namespace CrownAndHearth.Game
 
         public Texture2D GroundAtlas { get; }
         /// <summary>Atlas cells, in the order PrototypeArtImporter writes them.</summary>
-        public const int CellGrass = 0, CellFert = 4, CellRock = 6, CellSnow = 7, CellRoad = 8, CellWhite = 9, CellCount = 10;
+        public const int CellGrass = 0, CellFert = 4, CellRock = 6, CellSnow = 7, CellRoad = 8, CellWhite = 9, CellWorkedStone = 10, CellCount = 11;
 
         public ArtLibrary()
         {

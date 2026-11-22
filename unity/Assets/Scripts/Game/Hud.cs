@@ -62,15 +62,18 @@ namespace CrownAndHearth.Game
         public event Action<string> BannerPicked;
         public event Action<string, int> PrioMoved;
         public event Action<bool> WorkforceToggled;
-        public event Action TutorialOpen, TutorialNext, TutorialBack, TutorialClose;
+        public event Action TutorialOpen, TutorialNext, TutorialClose;
 
         GameObject _tutPanel;
         Text _tutTitle, _tutBody, _tutGoal, _tutStep, _tutNextLabel;
+        UnityEngine.UI.Button _tutNext;
         string _tutGoalBase = "";
 
-        /// <summary>Progress on the tutorial's counted goal ("2 / 4"), shown after the goal line; null shows the goal alone.</summary>
-        public void SetTutorialProgress(string progress) =>
-            _tutGoal.text = _tutGoalBase + (progress != null ? $"   Progress: {progress}" : "");
+        public void SetTutorialProgress(string progress, bool canAdvance)
+        {
+            _tutGoal.text = _tutGoalBase + (progress != null ? $"   ·   {progress}" : "");
+            _tutNext.interactable = canAdvance;
+        }
         string _highlight;   // tool the tutorial points at
         World _world;        // for card prices
 
@@ -382,10 +385,10 @@ namespace CrownAndHearth.Game
             Stretch(_tutBody.rectTransform, new Vector2(14, 76), new Vector2(-14, -40));
             _tutGoal = MakeText(tp, "Goal", 15, TextAnchor.MiddleLeft); _tutGoal.color = new Color(1f, 0.82f, 0.4f);
             Stretch(_tutGoal.rectTransform, new Vector2(14, 44), new Vector2(-14, -196));
-            MakeButton(tp, "Back", new Vector2(0, 0), new Vector2(54, 24), new Vector2(84, 30), () => TutorialBack?.Invoke());
             MakeButton(tp, "Close", new Vector2(1, 0), new Vector2(-54, 24), new Vector2(84, 30), () => TutorialClose?.Invoke());
-            var next = MakeButton(tp, "Next", new Vector2(1, 0), new Vector2(-146, 24), new Vector2(84, 30), () => TutorialNext?.Invoke());
+            var next = MakeButton(tp, "Next", new Vector2(1, 0), new Vector2(-162, 24), new Vector2(112, 30), () => TutorialNext?.Invoke());
             _tutNextLabel = next.GetComponentInChildren<Text>();
+            _tutNext = next.GetComponent<UnityEngine.UI.Button>();
             _tutPanel.SetActive(false);
         }
 
@@ -400,9 +403,10 @@ namespace CrownAndHearth.Game
             _tutTitle.text = s.Title;
             _tutStep.text = $"{t.Index + 1} / {Tutorial.Steps.Count}";
             _tutBody.text = t.BodyText;
-            _tutGoal.text = "Goal: " + s.Goal + (s.Tool != null ? "  (the glowing button below)" : "");
+            _tutGoal.text = s.Goal;
             _tutGoalBase = _tutGoal.text;
-            _tutNextLabel.text = s.Explanation ?(t.Index == Tutorial.Steps.Count - 1 ? "Finish" : "Next") : "Skip";
+            _tutNextLabel.text = s.Button ?? "";
+            _tutNext.gameObject.SetActive(s.Button != null);
             RestoreColors();
         }
 
