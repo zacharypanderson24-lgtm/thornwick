@@ -3,6 +3,7 @@
 The exact numbers for making textures with ChatGPT (or anything else). Game sizes are tiny; ChatGPT draws big and the game shrinks the picture for you, so the numbers below tell you what to ask for and what the game will turn it into.
 
 > Before making a building, read `BUILDING_TILE_GUIDE.md` and attach a guide from `templates/`.
+> For the current Unity visual direction and native-size workflow, read the [texture style guide](TEXTURE_STYLE.md).
 
 ## 1. The grid
 

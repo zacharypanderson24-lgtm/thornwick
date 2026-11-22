@@ -89,7 +89,7 @@ unity test unity --mode EditMode                 # project must be closed in the
 
 ChatGPT and Claude Code work on separate branches and merge into `unity-migration` through pull requests.
 Scenes are tiny on purpose (everything is built in code), so they rarely conflict; avoid editing the same scene on two branches.
-Art rules are unchanged: see `TEXTURE_SPEC.md` and `CHATGPT_START_HERE.md` at the repo root.
+For new sprites and textures, follow the [current Thornwick texture style](../TEXTURE_STYLE.md) and the [building tile guide](../BUILDING_TILE_GUIDE.md).
 
 ## Saving a settlement
 
