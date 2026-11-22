@@ -12,6 +12,23 @@ namespace CrownAndHearth.Sim
 
     public sealed class SupplyPile { public int X, Y; public Res Res; public int Amount; }
 
+    /// <summary>How big a camp of each strength is: a strength 1 camp is a couple of tents round one fire, a strength 5 camp a sprawling
+    /// war camp. Reach is how far from the warlord's tent its fires may stand.</summary>
+    public readonly struct CampSize
+    {
+        public readonly int Fires, Tents, Racks, Piles, Raiders, Brutes, Reach;
+        CampSize(int fires, int tents, int racks, int piles, int raiders, int brutes, int reach) { Fires = fires; Tents = tents; Racks = racks; Piles = piles; Raiders = raiders; Brutes = brutes; Reach = reach; }
+        static readonly CampSize[] Table =
+        {
+            new CampSize(1, 2, 1, 1, 3, 1, 4),
+            new CampSize(2, 5, 1, 3, 6, 1, 5),
+            new CampSize(3, 8, 2, 5, 10, 2, 6),
+            new CampSize(4, 12, 3, 7, 15, 3, 7),
+            new CampSize(6, 20, 5, 10, 24, 4, 9),
+        };
+        public static CampSize Of(int strength) => Table[Math.Max(1, Math.Min(5, strength)) - 1];
+    }
+
     public sealed class CampMap
     {
         public const int Size = 32;
@@ -34,6 +51,47 @@ namespace CrownAndHearth.Sim
         public bool Passable(int x, int y) => Inb(x, y) && Ground[y, x] == CampTile.Open && !HasStructure(x, y);
 
         static readonly Res[] Pool = { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Gold, Res.Flax };
+
+        /// <summary>Would building on (x, y) still leave every open tile beside it reachable from the map's edge? Tents are pitched close
+        /// together now, so this keeps them from walling anything (or anyone) in.</summary>
+        bool LeavesPath(int bx, int by)
+        {
+            var seen = new bool[Size, Size];
+            var q = new Queue<(int x, int y)>();
+            for (int i = 0; i < Size; i++)
+                foreach (var (x, y) in new[] { (i, 0), (i, Size - 1), (0, i), (Size - 1, i) })
+                    if (!seen[y, x] && (x != bx || y != by) && Passable(x, y)) { seen[y, x] = true; q.Enqueue((x, y)); }
+            while (q.Count > 0)
+            {
+                var (cx, cy) = q.Dequeue();
+                for (int k = 0; k < 4; k++)
+                {
+                    int nx = cx + Defs.Nb[k, 0], ny = cy + Defs.Nb[k, 1];
+                    if (!Inb(nx, ny) || seen[ny, nx] || (nx == bx && ny == by) || !Passable(nx, ny)) continue;
+                    seen[ny, nx] = true; q.Enqueue((nx, ny));
+                }
+            }
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    int nx = bx + dx, ny = by + dy;
+                    if ((dx != 0 || dy != 0) && Passable(nx, ny) && !seen[ny, nx]) return false;
+                }
+            // the warlord's tent and every tent right beside this spot must keep an open, connected tile next to it
+            bool Reachable(int tx, int ty)
+            {
+                for (int k = 0; k < 4; k++)
+                {
+                    int nx = tx + Defs.Nb[k, 0], ny = ty + Defs.Nb[k, 1];
+                    if (Inb(nx, ny) && (nx != bx || ny != by) && Passable(nx, ny) && seen[ny, nx]) return true;
+                }
+                return false;
+            }
+            if (!Reachable(bx, by) || !Reachable(Chief.x, Chief.y)) return false;
+            foreach (var t in Tents)
+                if (Math.Max(Math.Abs(t.x - bx), Math.Abs(t.y - by)) <= 1 && !Reachable(t.x, t.y)) return false;
+            return true;
+        }
 
         /// <summary>Room for a structure at (x, y): level open ground away from the edge, and nothing built within `apart` tiles.</summary>
         bool Free(int x, int y, int apart = 0)
@@ -67,45 +125,46 @@ namespace CrownAndHearth.Sim
                 }
             if (!found) m.Chief = (16, 16);
 
-            // campfires on a ring round it, each with up to three tents pitched beside it
-            int fires = 1 + camp.Strength / 2, tentsWanted = 3 + camp.Strength;
-            var offsets = new[] { (-2, 0), (2, 0), (0, -2), (0, 2), (-2, -2), (2, -2), (-2, 2), (2, 2) };
-            for (int a = 0; a < 300 && m.Fires.Count < fires; a++)
+            // campfires in a tight ring round it (a bigger camp spreads a little further), each with its tents pitched right beside it
+            var size = CampSize.Of(camp.Strength);
+            int fires = size.Fires, tentsWanted = size.Tents, perFire = (tentsWanted + fires - 1) / fires, reach = size.Reach;
+            var offsets = new[] { (-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1), (-1, 1), (1, 1) };
+            for (int a = 0; a < 600 && m.Fires.Count < fires; a++)
             {
-                double ang = Noise.Hash2(a, 7, s + 21) * Math.PI * 2, rad = 5 + Noise.Hash2(a, 8, s + 21) * 4;
+                double ang = Noise.Hash2(a, 7, s + 21) * Math.PI * 2, rad = 3 + Noise.Hash2(a, 8, s + 21) * (reach - 3);
                 int x = m.Chief.x + (int)Math.Round(Math.Cos(ang) * rad), y = m.Chief.y + (int)Math.Round(Math.Sin(ang) * rad);
-                if (!m.Free(x, y, 3)) continue;
+                if (!m.Free(x, y, 1)) continue;
                 bool apart = true;
-                foreach (var f in m.Fires) if (Math.Max(Math.Abs(f.x - x), Math.Abs(f.y - y)) < 7) { apart = false; break; }
+                foreach (var f in m.Fires) if (Math.Max(Math.Abs(f.x - x), Math.Abs(f.y - y)) < 4) { apart = false; break; }
                 if (!apart) continue;
                 m.Fires.Add((x, y));
-                int placed = 0;
-                for (int k = 0; k < offsets.Length && placed < 3 && m.Tents.Count < tentsWanted; k++)
+                int placed = 0, turn = (int)(Noise.Hash2(a, 9, s + 22) * 8);
+                for (int k = 0; k < offsets.Length && placed < perFire && m.Tents.Count < tentsWanted; k++)
                 {
-                    var o = offsets[(k + (int)(Noise.Hash2(a, 9, s + 22) * 8)) % offsets.Length];
-                    if (m.Free(x + o.Item1, y + o.Item2, 1)) { m.Tents.Add((x + o.Item1, y + o.Item2)); placed++; }
+                    var o = offsets[(k + turn) % offsets.Length];
+                    if (m.Free(x + o.Item1, y + o.Item2, 0) && m.LeavesPath(x + o.Item1, y + o.Item2)) { m.Tents.Add((x + o.Item1, y + o.Item2)); placed++; }
                 }
             }
-            // a camp on rough ground may find no room for a ring of fires: give it at least one, wherever there is room
+            // a camp on rough ground may find no room for its ring of fires: give it at least one, wherever there is room
             for (int a = 0; a < 400 && m.Fires.Count == 0; a++)
             {
-                int x = m.Chief.x + (int)((Noise.Hash2(a, 15, s + 21) - 0.5) * 14), y = m.Chief.y + (int)((Noise.Hash2(a, 16, s + 21) - 0.5) * 14);
+                int x = m.Chief.x + (int)((Noise.Hash2(a, 15, s + 21) - 0.5) * 2 * reach), y = m.Chief.y + (int)((Noise.Hash2(a, 16, s + 21) - 0.5) * 2 * reach);
                 if (m.Free(x, y, 1)) m.Fires.Add((x, y));
             }
-            // any tents still owed are scattered round the camp (close together if the ground is cramped)
-            for (int pass = 1; pass >= 0; pass--)
+            // any tents still owed are pitched near the camp's middle, widening the search only if the ground is cramped
+            for (int spread = reach; spread <= 14 && m.Tents.Count < tentsWanted; spread += 3)
                 for (int a = 0; a < 500 && m.Tents.Count < tentsWanted; a++)
                 {
-                    int x = m.Chief.x + (int)((Noise.Hash2(a, 1, s + 2) - 0.5) * 20), y = m.Chief.y + (int)((Noise.Hash2(a, 2, s + 2) - 0.5) * 20);
-                    if (m.Free(x, y, pass)) m.Tents.Add((x, y));
+                    int x = m.Chief.x + (int)Math.Round((Noise.Hash2(a + spread * 1000, 1, s + 2) - 0.5) * 2 * spread), y = m.Chief.y + (int)Math.Round((Noise.Hash2(a + spread * 1000, 2, s + 2) - 0.5) * 2 * spread);
+                    if (m.Free(x, y, 0) && m.LeavesPath(x, y)) m.Tents.Add((x, y));
                 }
             // weapon racks next to tents
-            int racks = 1 + camp.Strength / 2;
+            int racks = size.Racks;
             for (int a = 0; a < 400 && m.Racks.Count < racks && m.Tents.Count > 0; a++)
             {
                 var t = m.Tents[(int)(Noise.Hash2(a, 10, s + 23) * m.Tents.Count)];
                 int x = t.x + (int)(Noise.Hash2(a, 11, s + 23) * 3) - 1, y = t.y + 1 + (int)(Noise.Hash2(a, 12, s + 23) * 2);
-                if (m.Free(x, y, 0)) m.Racks.Add((x, y));
+                if (m.Free(x, y, 0) && m.LeavesPath(x, y)) m.Racks.Add((x, y));
             }
             // supplies: the warlord's hoard of gold by his tent, and piles of goods round the camp
             for (int a = 0; a < 200; a++)
@@ -113,10 +172,11 @@ namespace CrownAndHearth.Sim
                 int x = m.Chief.x + (int)(Noise.Hash2(a, 13, s + 24) * 7) - 3, y = m.Chief.y + (int)(Noise.Hash2(a, 14, s + 24) * 7) - 3;
                 if (m.Free(x, y, 0)) { m.Piles.Add(new SupplyPile { X = x, Y = y, Res = Res.Gold, Amount = 14 + 5 * camp.Strength }); break; }
             }
-            int piles = 2 + camp.Strength;
+            int piles = size.Piles, pileSpread = 2 * (reach + 2);
             for (int a = 0; a < 600 && m.Piles.Count < piles + 1; a++)
             {
-                int x = m.Chief.x + (int)((Noise.Hash2(a, 3, s + 3) - 0.5) * 20), y = m.Chief.y + (int)((Noise.Hash2(a, 4, s + 3) - 0.5) * 20);
+                int spread = a < 300 ? pileSpread : 20;   // among the tents, or further out if the ground is cramped
+                int x = m.Chief.x + (int)((Noise.Hash2(a, 3, s + 3) - 0.5) * spread), y = m.Chief.y + (int)((Noise.Hash2(a, 4, s + 3) - 0.5) * spread);
                 if (!m.Free(x, y, 0)) continue;
                 var res = Pool[(int)(Noise.Hash2(a, 5, s + 3) * Pool.Length)];
                 int amount = 10 + 6 * camp.Strength + (int)(Noise.Hash2(a, 6, s + 3) * 12);
@@ -149,7 +209,7 @@ namespace CrownAndHearth.Sim
         public const double BruteHp = 5, BruteHit = 1.1, ChiefHp = 9, ChiefHit = 1.6;
 
         /// <summary>Everyone in a camp of this strength: raiders and archers, brutes round the warlord, and the warlord.</summary>
-        public static int RaiderCount(int strength) => 3 + 2 * strength + (strength + 1) / 2 + 1;
+        public static int RaiderCount(int strength) { var c = CampSize.Of(strength); return c.Raiders + c.Brutes + 1; }
         public const int ArcherRange = 7, RaiderArcherRange = 6, AlertR = 6, MaxTicks = 500, InfantryCarry = 8, ArcherCarry = 5, BodyTicks = 12;
 
         public readonly RaiderCamp Camp;
@@ -177,7 +237,8 @@ namespace CrownAndHearth.Sim
                 }
                 SentInfantry += g.Infantry; SentArchers += g.Archers;
             }
-            int raiders = 3 + 2 * camp.Strength, brutes = (camp.Strength + 1) / 2;
+            var size = CampSize.Of(camp.Strength);
+            int raiders = size.Raiders, brutes = size.Brutes;
             for (int i = 0; i < raiders; i++)
             {
                 (int x, int y) tent = Map.Tents.Count > 0 ? Map.Tents[i % Map.Tents.Count] : (16, 16);
