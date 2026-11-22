@@ -34,19 +34,23 @@ namespace CrownAndHearth.Sim
         (int x0, int y0) PickCampWindow(RaiderCamp camp)
         {
             int bestX = Start - CampMap.Size / 2, bestY = bestX; double bestScore = -1;
+            // the camp needs a clearing in the middle as wide as its fires reach (a strength 5 camp a big one)
+            int half = CampSize.Of(camp.Strength).Reach + 1, mid = CampMap.Size / 2;
             for (int i = 0; i < 32; i++)
             {
                 int ox = 8 + (int)(Noise.Hash2(i, 1, camp.Seed + 30) * (N - CampMap.Size - 16)), oy = 8 + (int)(Noise.Hash2(i, 2, camp.Seed + 30) * (N - CampMap.Size - 16));
-                int open = 0, ring = 0, ringTotal = 0;
+                int open = 0, ring = 0, ringTotal = 0, core = 0, coreTotal = 0;
                 for (int y = 0; y < CampMap.Size; y++)
                     for (int x = 0; x < CampMap.Size; x++)
                     {
-                        if (CampBuildable(ox + x, oy + y)) open++;
+                        bool b = CampBuildable(ox + x, oy + y);
+                        if (b) open++;
+                        if (Math.Abs(x - mid) <= half && Math.Abs(y - mid) <= half) { coreTotal++; if (b) core++; }
                         if (x < 2 || y < 2 || x >= CampMap.Size - 2 || y >= CampMap.Size - 2) { ringTotal++; if (!IsSolid(ox + x, oy + y)) ring++; }
                     }
-                double openFrac = open / (double)(CampMap.Size * CampMap.Size), ringFrac = ring / (double)ringTotal;
-                if (openFrac >= 0.55 && ringFrac >= 0.75) return (ox, oy);
-                double score = Math.Min(openFrac / 0.55, 1) + Math.Min(ringFrac / 0.75, 1);
+                double openFrac = open / (double)(CampMap.Size * CampMap.Size), ringFrac = ring / (double)ringTotal, coreFrac = core / (double)coreTotal;
+                if (openFrac >= 0.55 && ringFrac >= 0.75 && coreFrac >= 0.7) return (ox, oy);
+                double score = Math.Min(openFrac / 0.55, 1) + Math.Min(ringFrac / 0.75, 1) + Math.Min(coreFrac / 0.7, 1);
                 if (score > bestScore) { bestScore = score; bestX = ox; bestY = oy; }
             }
             return (bestX, bestY);

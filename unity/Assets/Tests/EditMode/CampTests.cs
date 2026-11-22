@@ -39,10 +39,34 @@ namespace CrownAndHearth.Tests
             foreach (int strength in new[] { 1, 3, 5 })
             {
                 var m = Camp(strength).Site.Map;
-                Assert.AreEqual(3 + strength, m.Tents.Count);
-                Assert.AreEqual(3 + strength, m.Piles.Count, "goods piles plus the warlord's hoard");
-                Assert.AreEqual(1 + strength / 2, m.Fires.Count);
-                Assert.AreEqual(1 + strength / 2, m.Racks.Count);
+                var size = CampSize.Of(strength);
+                Assert.AreEqual(size.Tents, m.Tents.Count);
+                Assert.AreEqual(size.Piles + 1, m.Piles.Count, "goods piles plus the warlord's hoard");
+                Assert.AreEqual(size.Fires, m.Fires.Count);
+                Assert.AreEqual(size.Racks, m.Racks.Count);
+                // the tents are pitched close: each one stands right beside a fire or another tent, and the camp is compact round the warlord
+                foreach (var t in m.Tents)
+                    Assert.IsTrue(m.Fires.Any(f => Max(System.Math.Abs(f.x - t.x), System.Math.Abs(f.y - t.y)) <= 1) || m.Tents.Any(o => o != t && Max(System.Math.Abs(o.x - t.x), System.Math.Abs(o.y - t.y)) <= 2),
+                        $"strength {strength}: tent {t} stands on its own");
+                double meanDist = m.Tents.Average(t => Max(System.Math.Abs(t.x - m.Chief.x), System.Math.Abs(t.y - m.Chief.y)));
+                Assert.LessOrEqual(meanDist, size.Reach + 1.5, $"strength {strength}: the tents are close round the warlord");
+                // every tent can still be walked up to from the edge (close tents never wall anything in)
+                var reach = new bool[CampMap.Size, CampMap.Size]; var q = new Queue<(int x, int y)>();
+                for (int i = 0; i < CampMap.Size; i++)
+                    foreach (var (x, y) in new[] { (i, 0), (i, CampMap.Size - 1), (0, i), (CampMap.Size - 1, i) })
+                        if (!reach[y, x] && m.Passable(x, y)) { reach[y, x] = true; q.Enqueue((x, y)); }
+                while (q.Count > 0)
+                {
+                    var (cx, cy) = q.Dequeue();
+                    foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+                    {
+                        int nx = cx + dx, ny = cy + dy;
+                        if (CampMap.Inb(nx, ny) && !reach[ny, nx] && m.Passable(nx, ny)) { reach[ny, nx] = true; q.Enqueue((nx, ny)); }
+                    }
+                }
+                bool Reachable((int x, int y) t) => new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }.Any(d => CampMap.Inb(t.x + d.Item1, t.y + d.Item2) && reach[t.y + d.Item2, t.x + d.Item1]);
+                Assert.IsTrue(m.Tents.All(Reachable), $"strength {strength}: every tent can be reached");
+                Assert.IsTrue(Reachable(m.Chief), $"strength {strength}: the warlord's tent can be reached");
                 Assert.IsTrue(m.Piles.Any(p => p.Res == Res.Gold), "the warlord keeps gold");
                 var spots = new List<(int, int)>(m.Tents); spots.AddRange(m.Fires); spots.AddRange(m.Racks); spots.Add(m.Chief);
                 Assert.AreEqual(spots.Count, spots.Distinct().Count(), "nothing is built on top of anything else");
