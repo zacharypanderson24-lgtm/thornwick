@@ -13,6 +13,9 @@ namespace CrownAndHearth.Game
         readonly List<Texture2D> _textures = new List<Texture2D>();
 
         public Sprite Tent() => Get(-1, DrawTent);
+        public Sprite ChiefTent() => Get(-2, DrawChiefTent);
+        public Sprite Fire() => Get(-3, DrawFire);
+        public Sprite Rack() => Get(-4, DrawRack);
         public Sprite Supplies(Res r) => Get((int)r, px => DrawSupplies(px, r));
 
         public void Dispose() { foreach (var s in _sprites.Values) Object.Destroy(s); foreach (var t in _textures) Object.Destroy(t); _sprites.Clear(); _textures.Clear(); }
@@ -63,6 +66,56 @@ namespace CrownAndHearth.Game
             for (int i = 0; i < 12; i++) { Set(px, left.Item1 + i, left.Item2 - i / 2, new Color32(84, 22, 22, 255)); Set(px, right.Item1 - i, right.Item2 - i / 2, new Color32(84, 22, 22, 255)); }
             Rect(px, CX, CY + 20, 1, 5, new Color32(70, 50, 36, 255));                      // the pole
             Rect(px, CX + 1, CY + 23, 4, 2, new Color32(40, 24, 24, 255));                  // a rag of a pennant
+        }
+
+        // ---------- the warlord's tent: bigger, darker, with gold trim and a banner ----------
+        static void DrawChiefTent(Color32[] px)
+        {
+            var apex = (CX, CY + 28);
+            var left = (CX - 15, CY + 1); var right = (CX + 15, CY + 1); var front = (CX, CY - 7); var back = (CX, CY + 9);
+            Triangle(px, left, back, apex, new Color32(84, 22, 28, 255));
+            Triangle(px, back, right, apex, new Color32(72, 18, 24, 255));
+            Triangle(px, left, front, apex, new Color32(150, 36, 44, 255));
+            Triangle(px, front, right, apex, new Color32(112, 28, 34, 255));
+            var gold = new Color32(232, 190, 70, 255);
+            for (int i = 0; i <= 28; i++) Set(px, CX, CY - 7 + i, gold);   // a gold seam up the front
+            for (int i = 0; i < 15; i++) { Set(px, left.Item1 + i, left.Item2 - i * 8 / 15, gold); Set(px, right.Item1 - i, right.Item2 - i * 8 / 15, gold); }   // gold along the eaves
+            Triangle(px, (CX + 4, CY - 4), (CX + 11, CY + 0), (CX + 7, CY + 12), new Color32(30, 16, 18, 255));   // the doorway
+            Rect(px, CX, CY + 28, 1, 8, new Color32(70, 50, 36, 255));
+            Rect(px, CX + 1, CY + 31, 6, 4, gold);                  // the banner
+            Rect(px, CX + 3, CY + 32, 2, 2, new Color32(140, 30, 30, 255));
+        }
+
+        // ---------- a campfire ----------
+        static void DrawFire(Color32[] px)
+        {
+            for (int dy = -4; dy <= 4; dy++) for (int dx = -9; dx <= 9; dx++)
+            {
+                float d = dx * dx / 81f + dy * dy / 16f;
+                if (d <= 1f && d > 0.55f) Set(px, CX + dx, CY + dy - 1, (dx + dy) % 2 == 0 ? new Color32(150, 150, 156, 255) : new Color32(112, 112, 118, 255));   // a ring of stones
+                else if (d <= 0.55f) Set(px, CX + dx, CY + dy - 1, new Color32(48, 36, 30, 255));   // ash
+            }
+            Rect(px, CX - 5, CY - 1, 10, 2, new Color32(96, 66, 38, 255));   // crossed logs
+            Rect(px, CX - 2, CY - 2, 4, 4, new Color32(80, 54, 30, 255));
+            var flame = new Color32(240, 120, 36, 255); var hot = new Color32(255, 214, 80, 255);
+            for (int i = 0; i < 9; i++) { int w = Mathf.Max(1, 4 - i / 2); Rect(px, CX - w + 1, CY + i, w * 2 - 1, 1, i < 3 ? flame : i < 6 ? hot : flame); }
+            Set(px, CX + 1, CY + 9, new Color32(255, 240, 160, 255));
+            Set(px, CX - 4, CY + 6, hot); Set(px, CX + 5, CY + 4, hot);   // sparks
+        }
+
+        // ---------- a weapon rack: a frame of two posts with spears ----------
+        static void DrawRack(Color32[] px)
+        {
+            var wood = new Color32(112, 78, 44, 255); var dark = new Color32(76, 52, 30, 255); var steel = new Color32(196, 196, 204, 255);
+            for (int i = 0; i < 4; i++)
+            {
+                int x = CX - 7 + i * 4;
+                Rect(px, x, CY - 1, 1, 16, i % 2 == 0 ? wood : dark);   // a spear shaft
+                Rect(px, x - 1, CY + 15, 3, 3, steel); Set(px, x, CY + 18, steel);   // its head
+            }
+            Rect(px, CX - 9, CY - 3, 2, 14, dark); Rect(px, CX + 8, CY - 1, 2, 14, dark);   // the posts
+            Rect(px, CX - 9, CY + 5, 19, 2, wood);   // the crossbar
+            Rect(px, CX - 10, CY - 3, 4, 2, dark); Rect(px, CX + 7, CY - 1, 4, 2, dark);   // feet
         }
 
         // ---------- supplies ----------

@@ -205,7 +205,8 @@ namespace CrownAndHearth.Game
             var view = _campBattle ?? _campPreview;
             int tents = view.Map.Tents.Count, supplies = view.Map.Piles.Sum(p => Math.Max(0, p.Amount));
             _campInfo.text = $"<b>Strength {_camp.Strength} of 5</b>   ·   {_world.CampKm(_camp)} km away, {_world.MarchDays(_camp)} days of marching home\n" +
-                             $"{tents} tents · {view.AliveRaiders} raiders ({view.Units.Count(u => !u.Attacker && u.Alive && u.Kind == BKind.RaiderArcher)} archers)\n" +
+                             $"{tents} tents round {view.Map.Fires.Count} campfires, the warlord's tent and {view.Map.Racks.Count} weapon racks\n" +
+                             $"{view.AliveRaiders} raiders: {view.Units.Count(u => u.Alive && u.Kind == BKind.RaiderArcher)} archers, {view.Units.Count(u => u.Alive && u.Kind == BKind.Brute)} brutes" + (view.Units.Any(u => u.Alive && u.Kind == BKind.Chief) ? " and the warlord\n" : "\n") +
                              $"{view.Map.Piles.Count(p => p.Amount > 0)} supply piles holding about {supplies} goods";
             _campPlanBox.gameObject.SetActive(_campPhase == CampPhase.Plan);
             _campFightBox.gameObject.SetActive(_campPhase == CampPhase.Fight);

@@ -106,6 +106,7 @@ namespace CrownAndHearth.Sim
             battle.Settled = true;
             LastInvasion = battle;
             if (battle.Victory) DestroyedCamps.Add(battle.Camp.Id);
+            if (battle.Victory) battle.Camp.ReleaseSite();   // the camp is gone: its map is no longer kept
             int inf = battle.SurvivingInfantry, arc = battle.SurvivingArchers;
             if (inf + arc <= 0) { Events.Add($"The army sent against the {battle.Camp.Name} was lost."); return; }
             var e = new Expedition { CampId = battle.Camp.Id, Infantry = inf, Archers = arc, ReturnDay = Day + MarchDays(battle.Camp) };

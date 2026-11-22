@@ -180,13 +180,14 @@ namespace CrownAndHearth.Game
             var camp = CampNear(cell);
             if (camp == null) return;
             if (_world.DestroyedCamps.Contains(camp.Id)) { Toast($"The {camp.Name} is already destroyed."); return; }
+            if (!camp.SiteReady) { camp.PrepareSite(); Toast("The scouts are still mapping the camp. Try again in a moment."); return; }
             OpenCamp(camp);
         }
 
         string DescribeCamp(RaiderCamp c)
         {
             if (_world.DestroyedCamps.Contains(c.Id)) return $"<b>{c.Name}</b>: destroyed.";
-            return $"<b><color=#E05048>RAIDER CAMP</color> {c.Name}</b>\nStrength {c.Strength} of 5, about {3 + 2 * c.Strength} raiders\n{_world.CampKm(c)} km away: {_world.MarchDays(c)} days of marching.\nClick to plan an invasion.";
+            return $"<b><color=#E05048>RAIDER CAMP</color> {c.Name}</b>\nStrength {c.Strength} of 5, about {CampBattle.RaiderCount(c.Strength)} raiders\n{_world.CampKm(c)} km away: {_world.MarchDays(c)} days of marching.\n" + (c.SiteReady ? "Click to plan an invasion." : "Scouts are mapping the camp...");
         }
 
         public void SetMapGenerating() { if (_mapStatus != null && _worldMap == null) _mapStatus.text = "Generating the world..."; }
@@ -253,7 +254,7 @@ namespace CrownAndHearth.Game
             var region = cell.HasValue ? _worldMap.RegionAt(cell.Value.x, cell.Value.y) : _worldMap.Home;
             _mapInfo.text = region == null ? "" : DescribeRegion(_worldMap, region);
             var camp = CampNear(cell);
-            if (camp != null) { _mapCell.text = DescribeCamp(camp); return; }
+            if (camp != null) { if (!_world.DestroyedCamps.Contains(camp.Id)) camp.PrepareSite(); _mapCell.text = DescribeCamp(camp); return; }
             _mapCell.text = cell.HasValue ? DescribeCell(_worldMap, cell.Value.x, cell.Value.y) : "Move the cursor over the map. Showing your home region.";
         }
 
