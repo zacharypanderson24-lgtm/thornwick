@@ -26,7 +26,7 @@ namespace CrownAndHearth.Game
         public class ToolDef
         {
             public string Id, Label, Desc; public Cat Cat;
-            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Claim;
+            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Claim, Wall;
         }
 
         public static readonly CatDef[] Cats =
@@ -80,6 +80,8 @@ namespace CrownAndHearth.Game
                 Desc = "Must touch a road. Trading is paused for now." },
             new ToolDef { Id = "barracks", Cat = Cat.Military, Label = "Barracks", Build = "barracks",
                 Desc = "Trains infantry and archers from your peasants, one every 4 days (set the mix in the Troops menu). Troops eat more and do no other work. Must touch a road." },
+            new ToolDef { Id = "wall", Cat = Cat.Military, Label = "Palisade", Wall = true,
+                Desc = "A wooden palisade, 2 wood a tile: press and drag a line. It is a thin wall through the middle of each tile, and people and raiders must go around it. A road through the line is a gate." },
             new ToolDef { Id = "well", Cat = Cat.Water, Label = "Well", Build = "well",
                 Desc = $"Pumps up to {WaterTuning.WellPump:0} water a day from the groundwater patch it stands on (the blue patches) into the town-wide supply: any home on a connected road can use it, however far away. Wells on one patch share its reserve and recharge: draw more than the recharge and the patch runs down." },
             new ToolDef { Id = "cistern", Cat = Cat.Water, Label = "Cistern", Build = "cistern",
@@ -349,6 +351,7 @@ namespace CrownAndHearth.Game
                 : t.Build != null ? $"{t.Label} ({Hud.CostText(t.Build)}): click a spot to build it." + (ReachOf(t.Build) > 0 ? " The shaded ring is the land it works." : "") + stop
                 : t.Claim ? $"Claim Land: click a 16 x 16 parcel next to your land for free (green = you can, red = not next to your land).{stop}"
                 : t.Road ? $"Road (1 wood a tile): press and drag from a road to lay one.{stop}"
+                : t.Wall ? $"Palisade (2 wood a tile): press and drag a line. Raiders and people walk around it; a road through the line is a gate.{stop}"
                 : t.Zone != Zone.None ? $"{t.Label}: drag over the land, or click two corners. Green tiles will be zoned, red ones cannot be.{stop}"
                 : t.Unzone ? $"Remove Zones: drag over zoned land. Buildings stay.{stop}"
                 : t.Clear ? $"Demolish: click or drag over what you want removed.{stop}"
@@ -421,13 +424,14 @@ namespace CrownAndHearth.Game
                 return;
             }
 
-            if (_tool.Road)
+            if (_tool.Road || _tool.Wall)
             {
                 if (mouse.leftButton.wasPressedThisFrame && _hover.HasValue) _roadAnchor = _hover;
                 if (mouse.leftButton.wasReleasedThisFrame && _roadAnchor.HasValue)
                 {
                     var end = _hover ?? _roadAnchor.Value;
-                    var r = World.PlaceRoadPath(World.LPath(_roadAnchor.Value.x, _roadAnchor.Value.y, end.x, end.y));
+                    var line = World.LPath(_roadAnchor.Value.x, _roadAnchor.Value.y, end.x, end.y);
+                    var r = _tool.Wall ? World.PlaceWallPath(line) : World.PlaceRoadPath(line);
                     if (!r.Ok) _hud.Toast(r.Reason);
                     _roadAnchor = null;
                 }
@@ -557,11 +561,11 @@ namespace CrownAndHearth.Game
             if (_hover.HasValue)
             {
                 var h = _hover.Value;
-                if (_tool.Road)
+                if (_tool.Road || _tool.Wall)
                 {
                     var from = _roadAnchor ?? h;
                     var path = World.LPath(from.x, from.y, h.x, h.y);
-                    bool ok = World.RoadPathCheck(path).Ok;
+                    bool ok = (_tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path)).Ok;
                     foreach (var (x, y) in path) _overlay.AddTile(World, x, y, _rot, ok ? Ok : Bad);
                 }
                 else if (_tool.Claim)
@@ -744,13 +748,14 @@ namespace CrownAndHearth.Game
                 if (!cc.Ok) { _tipWarn = World.ParcelTouchesYours(cpx, cpy); return (cc.Reason, !_tipWarn); }
                 return ($"Click to claim this parcel (free): {World.DescribeParcel(cpx, cpy)} ({World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} owned)", false);
             }
-            if (_tool.Road)
+            if (_tool.Road || _tool.Wall)
             {
                 var path = World.LPath((_roadAnchor ?? h).x, (_roadAnchor ?? h).y, h.x, h.y);
-                var r = World.RoadPathCheck(path);
+                var r = _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path);
                 if (!r.Ok) return (r.Reason, true);
-                int n = r.Count;
-                return _roadAnchor.HasValue ? ($"{n} new tile{(n == 1 ? "" : "s")}, {n} wood. Let go to build", false) : ("Press and drag to lay a road", false);
+                int n = r.Count, cost = _tool.Wall ? n * Defs.Cost["wall"][Res.Wood] : n;
+                string what = _tool.Wall ? "palisade" : "road";
+                return _roadAnchor.HasValue ? ($"{n} new {what} tile{(n == 1 ? "" : "s")}, {cost} wood. Let go to build", false) : ($"Press and drag to lay a {what}", false);
             }
             if (_tool.Build != null)
             {

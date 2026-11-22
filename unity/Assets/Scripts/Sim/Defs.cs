@@ -45,6 +45,7 @@ namespace CrownAndHearth.Sim
         public static readonly Dictionary<string, Dictionary<Res, int>> Cost = new Dictionary<string, Dictionary<Res, int>>
         {
             { "road", new Dictionary<Res, int> { { Res.Wood, 1 } } },
+            { "wall", new Dictionary<Res, int> { { Res.Wood, 2 } } },
             { "house", new Dictionary<Res, int> { { Res.Wood, 10 } } },
             { "farm", new Dictionary<Res, int> { { Res.Wood, 8 } } },
             { "wood", new Dictionary<Res, int> { { Res.Wood, 6 } } },
@@ -75,7 +76,7 @@ namespace CrownAndHearth.Sim
 
         public static readonly Dictionary<string, string> Names = new Dictionary<string, string>
         {
-            { "road", "Dirt Road" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "quarry", "Quarry" },
+            { "road", "Dirt Road" }, { "wall", "Palisade" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "quarry", "Quarry" },
             { "mine", "Iron Mine" }, { "market", "Market" }, { "sawmill", "Sawmill" }, { "smithery", "Smithery" }, { "forester", "Forester" }, { "well", "Well" },
             { "barracks", "Barracks" }, { "hall", "Town Hall" }, { "silo", "Silo" }, { "cistern", "Cistern" },
         };

@@ -231,11 +231,11 @@ namespace CrownAndHearth.Game
                 Stretch(name.rectTransform, new Vector2(68, CardH - 36), new Vector2(-6, -4));
                 FitText(name, 10, 15);
                 var kind = MakeText(card, "Kind", 12, TextAnchor.MiddleLeft); kind.color = Dim;
-                kind.text = t.Claim ? "Click a 16x16 parcel" : t.Zone != Zone.None ? "Zone: drag an area" : t.Unzone ? "Drag an area" : t.Clear ? "Click or drag" : t.Road ? "Drag a line" : $"{Defs.PlacementSize(t.Build)}x{Defs.PlacementSize(t.Build)} building";
+                kind.text = t.Claim ? "Click a 16x16 parcel" : t.Zone != Zone.None ? "Zone: drag an area" : t.Unzone ? "Drag an area" : t.Clear ? "Click or drag" : t.Road || t.Wall ? "Drag a line" : $"{Defs.PlacementSize(t.Build)}x{Defs.PlacementSize(t.Build)} building";
                 Stretch(kind.rectTransform, new Vector2(68, 30), new Vector2(-6, -36));
                 FitText(kind, 9, 12);
                 var cost = MakeText(card, "Cost", 13, TextAnchor.MiddleLeft);
-                cost.text = t.Claim ? "Free" : t.Build != null ? CostText(t.Build) : t.Road ? "1 wood a tile" : t.Zone != Zone.None ? "Free" : "";
+                cost.text = t.Claim ? "Free" : t.Build != null ? CostText(t.Build) : t.Road ? "1 wood a tile" : t.Wall ? "2 wood a tile" : t.Zone != Zone.None ? "Free" : "";
                 Stretch(cost.rectTransform, new Vector2(68, 6), new Vector2(-6, -CardH + 30));
                 FitText(cost, 9, 13);
                 _cards[id] = img; _cardCost[id] = cost;
@@ -318,6 +318,7 @@ namespace CrownAndHearth.Game
                 if (_world != null && !_world.CanAfford(t.Build).Ok) foot += "\n" + _world.CanAfford(t.Build).Reason;
             }
             else if (t.Road) foot = "Cost: 1 wood a tile";
+            else if (t.Wall) foot = "Cost: 2 wood a tile";
             else if (t.Zone != Zone.None) foot = "Zoning is free. Right-click or Esc to stop.";
             ShowTip(true, over, t.Label, t.Desc, foot);
         }
@@ -583,6 +584,7 @@ namespace CrownAndHearth.Game
             if (t.Build != null) return _art?.Building(ArtSlot(t.Build), 0) ?? Glyph("box", Dim);
             if (t.Zone != Zone.None) return Glyph("zone", ZoneColor(t.Zone));
             if (t.Road) return Glyph("road", new Color(0.55f, 0.42f, 0.28f));
+            if (t.Wall) return Glyph("road", new Color(0.72f, 0.5f, 0.24f));
             if (t.Unzone) return Glyph("unzone", new Color(0.85f, 0.85f, 0.85f));
             if (t.Claim) return Glyph("claim", new Color(0.95f, 0.78f, 0.25f));
             if (t.Clear) return Glyph("cross", new Color(0.85f, 0.30f, 0.25f));
