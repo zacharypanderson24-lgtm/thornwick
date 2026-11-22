@@ -49,7 +49,7 @@ namespace CrownAndHearth.Sim
         public const int FolkMax = 90, FolkDepth = 40, FolkVariants = 6;
         public const double FolkPerPeasant = 0.6;
 
-        public const int HuntingRange = 4, ForestFoodReserve = 12, HuntingLoad = 3, HuntingRecoveryDays = 30;
+        public const int HuntingRange = WorkR, ForestFoodReserve = 12, HuntingLoad = 3, HuntingRecoveryDays = 30;
         // Only harvested tiles have an entry. Each date is when the reserve will be full again.
         readonly Dictionary<int, int> _gameRecoveryDay = new Dictionary<int, int>();
 
