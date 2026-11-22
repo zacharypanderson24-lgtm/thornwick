@@ -385,3 +385,4 @@ unity open unity                                 # then open Assets/Scenes/Settl
 
 ## Palisade
 - New **Palisade** tool in Military (press and drag a line, 2 wood a tile): a wooden wall drawn as a thin row of pointed stakes through the middle of each tile that joins the palisade tiles beside it (16 code-drawn sprites in `Game/WallArt.cs`, joined in view space so it works at every camera rotation). Walls are `wall` buildings (`World.WallPathCheck/PlaceWallPath`): they follow the slope instead of levelling it, create no jobs, need no road, and block walking, so people, raiders and soldiers go around them; a road tile in the line stays a road and is a gate.
+- **Hunting reach:** a hunting lodge now hunts mature forest within `HuntingRange = WorkR` (16) tiles of the building, the same reach as a woodcutter lodge (it was 4).
