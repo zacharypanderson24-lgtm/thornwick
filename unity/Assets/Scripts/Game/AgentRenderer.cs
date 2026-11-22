@@ -68,7 +68,14 @@ namespace CrownAndHearth.Game
                     bool moving = x != px || y != py;
                     int tx = u.Shooting ? ox + u.ShotX : u.Target != null ? ox + u.Target.X : x, ty = u.Shooting ? oy + u.ShotY : u.Target != null ? oy + u.Target.Y : y;
                     int facing = Facing(rot, moving ? x - px : tx - x, moving ? y - py : ty - y);
-                    string actor = u.Kind == BKind.Infantry ? "infantry" : u.Kind == BKind.Archer ? "archer" : "raider";
+                    string actor = u.Kind switch
+                    {
+                        BKind.Infantry => "infantry",
+                        BKind.Archer => "archer",
+                        BKind.Brute => "raider_brute",
+                        BKind.Chief => "raider_chief",
+                        _ => "raider",
+                    };
                     bool recoiling = u.Hurt && !u.Shooting && frac < 0.30f;
                     string pose = dead ? "fall" : recoiling ? "hurt" : u.Attacked ? "attack" : moving ? "run" : "idle";
                     float phase = dead ? battle.Tick - u.DeadTick - 1 + frac : HitPhase(u.Hurt && !u.Shooting, frac);

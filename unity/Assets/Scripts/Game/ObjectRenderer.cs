@@ -109,13 +109,21 @@ namespace CrownAndHearth.Game
             Put(sprite, IsoView.VertexPos(front.x + 1, front.y + 1, lvl), IsoView.SortOrder(front.x, front.y));
         }
 
-        /// <summary>A raider tent or a pile of supplies in a camp.</summary>
+        /// <summary>A one-tile camp prop, anchored at the front corner of its tile.</summary>
         void PlaceCamp(World w, Building b, int rot)
         {
             _campArt ??= new CampArt();
             var here = IsoView.ToView(b.X, b.Y, rot);
             float lvl = Mathf.Round((float)w.TileLevel(b.X, b.Y) * LvlPx) / LvlPx;
-            Put(b.T == "tent" ? _campArt.Tent() : b.T == "chieftent" ? _campArt.ChiefTent() : b.T == "campfire" ? _campArt.Fire() : b.T == "rack" ? _campArt.Rack() : _campArt.Supplies((Res)b.Var), IsoView.VertexPos(here.x + 1, here.y + 1, lvl), IsoView.SortOrder(here.x, here.y));
+            var sprite = b.T switch
+            {
+                "tent" => _campArt.Tent(rot),
+                "chieftent" => _campArt.ChiefTent(rot),
+                "campfire" => _campArt.Fire(),
+                "rack" => _campArt.Rack(rot),
+                _ => _campArt.Supplies((Res)b.Var),
+            };
+            Put(sprite, IsoView.VertexPos(here.x + 1, here.y + 1, lvl), IsoView.SortOrder(here.x, here.y));
         }
 
         /// <summary>A palisade tile: a thin line of stakes joined to the palisade tiles beside it.</summary>

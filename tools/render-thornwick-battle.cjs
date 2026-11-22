@@ -79,6 +79,12 @@ const roles = [
   {name:'militia_quarry',label:'Quarry militia',coat:['363f43','50646a','74878a','a1aaa0'],head:'cap',weapon:'hammer',legs:'4b5352'},
   {name:'militia_miner',label:'Miner militia',coat:['363330','524c43','847a67','d3b477'],head:'cap',weapon:'pick',legs:'443d39'},
 ];
+if (unity) {
+  roles.push(
+    {name:'raider_brute',label:'Raider brute',coat:['332923','695043','936c50','bd9061'],head:'bare',weapon:'axe',legs:'48382e'},
+    {name:'raider_chief',label:'Raider warlord',coat:['352426','683638','914a42','ba7354'],head:'helm',weapon:'sword',shield:true,legs:'47302c'},
+  );
+}
 const civilianCoats = [
   ['382c30','694653','9a6471','c38d92'],
   ['34372e','566047','84916c','a9ab80'],
@@ -209,6 +215,14 @@ function drawUnit(role,direction,state,frame) {
     if(!rear)stroke(b,[x-2,bodyY+12],[x+1,bodyY+15],'9bb0a1');
   } else if(!rear && role.name.startsWith('militia')) {
     stroke(b,[x-1,bodyY+11],[x+1,bodyY+16],leather[3]);
+  }
+  if(role.name==='raider_brute') {
+    polygon(b,[[x-6,bodyY+12],[x-3,bodyY+10],[x+1,bodyY+11],[x-2,bodyY+14],[x-5,bodyY+15]],coat[0]);
+    stroke(b,[x-5,bodyY+12],[x-2,bodyY+11],coat[3],2);
+  }
+  if(role.name==='raider_chief') {
+    stroke(b,[x-3,bodyY+12],[x+2,bodyY+16],'d3aa66');
+    pixel(b,x+2,bodyY+11,'e2be79');
   }
   if(state==='carry'&&raider) { pack(b,x-4,bodyY+11);pixel(b,x+1,bodyY+12,wood[3]); }
 
