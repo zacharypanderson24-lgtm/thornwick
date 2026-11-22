@@ -16,7 +16,9 @@ namespace CrownAndHearth.Game
         FarmCropArt _crops;
         readonly List<(SpriteRenderer renderer, bool flax, int offset, int planted)> _fields = new();
 
-        void OnDestroy() => _crops?.Dispose();
+        WallArt _walls;
+
+        void OnDestroy() { _crops?.Dispose(); _walls?.Dispose(); }
 
         public void Init(ArtLibrary art, Material mat) { _art = art; _mat = mat; _crops = new FarmCropArt(); }
 
@@ -89,6 +91,7 @@ namespace CrownAndHearth.Game
 
         void PlaceBuilding(World w, Building b, int rot)
         {
+            if (b.T == "wall") { PlaceWall(w, b, rot); return; }
             // the footprint's front tile in this view: its bottom corner is the sprite's anchor
             Vector2Int front = new Vector2Int(-1, -1); int best = -1;
             foreach (var (tx, ty) in b.Tiles()) { var v = IsoView.ToView(tx, ty, rot); if (v.x + v.y > best) { best = v.x + v.y; front = v; } }
@@ -101,6 +104,24 @@ namespace CrownAndHearth.Game
             if (sprite == null) return;
             int lvl = IsoView.VhView(w, front.x + 1, front.y + 1, rot);
             Put(sprite, IsoView.VertexPos(front.x + 1, front.y + 1, lvl), IsoView.SortOrder(front.x, front.y));
+        }
+
+        /// <summary>A palisade tile: a thin line of stakes joined to the palisade tiles beside it.</summary>
+        void PlaceWall(World w, Building b, int rot)
+        {
+            _walls ??= new WallArt();
+            var here = IsoView.ToView(b.X, b.Y, rot);
+            int mask = 0;
+            for (int k = 0; k < 4; k++)
+            {
+                int nx = b.X + Defs.Nb[k, 0], ny = b.Y + Defs.Nb[k, 1];
+                if (!World.Inb(nx, ny) || w.Grid[ny, nx]?.T != "wall") continue;
+                var there = IsoView.ToView(nx, ny, rot);
+                int dx = there.x - here.x, dy = there.y - here.y;
+                mask |= dx == 1 ? WallArt.E : dx == -1 ? WallArt.W : dy == 1 ? WallArt.S : WallArt.N;
+            }
+            float lvl = Mathf.Round((float)w.TileLevel(b.X, b.Y) * LvlPx) / LvlPx;
+            Put(_walls.Get(mask), IsoView.VertexPos(here.x + 1, here.y + 1, lvl), IsoView.SortOrder(here.x, here.y));
         }
 
         /// <summary>The art slot for a building (JS slotName + the hut-variant rule).</summary>
