@@ -23,6 +23,14 @@ namespace CrownAndHearth.Sim
         public bool Spotted;
     }
 
+    /// <summary>What a camp is missing: raiders killed (Lost, slowly replaced) and survivors of a raid still marching back (Returning, home on BackDay).</summary>
+    public sealed class CampForce
+    {
+        public double Lost;
+        public int Returning, BackDay;
+        public bool Empty => Lost <= 0 && Returning <= 0;
+    }
+
     public partial class World
     {
         public const int MarchKmPerDay = 15, RaidFarKm = 220;
@@ -43,6 +51,58 @@ namespace CrownAndHearth.Sim
         public void SetCamps(IEnumerable<RaiderCamp> camps, int homeX, int homeY)
         {
             _camps = camps.ToList(); HomeCellX = homeX; HomeCellY = homeY; _nextCampRaid.Clear();
+        }
+
+        // ---------- who is home at a camp ----------
+
+        /// <summary>A camp replaces one killed raider every this many days.</summary>
+        public const int CampRefillDays = 10;
+        /// <summary>Per camp: raiders lost and raiders on their way back. Saved.</summary>
+        public readonly Dictionary<int, CampForce> CampForces = new Dictionary<int, CampForce>();
+        RaidReport _settledRaid;
+
+        CampForce ForceOf(int campId) { if (!CampForces.TryGetValue(campId, out var f)) CampForces[campId] = f = new CampForce(); return f; }
+
+        /// <summary>The camp's raiders who are out: the warband marching on you, the band raiding you now, and survivors marching back.</summary>
+        public int CampRaidersAway(RaiderCamp c)
+        {
+            int away = 0;
+            if (Warband != null && Warband.CampId == c.Id) away += Warband.Band;
+            if (Raid != null && !Raid.Over && Raid.Camp == c) away += Raid.Band;
+            if (CampForces.TryGetValue(c.Id, out var f) && Day < f.BackDay) away += f.Returning;
+            return away;
+        }
+
+        /// <summary>The camp's raiders killed and not yet replaced.</summary>
+        public int CampRaidersLost(RaiderCamp c) => CampForces.TryGetValue(c.Id, out var f) ? (int)Math.Ceiling(f.Lost - 1e-9) : 0;
+
+        /// <summary>Ordinary raiders in camp right now (brutes and the warlord never leave): what an invasion would face.</summary>
+        public int CampRaidersHome(RaiderCamp c) => Math.Max(0, CampSize.Of(c.Strength).Raiders - CampRaidersAway(c) - CampRaidersLost(c));
+
+        /// <summary>Everyone an invasion would face at this camp now: raiders at home, brutes and the warlord.</summary>
+        public int CampDefenders(RaiderCamp c) { var s = CampSize.Of(c.Strength); return CampRaidersHome(c) + s.Brutes + 1; }
+
+        /// <summary>Once a day: a finished raid's dead count against its camp and its survivors march back; killed raiders are slowly replaced.</summary>
+        void StepCampForces()
+        {
+            if (Raid != null && Raid.Over && Raid != _settledRaid)
+            {
+                _settledRaid = Raid;
+                if (Raid.Camp != null && !DestroyedCamps.Contains(Raid.Camp.Id))
+                {
+                    var f = ForceOf(Raid.Camp.Id);
+                    f.Lost += Raid.Killed;
+                    int back = Math.Max(0, Raid.Band - Raid.Killed);
+                    if (back > 0) { f.Returning = (Day < f.BackDay ? f.Returning : 0) + back; f.BackDay = Day + MarchDays(Raid.Camp); }
+                }
+            }
+            foreach (var id in CampForces.Keys.ToList())
+            {
+                var f = CampForces[id];
+                if (f.Lost > 0) f.Lost = Math.Max(0, f.Lost - 1.0 / CampRefillDays);
+                if (f.Returning > 0 && Day >= f.BackDay) f.Returning = 0;
+                if (f.Empty) CampForces.Remove(id);
+            }
         }
 
         public int CampKm(RaiderCamp c) => (int)Math.Round(Math.Sqrt((c.X - HomeCellX) * (double)(c.X - HomeCellX) + (c.Y - HomeCellY) * (double)(c.Y - HomeCellY)));
@@ -93,6 +153,7 @@ namespace CrownAndHearth.Sim
         /// worth raiding. The warband marches across the world map (MarchKmPerDay) and is spotted SpotDays before it arrives; then the raid begins.</summary>
         void StepCampRaids()
         {
+            StepCampForces();
             if (Warband != null) { StepWarband(); return; }
             if (_camps.Count == 0 || Day < 100 || Peasants + Soldiers < RaidMinPopulation) return;
             if (Raid != null && !Raid.Over) return;
@@ -103,7 +164,10 @@ namespace CrownAndHearth.Sim
                 if (!_nextCampRaid.TryGetValue(c.Id, out int due)) { _nextCampRaid[c.Id] = Day + 60 + (int)(Noise.Hash2(c.Id, Day, 94) * 120) + km / 2; continue; }
                 if (Day < due) continue;
                 _nextCampRaid[c.Id] = Day + 160 - 14 * c.Strength + (int)(Noise.Hash2(c.Id, Day, 95) * 60) + km / 2;
-                Warband = new Warband { CampId = c.Id, Band = 3 + 2 * c.Strength, LeaveDay = Day, ArriveDay = Day + MarchDays(c) };
+                // a camp that lost raiders (to your soldiers, or out on another raid) sends a smaller band, or none until it has recovered
+                int band = 3 + 2 * c.Strength - CampRaidersLost(c) - CampRaidersAway(c);
+                if (band < 2) continue;
+                Warband = new Warband { CampId = c.Id, Band = band, LeaveDay = Day, ArriveDay = Day + MarchDays(c) };
                 StepWarband();   // a camp close by may be in sight the day it sets out
                 return;   // one warband at a time
             }
@@ -119,7 +183,8 @@ namespace CrownAndHearth.Sim
                 wb.Spotted = true;
                 string who = Blds.Any(b => b.T == "watchtower") ? "Lookouts on your watchtower" : "Scouts";
                 string when = left <= 0 ? "today" : left == 1 ? "tomorrow" : $"in about {left} days";
-                Events.Add($"{who} spotted a warband of {wb.Band} raiders from the {c.Name}! They will reach you {when}, from the {CampSideName(c)}.");
+                Events.Add($"{who} spotted a warband of {wb.Band} raiders from the {c.Name}! They will reach you {when}, from the {CampSideName(c)}." +
+                    (DestroyedCamps.Contains(c.Id) ? "" : $" With them gone, their camp has only {CampDefenders(c)} fighters at home: a chance to strike it."));
             }
             if (left > 0 || (Raid != null && !Raid.Over)) return;
             Warband = null;
@@ -146,7 +211,7 @@ namespace CrownAndHearth.Sim
             if (!ok.Ok) return null;
             int inf = groups.Sum(g => g.Infantry), arc = groups.Sum(g => g.Archers);
             Soldiers -= inf + arc; Archers -= arc;
-            return new CampBattle(camp, groups);
+            return new CampBattle(camp, groups, CampRaidersHome(camp));
         }
 
         /// <summary>The fight is over: a won camp is destroyed (its raids stop) and the survivors set off home with their loot.</summary>
@@ -156,7 +221,13 @@ namespace CrownAndHearth.Sim
             battle.Settled = true;
             LastInvasion = battle;
             if (battle.Victory) DestroyedCamps.Add(battle.Camp.Id);
-            if (battle.Victory) battle.Camp.ReleaseSite();   // the camp is gone: its map is no longer kept
+            if (battle.Victory) { battle.Camp.ReleaseSite(); CampForces.Remove(battle.Camp.Id); }   // the camp is gone: its map is no longer kept
+            else
+            {
+                // the raiders you cut down before pulling out are missing from the camp until it replaces them
+                int killed = battle.Units.Count(u => !u.Alive && !u.Attacker && (u.Kind == BKind.Raider || u.Kind == BKind.RaiderArcher));
+                if (killed > 0) ForceOf(battle.Camp.Id).Lost += killed;
+            }
             int inf = battle.SurvivingInfantry, arc = battle.SurvivingArchers;
             if (inf + arc <= 0) { Events.Add($"The army sent against the {battle.Camp.Name} was lost."); return; }
             var e = new Expedition { CampId = battle.Camp.Id, Infantry = inf, Archers = arc, ReturnDay = Day + MarchDays(battle.Camp) };

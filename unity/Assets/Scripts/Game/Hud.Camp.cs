@@ -116,7 +116,7 @@ namespace CrownAndHearth.Game
             if (camp == null || _world == null) return;
             _camp = camp; _campOpen = true; _campPhase = CampPhase.Plan;
             _campGroups.Clear(); _campSelected = null; _campHover = null; _campBattle = null; _campPaused = false; _campSpeedIndex = 0; _campAcc = 0;
-            _campPreview = new CampBattle(camp, new List<BattleGroup>());
+            _campPreview = new CampBattle(camp, new List<BattleGroup>(), _world.CampRaidersHome(camp));   // shows only who is home
             _campTitle.text = camp.Name;
             _mapPanel.gameObject.SetActive(false);   // the camp is shown in the game view; the map comes back when this closes
             _campPanel.gameObject.SetActive(true);
@@ -207,7 +207,8 @@ namespace CrownAndHearth.Game
             _campInfo.text = $"<b>Strength {_camp.Strength} of 5</b>   ·   {_world.CampKm(_camp)} km away, {_world.MarchDays(_camp)} days of marching home\n" +
                              $"{tents} tents round {view.Map.Fires.Count} campfires, the warlord's tent and {view.Map.Racks.Count} weapon racks\n" +
                              $"{view.AliveRaiders} raiders: {view.Units.Count(u => u.Alive && u.Kind == BKind.RaiderArcher)} archers, {view.Units.Count(u => u.Alive && u.Kind == BKind.Brute)} brutes" + (view.Units.Any(u => u.Alive && u.Kind == BKind.Chief) ? " and the warlord\n" : "\n") +
-                             $"{view.Map.Piles.Count(p => p.Amount > 0)} supply piles holding about {supplies} goods";
+                             $"{view.Map.Piles.Count(p => p.Amount > 0)} supply piles holding about {supplies} goods" +
+                             (_campBattle == null ? CampAbsence(_camp) : "");
             _campPlanBox.gameObject.SetActive(_campPhase == CampPhase.Plan);
             _campFightBox.gameObject.SetActive(_campPhase == CampPhase.Fight);
             _campReportBox.gameObject.SetActive(_campPhase == CampPhase.Report);
@@ -220,6 +221,17 @@ namespace CrownAndHearth.Game
                 _campConfirm.color = _campGroups.Sum(x => x.Total) > 0 ? BtnOn : Btn;
             }
             RefreshCampButtons();
+        }
+
+        /// <summary>A line on who is missing from the camp (away raiding you, marching back, or killed and not yet replaced), or "".</summary>
+        string CampAbsence(RaiderCamp c)
+        {
+            int away = _world.CampRaidersAway(c), lost = _world.CampRaidersLost(c);
+            if (away + lost == 0) return "";
+            var parts = new List<string>();
+            if (away > 0) parts.Add($"{away} away raiding you");
+            if (lost > 0) parts.Add($"{lost} killed and not yet replaced");
+            return $"\n<color=#FF8C1E>Fewer defenders: {string.Join(", ", parts)}.</color>";
         }
 
         void RefreshCampButtons()

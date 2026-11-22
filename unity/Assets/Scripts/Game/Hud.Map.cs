@@ -232,7 +232,9 @@ namespace CrownAndHearth.Game
         string DescribeCamp(RaiderCamp c)
         {
             if (_world.DestroyedCamps.Contains(c.Id)) return $"<b>{c.Name}</b>: destroyed.";
-            return $"<b><color=#E05048>RAIDER CAMP</color> {c.Name}</b>\nStrength {c.Strength} of 5, about {CampBattle.RaiderCount(c.Strength)} raiders\n{_world.CampKm(c)} km away: {_world.MarchDays(c)} days of marching.\n" + (c.SiteReady ? "Click to plan an invasion." : "Scouts are mapping the camp...");
+            int home = _world.CampDefenders(c), full = CampBattle.RaiderCount(c.Strength);
+            string fighters = home < full ? $"{home} fighters at home (of {full})" : $"about {full} fighters";
+            return $"<b><color=#E05048>RAIDER CAMP</color> {c.Name}</b>\nStrength {c.Strength} of 5, {fighters}{CampAbsence(c)}\n{_world.CampKm(c)} km away: {_world.MarchDays(c)} days of marching.\n" + (c.SiteReady ? "Click to plan an invasion." : "Scouts are mapping the camp...");
         }
 
         public void SetMapGenerating() { if (_mapStatus != null && _worldMap == null) _mapStatus.text = "Generating the world..."; }
