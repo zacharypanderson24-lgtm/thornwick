@@ -38,15 +38,22 @@ namespace CrownAndHearth.Tests
         {
             foreach (int strength in new[] { 1, 3, 5 })
             {
-                var m = CampMap.Generate(Camp(strength));
+                var m = Camp(strength).Site.Map;
                 Assert.AreEqual(3 + strength, m.Tents.Count);
-                Assert.AreEqual(2 + strength, m.Piles.Count);
+                Assert.AreEqual(3 + strength, m.Piles.Count, "goods piles plus the warlord's hoard");
+                Assert.AreEqual(1 + strength / 2, m.Fires.Count);
+                Assert.AreEqual(1 + strength / 2, m.Racks.Count);
+                Assert.IsTrue(m.Piles.Any(p => p.Res == Res.Gold), "the warlord keeps gold");
+                var spots = new List<(int, int)>(m.Tents); spots.AddRange(m.Fires); spots.AddRange(m.Racks); spots.Add(m.Chief);
+                Assert.AreEqual(spots.Count, spots.Distinct().Count(), "nothing is built on top of anything else");
+                Assert.IsTrue(spots.All(t => !m.Passable(t.Item1, t.Item2)), "soldiers cannot walk through the camp's buildings");
                 Assert.IsTrue(m.Piles.All(p => p.Amount > 0 && m.Ground[p.Y, p.X] == CampTile.Open && !m.HasTent(p.X, p.Y)));
+                int edge = 0, edgeOpen = 0;
                 for (int i = 0; i < CampMap.Size; i++)
-                    foreach (var (x, y) in new[] { (i, 0), (i, CampMap.Size - 1), (0, i), (CampMap.Size - 1, i) })
-                        Assert.IsTrue(m.Passable(x, y), $"edge tile {x},{y} is open for landing");
+                    foreach (var (x, y) in new[] { (i, 0), (i, CampMap.Size - 1), (0, i), (CampMap.Size - 1, i) }) { edge++; if (m.Passable(x, y)) edgeOpen++; }
+                Assert.GreaterOrEqual(edgeOpen, edge * 6 / 10, "most of the edge is open ground to land on");
             }
-            Assert.AreEqual(string.Join(",", CampMap.Generate(Camp(3)).Tents), string.Join(",", CampMap.Generate(Camp(3)).Tents), "deterministic");
+            Assert.AreEqual(string.Join(",", Camp(3).Site.Map.Tents), string.Join(",", Camp(3).Site.Map.Tents), "deterministic");
         }
 
         [Test]
@@ -55,7 +62,9 @@ namespace CrownAndHearth.Tests
             var camp = Camp(2);
             var win = new CampBattle(camp, new[] { Landing(0, 16, 14, 6), Landing(16, 0, 6, 4) });
             Assert.AreEqual(30, win.AliveAttackers);
-            Assert.AreEqual(3 + 2 * 2, win.AliveRaiders);
+            Assert.AreEqual(CampBattle.RaiderCount(2), win.AliveRaiders);
+            Assert.AreEqual(1, win.Units.Count(u => u.Kind == BKind.Chief), "one warlord");
+            Assert.AreEqual(1, win.Units.Count(u => u.Kind == BKind.Brute), "one brute guards the warlord at strength 2");
             Run(win);
             Assert.IsTrue(win.Over && win.Victory, win.Summary());
             Assert.AreEqual(win.RaidersTotal, win.RaidersKilled);
@@ -134,22 +143,47 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void ACampIsDrawnAsASmallWorldWithTentsAndSuppliesInsideItsSquare()
+        public void ACampIsDrawnAsASmallWorldMadeByTheSettlementTerrainGenerator()
         {
-            var camp = Camp(3);
-            var map = CampMap.Generate(camp);
-            var w = World.CreateCamp(camp, map);
+            var camp = Camp(3); camp.Relief = Relief.Alpine;
+            var site = camp.Site;
+            var w = site.World; var map = site.Map;
+            int ox = w.CampX0, oy = w.CampY0;
             Assert.IsTrue(w.IsCamp);
+            Assert.AreSame(site, camp.Site, "the camp is made once and kept");
             Assert.IsFalse(w.InPlay(0, 0), "only the 32 x 32 square is in play");
-            Assert.IsTrue(w.InPlay(World.CampOrigin, World.CampOrigin));
-            Assert.IsTrue(w.InPlay(World.CampOrigin + 31, World.CampOrigin + 31));
-            Assert.IsFalse(w.InPlay(World.CampOrigin + 32, World.CampOrigin));
+            Assert.IsTrue(w.InPlay(ox, oy));
+            Assert.IsTrue(w.InPlay(ox + 31, oy + 31));
+            Assert.IsFalse(w.InPlay(ox + 32, oy));
             Assert.AreEqual(map.Tents.Count, w.Blds.Count(b => b.T == "tent"));
             Assert.AreEqual(map.Piles.Count, w.Blds.Count(b => b.T == "supplies"));
-            foreach (var p in map.Piles) Assert.AreEqual((int)p.Res, w.Grid[World.CampOrigin + p.Y, World.CampOrigin + p.X].Var, "a pile shows its goods");
-            foreach (var t in map.Tents) Assert.AreEqual("tent", w.Grid[World.CampOrigin + t.y, World.CampOrigin + t.x].T);
-            int trees = 0; for (int y = 0; y < CampMap.Size; y++) for (int x = 0; x < CampMap.Size; x++) if (map.Ground[y, x] == CampTile.Tree) { trees++; Assert.AreEqual(Deco.Tree, w.DecoMap[World.CampOrigin + y, World.CampOrigin + x]); }
-            Assert.Greater(trees, 0);
+            Assert.AreEqual(map.Fires.Count, w.Blds.Count(b => b.T == "campfire"));
+            Assert.AreEqual(map.Racks.Count, w.Blds.Count(b => b.T == "rack"));
+            Assert.AreEqual("chieftent", w.Grid[oy + map.Chief.y, ox + map.Chief.x].T);
+            foreach (var p in map.Piles) Assert.AreEqual((int)p.Res, w.Grid[oy + p.Y, ox + p.X].Var, "a pile shows its goods");
+            foreach (var t in map.Tents) Assert.AreEqual("tent", w.Grid[oy + t.y, ox + t.x].T);
+            for (int y = 0; y < CampMap.Size; y++)
+                for (int x = 0; x < CampMap.Size; x++)
+                {
+                    if (map.Ground[y, x] == CampTile.Tree) Assert.AreEqual(Deco.Tree, w.DecoMap[oy + y, ox + x]);
+                    if (map.Ground[y, x] == CampTile.Open) Assert.IsFalse(w.IsSolid(ox + x, oy + y), "open ground is not mountain or too steep");
+                    if (map.HasStructure(x, y)) Assert.IsTrue(map.Buildable[y, x] || map.Chief == (x, y) , "built on level open ground");
+                }
+
+            // the very same generator as a settlement: the same seed and relief give the same heights, trees and rocks outside the camp's own square
+            var settlement = new World(camp.Seed, TerrainStyle.Ranges, Relief.Alpine);
+            int compared = 0;
+            for (int y = 0; y < Defs.N; y += 3)
+                for (int x = 0; x < Defs.N; x += 3)
+                {
+                    if (w.InPlay(x, y) || System.Math.Max(System.Math.Abs(x - Defs.Start), System.Math.Abs(y - Defs.Start)) < 30) continue;   // the settlement lays out its town valley and starting buildings there
+                    Assert.AreEqual(settlement.DecoMap[y, x], w.DecoMap[y, x], $"tile {x},{y}");
+                    Assert.AreEqual(settlement.Vh(x, y), w.Vh(x, y), $"height {x},{y}");
+                    compared++;
+                }
+            Assert.Greater(compared, 1000);
+            int mountains = 0; for (int y = 0; y < Defs.N; y++) for (int x = 0; x < Defs.N; x++) if (w.IsMountain(x, y)) mountains++;
+            Assert.Greater(mountains, 0, "an alpine camp has mountains in its world");
             Assert.IsFalse(new World(7).IsCamp, "a settlement has no play area limit");
             Assert.IsTrue(new World(7).InPlay(0, 0));
         }

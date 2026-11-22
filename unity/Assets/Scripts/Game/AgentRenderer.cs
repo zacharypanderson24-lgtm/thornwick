@@ -59,21 +59,21 @@ namespace CrownAndHearth.Game
             _used = 0;
             if (_battle != null && battle != null)
             {
-                int o = World.CampOrigin;
+                int ox = cw.CampX0, oy = cw.CampY0;
                 foreach (var u in battle.Units)
                 {
                     bool dead = !u.Alive;
                     if (dead && battle.Tick - u.DeadTick > CampBattle.BodyTicks) continue;
-                    int x = o + u.X, y = o + u.Y, px = o + u.Px, py = o + u.Py;
+                    int x = ox + u.X, y = oy + u.Y, px = ox + u.Px, py = oy + u.Py;
                     bool moving = x != px || y != py;
-                    int tx = u.Shooting ? o + u.ShotX : u.Target != null ? o + u.Target.X : x, ty = u.Shooting ? o + u.ShotY : u.Target != null ? o + u.Target.Y : y;
+                    int tx = u.Shooting ? ox + u.ShotX : u.Target != null ? ox + u.Target.X : x, ty = u.Shooting ? oy + u.ShotY : u.Target != null ? oy + u.Target.Y : y;
                     int facing = Facing(rot, moving ? x - px : tx - x, moving ? y - py : ty - y);
                     string actor = u.Kind == BKind.Infantry ? "infantry" : u.Kind == BKind.Archer ? "archer" : "raider";
                     bool recoiling = u.Hurt && !u.Shooting && frac < 0.30f;
                     string pose = dead ? "fall" : recoiling ? "hurt" : u.Attacked ? "attack" : moving ? "run" : "idle";
                     float phase = dead ? battle.Tick - u.DeadTick - 1 + frac : HitPhase(u.Hurt && !u.Shooting, frac);
                     Put(cw, rot, _battle.Pose(actor, pose, facing, battle.Tick, phase, u.Id), dead ? x : px, dead ? y : py, x, y, frac, Jitter(u.Id), (u.Id * 7) % 3 - 1);
-                    if (u.Shooting && !dead) DrawArrow(cw, rot, x, y, o + u.ShotX, o + u.ShotY, frac);
+                    if (u.Shooting && !dead) DrawArrow(cw, rot, x, y, ox + u.ShotX, oy + u.ShotY, frac);
                     if (!dead) DrawBattleEffects(cw, rot, px, py, x, y, frac, u.Hurt, pose == "run");
                 }
             }

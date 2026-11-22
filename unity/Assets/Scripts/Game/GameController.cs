@@ -279,11 +279,11 @@ namespace CrownAndHearth.Game
 
         void EnterCamp()
         {
-            _campWorld = World.CreateCamp(_hud.CurrentCamp, _hud.CampView.Map);
+            _campWorld = _hud.CurrentCamp.Site.World;   // the camp, made by the settlement terrain generator
             _savedCamCenter = _cam.Center; _savedZoomIndex = _cam.ZoomIndex;
             _cam.ZoomIndex = 2;   // 1x: the 32 x 32 camp fills the view
-            int o = World.CampOrigin;
-            _cam.CenterOn(IsoView.TileCenter(_campWorld, o + CampMap.Size / 2, o + CampMap.Size / 2, _rot));
+            int ox = _campWorld.CampX0, oy = _campWorld.CampY0;
+            _cam.CenterOn(IsoView.TileCenter(_campWorld, ox + CampMap.Size / 2, oy + CampMap.Size / 2, _rot));
             _drawnVersion = -1; _hover = null;
         }
 
@@ -304,7 +304,7 @@ namespace CrownAndHearth.Game
             (int x, int y)? local = null;
             if (picked.HasValue)
             {
-                int lx = picked.Value.x - World.CampOrigin, ly = picked.Value.y - World.CampOrigin;
+                int lx = picked.Value.x - _campWorld.CampX0, ly = picked.Value.y - _campWorld.CampY0;
                 if (lx >= 0 && ly >= 0 && lx < CampMap.Size && ly < CampMap.Size) local = (lx, ly);
             }
             _hud.CampTileHover(local);
@@ -315,16 +315,16 @@ namespace CrownAndHearth.Game
         void DrawCampOverlay()
         {
             _overlay.Clear();
-            int o = World.CampOrigin;
+            int ox = _campWorld.CampX0, oy = _campWorld.CampY0;
             if (_hud.CampPlanning)
             {
                 var map = _hud.CampView.Map;
                 for (int i = 0; i < CampMap.Size; i++)
                     foreach (var (x, y) in new[] { (i, 0), (i, CampMap.Size - 1), (0, i), (CampMap.Size - 1, i) })
-                        if (map.Passable(x, y)) _overlay.AddTile(_campWorld, o + x, o + y, _rot, new Color32(90, 150, 255, 55));
-                foreach (var g in _hud.CampGroups) _overlay.AddTile(_campWorld, o + g.X, o + g.Y, _rot, g.Total > 0 ? new Color32(70, 130, 255, 190) : new Color32(70, 130, 255, 110));
-                if (_hud.CampSelected.HasValue) _overlay.AddTile(_campWorld, o + _hud.CampSelected.Value.x, o + _hud.CampSelected.Value.y, _rot, new Color32(255, 230, 90, 170));
-                if (_hud.CampHoverTile.HasValue) _overlay.AddTile(_campWorld, o + _hud.CampHoverTile.Value.x, o + _hud.CampHoverTile.Value.y, _rot, new Color32(255, 255, 255, 90));
+                        if (map.Passable(x, y)) _overlay.AddTile(_campWorld, ox + x, oy + y, _rot, new Color32(90, 150, 255, 55));
+                foreach (var g in _hud.CampGroups) _overlay.AddTile(_campWorld, ox + g.X, oy + g.Y, _rot, g.Total > 0 ? new Color32(70, 130, 255, 190) : new Color32(70, 130, 255, 110));
+                if (_hud.CampSelected.HasValue) _overlay.AddTile(_campWorld, ox + _hud.CampSelected.Value.x, oy + _hud.CampSelected.Value.y, _rot, new Color32(255, 230, 90, 170));
+                if (_hud.CampHoverTile.HasValue) _overlay.AddTile(_campWorld, ox + _hud.CampHoverTile.Value.x, oy + _hud.CampHoverTile.Value.y, _rot, new Color32(255, 255, 255, 90));
             }
             _overlay.Apply();
         }

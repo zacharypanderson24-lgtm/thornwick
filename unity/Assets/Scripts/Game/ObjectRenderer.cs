@@ -94,7 +94,7 @@ namespace CrownAndHearth.Game
         void PlaceBuilding(World w, Building b, int rot)
         {
             if (b.T == "wall") { PlaceWall(w, b, rot); return; }
-            if (b.T == "tent" || b.T == "supplies") { PlaceCamp(w, b, rot); return; }
+            if (b.T == "tent" || b.T == "supplies" || b.T == "chieftent" || b.T == "campfire" || b.T == "rack") { PlaceCamp(w, b, rot); return; }
             // the footprint's front tile in this view: its bottom corner is the sprite's anchor
             Vector2Int front = new Vector2Int(-1, -1); int best = -1;
             foreach (var (tx, ty) in b.Tiles()) { var v = IsoView.ToView(tx, ty, rot); if (v.x + v.y > best) { best = v.x + v.y; front = v; } }
@@ -115,7 +115,7 @@ namespace CrownAndHearth.Game
             _campArt ??= new CampArt();
             var here = IsoView.ToView(b.X, b.Y, rot);
             float lvl = Mathf.Round((float)w.TileLevel(b.X, b.Y) * LvlPx) / LvlPx;
-            Put(b.T == "tent" ? _campArt.Tent() : _campArt.Supplies((Res)b.Var), IsoView.VertexPos(here.x + 1, here.y + 1, lvl), IsoView.SortOrder(here.x, here.y));
+            Put(b.T == "tent" ? _campArt.Tent() : b.T == "chieftent" ? _campArt.ChiefTent() : b.T == "campfire" ? _campArt.Fire() : b.T == "rack" ? _campArt.Rack() : _campArt.Supplies((Res)b.Var), IsoView.VertexPos(here.x + 1, here.y + 1, lvl), IsoView.SortOrder(here.x, here.y));
         }
 
         /// <summary>A palisade tile: a thin line of stakes joined to the palisade tiles beside it.</summary>
