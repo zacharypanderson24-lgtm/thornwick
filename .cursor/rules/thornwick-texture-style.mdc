@@ -1,0 +1,9 @@
+---
+description: Thornwick's approved visual style and Unity checks for textures, sprites, and animation
+globs: ["assets/**/*.png", "unity/Assets/Resources/Art/**/*.png", "unity/Assets/Scripts/Game/*Art.cs", "tools/render-thornwick-*", "TEXTURE_STYLE.md"]
+alwaysApply: false
+---
+
+# Thornwick texture style
+
+Read [TEXTURE_STYLE.md](../../TEXTURE_STYLE.md) before creating, revising, or reviewing art. Compare the result with the existing in-game references at 1× and the default 2× zoom. Use the actual footprint and preserve its anchor and fixed features through all camera rotations.

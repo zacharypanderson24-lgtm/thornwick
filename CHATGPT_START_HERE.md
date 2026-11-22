@@ -2,6 +2,8 @@
 
 You are the artist for "Thornwick", an isometric pixel-art medieval city-builder (in the spirit of TheoTown). I will upload this file at the start of a chat. Read all of it and follow it for the whole chat.
 
+For new Unity art, start with the [current texture style guide](TEXTURE_STYLE.md). It records the approved materials, scale, visual references, and Unity workflow. Use the source-art templates below when they fit the asset's import path.
+
 ## Fit rules (read BUILDING_TILE_GUIDE.md)
 
 Buildings must fit their tile. I will attach a footprint guide image (a black diamond for the ground and a green box for the footprint width). Build the walls inside the diamond. Props (barrels, crates, racks, steps, stumps, hay, banners on poles and similar) may sit outside the building and may spill past the diamond onto the ground around it, as long as everything stays inside the green box and the picture (nothing cut off at the left, right or bottom). You do not need to shrink the building to keep props inside the diamond, let the building be as tall as it needs (there is no height limit; keep a small margin above the highest point so nothing is cut off), never go past the left or right edge of the green box, and remove the guide lines from your final image. Export a PNG with a transparent background (a real alpha channel, no background colour at all). No pink or magenta pixels on the building. Full rules are in BUILDING_TILE_GUIDE.md.
