@@ -134,6 +134,27 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
+        public void ACampIsDrawnAsASmallWorldWithTentsAndSuppliesInsideItsSquare()
+        {
+            var camp = Camp(3);
+            var map = CampMap.Generate(camp);
+            var w = World.CreateCamp(camp, map);
+            Assert.IsTrue(w.IsCamp);
+            Assert.IsFalse(w.InPlay(0, 0), "only the 32 x 32 square is in play");
+            Assert.IsTrue(w.InPlay(World.CampOrigin, World.CampOrigin));
+            Assert.IsTrue(w.InPlay(World.CampOrigin + 31, World.CampOrigin + 31));
+            Assert.IsFalse(w.InPlay(World.CampOrigin + 32, World.CampOrigin));
+            Assert.AreEqual(map.Tents.Count, w.Blds.Count(b => b.T == "tent"));
+            Assert.AreEqual(map.Piles.Count, w.Blds.Count(b => b.T == "supplies"));
+            foreach (var p in map.Piles) Assert.AreEqual((int)p.Res, w.Grid[World.CampOrigin + p.Y, World.CampOrigin + p.X].Var, "a pile shows its goods");
+            foreach (var t in map.Tents) Assert.AreEqual("tent", w.Grid[World.CampOrigin + t.y, World.CampOrigin + t.x].T);
+            int trees = 0; for (int y = 0; y < CampMap.Size; y++) for (int x = 0; x < CampMap.Size; x++) if (map.Ground[y, x] == CampTile.Tree) { trees++; Assert.AreEqual(Deco.Tree, w.DecoMap[World.CampOrigin + y, World.CampOrigin + x]); }
+            Assert.Greater(trees, 0);
+            Assert.IsFalse(new World(7).IsCamp, "a settlement has no play area limit");
+            Assert.IsTrue(new World(7).InPlay(0, 0));
+        }
+
+        [Test]
         public void RaidsLaunchFromLivingCampsTowardsThemAndStopWhenTheyAreDestroyed()
         {
             var w = Town(0, 0);
