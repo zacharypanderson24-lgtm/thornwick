@@ -55,10 +55,32 @@ namespace CrownAndHearth.Tests
             world.Tick();
             var legacy = JObject.Parse(world.SaveJson());
             ((JObject)legacy["res"]).Remove("metal");
-            foreach (JArray row in (JArray)legacy["statistics"]) row.RemoveAt(row.Count - 1);
+            // a save from before Metal has history rows that stop just before it (and before everything added after it)
+            foreach (JArray row in (JArray)legacy["statistics"]) while (row.Count > 2 + (int)Res.Metal) row.RemoveAt(row.Count - 1);
             var loaded = World.LoadJson(legacy.ToString());
             Assert.That(loaded.ResAmt[Res.Metal], Is.Zero);
             Assert.That(loaded.Statistics[0].Stockpile(Res.Metal), Is.Zero);
+            Assert.That(loaded.Statistics[0].Stockpile(Res.Food), Is.EqualTo(world.Statistics[0].Stockpile(Res.Food)), "older columns keep their values");
+        }
+
+        [Test]
+        public void HistoryFromEverySaveVersionLoads()
+        {
+            var world = new World(7);
+            world.Tick();
+            int full = 2 + Enum.GetValues(typeof(Res)).Length;
+            // every row length a save has ever written, from before Metal to today (each new resource added one column at the end)
+            for (int length = 2 + (int)Res.Metal; length <= full; length++)
+            {
+                var save = JObject.Parse(world.SaveJson());
+                foreach (JArray row in (JArray)save["statistics"]) while (row.Count > length) row.RemoveAt(row.Count - 1);
+                var loaded = World.LoadJson(save.ToString());
+                Assert.That(loaded.Statistics.Count, Is.EqualTo(world.Statistics.Count), $"rows of {length} load");
+                for (int r = length - 2; r < full - 2; r++) Assert.That(loaded.Statistics[0].Stockpile((Res)r), Is.Zero, $"missing column {(Res)r} reads as zero");
+            }
+            var bad = JObject.Parse(world.SaveJson());
+            ((JArray)((JArray)bad["statistics"])[0]).Add(1.0);
+            Assert.Throws<System.IO.InvalidDataException>(() => World.LoadJson(bad.ToString()), "a row longer than any save ever wrote is rejected");
         }
 
         [Test]
