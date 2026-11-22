@@ -120,6 +120,29 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
+        public void ARaiderNearACivilianSoundsTheAlarmAndEverySoldierMarchesOut()
+        {
+            var w = Town(true, 6, 0);
+            var r = w.BeginRaid(1);
+            var hall = w.Blds.Single(b => b.T == "hall");
+            var raider = r.Raiders[0];
+            raider.St = RaiderState.Approach; raider.Target = hall; raider.Delay = 0;
+            raider.X = raider.Px = Defs.Start + 45; raider.Y = raider.Py = Defs.Start;   // far from every home and from the barracks
+            raider.Path.Add(raider.Y * Defs.N + raider.X);
+            w.ResAmt[Res.Food] = 300; w.Tick();
+            Assert.IsFalse(r.Alarm, "nobody is near");
+            Assert.IsTrue(r.Fighters.All(f => f.St == FighterState.Idle), "the soldiers stay in");
+            w.Events.Clear();
+            var home = w.Blds.First(b => b.T == "house");
+            raider.X = raider.Px = home.X + 4; raider.Y = raider.Py = home.Y;   // 4 tiles from a home
+            raider.Path.Clear(); raider.Path.Add(raider.Y * Defs.N + raider.X);
+            w.ResAmt[Res.Food] = 300; w.Tick();
+            Assert.IsTrue(r.Alarm, "a raider within 5 tiles of people raises the alarm");
+            Assert.IsTrue(w.Events.Any(e => e.Contains("alarm")), "and the player is told");
+            Assert.AreEqual(6, r.Fighters.Count(f => f.St == FighterState.Engage), "every soldier is called out");
+        }
+
+        [Test]
         public void SoldiersWhoFallAreGoneFromYourArmy()
         {
             var w = Town(true, 2, 0);   // two infantry against a big band
