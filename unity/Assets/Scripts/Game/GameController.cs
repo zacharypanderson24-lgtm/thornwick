@@ -107,6 +107,8 @@ namespace CrownAndHearth.Game
         Rect _builtRect;   // the part of the world the renderers last built (in world units)
         int _progressVersion = -1;   // world version the tutorial's progress line was last counted at
         WorldMap _worldMap; System.Threading.Tasks.Task<WorldMap> _worldMapTask;   // the conquest map, made on a background thread the first time the Map opens
+        World _campWorld;   // while a raider camp is open the game view shows this little world instead of the settlement
+        Vector3 _savedCamCenter; int _savedZoomIndex;
         int _ugLevel;   // underground view: 0 off, else the level shown (U cycles)
         float _dayAcc;
         ToolDef _tool = Tools[0];
@@ -267,6 +269,66 @@ namespace CrownAndHearth.Game
             EnsureWorldMap();   // the save may have changed while it was being made; this also hands the camps to the settlement
         }
 
+        // ---------- the raider camp view ----------
+        void SyncCampView()
+        {
+            bool want = _hud.CampOpen && _hud.CurrentCamp != null;
+            if (want && _campWorld == null) EnterCamp();
+            else if (!want && _campWorld != null) ExitCamp();
+        }
+
+        void EnterCamp()
+        {
+            _campWorld = World.CreateCamp(_hud.CurrentCamp, _hud.CampView.Map);
+            _savedCamCenter = _cam.Center; _savedZoomIndex = _cam.ZoomIndex;
+            _cam.ZoomIndex = 2;   // 1x: the 32 x 32 camp fills the view
+            int o = World.CampOrigin;
+            _cam.CenterOn(IsoView.TileCenter(_campWorld, o + CampMap.Size / 2, o + CampMap.Size / 2, _rot));
+            _drawnVersion = -1; _hover = null;
+        }
+
+        void ExitCamp()
+        {
+            _campWorld = null;
+            _cam.ZoomIndex = _savedZoomIndex;
+            _cam.CenterOn(_savedCamCenter);
+            _drawnVersion = -1;
+        }
+
+        /// <summary>Hover and click on the camp: tells the camp panel which tile (0..31 within the camp) the cursor is on.</summary>
+        void HandleCampMouse(bool overUi)
+        {
+            var mouse = Mouse.current; if (mouse == null) return;
+            var wp = _cam.Cam.ScreenToWorldPoint(mouse.position.ReadValue());
+            var picked = overUi ? null : IsoView.PickTile(_campWorld, wp, _rot);
+            (int x, int y)? local = null;
+            if (picked.HasValue)
+            {
+                int lx = picked.Value.x - World.CampOrigin, ly = picked.Value.y - World.CampOrigin;
+                if (lx >= 0 && ly >= 0 && lx < CampMap.Size && ly < CampMap.Size) local = (lx, ly);
+            }
+            _hud.CampTileHover(local);
+            if (local.HasValue && mouse.leftButton.wasPressedThisFrame) _hud.CampTileClick(local.Value.x, local.Value.y);
+        }
+
+        /// <summary>Planning marks on the camp: where soldiers can land, the landings so far, the selected one and the tile under the cursor.</summary>
+        void DrawCampOverlay()
+        {
+            _overlay.Clear();
+            int o = World.CampOrigin;
+            if (_hud.CampPlanning)
+            {
+                var map = _hud.CampView.Map;
+                for (int i = 0; i < CampMap.Size; i++)
+                    foreach (var (x, y) in new[] { (i, 0), (i, CampMap.Size - 1), (0, i), (CampMap.Size - 1, i) })
+                        if (map.Passable(x, y)) _overlay.AddTile(_campWorld, o + x, o + y, _rot, new Color32(90, 150, 255, 55));
+                foreach (var g in _hud.CampGroups) _overlay.AddTile(_campWorld, o + g.X, o + g.Y, _rot, g.Total > 0 ? new Color32(70, 130, 255, 190) : new Color32(70, 130, 255, 110));
+                if (_hud.CampSelected.HasValue) _overlay.AddTile(_campWorld, o + _hud.CampSelected.Value.x, o + _hud.CampSelected.Value.y, _rot, new Color32(255, 230, 90, 170));
+                if (_hud.CampHoverTile.HasValue) _overlay.AddTile(_campWorld, o + _hud.CampHoverTile.Value.x, o + _hud.CampHoverTile.Value.y, _rot, new Color32(255, 255, 255, 90));
+            }
+            _overlay.Apply();
+        }
+
         void OnDestroy() => _art?.SetBanner(null);
 
         void Update()
@@ -278,13 +340,15 @@ namespace CrownAndHearth.Game
                 enabled = false;
                 return;
             }
+            SyncCampView();
             HandleKeys();
             bool overUi = _hud.PointerOverUi;
             var camBefore = _cam.Center; int zoomBefore = _cam.ZoomIndex;
-            _cam.Tick(!overUi && !_hud.MapOpen, !_hud.EditingBanner && !_hud.MapOpen);
+            bool modal = _hud.MapOpen && _campWorld == null;   // the world map is modal, the camp view is not (you pan and zoom it)
+            _cam.Tick(!overUi && !modal, !_hud.EditingBanner && !modal);
             if ((_cam.Center - camBefore).sqrMagnitude > 1e-6f) _tutorial.Panned = true;
             if (_cam.ZoomIndex != zoomBefore) _tutorial.Zoomed = true;
-            HandleMouse(overUi || _hud.MapOpen);
+            if (_campWorld != null) HandleCampMouse(overUi); else HandleMouse(overUi || _hud.MapOpen);
 
             if (_speed > 0)
             {
@@ -298,17 +362,19 @@ namespace CrownAndHearth.Game
             // part, the zoom changes it, the world changes or the view turns
             var camera = _cam.Cam; float halfH = camera.orthographicSize, halfW = halfH * camera.aspect; Vector2 at = camera.transform.position;
             var visible = new Rect(at.x - halfW, at.y - halfH, halfW * 2, halfH * 2);
-            if (World.Version != _drawnVersion || _rot != _drawnRot || !_builtRect.Contains(visible.min) || !_builtRect.Contains(visible.max)
+            var drawn = _campWorld ?? World;
+            if (drawn.Version != _drawnVersion || _rot != _drawnRot || !_builtRect.Contains(visible.min) || !_builtRect.Contains(visible.max)
                 || _builtRect.width > visible.width * 3.5f)   // zoomed back in after being zoomed right out: do not keep drawing the whole map
             {
                 _builtRect = new Rect(visible.x - visible.width * 0.5f, visible.y - visible.height * 0.5f, visible.width * 2f, visible.height * 2f);
                 var window = IsoView.TileWindow(_builtRect);
-                _ground.Build(World, _rot, window); _objects.Build(World, _rot, window);
-                _drawnVersion = World.Version; _drawnRot = _rot;
+                _ground.Build(drawn, _rot, window); _objects.Build(drawn, _rot, window);
+                _drawnVersion = drawn.Version; _drawnRot = _rot;
             }
-            _agents.Draw(World, _rot, Mathf.Clamp01(_dayAcc), _cam.Zoom <= 0.5f);
+            if (_campWorld != null) _agents.DrawCamp(_campWorld, _hud.CampView, _rot, _hud.CampFrac);
+            else _agents.Draw(World, _rot, Mathf.Clamp01(_dayAcc), _cam.Zoom <= 0.5f);
             _objects.RefreshCropStages(World.Day);
-            DrawOverlay();
+            if (_campWorld != null) DrawCampOverlay(); else DrawOverlay();
             _hud.SetSettlement(World);
             _hud.SetDemand(World.Dem[Zone.Res]);
             var tip = CursorTip(); _hud.SetCursorTip(tip.text, tip.bad, Mouse.current?.position.ReadValue() ?? Vector2.zero, _tipWarn);

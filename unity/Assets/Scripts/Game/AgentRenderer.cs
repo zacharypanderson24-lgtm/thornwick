@@ -53,6 +53,33 @@ namespace CrownAndHearth.Game
             for (int i = _used; i < _pool.Count; i++) if (_pool[i].enabled) _pool[i].enabled = false;
         }
 
+        /// <summary>The soldiers and raiders of an invasion, drawn on the camp world with the same sprites and effects as a raid. Replaces the settlement agents.</summary>
+        public void DrawCamp(World cw, CampBattle battle, int rot, float frac)
+        {
+            _used = 0;
+            if (_battle != null && battle != null)
+            {
+                int o = World.CampOrigin;
+                foreach (var u in battle.Units)
+                {
+                    bool dead = !u.Alive;
+                    if (dead && battle.Tick - u.DeadTick > CampBattle.BodyTicks) continue;
+                    int x = o + u.X, y = o + u.Y, px = o + u.Px, py = o + u.Py;
+                    bool moving = x != px || y != py;
+                    int tx = u.Shooting ? o + u.ShotX : u.Target != null ? o + u.Target.X : x, ty = u.Shooting ? o + u.ShotY : u.Target != null ? o + u.Target.Y : y;
+                    int facing = Facing(rot, moving ? x - px : tx - x, moving ? y - py : ty - y);
+                    string actor = u.Kind == BKind.Infantry ? "infantry" : u.Kind == BKind.Archer ? "archer" : "raider";
+                    bool recoiling = u.Hurt && !u.Shooting && frac < 0.30f;
+                    string pose = dead ? "fall" : recoiling ? "hurt" : u.Attacked ? "attack" : moving ? "run" : "idle";
+                    float phase = dead ? battle.Tick - u.DeadTick - 1 + frac : HitPhase(u.Hurt && !u.Shooting, frac);
+                    Put(cw, rot, _battle.Pose(actor, pose, facing, battle.Tick, phase, u.Id), dead ? x : px, dead ? y : py, x, y, frac, Jitter(u.Id), (u.Id * 7) % 3 - 1);
+                    if (u.Shooting && !dead) DrawArrow(cw, rot, x, y, o + u.ShotX, o + u.ShotY, frac);
+                    if (!dead) DrawBattleEffects(cw, rot, px, py, x, y, frac, u.Hurt, pose == "run");
+                }
+            }
+            for (int i = _used; i < _pool.Count; i++) if (_pool[i].enabled) _pool[i].enabled = false;
+        }
+
         void DrawBattle(World w, RaidReport raid, int rot, float frac)
         {
             foreach (var a in raid.Raiders)

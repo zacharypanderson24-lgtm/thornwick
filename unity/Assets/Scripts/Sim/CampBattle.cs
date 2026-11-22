@@ -73,6 +73,7 @@ namespace CrownAndHearth.Sim
     {
         public int Id, X, Y, Px, Py, ShotX, ShotY, DeadTick;
         public BKind Kind;
+        public BUnit Target;   // who it is fighting or walking towards (drawn facing it)
         public bool Attacker, Alive = true, Hurt, Attacked, Shooting;
         public double Hp, Hit;
         public int Range = 1;
@@ -193,6 +194,7 @@ namespace CrownAndHearth.Sim
                 if (enemies.Count == 0) continue;
                 BUnit t = null; int best = int.MaxValue;
                 foreach (var e in enemies) { int d = Cheb(u.X, u.Y, e.X, e.Y); if (d < best || (d == best && e.Id < t.Id)) { t = e; best = d; } }
+                u.Target = t;
                 int want = u.Ranged ? u.Range - 1 : 1;
                 if (best > want)
                 {

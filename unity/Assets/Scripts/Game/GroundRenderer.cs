@@ -44,6 +44,7 @@ namespace CrownAndHearth.Game
                 for (int vx = win.xMin; vx < win.xMax; vx++)
                 {
                     var wt = IsoView.FromView(vx, vy, rot); int x = wt.x, y = wt.y;
+                    if (!w.InPlay(x, y)) continue;
                     int cT = IsoView.VhView(w, vx, vy, rot), cR = IsoView.VhView(w, vx + 1, vy, rot), cL = IsoView.VhView(w, vx, vy + 1, rot), cB = IsoView.VhView(w, vx + 1, vy + 1, rot);
                     int cell = CellFor(w, x, y);
 
