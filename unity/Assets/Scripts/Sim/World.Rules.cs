@@ -58,7 +58,7 @@ namespace CrownAndHearth.Sim
                 if (t == "road") ZoneMap[j, i] = Zone.None;
             }
             if (t == "hall") { Hall = b; b.Water = WaterTuning.HallCistern; }   // the Town Hall starts with a full cistern
-            if (t != "road") LevelFootprint(b);
+            if (t != "road" && t != "wall") LevelFootprint(b);   // roads and palisades follow the slope
             Touch();
             return b;
         }
@@ -158,6 +158,37 @@ namespace CrownAndHearth.Sim
             if (!c.Ok || c.Count == 0) return c;
             ResAmt[Res.Wood] -= c.Count * Cost["road"][Res.Wood];
             foreach (var (x, y) in path) if (Grid[y, x] == null) AddBld("road", x, y);
+            Recalc();
+            return c;
+        }
+
+        // ---------- Palisades ----------
+        // A wooden palisade is a thin wall that runs through the middle of its tile and joins its neighbours. Walls are buildings, so people and
+        // raiders walk around them; a road tile in the line is a gate (it stays a road and anyone can pass).
+        public Result WallPathCheck(IList<(int x, int y)> path)
+        {
+            int n = 0;
+            foreach (var (x, y) in path)
+            {
+                if (!Inb(x, y)) return Result.No("Outside the map", n);
+                if (!Claimed(x, y)) return Result.No(NotYours, n);
+                var g = Grid[y, x];
+                if (g != null && (g.T == "wall" || g.T == "road")) continue;   // already a wall, or a road acting as a gate
+                if (g != null) return Result.No("A building is in the way", n);
+                if (HasTree(x, y)) return Result.No(TreeMsg, n);
+                if (IsSolid(x, y)) return Result.No("A mountain, a quarry pit, ore or ground too steep to build on is in the way", n);
+                n++;
+            }
+            if (ResAmt[Res.Wood] < n * Cost["wall"][Res.Wood]) return Result.No($"Not enough wood: {n} palisade tiles need {n * Cost["wall"][Res.Wood]} wood", n);
+            return Result.Yes(n);
+        }
+
+        public Result PlaceWallPath(IList<(int x, int y)> path)
+        {
+            var c = WallPathCheck(path);
+            if (!c.Ok || c.Count == 0) return c;
+            ResAmt[Res.Wood] -= c.Count * Cost["wall"][Res.Wood];
+            foreach (var (x, y) in path) if (Grid[y, x] == null) AddBld("wall", x, y);
             Recalc();
             return c;
         }

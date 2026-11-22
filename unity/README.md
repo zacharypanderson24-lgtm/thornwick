@@ -22,7 +22,7 @@ button or card to see what it does, what it costs and what it needs:
 | 5 | Hunting | Hunting lodge |
 | 6 | Mining | Quarry, iron mine, mining zone |
 | 7 | Trade | Market |
-| 8 | Military | Barracks (trains infantry and archers; the Troops menu sets the mix) |
+| 8 | Military | Barracks (trains infantry and archers; the Troops menu sets the mix), Palisade (drag a wall line; a road through it is a gate) |
 | 9 | Water | Well (on the blue groundwater patches), cistern |
 | L | Land | Claim Land: claim a 16 x 16 parcel next to your land, free |
 | 0 / Delete | Bulldoze | Demolish, remove zones |
