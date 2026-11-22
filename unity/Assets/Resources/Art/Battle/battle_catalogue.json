@@ -325,6 +325,19 @@
             390
           ],
           "loop": false
+        },
+        {
+          "name": "carry",
+          "firstColumn": 28,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
         }
       ]
     },
@@ -400,6 +413,19 @@
             390
           ],
           "loop": false
+        },
+        {
+          "name": "carry",
+          "firstColumn": 28,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
         }
       ]
     },
@@ -475,6 +501,19 @@
             390
           ],
           "loop": false
+        },
+        {
+          "name": "carry",
+          "firstColumn": 28,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
         }
       ]
     },
@@ -550,6 +589,19 @@
             390
           ],
           "loop": false
+        },
+        {
+          "name": "carry",
+          "firstColumn": 28,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
         }
       ]
     },
@@ -625,6 +677,19 @@
             390
           ],
           "loop": false
+        },
+        {
+          "name": "carry",
+          "firstColumn": 28,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
         }
       ]
     },
@@ -700,6 +765,19 @@
             390
           ],
           "loop": false
+        },
+        {
+          "name": "carry",
+          "firstColumn": 28,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
         }
       ]
     },
@@ -775,6 +853,181 @@
             390
           ],
           "loop": false
+        },
+        {
+          "name": "carry",
+          "firstColumn": 28,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        }
+      ]
+    },
+    {
+      "name": "civilian_0",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        }
+      ]
+    },
+    {
+      "name": "civilian_1",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        }
+      ]
+    },
+    {
+      "name": "civilian_2",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        }
+      ]
+    },
+    {
+      "name": "civilian_3",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        }
+      ]
+    },
+    {
+      "name": "civilian_4",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        }
+      ]
+    },
+    {
+      "name": "civilian_5",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
         }
       ]
     }

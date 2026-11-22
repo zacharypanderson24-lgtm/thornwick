@@ -77,10 +77,21 @@ const roles = [
   {name:'militia_forester',label:'Forester militia',coat:['344036','4e6853','6f8666','a3ad81'],head:'cap',weapon:'hook',legs:'454e3c'},
   {name:'militia_sawyer',label:'Sawmill militia',coat:['4a372b','77573a','a18356','c3ab7a'],head:'bare',weapon:'saw',legs:'534537'},
   {name:'militia_quarry',label:'Quarry militia',coat:['363f43','50646a','74878a','a1aaa0'],head:'cap',weapon:'hammer',legs:'4b5352'},
-  {name:'militia_miner',label:'Miner militia',coat:['363330','524c43','847a67','d3b477'],head:'cap',weapon:'pick',legs:'443d39'}
+  {name:'militia_miner',label:'Miner militia',coat:['363330','524c43','847a67','d3b477'],head:'cap',weapon:'pick',legs:'443d39'},
 ];
-function motion(state, frame) {
-  const walk = state==='walk', run = state==='run'||state==='carry';
+const civilianCoats = [
+  ['382c30','694653','9a6471','c38d92'],
+  ['34372e','566047','84916c','a9ab80'],
+  ['35303f','56506e','847e9d','a59db3'],
+  ['3c3026','775633','a77b45','c8a26c'],
+  ['303a3b','4d6566','728e8a','a0b0a1'],
+  ['3b3430','6b5a51','9c8776','c2b29b'],
+];
+civilianCoats.forEach((coat,i)=>roles.push({
+  name:'civilian_'+i,label:'Civilian '+(i+1),coat,head:i%2===0?'bare':'cap',legs:'4c4037'
+}));
+function motion(state, frame, raider) {
+  const walk = state==='walk'||(state==='carry'&&!raider), run = state==='run'||(state==='carry'&&raider);
   const offsets=[[-2,2],[-1,1],[0,0],[2,-2],[1,-1],[0,0]][frame%6];
   return {
     dx: state==='hurt' ? [-1,-2,-1][frame] : state==='attack' ? [0,-1,0,1,1,0][frame] : state==='loot' ? [0,1,2,1,0][frame] : 0,
@@ -146,10 +157,24 @@ function pack(b,x,y) {
   pixel(b,x-2,y-2,'d6be87');stroke(b,[x-2,y],[x+1,y+2],'9a7a46');
   box(b,x-3,y-4,2,2,'776046');
 }
+function drawWorkLoad(b,tool,x,y) {
+  if(tool==='axe'||tool==='hook'||tool==='saw') {
+    stroke(b,[x-4,y-1],[x+3,y+2],wood[0],4);
+    stroke(b,[x-4,y-1],[x+3,y+2],wood[2],2);
+    box(b,x+1,y+1,3,3,wood[3]);
+  } else if(tool==='pick'||tool==='hammer') {
+    pack(b,x,y);
+    box(b,x-4,y-2,3,2,metal[2]);
+    box(b,x-1,y-2,2,2,metal[1]);
+  } else {
+    pack(b,x,y);
+  }
+}
 function drawUnit(role,direction,state,frame) {
   const b=Buffer.alloc(W*H*4);
   const rear=direction[0]==='n', mirror=direction[1]==='w';
-  const mo=motion(state,frame), x=15+mo.dx, y=mo.dy;
+  const raider=role.name==='raider';
+  const mo=motion(state,frame,raider), x=15+mo.dx, y=mo.dy;
   const coat=role.coat, crouch=state==='loot'&&frame>=2&&frame<=3;
   const bodyY=y+(crouch?1:0), headY=bodyY+5;
   const footA=[x-2+mo.legs[0],FOOT-mo.lift[0]], footB=[x+2+mo.legs[1],FOOT-mo.lift[1]];
@@ -185,7 +210,7 @@ function drawUnit(role,direction,state,frame) {
   } else if(!rear && role.name.startsWith('militia')) {
     stroke(b,[x-1,bodyY+11],[x+1,bodyY+16],leather[3]);
   }
-  if(state==='carry') { pack(b,x-4,bodyY+11);pixel(b,x+1,bodyY+12,wood[3]); }
+  if(state==='carry'&&raider) { pack(b,x-4,bodyY+11);pixel(b,x+1,bodyY+12,wood[3]); }
 
   // Headwear, lit on the upper-left and separately drawn from the face.
   polygon(b,[[x-2,headY],[x+2,headY],[x+4,headY+2],[x+4,headY+5],[x+1,headY+7],[x-3,headY+6],[x-4,headY+3]],ink);
@@ -218,7 +243,16 @@ function drawUnit(role,direction,state,frame) {
     stroke(b,[shieldX-1,bodyY+13],[shieldX+1,bodyY+13],metal[2]);
     pixel(b,shieldX,bodyY+15,'d4bd78');pixel(b,shieldX,bodyY+16,'ab9253');
   }
-  if(state==='loot') {
+  if(!role.weapon) {
+    const swing = state==='walk' ? Math.sign(mo.legs[0]) : 0;
+    stroke(b,[x+3,bodyY+12],[x+4+swing,bodyY+17],coat[0],2);
+    stroke(b,[x+3,bodyY+12],[x+4+swing,bodyY+15],coat[2],2);
+    pixel(b,x+4+swing,bodyY+17,skin[2]);
+  } else if(state==='carry'&&!raider) {
+    stroke(b,[x+2,bodyY+12],[x+4,bodyY+17],coat[2],2);
+    drawWorkLoad(b,role.weapon,x+6,bodyY+14);
+    box(b,x+3,bodyY+15,2,2,skin[2]);
+  } else if(state==='loot') {
     const g = [0,2,1,0,0][frame];
     stroke(b,[x+2,bodyY+12],[x+4,bodyY+16+g],coat[2],2);
     pixel(b,x+4,bodyY+17+g,skin[2]);
@@ -291,7 +325,11 @@ function attach(sheet,width,x,y,pixels) {
   for(let row=0;row<H;row++) pixels.copy(sheet,((y+row)*width+x)*4,row*W*4,(row+1)*W*4);
 }
 for(const role of roles) {
-  const clips = role.name==='raider' ? [...regular,['loot',[95,130,115,100,130],false],['carry',[92,92,92,92,92,92],true]] : regular;
+  const clips = !role.weapon ? regular.slice(0,2) : role.name==='raider'
+    ? [...regular,['loot',[95,130,115,100,130],false],['carry',[92,92,92,92,92,92],true]]
+    : role.name.startsWith('militia')
+      ? [...regular,['carry',[105,105,105,105,105,105],true]]
+      : regular;
   const width=clips.reduce((n,clip)=>n+clip[1].length,0)*W;
   const sheet=Buffer.alloc(width*H*directions.length*4);
   let column=0;
@@ -348,4 +386,4 @@ if (unity) {
   fs.writeFileSync(path.join(out,'battle_catalogue.json'),JSON.stringify(catalogue,null,2)+'\n');
 }
 if (!unity) fs.writeFileSync(path.join(out,'battle-animation.json'),JSON.stringify(manifest,null,2)+'\n');
-console.log('Rendered raiders, infantry, archers, seven militia roles, and four effect groups.');
+console.log('Rendered battle units, seven militia trades, six civilians, and four effect groups.');

@@ -8,6 +8,7 @@ namespace CrownAndHearth.Game
     sealed class BattleArt : IDisposable
     {
         const string Folder = "Art/Battle/";
+        const float PixelsPerUnit = IsoView.PPU * 2f;
 
         [Serializable] sealed class Catalogue
         {
@@ -62,7 +63,7 @@ namespace CrownAndHearth.Game
                 if (_cache[slot] == null)
                 {
                     var rect = new Rect(column * _width, _texture.height - (row + 1) * _height, _width, _height);
-                    _cache[slot] = Sprite.Create(_texture, rect, _pivot, IsoView.PPU, 0, SpriteMeshType.FullRect);
+                    _cache[slot] = Sprite.Create(_texture, rect, _pivot, PixelsPerUnit, 0, SpriteMeshType.FullRect);
                     _cache[slot].name = _texture.name;
                 }
                 return _cache[slot];

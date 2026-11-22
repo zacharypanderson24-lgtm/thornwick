@@ -1,3 +1,5 @@
+// The in-game tutorial (Sim/Tutorial.cs): its steps finish when the player really does the thing in the world, counted from when the
+// step began; explanations wait for Next; Back, Skip and Close work.
 using System.Linq;
 using CrownAndHearth.Sim;
 using NUnit.Framework;
@@ -6,119 +8,134 @@ namespace CrownAndHearth.Tests
 {
     public class TutorialTests
     {
+        static int IndexOf(string id) => Tutorial.Steps.Select((s, i) => (s, i)).First(p => p.s.Id == id).i;
+
         [Test]
-        public void RequiredStepsCannotBeSkippedAndClosingKeepsProgress()
+        public void EveryStepExplainsItselfAndSaysWhatFinishesIt()
         {
-            var w = new World();
-            var t = new Tutorial();
-            t.Open(w);
-            t.Next(w);
-            Assert.That(t.Current.Id, Is.EqualTo("hunt"));
-            t.Next(w);
-            Assert.That(t.Current.Id, Is.EqualTo("hunt"));
-            Assert.That(t.Check(w), Is.Null);
-            t.Close();
-            Assert.That(t.Active, Is.False);
-            t.Open(w);
-            Assert.That(t.Current.Id, Is.EqualTo("hunt"));
-            Assert.That(t.FirstRaid, Is.Null);
-        }
-
-        [TestCase(7, Relief.Upland)]
-        [TestCase(61, Relief.Lowland)]
-        [TestCase(127, Relief.Highland)]
-        [TestCase(12, Relief.Alpine)]
-        public void TutorialUsesRealDeliveriesAndBothRaidsWithoutStarvation(int seed, Relief relief)
-        {
-            var w = new World(seed, TerrainStyle.Ranges, relief);
-            var t = new Tutorial();
-            t.Open(w);
-            t.Next(w);
-            Build(t, w, "hunter");
-            RunTo(t, w, "farmland", 28);
-            PaintZone(t, w, Zone.Farm);
-            Assert.That(t.Check(w)?.Id, Is.EqualTo("farmland"));
-            var siloSites = t.SuggestedTiles(w).ToArray();
-            Assert.That(siloSites.Length, Is.EqualTo(Tutorial.Silos));
-            foreach (var (x, y) in siloSites) Assert.That(w.Place("silo", x, y).Ok, Is.True);
-            Assert.That(t.Check(w)?.Id, Is.EqualTo("silos"));
-            Assert.That(t.Check(w), Is.Null, "rations do not count as harvesting wheat");
-            RunTo(t, w, "mining", 160);
-            Assert.That(Tutorial.FoodDays(w), Is.GreaterThanOrEqualTo(Tutorial.ReserveDays));
-            Build(t, w, "quarry");
-            PaintZone(t, w, Zone.Mine);
-            RunTo(t, w, "lumber", 40);
-            Build(t, w, "wood");
-            PaintZone(t, w, Zone.Wood);
-            RunTo(t, w, "militia", 40);
-            Assert.That(w.Raid, Is.Null);
-
-            w.MilitiaFights = false;
-            t.Next(w);
-            Assert.That(w.Raid, Is.Null, "turn the militia on before the first raid");
-            w.MilitiaFights = true;
-            t.Next(w);
-            var first = t.FirstRaid;
-            Assert.That(first, Is.SameAs(w.Raid));
-            Assert.That(first.Defenders, Is.Zero);
-            t.Close();
-            t.Open(w);
-            t.Next(w);
-            Assert.That(w.Raid, Is.SameAs(first), "reopening cannot repeat the attack");
-            RunTo(t, w, "barracks", 180);
-            Assert.That(first.Over, Is.True);
-            Assert.That(first.Tools, Is.Not.Empty, $"militia never met the {first.From} band");
-            Assert.That(t.ReturnRaid, Is.Null);
-            t.Next(w);
-            Assert.That(t.Current.Id, Is.EqualTo("barracks"), "a garrison is required");
-            Build(t, w, "barracks");
-            RunTo(t, w, "return", 40);
-            Assert.That(w.Soldiers, Is.GreaterThanOrEqualTo(Tutorial.GarrisonSize));
-            Assert.That(t.ReturnRaid, Is.Null, "players decide when to start the return raid");
-            t.Next(w);
-            Assert.That(t.ReturnRaid, Is.Not.SameAs(first));
-            Assert.That(t.ReturnRaid.Defenders, Is.GreaterThanOrEqualTo(Tutorial.GarrisonSize));
-            RunTo(t, w, "finish", 180);
-            Assert.That(t.ReturnRaid.Over, Is.True);
-            Assert.That(Tutorial.FoodDays(w), Is.GreaterThan(30));
-            t.Next(w);
-            Assert.That(t.Finished, Is.True);
-            Assert.That(t.Active, Is.False);
-            var loaded = World.LoadJson(w.SaveJson());
-            Assert.That(loaded.LastHuntingDeliveryDay, Is.Positive);
-            Assert.That(loaded.LastWheatHarvestDay, Is.Positive);
-            Assert.That(loaded.LastStoneDeliveryDay, Is.Positive);
-            Assert.That(loaded.LastLogDeliveryDay, Is.Positive);
-        }
-
-        static void Build(Tutorial tutorial, World world, string type)
-        {
-            var tiles = tutorial.SuggestedTiles(world).ToArray();
-            Assert.That(tiles.Length, Is.EqualTo(4), $"highlighted {type} lot on day {world.Day}");
-            var (x, y) = tiles[0];
-            var result = world.Place(type, x, y);
-            Assert.That(result.Ok, Is.True, result.Reason);
-            Assert.That(world.Grid[y, x].Served, Is.True, type);
-        }
-
-        static void PaintZone(Tutorial tutorial, World world, Zone zone)
-        {
-            var tiles = tutorial.SuggestedTiles(world).ToArray();
-            Assert.That(tiles, Is.Not.Empty, zone.ToString());
-            foreach (var (x, y) in tiles) Assert.That(world.SetZone(zone, x, y).Ok, Is.True, zone.ToString());
-        }
-
-        static void RunTo(Tutorial t, World w, string step, int budget)
-        {
-            while (t.Current.Id != step && budget-- > 0)
+            Assert.That(Tutorial.Steps.Count, Is.GreaterThanOrEqualTo(12));
+            Assert.AreEqual(Tutorial.Steps.Count, Tutorial.Steps.Select(s => s.Id).Distinct().Count(), "step ids are unique");
+            foreach (var s in Tutorial.Steps)
             {
-                w.Tick();
-                Assert.That(w.Starving, Is.False, $"day {w.Day} in {t.Current.Id}");
-                t.Check(w);
+                Assert.IsNotEmpty(s.Title, s.Id); Assert.IsNotEmpty(s.Body, s.Id); Assert.IsNotEmpty(s.Goal, s.Id);
+                Assert.That(s.Body.Length, Is.LessThan(560), $"{s.Id}: keep the text short enough for the panel");
             }
-            Assert.That(t.Current.Id, Is.EqualTo(step),
-                $"day {w.Day}, food {w.ResAmt[Res.Food]:0}, wood {w.ResAmt[Res.Wood]:0}, stone {w.ResAmt[Res.Stone]:0}, " +
-                $"ore {w.ResAmt[Res.Ore]:0}, gold {w.ResAmt[Res.Gold]:0}, peasants {w.Peasants}, soldiers {w.Soldiers}");
+            // the mechanics the game has today are all covered
+            foreach (var id in new[] { "camera", "time", "road", "housing", "farmland", "workers", "lumber", "sawmill", "services", "stone", "underground", "danger", "save" })
+                Assert.IsTrue(Tutorial.Steps.Any(s => s.Id == id), id);
+        }
+
+        [Test]
+        public void ExplanationsWaitForNextAndTheTutorialEndsAfterTheLastStep()
+        {
+            var w = new World(7); var t = new Tutorial();
+            t.Start(w);
+            Assert.IsTrue(t.Active); Assert.AreEqual("welcome", t.Current.Id);
+            Assert.IsNull(t.Check(w), "an explanation does not finish by itself");
+            t.Next(w); Assert.AreEqual("camera", t.Current.Id);
+            t.Back(w); Assert.AreEqual("welcome", t.Current.Id);
+            for (int i = 0; i < Tutorial.Steps.Count; i++) t.Next(w);
+            Assert.IsTrue(t.Finished); Assert.IsFalse(t.Active);
+            t.Start(w, 3); t.Close(); Assert.IsFalse(t.Active); Assert.AreEqual(3, t.Index, "closing keeps the place");
+        }
+
+        [Test]
+        public void CameraAndTimeStepsFinishFromThePlayersActions()
+        {
+            var w = new World(7); var t = new Tutorial();
+            t.Start(w, IndexOf("camera"));
+            t.Panned = true; Assert.IsNull(t.Check(w), "panning alone is not enough");
+            t.Rotated = true; Assert.AreEqual("camera", t.Check(w)?.Id);
+            Assert.AreEqual("time", t.Current.Id);
+            Assert.IsFalse(t.Panned, "signals reset for each step");
+            t.SpeedChanged = true; Assert.AreEqual("time", t.Check(w)?.Id);
+        }
+
+        [Test]
+        public void RoadAndHousingStepsFinishWhenTheTownChanges()
+        {
+            var w = new World(7); var t = new Tutorial();
+            int C = Defs.Start;
+            t.Start(w, IndexOf("road"));
+            Assert.IsNull(t.Check(w));
+            w.ResAmt[Res.Wood] = 400;
+            // extend the starting street (x = C, y = C+2..C+6) by three tiles, clearing anything in the way
+            var path = World.LPath(C, C + 7, C, C + 9);
+            foreach (var (x, y) in path) if (w.Grid[y, x] == null && w.DecoMap[y, x] != Deco.None) w.Remove(x, y);
+            Assume.That(w.PlaceRoadPath(path).Ok, "the street can be extended on this seed");
+            w.Recalc();
+            Assert.AreEqual("road", t.Check(w)?.Id, "3 connected road tiles finish the road step");
+
+            Assert.AreEqual("housing", t.Current.Id);
+            for (int y = C + 7; y <= C + 9; y++) foreach (int x in new[] { C - 1, C + 1 }) if (w.Grid[y, x] == null && w.DecoMap[y, x] != Deco.None) w.Remove(x, y);   // clear trees first
+            var (zoned, _, _)= w.ZoneRect(Zone.Res, C + 1, C + 7, C + 1, C + 9);   // three tiles beside the new road
+            w.ZoneRect(Zone.Res, C - 1, C + 7, C - 1, C + 9);
+            Assume.That(zoned > 0);
+            Assert.AreEqual("housing", t.Check(w)?.Id, "4+ Housing tiles beside a connected road finish the housing step");
+        }
+
+        [Test]
+        public void HousingStepShowsProgressAndCountsHomesThatGrowOnTheZone()
+        {
+            var w = new World(7); var t = new Tutorial();
+            int C = Defs.Start;
+            t.Start(w, IndexOf("housing"));
+            Assert.AreEqual("0 / 4", t.Progress(w));
+            // two zoned tiles beside the street, then a home grows on one of them: still 2 of 4, not 1
+            int zoned = 0;
+            for (int y = C + 2; y <= C + 6 && zoned < 2; y++)
+                if (w.Grid[y, C + 1] == null && w.BesideConnectedRoad(C + 1, y) && w.ZoneRect(Zone.Res, C + 1, y, C + 1, y).zoned == 1) zoned++;
+            Assume.That(zoned == 2, "two open tiles beside the starting street on this seed");
+            Assert.AreEqual("2 / 4", t.Progress(w));
+            var tile = Enumerable.Range(C + 2, 5).First(y => w.Grid[y, C + 1] == null && w.ZoneMap[y, C + 1] == Zone.Res);
+            w.AddBld("house", C + 1, tile, 1); w.Recalc();
+            Assert.AreEqual("2 / 4", t.Progress(w), "a home on a zoned tile keeps the count");
+            Assert.IsNull(t.Check(w));
+            Assert.IsNull(new Tutorial().Progress(w), "no progress line when the tutorial is not running");
+        }
+
+        [Test]
+        public void ZoningHelpersSeeExistingZonesAndConnectedRoads()
+        {
+            var w = new World(7);
+            int C = Defs.Start;
+            int y = Enumerable.Range(C + 2, 5).First(j => w.Grid[j, C + 1] == null && w.ZoneCheck(Zone.Res, C + 1, j).Ok);
+            Assert.IsTrue(w.BesideConnectedRoad(C + 1, y), "beside the starting street");
+            Assert.IsFalse(w.AlreadyZoned(Zone.Res, C + 1, y));
+            w.ZoneRect(Zone.Res, C + 1, y, C + 1, y);
+            Assert.IsTrue(w.AlreadyZoned(Zone.Res, C + 1, y));
+            Assert.AreEqual(1, w.ZonedUnder("silo", C + 1, y), "a 1x1 building there would cover the zoned tile");
+            Assert.IsTrue(w.WouldConnect("silo", C + 1, y));
+            Assert.IsFalse(w.WouldConnect("silo", 2, 2), "the map corner is nowhere near a road");
+        }
+
+        [Test]
+        public void ProgressMadeBeforeAStepBeganDoesNotCount()
+        {
+            var w = new World(7); var t = new Tutorial();
+            int C = Defs.Start;
+            w.ZoneRect(Zone.Res, C + 1, C + 2, C + 1, C + 2);
+            var farmZoned = w.ZoneRect(Zone.Farm, C - 12, C - 12, C + 12, C + 12).zoned;   // lots of Farmland before the step
+            Assume.That(farmZoned >= 6);
+            t.Start(w, IndexOf("farmland"));
+            Assert.IsNull(t.Check(w), "zoning done before the step began does not finish it");
+        }
+
+        [Test]
+        public void TheRaidStepSendsARealBandOnceAndReportsIt()
+        {
+            var w = new World(7);
+            var t = new Tutorial();
+            t.Start(w, IndexOf("raid") - 1);
+            Assert.IsNull(t.Raid);
+            t.Next(w);   // onto the raid step
+            Assert.IsNotNull(t.Raid);
+            Assert.AreEqual(Tutorial.RaidBand, t.Raid.Raiders.Count);
+            Assert.IsFalse(t.Raid.Over, "they are still on their way");
+            StringAssert.Contains("coming", t.BodyText);
+            var first = t.Raid;
+            t.Back(w); t.Next(w);
+            Assert.AreSame(first, t.Raid, "the raid comes once");
         }
     }
 }

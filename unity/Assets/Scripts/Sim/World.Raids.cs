@@ -493,7 +493,6 @@ namespace CrownAndHearth.Sim
             r.Fighters.RemoveAll(f => f.St == FighterState.Dead && Day - f.DeadDay > BodyDays);
         }
 
-        /// <summary>No military: the workers of each building fight raiders in reach with their tools, and raiders at the door hurt them back.</summary>
         // Put the cosmetic defender on open ground just outside the participating building.
         (int x, int y) MilitiaPosition(Building b, Raider target)
         {
@@ -509,6 +508,7 @@ namespace CrownAndHearth.Sim
             return (x, y);
         }
 
+        /// <summary>Workers fight raiders in reach with their tools, and raiders at the door hurt them back.</summary>
         void MilitiaFight(RaidReport r)
         {
             var active = r.Raiders.Where(a => a.St == RaiderState.Approach || a.St == RaiderState.Loot || a.St == RaiderState.Flee).ToList();
