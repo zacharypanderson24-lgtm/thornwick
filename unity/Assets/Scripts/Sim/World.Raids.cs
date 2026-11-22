@@ -28,7 +28,7 @@ namespace CrownAndHearth.Sim
         public RaiderState St;
         public double Hp = World.RaiderHp;
         public Building Target;
-        public Res LootRes; public double Carry;
+        public Res LootRes; public double Carry, WheatLoot;
         public Fighter Opponent; // visual facing while a soldier blocks the raider
         public bool Hurt, Fighting;   // took a hit today / stopped to fight a soldier today (drawn red / swinging)
         public int DeadDay;           // the body stays on the field for a few days
@@ -55,7 +55,7 @@ namespace CrownAndHearth.Sim
         public readonly HashSet<string> Tools = new HashSet<string>();   // what the residents fought with
         public string From = "";
         public RaiderCamp Camp;   // the camp the band came from (null when no camps are set)
-        public bool Over, StartAnnounced, EndAnnounced, Alarm;   // Alarm: a raider got within 5 tiles of a civilian and the soldiers were called out
+        public bool Over, StartAnnounced, EndAnnounced, Alarm;   // Once raised, all garrisons respond for the rest of the raid.
         public readonly Dictionary<Res, int> Stolen = new Dictionary<Res, int>();   // what got away with the raiders
         public readonly List<Raider> Raiders = new List<Raider>();
         public readonly List<Fighter> Fighters = new List<Fighter>();
@@ -330,6 +330,7 @@ namespace CrownAndHearth.Sim
                     {
                         var (res, stock) = RaidLoot(a.Target);
                         double take = Math.Min(stock, RaidBite);
+                        if (res == Res.Food) { a.WheatLoot = WheatShare(take); _wheat = WheatStored - a.WheatLoot; }
                         ResAmt[res] -= take; a.LootRes = res; a.Carry = take;
                     }
                     a.St = RaiderState.Flee;
@@ -350,6 +351,10 @@ namespace CrownAndHearth.Sim
 
         /// <summary>Civilians are the people in homes, at work or on the road. A raider this close to any of them raises the alarm.</summary>
         public const int AlarmR = 5;
+        public const int WatchtowerRange = 24;
+
+        public static bool WithinWatchtowerRange(int dx, int dy) =>
+            dx * dx + dy * dy <= WatchtowerRange * WatchtowerRange;
 
         bool NearCivilian(Raider a)
         {
@@ -368,7 +373,7 @@ namespace CrownAndHearth.Sim
         bool FighterPass(int x, int y) => Inb(x, y) && !IsSolid(x, y) && (Grid[y, x] == null || Grid[y, x].T == "road");
 
         /// <summary>Steps from every tile within reach of a raider to that raider (BFS over ground soldiers can cross), -1 elsewhere.</summary>
-        int[] ChaseField(RaidReport r, Raider a)
+        int[] ChaseField(RaidReport r, Raider a, HashSet<int> responders)
         {
             if (!r.Chase.TryGetValue(a, out var dist)) { dist = new int[N * N]; r.Chase[a] = dist; }
             for (int i = 0; i < dist.Length; i++) dist[i] = -1;
@@ -377,7 +382,12 @@ namespace CrownAndHearth.Sim
             while (queue.Count > 0)
             {
                 int c = queue.Dequeue(), cx = c % N, cy = c / N;
-                if (dist[c] >= ChaseR + 4) continue;
+                if (responders != null)
+                {
+                    responders.Remove(c);
+                    if (responders.Count == 0) break;
+                }
+                else if (dist[c] >= ChaseR + 4) continue;
                 for (int k = 0; k < 4; k++)
                 {
                     int nx = cx + Nb[k, 0], ny = cy + Nb[k, 1];
@@ -406,13 +416,17 @@ namespace CrownAndHearth.Sim
         void StepFighters(RaidReport r)
         {
             var live = r.Raiders.Where(RaiderLive).ToList();
-            if (!r.Alarm && live.Any(NearCivilian))
+            if (!r.Alarm && live.Count > 0)
             {
-                r.Alarm = true;
-                Events.Add("Raiders are among your people! The barracks sounds the alarm and the soldiers march out.");
+                bool sighted = Blds.Any(b => b.T == "watchtower" &&
+                    live.Any(a => WithinWatchtowerRange(a.X - b.X, a.Y - b.Y)));
+                if (sighted || live.Any(NearCivilian))
+                {
+                    r.Alarm = true;
+                    Events.Add(sighted ? "A watchtower spotted raiders and sounded the town alarm!" :
+                        "Raiders are among your people! The barracks sounds the alarm and the soldiers march out.");
+                }
             }
-            var chase = new Dictionary<Raider, int[]>();
-            int[] FieldOf(Raider a) { if (!chase.TryGetValue(a, out var f)) chase[a] = f = ChaseField(r, a); return f; }
             var hitRaider = new Dictionary<Raider, double>();
             var hitFighter = new Dictionary<Fighter, double>();
 
@@ -439,7 +453,21 @@ namespace CrownAndHearth.Sim
                     if (f.St == FighterState.Engage) f.St = FighterState.Return;
                 }
                 else if (f.St == FighterState.Idle || f.St == FighterState.Return) f.St = FighterState.Engage;
+            }
 
+            var chase = new Dictionary<Raider, int[]>();
+            int[] FieldOf(Raider a)
+            {
+                if (chase.TryGetValue(a, out var field)) return field;
+                // At an alarm, search only until the responding soldiers can all follow the route.
+                var responders = r.Alarm ? new HashSet<int>(r.Fighters
+                    .Where(f => f.St == FighterState.Engage && f.Target == a)
+                    .Select(f => Tk(f.X, f.Y))) : null;
+                return chase[a] = ChaseField(r, a, responders);
+            }
+
+            foreach (var f in r.Fighters)
+            {
                 if (f.St == FighterState.Engage)
                 {
                     var t = f.Target;
@@ -481,7 +509,11 @@ namespace CrownAndHearth.Sim
             foreach (var a in r.Raiders)
                 if (a.Hp <= 0 && RaiderLive(a))
                 {
-                    if (a.Carry > 0) { ResAmt[a.LootRes] += a.Carry; a.Carry = 0; }   // the loot drops where it fell and is carried back
+                    if (a.Carry > 0)
+                    {
+                        if (a.LootRes == Res.Food) _wheat = WheatStored + a.WheatLoot;
+                        ResAmt[a.LootRes] += a.Carry; a.Carry = 0; a.WheatLoot = 0;
+                    }
                     a.St = RaiderState.Dead; a.DeadDay = Day; r.Killed++;
                 }
             foreach (var f in r.Fighters)

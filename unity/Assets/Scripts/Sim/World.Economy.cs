@@ -11,6 +11,12 @@ namespace CrownAndHearth.Sim
     public partial class World
     {
         bool _sawHinted;   // the one-time hint about unsawn logs (runtime only)
+        double _wheat;
+        public double WheatStored => Math.Clamp(_wheat, 0, Math.Max(0, ResAmt[Res.Food]));
+        public double? RecentFoodProduction { get; private set; }
+
+        // Food stays interchangeable for gameplay. When food is eaten or stolen, remove the same share of each source.
+        double WheatShare(double amount) => ResAmt[Res.Food] > 0 ? WheatStored * Math.Clamp(amount / ResAmt[Res.Food], 0, 1) : 0;
 
         public void Tick()
         {
@@ -24,6 +30,7 @@ namespace CrownAndHearth.Sim
             // farms + foresters
             var crops = SeasonalFarming ? WorkSeasonalFields() : FarmOutput();
             food += SeasonalFarming ? Math.Min(crops.food, Math.Max(0, CropStorage(Res.Food) - ResAmt[Res.Food])) : crops.food;
+            double wheat = food;
             ResAmt[Res.Flax] += SeasonalFarming ? Math.Min(crops.flax, Math.Max(0, CropStorage(Res.Flax) - ResAmt[Res.Flax])) : crops.flax;
             foreach (var b in Blds.Where(b => b.T == "forester" && b.Served).ToList())
             {
@@ -65,7 +72,11 @@ namespace CrownAndHearth.Sim
 
             // economy
             double eat = DailyFoodDemand;
-            ResAmt[Res.Food] += food - eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
+            RecentFoodProduction = RecentFoodProduction is double recent ? (6 * recent + food) / 7 : food;
+            _wheat = WheatStored + wheat;
+            ResAmt[Res.Food] += food;
+            _wheat -= WheatShare(eat);
+            ResAmt[Res.Food] -= eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
             // Newly delivered ore is available to road-linked smiths on the same day.
             foreach (var b in Blds.Where(b => b.T == "smithery" && b.Served))
             {
@@ -91,6 +102,7 @@ namespace CrownAndHearth.Sim
                 if (PopAcc > 0.99) PopAcc = 0.99;
                 while (PopAcc <= -1 && Peasants > 0) { Peasants--; PopAcc += 1; }
             }
+            ApplyDehydration(water);
             if (Peasants + Soldiers > d.Civ) { if (Peasants > 0) Peasants--; else LoseSoldier(); }   // a standing army takes places in the population: its soldiers are not refilled by births
             if (Soldiers > d.Bunks) LoseSoldier();
             foreach (var b in Blds.Where(b => b.T == "barracks" && b.Served))
@@ -106,6 +118,7 @@ namespace CrownAndHearth.Sim
                 int limit = CropStorage(k);
                 // Disconnecting storage prevents additions until the excess is used or sold.
                 double available = k == Res.Food || k == Res.Flax ? Math.Max(limit, before[k]) : limit;
+                if (k == Res.Food) _wheat = WheatStored - WheatShare(Math.Max(0, ResAmt[k] - available));
                 ResAmt[k] = Math.Max(0, Math.Min(available, ResAmt[k]));
             }
             foreach (var k in ResAmt.Keys.ToList())

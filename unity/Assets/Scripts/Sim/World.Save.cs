@@ -39,6 +39,7 @@ namespace CrownAndHearth.Sim
                 ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["militia"] = MilitiaFights, ["starving"] = Starving,
                 ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
                 ["res"] = JObject.FromObject(ResAmt.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
+                ["wheatStored"] = WheatStored, ["foodProduction"] = RecentFoodProduction, ["waterShortDays"] = WaterShortDays,
                 ["rate"] = JObject.FromObject(Rate.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["deco"] = EncodeGrid(DecoMap, value => value == Deco.None ? JValue.CreateNull() : new JValue(SaveKey(value))),
                 ["zone"] = EncodeGrid(ZoneMap, value => value == Zone.None ? JValue.CreateNull() : new JValue(SaveKey(value))),
@@ -112,6 +113,9 @@ namespace CrownAndHearth.Sim
                 Drafting = save.Value<bool?>("drafting") ?? true,
                 MilitiaFights = save.Value<bool?>("militia") ?? true,
                 Starving = save.Value<bool?>("starving") ?? false,
+                RecentFoodProduction = save.Value<double?>("foodProduction"),
+                WaterShortDays = Math.Clamp(save.Value<int?>("waterShortDays") ?? 0, 0, WaterTuning.Grace),
+                _wheat = Math.Max(0, save.Value<double?>("wheatStored") ?? 0),
             };
             var priority = save["prio"]?.ToObject<string[]>() ?? Array.Empty<string>();
             world.Prio = priority.Where(Trades.Contains).Concat(Trades).Distinct().ToArray();

@@ -39,7 +39,7 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Hunting, Label = "Hunting", Key = "5", Hotkey = Key.Digit5, Icon = "hunter", Desc = "Hunting lodges bring back food from the forest all year, even in winter." },
             new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "6", Hotkey = Key.Digit6, Icon = "mine", Desc = "Quarries for stone, mines for iron ore, and smitheries for metal." },
             new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "7", Hotkey = Key.Digit7, Icon = "market", Desc = "Markets." },
-            new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Barracks train infantry and archers. Choose the mix in the Troops menu." },
+            new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Train troops, build palisades, and place watchtowers to spot incoming raiders." },
             new CatDef { Cat = Cat.Water, Label = "Water", Key = "9", Hotkey = Key.Digit9, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
             new CatDef { Cat = Cat.Land, Label = "Land", Key = "L", Hotkey = Key.L, Desc = "Your district is 64 x 64 tiles. claim the land beyond it, one 16 x 16 parcel at a time, for free." },
             new CatDef { Cat = Cat.Bulldoze, Label = "Bulldoze", Key = "0", Hotkey = Key.Digit0, Alt = Key.Delete, Desc = "Demolish buildings and roads, clear trees and rocks, or remove zones." },
@@ -82,6 +82,8 @@ namespace CrownAndHearth.Game
                 Desc = "Trains infantry and archers from your peasants, one every 4 days (set the mix in the Troops menu). Troops eat more and do no other work. Must touch a road." },
             new ToolDef { Id = "wall", Cat = Cat.Military, Label = "Palisade", Wall = true,
                 Desc = "A wooden palisade, 2 wood a tile: press and drag a line. It is a thin wall through the middle of each tile, and people and raiders must go around it. A road through the line is a gate." },
+            new ToolDef { Id = "watchtower", Cat = Cat.Military, Label = "Watchtower", Build = "watchtower",
+                Desc = $"Spots raiders within {World.WatchtowerRange} tiles and alerts every garrison. Place it along an approach to town. Works without a road." },
             new ToolDef { Id = "well", Cat = Cat.Water, Label = "Well", Build = "well",
                 Desc = $"Pumps up to {WaterTuning.WellPump:0} water a day from the groundwater patch it stands on (the blue patches) into the town-wide supply: any home on a connected road can use it, however far away. Wells on one patch share its reserve and recharge: draw more than the recharge and the patch runs down." },
             new ToolDef { Id = "cistern", Cat = Cat.Water, Label = "Cistern", Build = "cistern",
@@ -546,6 +548,24 @@ namespace CrownAndHearth.Game
                 }
         }
 
+        void AddWatchtowerRange(int centerX, int centerY, Color32 color)
+        {
+            const int r = World.WatchtowerRange;
+            // Outline only, so a large radius does not paint over the settlement.
+            for (int dy = -r; dy <= r; dy++)
+            {
+                int edge = Mathf.FloorToInt(Mathf.Sqrt(r * r - dy * dy));
+                int nearEdge = Mathf.Abs(dy) == r ? 0 :
+                    Mathf.FloorToInt(Mathf.Sqrt(r * r - (Mathf.Abs(dy) + 1) * (Mathf.Abs(dy) + 1))) + 1;
+                for (int dx = Mathf.Min(edge, nearEdge); dx <= edge; dx++)
+                {
+                    int y = centerY + dy;
+                    if (World.Inb(centerX + dx, y)) _overlay.AddTile(World, centerX + dx, y, _rot, color);
+                    if (dx != 0 && World.Inb(centerX - dx, y)) _overlay.AddTile(World, centerX - dx, y, _rot, color);
+                }
+            }
+        }
+
         /// <summary>The buildings whose reach matters to this zone tool: lodges and foresters for lumber, quarries and mines for mining.</summary>
         static bool Works(Zone z, string type) => z switch
         {
@@ -597,6 +617,7 @@ namespace CrownAndHearth.Game
                     bool ok = World.CanPlace(_tool.Build, h.x, h.y).Ok;
                     int sz = PlacementSize(_tool.Build);
                     AddReach(_tool.Build, h.x, h.y, sz, ReachNew, null);
+                    if (_tool.Build == "watchtower") AddWatchtowerRange(h.x, h.y, ok ? ReachNew : Bad);
                     for (int j = 0; j < sz; j++) for (int i = 0; i < sz; i++) _overlay.AddTile(World, h.x + i, h.y + j, _rot, !ok ? Bad : PlaceWarning(_tool.Build, h.x, h.y) != null ? Warn : Ok);
                 }
                 else if (_tool.Zone != Zone.None)
@@ -617,6 +638,7 @@ namespace CrownAndHearth.Game
                     // inspecting a work building shows its reach too
                     var b = World.Grid[h.y, h.x];
                     if (b != null && ReachOf(b.T) > 0) AddReach(b.T, b.X, b.Y, b.Sz, Reach, null);
+                    if (b?.T == "watchtower") AddWatchtowerRange(b.X, b.Y, Reach);
                     _overlay.AddTile(World, h.x, h.y, _rot, Hover);
                 }
             }
@@ -872,7 +894,8 @@ namespace CrownAndHearth.Game
             if (b != null && b.T != "road")
             {
                 lines.Add(b.Name.ToUpper());
-                lines.Add(b.Served ? "Connected to the Town Hall" : "Not connected: needs a road to the Town Hall");
+                lines.Add(b.T == "watchtower" ? $"On watch within {World.WatchtowerRange} tiles. Alerts the whole town." :
+                    b.Served ? "Connected to the Town Hall" : "Not connected: needs a road to the Town Hall");
                 if (b.T == "house") lines.Add($"Homes {b.Capacity} villagers. Level {b.Lvl}");
                 if (b.Jobs > 0)
                 {

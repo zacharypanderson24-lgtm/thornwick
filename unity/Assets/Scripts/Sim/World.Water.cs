@@ -241,7 +241,7 @@ namespace CrownAndHearth.Sim
         {
             var p = new WaterPlan();
             int civ = Math.Max(1, D?.Civ ?? HallCap);
-            double occ = Math.Min(1, Peasants / (double)civ);
+            double occ = (Peasants + Soldiers) / (double)civ;
             var net = WaterNetwork(closed); p.Network = net;
             var homes = Blds.Where(IsHome).ToList();
             double demandOn = 0;   // what the homes on the network ask for (the others cannot be reached at all)
@@ -322,6 +322,21 @@ namespace CrownAndHearth.Sim
 
         /// <summary>The last day's water, for the HUD (null before the first day).</summary>
         public WaterPlan LastWater { get; private set; }
+        public int WaterShortDays { get; private set; }
+
+        void ApplyDehydration(WaterPlan water)
+        {
+            if (water.Unmet < WaterTuning.PerHead)
+            {
+                WaterShortDays = 0;
+                return;
+            }
+
+            if (WaterShortDays < WaterTuning.Grace) WaterShortDays++;
+            if (WaterShortDays < WaterTuning.Grace || Starving || Peasants + Soldiers == 0) return;
+            if (Peasants > 0) Peasants--; else LoseSoldier();
+            Events.Add("A resident died from dehydration. Connect more wells to the Town Hall.");
+        }
         bool _warnedShort, _warnedStore;
         readonly HashSet<int> _warnedDry = new HashSet<int>();
 

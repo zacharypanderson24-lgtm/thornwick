@@ -46,6 +46,7 @@ namespace CrownAndHearth.Sim
         {
             { "road", new Dictionary<Res, int> { { Res.Wood, 1 } } },
             { "wall", new Dictionary<Res, int> { { Res.Wood, 2 } } },
+            { "watchtower", new Dictionary<Res, int> { { Res.Wood, 12 }, { Res.Stone, 4 } } },
             { "house", new Dictionary<Res, int> { { Res.Wood, 10 } } },
             { "farm", new Dictionary<Res, int> { { Res.Wood, 8 } } },
             { "wood", new Dictionary<Res, int> { { Res.Wood, 6 } } },
@@ -78,7 +79,7 @@ namespace CrownAndHearth.Sim
         {
             { "road", "Dirt Road" }, { "wall", "Palisade" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "quarry", "Quarry" },
             { "mine", "Iron Mine" }, { "market", "Market" }, { "sawmill", "Sawmill" }, { "smithery", "Smithery" }, { "forester", "Forester" }, { "well", "Well" },
-            { "barracks", "Barracks" }, { "hall", "Town Hall" }, { "silo", "Silo" }, { "cistern", "Cistern" },
+            { "barracks", "Barracks" }, { "watchtower", "Watchtower" }, { "hall", "Town Hall" }, { "silo", "Silo" }, { "cistern", "Cistern" },
         };
 
         public static readonly Dictionary<string, int> Jobs = new Dictionary<string, int>

@@ -9,8 +9,15 @@ namespace CrownAndHearth.Game
     {
         // neighbour bits in view space: 1 = +x (down right on screen), 2 = -x (up left), 4 = +y (down left), 8 = -y (up right)
         public const int E = 1, W = 2, S = 4, N = 8;
-        const int Size = 32, CenterX = 16, CenterY = 8, StakeH = 13;
-        static readonly Color32 Light = new Color32(196, 148, 90, 255), Mid = new Color32(152, 106, 60, 255), Dark = new Color32(102, 69, 39, 255), Rail = new Color32(128, 88, 50, 255);
+        const int Size = 32, CenterX = 16, CenterY = 8, StakeH = 16;
+        static readonly int[] Directions = { E, W, S, N };
+        static readonly Color32 Shadow = new Color32(48, 33, 24, 255);
+        static readonly Color32 Bark = new Color32(77, 51, 34, 255);
+        static readonly Color32 Grain = new Color32(128, 87, 52, 255);
+        static readonly Color32 Timber = new Color32(155, 110, 66, 255);
+        static readonly Color32 Sapwood = new Color32(205, 160, 98, 255);
+        static readonly Color32 RailFace = new Color32(108, 72, 43, 255);
+        static readonly Color32 RailEdge = new Color32(172, 125, 72, 255);
 
         readonly Sprite[] _sprites = new Sprite[16];
         readonly Texture2D[] _textures = new Texture2D[16];
@@ -28,32 +35,56 @@ namespace CrownAndHearth.Game
         {
             var px = new Color32[Size * Size];
             void Set(int x, int y, Color32 c) { if (x >= 0 && y >= 0 && x < Size && y < Size) px[y * Size + x] = c; }
+            void Rail(int x, int y)
+            {
+                Set(x, y, Shadow);
+                Set(x, y + 1, RailFace);
+                Set(x, y + 2, RailEdge);
+            }
+
             var stakes = new System.Collections.Generic.List<(int x, int y)> { (CenterX, CenterY) };
             if (mask == 0) { stakes.Add((CenterX - 3, CenterY - 1)); stakes.Add((CenterX + 3, CenterY + 1)); }
-            foreach (int bit in new[] { E, W, S, N })
+            foreach (int bit in Directions)
             {
                 if ((mask & bit) == 0) continue;
                 var (dx, dy) = Half(bit);
                 for (int step = 1; step <= 3; step++) stakes.Add((CenterX + Mathf.RoundToInt(dx * step / 3f), CenterY + Mathf.RoundToInt(dy * step / 3f)));
-                // two rails along the segment
-                for (int i = 0; i <= 16; i++)
-                {
-                    int x = CenterX + Mathf.RoundToInt(dx * i / 16f), y = CenterY + Mathf.RoundToInt(dy * i / 16f);
-                    Set(x, y + 4, Rail); Set(x, y + 9, Rail);
-                }
             }
             // far stakes first so nearer ones overlap them
             stakes.Sort((a, b) => b.y != a.y ? b.y.CompareTo(a.y) : a.x.CompareTo(b.x));
             foreach (var (x, y) in stakes)
             {
-                for (int h = 0; h < StakeH; h++)
+                bool post = x == CenterX && y == CenterY;
+                int pattern = (x + 2 * y) % 5;
+                int height = post ? StakeH + 1 : StakeH - pattern % 3;
+                for (int h = 0; h < height - 3; h++)
                 {
-                    bool tip = h == StakeH - 1, nearTip = h == StakeH - 2;
-                    if (tip) { Set(x, y + h, Mid); continue; }
-                    if (nearTip) { Set(x, y + h, Light); Set(x + 1, y + h, Mid); Set(x - 1, y + h, Mid); continue; }
-                    Set(x - 1, y + h, h < 2 ? Dark : Light);
-                    Set(x, y + h, h < 2 ? Dark : Mid);
-                    Set(x + 1, y + h, Dark);
+                    Set(x - 1, y + h, h < 2 ? Bark : Timber);
+                    Set(x, y + h, h < 2 || h == 6 + pattern ? Bark : Grain);
+                    Set(x + 1, y + h, Bark);
+                    if (post) Set(x + 2, y + h, Shadow);
+                }
+                Set(x - 1, y + height - 3, Timber);
+                Set(x, y + height - 3, Sapwood);
+                Set(x + 1, y + height - 3, Bark);
+                Set(x, y + height - 2, Sapwood);
+                Set(x, y + height - 1, Timber);
+            }
+
+            // Face-mounted rails stay visible across the grain. A peg at each end ties the run together.
+            foreach (int bit in Directions)
+            {
+                if ((mask & bit) == 0) continue;
+                var (dx, dy) = Half(bit);
+                for (int i = 0; i <= Mathf.Abs(dx); i++)
+                {
+                    int x = CenterX + System.Math.Sign(dx) * i;
+                    int y = CenterY + Mathf.RoundToInt(dy * i / (float)Mathf.Abs(dx));
+                    Rail(x, y + 3);
+                    Rail(x, y + 8);
+                    if (i != 0 && i != 7) continue;
+                    Set(x, y + 4, Shadow);
+                    Set(x, y + 9, Shadow);
                 }
             }
             var tex = new Texture2D(Size, Size, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = "palisade_" + mask };

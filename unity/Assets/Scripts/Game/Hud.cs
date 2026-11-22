@@ -27,7 +27,7 @@ namespace CrownAndHearth.Game
         static readonly Color BadInk = new Color(1f, 0.55f, 0.45f, 1f);
         static readonly Color Pulse = new Color(0.95f, 0.72f, 0.2f, 1f);
 
-        const float BarH = 84, CatW = 76, CardW = 172, CardH = 84;
+        const float BarH = 84, NeedsH = 54, BottomH = BarH + NeedsH, CatW = 76, CardW = 172, CardH = 84;
 
         Font _font;
         ArtLibrary _art;
@@ -35,8 +35,7 @@ namespace CrownAndHearth.Game
         Text _infoText, _toastText, _workText;
         GameObject _infoPanel, _workPanel;
         float _toastUntil;
-        readonly Dictionary<Res, Text> _stock = new Dictionary<Res, Text>();
-        Text _day, _population, _water, _infoTitle;
+        Text _day, _population, _gold, _infoTitle;
         readonly Dictionary<int, Image> _speedButtons = new Dictionary<int, Image>();
         RectTransform _workRows, _root;
 
@@ -98,11 +97,10 @@ namespace CrownAndHearth.Game
             statRow.childForceExpandWidth = statRow.childForceExpandHeight = true;
             _day = MakeStat(stats, "Day");
             _population = MakeStat(stats, "Population");
-            _water = MakeStat(stats, "Water");
-            var waterCard = (RectTransform)_water.transform.parent;
-            AddHover(waterCard.gameObject, on => { if (_world != null) ShowTip(on, waterCard, "Drinking water", WaterSummary(_world), "Build wells and cisterns in Water (9)."); });
-            foreach (Res resource in new[] { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Metal, Res.Flax, Res.Gold })
-                _stock[resource] = MakeStat(stats, resource.ToString());
+            BuildStockpileDropdown(stats, "Crops", ("Wheat", Res.Food), ("Flax", Res.Flax));
+            BuildStockpileDropdown(stats, "Mining", ("Stone", Res.Stone), ("Ore", Res.Ore), ("Metal", Res.Metal));
+            BuildStockpileDropdown(stats, "Wood", ("Logs", Res.Logs), ("Wood", Res.Wood));
+            _gold = MakeStat(stats, "Gold");
 
             var top = MakePanel(root, "TimeAndSession", Vector2.one, Vector2.one,
                 new Vector2(-604, -110), new Vector2(-8, -68));
@@ -119,9 +117,10 @@ namespace CrownAndHearth.Game
             MakeButton(top, "Save", new Vector2(1, 0.5f), new Vector2(-73, 0), new Vector2(48, 30), () => SavePicked?.Invoke());
             MakeButton(top, "Load", new Vector2(1, 0.5f), new Vector2(-23, 0), new Vector2(44, 30), () => LoadPicked?.Invoke());
 
+            BuildNeeds(root);
             BuildBar(root);
             var townMenuBar = MakePanel(root, "TownMenuBar", Vector2.right, Vector2.right,
-                new Vector2(-545, BarH + 8), new Vector2(-8, BarH + 50));
+                new Vector2(-545, BottomH + 8), new Vector2(-8, BottomH + 50));
             BuildTownMenus(root, townMenuBar);
             BuildMap(root, townMenuBar);
             BuildCamp(root);
@@ -139,11 +138,11 @@ namespace CrownAndHearth.Game
 
             // toast: messages after an action, above the build bar and its tray
             _toastText = MakeText(root, "Toast", 18, TextAnchor.MiddleCenter);
-            var tr = _toastText.rectTransform; tr.anchorMin = new Vector2(0.5f, 0); tr.anchorMax = new Vector2(0.5f, 0); tr.sizeDelta = new Vector2(1100, 40); tr.anchoredPosition = new Vector2(0, BarH + CardH + 44);
+            var tr = _toastText.rectTransform; tr.anchorMin = new Vector2(0.5f, 0); tr.anchorMax = new Vector2(0.5f, 0); tr.sizeDelta = new Vector2(1100, 40); tr.anchoredPosition = new Vector2(0, BottomH + CardH + 44);
             _toastText.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
 
             // workforce panel
-            var wp = MakePanel(root, "Workforce", Vector2.right, Vector2.right, new Vector2(-440, BarH + 58), new Vector2(-8, BarH + 382));
+            var wp = MakePanel(root, "Workforce", Vector2.right, Vector2.right, new Vector2(-440, BottomH + 58), new Vector2(-8, BottomH + 382));
             _workPanel = wp.gameObject;
             var title = MakeText(wp, "Title", 17, TextAnchor.UpperLeft); title.text = "Workforce: villagers fill trades top to bottom";
             Stretch(title.rectTransform, new Vector2(10, 290), new Vector2(-10, -8));
@@ -160,7 +159,7 @@ namespace CrownAndHearth.Game
         // ---------- Build bar: categories, trays of cards, tooltips ----------
         void BuildBar(RectTransform root)
         {
-            var bar = MakePanel(root, "BuildBar", Vector2.zero, Vector2.right, Vector2.zero, new Vector2(0, BarH));
+            var bar = MakePanel(root, "BuildBar", Vector2.zero, Vector2.right, new Vector2(0, NeedsH), new Vector2(0, BottomH));
             for (int i = 0; i < _cats.Count; i++)
             {
                 var cat = _cats[i];
@@ -214,7 +213,7 @@ namespace CrownAndHearth.Game
         {
             float w = tools.Count * (CardW + 6) + 6;
             float x0 = Mathf.Min(left, 1600 - 16 - w);   // keep the tray on screen (reference width)
-            var tray = MakePanel(root, c + "Tray", Vector2.zero, Vector2.zero, new Vector2(x0, BarH + 4), new Vector2(x0 + w, BarH + 4 + CardH + 12));
+            var tray = MakePanel(root, c + "Tray", Vector2.zero, Vector2.zero, new Vector2(x0, BottomH + 4), new Vector2(x0 + w, BottomH + 4 + CardH + 12));
             for (int i = 0; i < tools.Count; i++)
             {
                 var t = tools[i];
@@ -474,12 +473,12 @@ namespace CrownAndHearth.Game
             pr.offsetMin = new Vector2(pr.offsetMin.x, pr.offsetMax.y - Mathf.Min(349, 56 + _infoText.preferredHeight));
         }
 
-        Text MakeStat(RectTransform row, string label)
+        Text MakeStat(RectTransform row, string label, string caption = null)
         {
             var card = MakePanel(row, label + "Card", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             card.GetComponent<Image>().color = Btn;
             var title = MakeText(card, label, 12, TextAnchor.UpperCenter);
-            title.text = label;
+            title.text = caption ?? label;
             Stretch(title.rectTransform, Vector2.zero, new Vector2(0, -3));
             var value = MakeText(card, label + "Value", 17, TextAnchor.LowerCenter);
             Stretch(value.rectTransform, new Vector2(0, 3), Vector2.zero);
@@ -488,42 +487,15 @@ namespace CrownAndHearth.Game
 
         public void SetSettlement(World world)
         {
+            if (_world != world) _initialWater = world.PlanWater();
             _world = world;
             _day.text = world.SeasonalFarming ? $"{world.Season} {1 + (world.YearDay - 1) % World.SeasonLength} / Y{world.Year}" : world.Day.ToString();
             _population.text = world.Starving ? "Starving" : world.Soldiers > 0 ? $"{world.Peasants} + {world.Soldiers} troops/{world.D.Civ} · {world.D.Idle} idle" : $"{world.Peasants}/{world.D.Civ} · {world.D.Idle} idle";
-            var (stored, room) = world.WaterStored();
-            var wp = world.LastWater;
-            int shortHomes = wp?.ShortHomes ?? 0;
-            _water.text = shortHomes > 0 ? $"{stored:0} · {shortHomes} short" : $"{stored:0}/{room:0}";
-            _water.color = shortHomes > 0 ? BadInk : wp != null && wp.FromStore > 1e-6 ? Pulse : Ink;
-            foreach (var pair in _stock)
-            {
-                double rate = world.Rate[pair.Key];
-                string amount = Mathf.FloorToInt((float)world.ResAmt[pair.Key]).ToString();
-                pair.Value.text = System.Math.Abs(rate) < 0.05 ? amount : $"{amount}  {rate:+0.0;-0.0}";
-                pair.Value.color = rate < -0.05 ? new Color(1f, 0.68f, 0.52f) : Ink;
-            }
+            UpdateStockpiles(world);
+            UpdateNeeds(world);
             // prices turn red on the cards the town cannot afford yet
             foreach (var t in _tools)
                 if (t.Build != null && _cardCost.TryGetValue(t.Id, out var cost)) cost.color = world.CanAfford(t.Build).Ok ? Ink : BadInk;
-        }
-
-        /// <summary>The Water card's tooltip: what the town drinks, what the sources deliver, and how long storage covers a shortfall.</summary>
-        public static string WaterSummary(World w)
-        {
-            var p = w.LastWater; var (stored, room) = w.WaterStored();
-            if (p == null) return $"Stored {stored:0} of {room:0}. The first day has not run yet.";
-            var lines = new List<string>
-            {
-                $"The town drinks {p.Demand:0.#} a day; wells and the Town Hall's spring delivered {p.Delivered:0.#}.",
-                $"Stored: {stored:0} of {room:0} (Town Hall cistern and Cisterns)." + (p.StoreFill > 0.05 ? $" Filled {p.StoreFill:0.#} today." : ""),
-            };
-            if (p.StoreDays is double days) lines.Add($"Storage covered {p.FromStore:0.#} of a {p.Shortfall:0.#} shortfall: it lasts about {System.Math.Floor(days)} more days at this rate.");
-            else if (p.Shortfall > 0.05) lines.Add($"The {p.Shortfall:0.#} shortfall is beyond the reach of any stored water.");
-            if (p.ShortHomes > 0) lines.Add($"{p.ShortHomes} home{(p.ShortHomes == 1 ? " is" : "s are")} short. Hover one to see why. Homes stop growing; people leave after {WaterTuning.Grace} days.");
-            else lines.Add("Every home has enough.");
-            if (p.GroundwaterDraw > 0.05) lines.Add($"Groundwater drawn today: {p.GroundwaterDraw:0.#}.");
-            return string.Join("\n", lines);
         }
 
         public void Toast(string text, float secs = 3.5f) { _toastText.text = text; _toastUntil = Time.unscaledTime + secs; }
@@ -586,7 +558,7 @@ namespace CrownAndHearth.Game
             if (t.Build != null) return _art?.Building(ArtSlot(t.Build), 0) ?? Glyph("box", Dim);
             if (t.Zone != Zone.None) return Glyph("zone", ZoneColor(t.Zone));
             if (t.Road) return Glyph("road", new Color(0.55f, 0.42f, 0.28f));
-            if (t.Wall) return Glyph("road", new Color(0.72f, 0.5f, 0.24f));
+            if (t.Wall) return Glyph("wall", new Color(0.72f, 0.5f, 0.24f));
             if (t.Unzone) return Glyph("unzone", new Color(0.85f, 0.85f, 0.85f));
             if (t.Claim) return Glyph("claim", new Color(0.95f, 0.78f, 0.25f));
             if (t.Clear) return Glyph("cross", new Color(0.85f, 0.30f, 0.25f));
@@ -629,6 +601,10 @@ namespace CrownAndHearth.Game
                         case "zone": if (InDiamond(x, y)) v = ((x + y) / 3) % 2 == 0 ? col : dark; break;
                         case "unzone": if (InDiamond(x, y)) v = new Color32(120, 120, 110, 255); break;
                         case "road": if (InDiamond(x, y)) v = Mathf.Abs((x - 15.5f) - 2 * (y - 15.5f)) < 3f ? white : col; break;
+                        case "wall":
+                            if (x >= 4 && x < 28 && y >= 6 && y <= 26 - Mathf.Abs((x - 4) % 4 - 1))
+                                v = y == 9 || y == 16 || (x - 4) % 4 == 0 ? dark : col;
+                            break;
                         case "box": if (x > 6 && x < 25 && y > 6 && y < 25) v = col; break;
                         case "lens":
                             float d = Vector2.Distance(new Vector2(x, y), new Vector2(18, 19));
