@@ -4,7 +4,7 @@
 //   - flat magenta backgrounds are keyed out (flood fill from the corners, plus stray magenta pockets), alpha is snapped to 0/255
 //   - ground tiles (grass_N, grassfert_N, 2048 x 1024) are cropped to their diamond and shrunk to 32 x 16 with hard-edged sampling,
 //     rejected if the diamond has holes (grass_0 is 3:2 inside its canvas, so the built-in grass replaces it, as in the browser)
-//   - a ground atlas is built: grass 0-3, fertile 0-1, mountain rock, snow, road, white (for overlays)
+//   - a ground atlas is built: grass 0-3, fertile 0-1, mountain rock, snow, road, white (for overlays), and worked stone
 //   - placeholder sprites (prefixed ph_) are drawn for everything that has no art yet, in the shared palette from TEXTURE_SPEC.md
 using System;
 using System.Collections.Generic;
@@ -17,7 +17,7 @@ namespace CrownAndHearth.EditorTools
     public static class PrototypeArtImporter
     {
         public const string OutDir = "Assets/Resources/Art";
-        public static readonly string[] AtlasCells = { "grass_0", "grass_1", "grass_2", "grass_3", "grassfert_0", "grassfert_1", "rock", "snow", "road", "white" };
+        public static readonly string[] AtlasCells = { "grass_0", "grass_1", "grass_2", "grass_3", "grassfert_0", "grassfert_1", "mountain_rock", "mountain_snow", "road", "white", "worked_stone" };
 
         internal static string SourceDir => Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "assets"));
 
@@ -39,6 +39,12 @@ namespace CrownAndHearth.EditorTools
                 if (!tex.LoadImage(File.ReadAllBytes(file))) { report.Add("could not read " + name); continue; }
                 var px = tex.GetPixels32(); int w = tex.width, h = tex.height;
                 UnityEngine.Object.DestroyImmediate(tex);
+                if (IsNativeSurface(name))
+                {
+                    if (w == 32 && h == 16 && Array.TrueForAll(px, color => color.a == 255)) ground[name] = px;
+                    else report.Add(name + " rejected (expected a fully opaque 32 x 16 surface); built-in ground used");
+                    continue;
+                }
                 KeyOut(px, w, h);
                 if (name.StartsWith("grass_") || name.StartsWith("grassfert_"))
                 {
@@ -87,6 +93,8 @@ namespace CrownAndHearth.EditorTools
                 px[i].a = px[i].a < 128 ? (byte)0 : (byte)255;
             }
         }
+
+        static bool IsNativeSurface(string name) => name == "mountain_rock" || name == "mountain_snow" || name == "worked_stone";
 
         // ---------- Ground tiles (textures.js fitToSlot + validGround) ----------
         internal static Color32[] FitGround(Color32[] px, int w, int h)
@@ -156,8 +164,9 @@ namespace CrownAndHearth.EditorTools
             switch (name)
             {
                 case "grassfert_0": case "grassfert_1": b = Hex("#6B9A3E"); d = Hex("#5A4A2E"); l = Hex("#86B055"); break;
-                case "rock": b = Hex("#828783"); d = Hex("#565C5C"); l = Hex("#A6A59A"); break;
-                case "snow": b = Hex("#E6EBF2"); d = Hex("#C9D2DF"); l = Hex("#FFFFFF"); break;
+                case "mountain_rock": b = Hex("#828783"); d = Hex("#565C5C"); l = Hex("#A6A59A"); break;
+                case "mountain_snow": b = Hex("#E6EBF2"); d = Hex("#C9D2DF"); l = Hex("#FFFFFF"); break;
+                case "worked_stone": b = Hex("#606153"); d = Hex("#3E4035"); l = Hex("#8A8777"); break;
                 case "road": b = Hex("#9C7A4E"); d = Hex("#7E6040"); l = Hex("#B08F60"); break;
                 case "white": b = d = l = new Color32(255, 255, 255, 255); break;
                 default: b = Hex("#5F9E48"); d = Hex("#4F8C3B"); l = Hex("#79B65B"); break;
@@ -166,7 +175,7 @@ namespace CrownAndHearth.EditorTools
             for (int y = 0; y < 16; y++) for (int x = 0; x < 32; x++)
             {
                 double r = Sim.Noise.Hash2(x, y, 900 + salt);
-                if (name == "rock" || name == "snow")
+                if (IsNativeSurface(name))
                 {
                     double grain = Sim.Noise.VNoise(x * 0.31, y * 0.43, 730 + salt);
                     double strata = (y + x * 0.29 + grain * 2.5) % 4;
