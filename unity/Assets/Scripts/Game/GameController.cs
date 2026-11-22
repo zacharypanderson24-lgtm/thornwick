@@ -58,6 +58,12 @@ namespace CrownAndHearth.Game
                 Desc = "Drag over fertile land anywhere. Every farmhouse with a road works it. Set the wheat and flax percentages in the Farming menu above the build bar." },
             new ToolDef { Id = "silo", Cat = Cat.Farming, Label = "Silo", Build = "silo",
                 Desc = $"Stores {World.SiloFood} more wheat and {World.SiloFlax} more flax. Needs a road to the Town Hall." },
+            new ToolDef { Id = "pigPen", Cat = Cat.Farming, Label = "Pig Pen", Zone = Zone.Pigs,
+                Desc = "Drag a fenced pen on level ground beside a connected road. Pigs need 3 tiles each and eat wheat." },
+            new ToolDef { Id = "sheepPen", Cat = Cat.Farming, Label = "Sheep Pen", Zone = Zone.Sheep,
+                Desc = "Drag a fenced pen on level ground beside a connected road. Sheep need 2 tiles each and eat wheat." },
+            new ToolDef { Id = "chickenPen", Cat = Cat.Farming, Label = "Chicken Pen", Zone = Zone.Chickens,
+                Desc = "Drag a fenced pen on level ground beside a connected road. Chickens need 1 tile each and eat wheat." },
             new ToolDef { Id = "lodge", Cat = Cat.Forestry, Label = "Woodcutter Lodge", Build = "wood",
                 Desc = $"Woodcutters walk out to trees in Lumber zones within {WorkR} tiles, nearest first, fell them and carry the logs home. The lodge sets how many woodcutters you can have; the zoned trees set how many are needed. Farther trees mean longer walks. Needs a road to the Town Hall." },
             new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Lumber Zone", Zone = Zone.Wood,
@@ -66,8 +72,12 @@ namespace CrownAndHearth.Game
                 Desc = $"Plants saplings on Lumber-zoned open ground within {ForesterR} tiles, so the forest grows back." },
             new ToolDef { Id = "sawmill", Cat = Cat.Forestry, Label = "Sawmill", Build = "sawmill",
                 Desc = "Saws 4 logs a day into wood at full yield (the Town Hall saws 1 at half yield). Needs a road." },
+            new ToolDef { Id = "charcoal", Cat = Cat.Forestry, Label = "Charcoal Clamp", Build = "charcoal",
+                Desc = "Charcoal burners turn logs into fuel. Smiths use charcoal to smelt extra metal. Needs a connected road." },
             new ToolDef { Id = "hunter", Cat = Cat.Hunting, Label = "Hunting Lodge", Build = "hunter",
                 Desc = $"This 2×2 lodge sends two hunters to bring back food year-round from reachable mature forest within {World.HuntingRange} tiles. Each forest tile holds up to {World.ForestFoodReserve} food and recovers 1 every {World.HuntingRecoveryDays} days. Needs a road to the Town Hall." },
+            new ToolDef { Id = "smokehouse", Cat = Cat.Hunting, Label = "Smokehouse", Build = "smokehouse",
+                Desc = "Uses logs to preserve fresh meat from hunting and livestock. The town eats smoked meat when fresh food is short." },
             new ToolDef { Id = "quarry", Cat = Cat.Mining, Label = "Quarry", Build = "quarry",
                 Desc = $"Quarrymen dig stone from Mining zones within {WorkR} tiles, nearest first: rock outcrops, hills, and mountains from their edge inward. The quarry sets how many you can have; the zoned rock sets how many are needed. Needs a road." },
             new ToolDef { Id = "mine", Cat = Cat.Mining, Label = "Iron Mine", Build = "mine",
@@ -78,6 +88,8 @@ namespace CrownAndHearth.Game
                 Desc = "Drag over rock, hills and mountains for a nearby quarry or mine to work. The shaded area shows how far they work." },
             new ToolDef { Id = "market", Cat = Cat.Trade, Label = "Market", Build = "market",
                 Desc = "Must touch a road. Trading is paused for now." },
+            new ToolDef { Id = "storehouse", Cat = Cat.Trade, Label = "Storehouse", Build = "storehouse",
+                Desc = $"Haulers move construction supplies, ores, and fuel into extra storage via connected roads. Holds {World.StorehouseSpace} extra of each material." },
             new ToolDef { Id = "barracks", Cat = Cat.Military, Label = "Barracks", Build = "barracks",
                 Desc = "Trains infantry and archers from your peasants, one every 4 days (set the mix in the Troops menu). Troops eat more and do no other work. Must touch a road." },
             new ToolDef { Id = "wall", Cat = Cat.Military, Label = "Palisade", Wall = true,
@@ -329,7 +341,11 @@ namespace CrownAndHearth.Game
             _overlay.Apply();
         }
 
-        void OnDestroy() => _art?.SetBanner(null);
+        void OnDestroy()
+        {
+            _art?.SetBanner(null);
+            _art?.SettlementWork.Dispose();
+        }
 
         void Update()
         {
@@ -549,6 +565,12 @@ namespace CrownAndHearth.Game
                 _hud.Toast(n == 0 ? "No zoned open land there." : $"Removed the zone from {n} tile{(n == 1 ? "" : "s")}.");
                 return;
             }
+            if (World.IsLivestockZone(_tool.Zone))
+            {
+                var pen = World.PlacePen(_tool.Zone, a.x, a.y, b.x, b.y);
+                _hud.Toast(pen.Ok ? $"Fenced {_tool.Label}. Stocked 1 of {pen.Count} animals." : pen.Reason, 6);
+                return;
+            }
             var (x0, y0, x1, y1) = (Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
             var fresh = new List<Vector2Int>();   // tiles that are not this zone yet
             for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) if (World.Inb(x, y) && !World.AlreadyZoned(_tool.Zone, x, y)) fresh.Add(new Vector2Int(x, y));
@@ -690,7 +712,10 @@ namespace CrownAndHearth.Game
                 {
                     // the rectangle from the first corner to the cursor (or just the hovered tile before the first click)
                     var (x0, y0, x1, y1) = RectTo(h);
-                    for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) _overlay.AddTile(World, x, y, _rot, World.AlreadyZoned(_tool.Zone, x, y) ? Hover : World.ZoneCheck(_tool.Zone, x, y).Ok ? Ok : Bad);
+                    bool pen = World.IsLivestockZone(_tool.Zone);
+                    bool penOk = pen && World.CheckPen(_tool.Zone, x0, y0, x1, y1).Ok;
+                    for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++)
+                        _overlay.AddTile(World, x, y, _rot, pen ? (penOk ? Ok : Bad) : World.AlreadyZoned(_tool.Zone, x, y) ? Hover : World.ZoneCheck(_tool.Zone, x, y).Ok ? Ok : Bad);
                 }
                 else if (_tool.Unzone)
                 {
@@ -813,7 +838,8 @@ namespace CrownAndHearth.Game
 
         static string ZoneName(Zone z, bool flax = false) => z switch
         {
-            Zone.Res => "Housing", Zone.Farm => flax ? "Flax field" : "Wheat field", Zone.Wood => "Lumber", Zone.Mine => "Mining", Zone.Comm => "Commerce", _ => "No",
+            Zone.Res => "Housing", Zone.Farm => flax ? "Flax field" : "Wheat field", Zone.Wood => "Lumber", Zone.Mine => "Mining", Zone.Comm => "Commerce",
+            Zone.Pigs => "Pig pen", Zone.Sheep => "Sheep pen", Zone.Chickens => "Chicken pen", _ => "No",
         };
 
         /// <summary>Why a building that can be placed here may still disappoint: no connected road yet, or zoned land it would cover.
@@ -881,6 +907,14 @@ namespace CrownAndHearth.Game
             if (_tool.Zone != Zone.None)
             {
                 var (x0, y0, x1, y1) = RectTo(h);
+                if (World.IsLivestockZone(_tool.Zone))
+                {
+                    if (!_zoneAnchor.HasValue) return ($"Drag a rectangle. {World.TilesPerAnimal(_tool.Zone)} tiles per animal.", false);
+                    var pen = World.CheckPen(_tool.Zone, x0, y0, x1, y1);
+                    return pen.Ok
+                        ? ($"Capacity {pen.Count} animals. Fence costs {2 * (x1 - x0 + y1 - y0 + 2)} wood. Starter livestock cost {World.StarterLivestockGold} gold.", false)
+                        : (pen.Reason, true);
+                }
                 int ok = 0, bad = 0, already = 0, offRoad = 0; string why = null;
                 for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++)
                     {
@@ -907,11 +941,18 @@ namespace CrownAndHearth.Game
             {
                 var (x0, y0, x1, y1) = RectTo(h);
                 int n = 0;
-                for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++) if (World.Grid[y, x] == null && World.ZoneMap[y, x] != Zone.None) n++;
+                var pens = new HashSet<LivestockPen>();
+                for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++)
+                {
+                    if (World.PenAt(x, y) is LivestockPen pen) pens.Add(pen);
+                    else if (World.Grid[y, x] == null && World.ZoneMap[y, x] != Zone.None) n++;
+                }
+                if (pens.Count > 0) return ($"Remove {pens.Count} entire pen(s) with livestock" + (n > 0 ? $" and {n} other zone tiles" : ""), false);
                 return _zoneAnchor.HasValue ? ($"Remove the zone from {n} tile{(n == 1 ? "" : "s")}", n == 0) : ("Press and drag over zoned land", false);
             }
             if (_tool.Clear)
             {
+                if (World.PenAt(h.x, h.y) != null) return ("Remove the entire pen and its livestock", false);
                 var b = World.Grid[h.y, h.x];
                 if (b != null)
                 {
@@ -980,8 +1021,12 @@ namespace CrownAndHearth.Game
                 if (b.T == "smithery")
                 {
                     lines.Add($"{OrePerMetal} iron ore per metal. Staffed capacity: {SmeltRate * b.Eff:0.##} metal/day.");
-                    lines.Add($"Stockpile: {w.ResAmt[Res.Ore]:0.##} ore · {w.ResAmt[Res.Metal]:0.##}/{Storage} metal");
+                    lines.Add($"Stockpile: {w.ResAmt[Res.Ore]:0.##} ore · {w.ResAmt[Res.Metal]:0.##}/{w.CropStorage(Res.Metal)} metal");
+                    lines.Add("Charcoal fuels up to 1 extra metal per day with a full crew.");
                 }
+                if (b.T == "storehouse") lines.Add($"+{World.StorehouseSpace} storage per material. Hauls up to {b.Workers * World.HaulPerWorker} extra goods/day.");
+                if (b.T == "smokehouse") lines.Add($"Fresh meat {w.FreshMeatStored:0.#} · Winter reserve {w.ResAmt[Res.SmokedMeat]:0.#}");
+                if (b.T == "charcoal") lines.Add($"Fuel stockpile {w.ResAmt[Res.Charcoal]:0.#}. {World.LogsPerCharcoal} logs per charcoal.");
                 if (b.T == "hunter") lines.Add($"Hunts mature forest within {World.HuntingRange} tiles in all seasons.");
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
                 if (b.T == "silo")
@@ -992,6 +1037,12 @@ namespace CrownAndHearth.Game
                 lines.AddRange(WaterLines(b));
             }
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");
+            if (w.PenAt(x, y) is LivestockPen pen)
+            {
+                lines.Add(ZoneName(pen.Species).ToUpper());
+                lines.Add($"{pen.Count}/{pen.Capacity} animals · {pen.Area} tiles · {World.TilesPerAnimal(pen.Species)} tiles per animal");
+                return string.Join("\n", lines);
+            }
             var d = w.DecoMap[y, x];
             // a short heading line of its own (the info panel shows the first line as its title), then the explanation
             if (d == Deco.Tree)

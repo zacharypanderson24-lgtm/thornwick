@@ -330,7 +330,12 @@ namespace CrownAndHearth.Sim
                     {
                         var (res, stock) = RaidLoot(a.Target);
                         double take = Math.Min(stock, RaidBite);
-                        if (res == Res.Food) { a.WheatLoot = WheatShare(take); _wheat = WheatStored - a.WheatLoot; }
+                        if (res == Res.Food)
+                        {
+                            _freshMeat = FreshMeatStored - FreshMeatShare(take);
+                            a.WheatLoot = WheatShare(take);
+                            _wheat = WheatStored - a.WheatLoot;
+                        }
                         ResAmt[res] -= take; a.LootRes = res; a.Carry = take;
                     }
                     a.St = RaiderState.Flee;

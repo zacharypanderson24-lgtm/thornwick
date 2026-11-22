@@ -46,7 +46,8 @@ namespace CrownAndHearth.Sim
             int previous = 0;
             foreach (var item in rows)
             {
-                if (!(item is JArray row) || (row.Count != 2 + RecordedResources.Length && row.Count != 2 + (int)Res.Metal))
+                if (!(item is JArray row) || (row.Count != 2 + RecordedResources.Length &&
+                    row.Count != 2 + (int)Res.Charcoal && row.Count != 2 + (int)Res.Metal))
                     throw new InvalidDataException("Invalid statistics entry.");
                 int day = row[0].Value<int>();
                 int population = row[1].Value<int>();

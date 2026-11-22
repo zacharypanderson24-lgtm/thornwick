@@ -8,6 +8,7 @@ namespace CrownAndHearth.Game
     {
         readonly Dictionary<string, Sprite> _sprites = new Dictionary<string, Sprite>();
         readonly Dictionary<Sprite, Sprite> _banners = new Dictionary<Sprite, Sprite>();
+        internal readonly SettlementWorkArt SettlementWork = new SettlementWorkArt();
         Color32? _bannerColor;
 
         public Texture2D GroundAtlas { get; }
@@ -26,7 +27,7 @@ namespace CrownAndHearth.Game
         /// <summary>A building's sprite for camera-relative view 0..3 (file suffix _1.._4), else its single image, else its placeholder.</summary>
         public Sprite Building(string slot, int view)
         {
-            var source = Find(slot + "_" + (view + 1)) ?? Find(slot) ?? Find("ph_" + slot);
+            var source = Find(slot + "_" + (view + 1)) ?? Find(slot) ?? SettlementWork.Building(slot, view) ?? Find("ph_" + slot);
             if (source == null && slot == "hunter") return Building("wood2", view);
             if (source == null || !_bannerColor.HasValue || (slot != "hall" && slot != "barracks") || !source.texture.isReadable)
                 return source;

@@ -98,9 +98,9 @@ namespace CrownAndHearth.Game
             statRow.childForceExpandWidth = statRow.childForceExpandHeight = true;
             _day = MakeStat(stats, "Day");
             _population = MakeStat(stats, "Population");
-            BuildStockpileDropdown(stats, "Crops", ("Wheat", Res.Food), ("Flax", Res.Flax));
+            BuildStockpileDropdown(stats, "Crops", ("Wheat", Res.Food), ("Flax", Res.Flax), ("Smoked meat", Res.SmokedMeat));
             BuildStockpileDropdown(stats, "Mining", ("Stone", Res.Stone), ("Ore", Res.Ore), ("Metal", Res.Metal));
-            BuildStockpileDropdown(stats, "Wood", ("Logs", Res.Logs), ("Wood", Res.Wood));
+            BuildStockpileDropdown(stats, "Wood", ("Logs", Res.Logs), ("Wood", Res.Wood), ("Charcoal", Res.Charcoal));
             _gold = MakeStat(stats, "Gold");
 
             var top = MakePanel(root, "TimeAndSession", Vector2.one, Vector2.one,
@@ -151,14 +151,15 @@ namespace CrownAndHearth.Game
             _warbandPanel.SetActive(false);
 
             // workforce panel
-            var wp = MakePanel(root, "Workforce", Vector2.right, Vector2.right, new Vector2(-440, BottomH + 58), new Vector2(-8, BottomH + 382));
+            float workforceHeight = 80 + Defs.Trades.Length * 38;
+            var wp = MakePanel(root, "Workforce", Vector2.right, Vector2.right, new Vector2(-440, BottomH + 58), new Vector2(-8, BottomH + 58 + workforceHeight));
             _workPanel = wp.gameObject;
             var title = MakeText(wp, "Title", 17, TextAnchor.UpperLeft); title.text = "Workforce: villagers fill trades top to bottom";
-            Stretch(title.rectTransform, new Vector2(10, 290), new Vector2(-10, -8));
+            Stretch(title.rectTransform, new Vector2(10, workforceHeight - 34), new Vector2(-10, -8));
             _workRows = new GameObject("Rows", typeof(RectTransform)).GetComponent<RectTransform>();
             _workRows.SetParent(wp, false); Stretch(_workRows, new Vector2(10, 40), new Vector2(-10, -40));
             _workText = MakeText(wp, "Summary", 14, TextAnchor.LowerLeft);
-            Stretch(_workText.rectTransform, new Vector2(10, 8), new Vector2(-10, -290));
+            Stretch(_workText.rectTransform, new Vector2(10, 8), new Vector2(-10, 34 - workforceHeight));
             _workPanel.SetActive(false);
 
             BuildTutorial(root);
@@ -244,7 +245,8 @@ namespace CrownAndHearth.Game
                 Stretch(kind.rectTransform, new Vector2(68, 30), new Vector2(-6, -36));
                 FitText(kind, 9, 12);
                 var cost = MakeText(card, "Cost", 13, TextAnchor.MiddleLeft);
-                cost.text = t.Claim ? "Free" : t.Build != null ? CostText(t.Build) : t.Road ? "1 wood a tile" : t.Wall ? "2 wood a tile" : t.Zone != Zone.None ? "Free" : "";
+                cost.text = t.Claim ? "Free" : t.Build != null ? CostText(t.Build) : t.Road ? "1 wood a tile" : t.Wall ? "2 wood a tile" :
+                    World.IsLivestockZone(t.Zone) ? $"Fence wood + {World.StarterLivestockGold} gold" : t.Zone != Zone.None ? "Free" : "";
                 Stretch(cost.rectTransform, new Vector2(68, 6), new Vector2(-6, -CardH + 30));
                 FitText(cost, 9, 13);
                 _cards[id] = img; _cardCost[id] = cost;
@@ -579,6 +581,7 @@ namespace CrownAndHearth.Game
         Sprite ToolIcon(GameController.ToolDef t)
         {
             if (t.Build != null) return _art?.Building(ArtSlot(t.Build), 0) ?? Glyph("box", Dim);
+            if (World.IsLivestockZone(t.Zone)) return _art?.SettlementWork.Animal(t.Zone) ?? Glyph("zone", ZoneColor(t.Zone));
             if (t.Zone != Zone.None) return Glyph("zone", ZoneColor(t.Zone));
             if (t.Road) return Glyph("road", new Color(0.55f, 0.42f, 0.28f));
             if (t.Wall) return Glyph("wall", new Color(0.72f, 0.5f, 0.24f));
