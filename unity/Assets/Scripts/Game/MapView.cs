@@ -18,6 +18,9 @@ namespace CrownAndHearth.Game
         public RectTransform Highlight;                // outline of the hovered region
         /// <summary>The cell under the cursor (x, y with y = 0 in the north), or null when the cursor is off the map.</summary>
         public Action<Vector2Int?> Hovered;
+        /// <summary>A left click that was not a drag, on a cell.</summary>
+        public Action<Vector2Int> Clicked;
+        Vector2 _pressP; bool _moved;
 
         WorldMap _map;
         float _zoom = 1f;
@@ -82,12 +85,14 @@ namespace CrownAndHearth.Game
                 }
                 bool down = mouse.leftButton.isPressed || mouse.rightButton.isPressed || mouse.middleButton.isPressed;
                 bool pressed = mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame || mouse.middleButton.wasPressedThisFrame;
-                if (pressed && inside) { _dragging = true; _lastP = p; }
+                if (pressed && inside) { _dragging = true; _lastP = p; _pressP = p; _moved = false; }
+                if (mouse.leftButton.wasReleasedThisFrame && inside && !_moved && (p - _pressP).sqrMagnitude < 0.0004f && _hover.HasValue) Clicked?.Invoke(_hover.Value);
                 if (!down) _dragging = false;
                 if (_dragging)
                 {
                     var delta = p - _lastP; _lastP = p;
                     if (delta.sqrMagnitude > 0) { _centre -= delta * d; Apply(); }
+                    if ((p - _pressP).sqrMagnitude >= 0.0004f) _moved = true;
                 }
                 SetHover(inside ? CellAt(p) : (Vector2Int?)null);
             }

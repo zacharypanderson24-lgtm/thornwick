@@ -149,7 +149,7 @@ namespace CrownAndHearth.Game
         }
 
         /// <summary>City sites as small dark-outlined dots (white), and the player's settlement as a larger gold marker.</summary>
-        public static Texture2D BuildSites(WorldMap m)
+        public static Texture2D BuildSites(WorldMap m, System.Collections.Generic.IReadOnlyList<RaiderCamp> camps = null, System.Collections.Generic.ISet<int> destroyed = null)
         {
             var px = new Color32[S * S]; var outline = new Color32(10, 10, 16, 210);
             void Square(int cx, int cy, int r, Color32 c)
@@ -161,6 +161,13 @@ namespace CrownAndHearth.Game
                 if (reg.Site == null || reg.Id == m.HomeRegion) continue;
                 Square(reg.Site.X, reg.Site.Y, 2, outline); Square(reg.Site.X, reg.Site.Y, 1, SiteWhite);
             }
+            if (camps != null)
+                foreach (var c in camps)
+                {
+                    bool dead = destroyed != null && destroyed.Contains(c.Id);
+                    Square(c.X, c.Y, 3, outline);
+                    Square(c.X, c.Y, 2, dead ? new Color32(110, 110, 116, 255) : new Color32(226, 56, 46, 255));
+                }
             if (m.HomeSite != null)
             {
                 Square(m.HomeSite.X, m.HomeSite.Y, 5, outline); Square(m.HomeSite.X, m.HomeSite.Y, 4, HomeGold);

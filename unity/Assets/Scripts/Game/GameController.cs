@@ -155,8 +155,16 @@ namespace CrownAndHearth.Game
             _hud.TutorialClose += () => { _tutorial.Close(); PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
             _hud.SavePicked += SaveSettlement;
             _hud.MapToggled += open => { if (open) EnsureWorldMap(); };
+            _hud.InvasionConfirmed += (camp, groups) => World.BeginInvasion(camp, groups);
+            _hud.InvasionFinished += battle =>
+            {
+                World.FinishInvasion(battle);
+                _hud.SetCamps(World);
+                _hud.Toast(battle.Victory ? $"The {battle.Camp.Name} is destroyed." : $"The attack on the {battle.Camp.Name} is over.", 6);
+            };
             _hud.LoadPicked += LoadSettlement;
             SetTool(_tool); _hud.SetSpeed(_speed);
+            EnsureWorldMap();   // the raider camps live on the world map, so it is made at the start (on a worker thread)
             // the tutorial opens by itself until the player has finished or closed it once (the Tutorial button brings it back)
             if (PlayerPrefs.GetInt(TutorialSeenKey, 0) == 0) { _tutorial.Start(World); _hud.ShowTutorial(_tutorial); }
             else _hud.Toast("Welcome back to Crown & Hearth. Pick a category along the bottom to build; the Tutorial button walks through the game.", 6);
@@ -210,7 +218,7 @@ namespace CrownAndHearth.Game
             _hud.SetSpeed(_speed);
             _cam.CenterOn(IsoView.TileCenter(World, loaded.Hall.X + 1, loaded.Hall.Y + 1, _rot));
             _hud.Toast("Settlement loaded and paused.");
-            if (_hud.MapOpen) EnsureWorldMap();   // a different save can have a different world
+            EnsureWorldMap();   // a different save can have a different world (and its own raider camps)
         }
 
         void SetBanner(string hex)
@@ -235,10 +243,19 @@ namespace CrownAndHearth.Game
         void EnsureWorldMap()
         {
             int seed = World.Seed; var relief = World.Relief;
-            if (_worldMap != null && _worldMap.Seed == seed && _worldMap.HomeRelief == relief) { _hud.SetWorldMap(_worldMap); return; }
+            if (_worldMap != null && _worldMap.Seed == seed && _worldMap.HomeRelief == relief) { _hud.SetWorldMap(_worldMap); AttachCamps(); return; }
             if (_worldMapTask != null && !_worldMapTask.IsCompleted) return;
             _hud.SetMapGenerating();
             _worldMapTask = System.Threading.Tasks.Task.Run(() => WorldMap.Generate(seed, relief));
+        }
+
+        /// <summary>Give the settlement the raider camps of its world, once the map for its seed exists.</summary>
+        void AttachCamps()
+        {
+            if (_worldMap == null || _worldMap.Seed != World.Seed || World.Camps.Count > 0) return;
+            var home = _worldMap.HomeSite;
+            World.SetCamps(RaiderCamps.Generate(_worldMap), home?.X ?? WorldMap.Size / 2, home?.Y ?? WorldMap.Size / 2);
+            _hud.SetCamps(World);
         }
 
         void PollWorldMap()
@@ -247,7 +264,7 @@ namespace CrownAndHearth.Game
             var task = _worldMapTask; _worldMapTask = null;
             if (task.IsFaulted) { Debug.LogError("World map generation failed: " + task.Exception?.GetBaseException()); _hud.Toast("Could not generate the world map.", 6); return; }
             _worldMap = task.Result;
-            if (_hud.MapOpen) EnsureWorldMap();   // the save may have changed while it was being made
+            EnsureWorldMap();   // the save may have changed while it was being made; this also hands the camps to the settlement
         }
 
         void OnDestroy() => _art?.SetBanner(null);
@@ -326,7 +343,7 @@ namespace CrownAndHearth.Game
             if (_hud.MapOpen)
             {
                 // the map is modal: Esc closes it, Space still pauses, nothing else reaches the town
-                if (kb.escapeKey.wasPressedThisFrame) _hud.CloseMap();
+                if (kb.escapeKey.wasPressedThisFrame) _hud.EscapePanels();
                 if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
                 return;
             }

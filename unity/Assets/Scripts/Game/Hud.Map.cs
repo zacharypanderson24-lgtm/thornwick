@@ -26,7 +26,7 @@ namespace CrownAndHearth.Game
         MapLayer _mapLayer = MapLayer.Terrain;
         bool _mapOpen, _mapBordersOn = true;
 
-        public bool MapOpen => _mapOpen;
+        public bool MapOpen => _mapOpen || _campOpen;
         /// <summary>Raised when the map opens (true) or closes (false); the game asks for the world to be generated on open.</summary>
         public event Action<bool> MapToggled;
 
@@ -55,6 +55,7 @@ namespace CrownAndHearth.Game
             _mapView = _mapPanel.gameObject.AddComponent<MapView>();
             _mapView.Surface = surface; _mapView.Highlight = highlight; _mapView.Layers = new[] { _mapBase, _mapBorders, _mapSites };
             _mapView.Hovered = OnMapHover;
+            _mapView.Clicked = OnMapClick;
 
             // the side: what is under the cursor, the layers, the legend, the buttons
             var side = MakePanel(_mapPanel, "Side", Vector2.zero, Vector2.one, new Vector2(708, 14), new Vector2(-14, -66));
@@ -102,7 +103,12 @@ namespace CrownAndHearth.Game
             rt.anchorMin = Vector2.up; rt.anchorMax = Vector2.one; rt.offsetMin = new Vector2(8, -bottom); rt.offsetMax = new Vector2(-8, -top);
         }
 
-        public void ToggleMap() { if (_mapOpen) CloseMap(); else OpenMap(); }
+        public void ToggleMap()
+        {
+            if (_campOpen && _campPhase == CampPhase.Fight) return;   // no leaving a battle by accident
+            if (_campOpen) CloseCamp();
+            if (_mapOpen) CloseMap(); else OpenMap();
+        }
 
         public void OpenMap()
         {
@@ -119,6 +125,7 @@ namespace CrownAndHearth.Game
         public void CloseMap()
         {
             if (!_mapOpen) return;
+            if (_campOpen) { if (_campPhase == CampPhase.Fight) return; CloseCamp(); }
             _mapOpen = false;
             _mapPanel.gameObject.SetActive(false);
             _mapMenuButton.color = Btn;
@@ -132,7 +139,7 @@ namespace CrownAndHearth.Game
             _worldMap = map;
             foreach (var tex in new[] { _terrainTex, _heatTex, _bordersTex, _sitesTex }) if (tex != null) Destroy(tex);
             _terrainTex = WorldMapRenderer.BuildTerrain(map); _heatTex = WorldMapRenderer.BuildHeat(map);
-            _bordersTex = WorldMapRenderer.BuildBorders(); _sitesTex = WorldMapRenderer.BuildSites(map);
+            _bordersTex = WorldMapRenderer.BuildBorders(); _sitesTex = WorldMapRenderer.BuildSites(map, _world?.Camps, _world?.DestroyedCamps);
             _mapBorders.texture = _bordersTex; _mapSites.texture = _sitesTex;
             _mapTitle.text = $"World map: {WorldMap.SettingName(map.Setting)} campaign";
             _mapSubtitle.text = $"{WorldMap.Size} x {WorldMap.Size} km  ·  {WorldMap.Regions} x {WorldMap.Regions} regions of {WorldMap.RegionCells} km  ·  seed {map.Seed}";
@@ -140,6 +147,46 @@ namespace CrownAndHearth.Game
             _mapView.SetMap(map);
             RefreshMapLayers();
             OnMapHover(null);
+        }
+
+        /// <summary>The camps were handed to the settlement, or one was destroyed: redraw the red dots.</summary>
+        public void SetCamps(World w)
+        {
+            if (_worldMap == null || _sitesTex == null) return;
+            _world = w;
+            Destroy(_sitesTex);
+            _sitesTex = WorldMapRenderer.BuildSites(_worldMap, w.Camps, w.DestroyedCamps);
+            _mapSites.texture = _sitesTex;
+            BuildMapLegend();
+            OnMapHover(_mapView?.HoverCell);
+        }
+
+        const int CampPick = 4;   // cells around a red dot that count as pointing at it
+
+        RaiderCamp CampNear(Vector2Int? cell)
+        {
+            if (!cell.HasValue || _world == null) return null;
+            RaiderCamp best = null; int bestD = CampPick + 1;
+            foreach (var c in _world.Camps)
+            {
+                int d = Math.Max(Math.Abs(c.X - cell.Value.x), Math.Abs(c.Y - cell.Value.y));
+                if (d < bestD) { best = c; bestD = d; }
+            }
+            return best;
+        }
+
+        void OnMapClick(Vector2Int cell)
+        {
+            var camp = CampNear(cell);
+            if (camp == null) return;
+            if (_world.DestroyedCamps.Contains(camp.Id)) { Toast($"The {camp.Name} is already destroyed."); return; }
+            OpenCamp(camp);
+        }
+
+        string DescribeCamp(RaiderCamp c)
+        {
+            if (_world.DestroyedCamps.Contains(c.Id)) return $"<b>{c.Name}</b>: destroyed.";
+            return $"<b><color=#E05048>RAIDER CAMP</color> {c.Name}</b>\nStrength {c.Strength} of 5, about {3 + 2 * c.Strength} raiders\n{_world.CampKm(c)} km away: {_world.MarchDays(c)} days of marching.\nClick to plan an invasion.";
         }
 
         public void SetMapGenerating() { if (_mapStatus != null && _worldMap == null) _mapStatus.text = "Generating the world..."; }
@@ -174,6 +221,7 @@ namespace CrownAndHearth.Game
                 rows.Add((WorldMapRenderer.River, "River", ""));
                 rows.Add((WorldMapRenderer.SiteWhite, "City site", ""));
                 rows.Add((WorldMapRenderer.HomeGold, "Your settlement", ""));
+                rows.Add((new Color32(220, 60, 50, 255), "Raider camp (click)", ""));
             }
             else
             {
@@ -204,6 +252,8 @@ namespace CrownAndHearth.Game
             if (_worldMap == null) return;
             var region = cell.HasValue ? _worldMap.RegionAt(cell.Value.x, cell.Value.y) : _worldMap.Home;
             _mapInfo.text = region == null ? "" : DescribeRegion(_worldMap, region);
+            var camp = CampNear(cell);
+            if (camp != null) { _mapCell.text = DescribeCamp(camp); return; }
             _mapCell.text = cell.HasValue ? DescribeCell(_worldMap, cell.Value.x, cell.Value.y) : "Move the cursor over the map. Showing your home region.";
         }
 

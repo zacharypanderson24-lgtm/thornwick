@@ -54,6 +54,7 @@ namespace CrownAndHearth.Sim
         public int Band, Defenders, Killed, Escaped, SoldiersLost, StartDay, PeasantsLost;
         public readonly HashSet<string> Tools = new HashSet<string>();   // what the residents fought with
         public string From = "";
+        public RaiderCamp Camp;   // the camp the band came from (null when no camps are set)
         public bool Over, StartAnnounced, EndAnnounced, Alarm;   // Once raised, all garrisons respond for the rest of the raid.
         public readonly Dictionary<Res, int> Stolen = new Dictionary<Res, int>();   // what got away with the raiders
         public readonly List<Raider> Raiders = new List<Raider>();
@@ -74,7 +75,7 @@ namespace CrownAndHearth.Sim
             string defence = Defenders == 0 ? (Tools.Count > 0 ? "You had no soldiers. " + folk : "You had no soldiers to stop them.")
                 : $"{Defenders} soldiers stood guard" + (SoldiersLost > 0 ? $" and {SoldiersLost} fell." : ".") + (folk == "" ? "" : " " + folk);
             if (!Over) return $"{Band} raiders are coming from the {From}. {Active} still on the field, {Killed} cut down so far.\nThey have taken: {loot}.";
-            return $"{Band} raiders came from the {From}: {Killed} cut down, {Escaped} escaped with loot. {defence}\nThey made off with: {loot}.";
+            return $"{Band} raiders came from the {From}" + (Camp != null ? $" ({Camp.Name})" : "") + $": {Killed} cut down, {Escaped} escaped with loot. {defence}\nThey made off with: {loot}.";
         }
     }
 
@@ -174,11 +175,12 @@ namespace CrownAndHearth.Sim
         static readonly string[] Sides = { "north", "east", "south", "west" };
 
         /// <summary>A band arrives from outside your land: one side picked by the day and the town, raiders staggered over a few days.</summary>
-        public RaidReport BeginRaid(int raiders)
+        public RaidReport BeginRaid(int raiders, RaiderCamp camp = null)
         {
-            var r = new RaidReport { Band = raiders, Defenders = Soldiers, StartDay = Day };
+            camp ??= PickRaidCamp();
+            var r = new RaidReport { Band = raiders, Defenders = Soldiers, StartDay = Day, Camp = camp };
             Raid = r; _militiaWounds = 0;
-            int side = (int)Math.Floor(Noise.Hash2(Day, Seed, 91) * 4);
+            int side = camp != null ? CampSide(camp) : (int)Math.Floor(Noise.Hash2(Day, Seed, 91) * 4);
             r.From = Sides[side];
             int minX = N, maxX = 0, minY = N, maxY = 0;
             for (int py = 0; py < ParcelsPerSide; py++) for (int px = 0; px < ParcelsPerSide; px++)

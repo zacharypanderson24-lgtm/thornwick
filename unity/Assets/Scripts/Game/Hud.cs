@@ -123,6 +123,7 @@ namespace CrownAndHearth.Game
                 new Vector2(-545, BottomH + 8), new Vector2(-8, BottomH + 50));
             BuildTownMenus(root, townMenuBar);
             BuildMap(root, townMenuBar);
+            BuildCamp(root);
 
             // left info panel
             _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -417), new Vector2(330, -68)).gameObject;
@@ -501,6 +502,7 @@ namespace CrownAndHearth.Game
 
         void Update()
         {
+            UpdateCamp();
             if (_toastText != null && Time.unscaledTime > _toastUntil && _toastText.text.Length > 0) _toastText.text = "";
             // the tutorial's tool glows until the player picks it: its card if the tray is open, else its category button
             if (_highlight != null && _highlight != _currentTool)
