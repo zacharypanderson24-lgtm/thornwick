@@ -61,6 +61,10 @@ namespace CrownAndHearth.Sim
                         ["camp"] = e.CampId, ["infantry"] = e.Infantry, ["archers"] = e.Archers, ["returnDay"] = e.ReturnDay,
                         ["loot"] = new JObject(e.Loot.Select(kv => new JProperty(kv.Key.ToString(), kv.Value))),
                     })),
+                    ["warband"] = Warband == null ? null : new JObject
+                    {
+                        ["camp"] = Warband.CampId, ["band"] = Warband.Band, ["leaveDay"] = Warband.LeaveDay, ["arriveDay"] = Warband.ArriveDay, ["spotted"] = Warband.Spotted,
+                    },
                 },
                 ["gameRecoveryDay"] = JObject.FromObject(_gameRecoveryDay.Where(pair => pair.Value > Day)
                     .ToDictionary(pair => pair.Key, pair => pair.Value)),
@@ -247,6 +251,8 @@ namespace CrownAndHearth.Sim
                     foreach (var p in (token["loot"] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>()) if (Enum.TryParse<Res>(p.Name, out var res)) e.Loot[res] = (int)p.Value;
                     world.Expeditions.Add(e);
                 }
+                if (campsSave["warband"] is JObject wb)   // older saves have none
+                    world.Warband = new Warband { CampId = (int)wb["camp"], Band = (int)wb["band"], LeaveDay = (int)wb["leaveDay"], ArriveDay = (int)wb["arriveDay"], Spotted = (bool)wb["spotted"] };
             }
             world.SetShaftDepthLimit(save.Value<int?>("shaftDepthLimit") ?? MaxDepth);
             world.SetMineSupportsRequired(save.Value<bool?>("requireMineSupports") ?? false);

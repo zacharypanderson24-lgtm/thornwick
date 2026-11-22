@@ -149,7 +149,12 @@ namespace CrownAndHearth.Game
         }
 
         /// <summary>City sites as small dark-outlined dots (white), and the player's settlement as a larger gold marker.</summary>
-        public static Texture2D BuildSites(WorldMap m, System.Collections.Generic.IReadOnlyList<RaiderCamp> camps = null, System.Collections.Generic.ISet<int> destroyed = null)
+        public static readonly Color32 WarbandOrange = new Color32(255, 140, 30, 255);
+
+        /// <summary>City sites, camps and your settlement; a spotted warband (warband = where it is now, home = where it is going) is drawn
+        /// as an orange marker with a dashed line along the rest of its road.</summary>
+        public static Texture2D BuildSites(WorldMap m, System.Collections.Generic.IReadOnlyList<RaiderCamp> camps = null, System.Collections.Generic.ISet<int> destroyed = null,
+            (double x, double y)? warband = null, (int x, int y)? home = null)
         {
             var px = new Color32[S * S]; var outline = new Color32(10, 10, 16, 210);
             void Square(int cx, int cy, int r, Color32 c)
@@ -168,10 +173,22 @@ namespace CrownAndHearth.Game
                     Square(c.X, c.Y, 3, outline);
                     Square(c.X, c.Y, 2, dead ? new Color32(110, 110, 116, 255) : new Color32(226, 56, 46, 255));
                 }
+            if (warband.HasValue && home.HasValue)
+            {
+                double wx = warband.Value.x, wy = warband.Value.y, dx = home.Value.x - wx, dy = home.Value.y - wy;
+                int steps = System.Math.Max(1, (int)System.Math.Ceiling(System.Math.Sqrt(dx * dx + dy * dy)));
+                for (int i = 0; i <= steps; i++)
+                    if (i % 6 < 3) Square((int)System.Math.Round(wx + dx * i / steps), (int)System.Math.Round(wy + dy * i / steps), 0, WarbandOrange);
+            }
             if (m.HomeSite != null)
             {
                 Square(m.HomeSite.X, m.HomeSite.Y, 5, outline); Square(m.HomeSite.X, m.HomeSite.Y, 4, HomeGold);
                 Square(m.HomeSite.X, m.HomeSite.Y, 1, outline);
+            }
+            if (warband.HasValue)
+            {
+                int x = (int)System.Math.Round(warband.Value.x), y = (int)System.Math.Round(warband.Value.y);
+                Square(x, y, 4, outline); Square(x, y, 3, WarbandOrange); Square(x, y, 1, outline);
             }
             return NewTexture(px);
         }

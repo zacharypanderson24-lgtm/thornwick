@@ -32,7 +32,8 @@ namespace CrownAndHearth.Game
         Font _font;
         ArtLibrary _art;
         InputField _bannerInput;
-        Text _infoText, _toastText, _workText;
+        Text _infoText, _toastText, _workText, _warbandText;
+        GameObject _warbandPanel;
         GameObject _infoPanel, _workPanel;
         float _toastUntil;
         Text _day, _population, _gold, _infoTitle;
@@ -140,6 +141,14 @@ namespace CrownAndHearth.Game
             _toastText = MakeText(root, "Toast", 18, TextAnchor.MiddleCenter);
             var tr = _toastText.rectTransform; tr.anchorMin = new Vector2(0.5f, 0); tr.anchorMax = new Vector2(0.5f, 0); tr.sizeDelta = new Vector2(1100, 40); tr.anchoredPosition = new Vector2(0, BottomH + CardH + 44);
             _toastText.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
+
+            // a spotted warband on its way: stays under the top bar until it arrives
+            var wbp = MakePanel(root, "Warband", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-340, -108), new Vector2(180, -70));
+            _warbandPanel = wbp.gameObject;
+            _warbandText = MakeText(wbp, "WarbandText", 15, TextAnchor.MiddleCenter);
+            Stretch(_warbandText.rectTransform, new Vector2(8, 2), new Vector2(-8, -2));
+            _warbandText.color = BadInk;
+            _warbandPanel.SetActive(false);
 
             // workforce panel
             var wp = MakePanel(root, "Workforce", Vector2.right, Vector2.right, new Vector2(-440, BottomH + 58), new Vector2(-8, BottomH + 382));
@@ -493,9 +502,23 @@ namespace CrownAndHearth.Game
             _population.text = world.Starving ? "Starving" : world.Soldiers > 0 ? $"{world.Peasants} + {world.Soldiers} troops/{world.D.Civ} · {world.D.Idle} idle" : $"{world.Peasants}/{world.D.Civ} · {world.D.Idle} idle";
             UpdateStockpiles(world);
             UpdateNeeds(world);
+            UpdateWarband(world);
             // prices turn red on the cards the town cannot afford yet
             foreach (var t in _tools)
                 if (t.Build != null && _cardCost.TryGetValue(t.Id, out var cost)) cost.color = world.CanAfford(t.Build).Ok ? Ink : BadInk;
+        }
+
+        /// <summary>The banner for a spotted warband: who, how many, how soon and from which side.</summary>
+        void UpdateWarband(World world)
+        {
+            RefreshWarbandOnMap(world);
+            var wb = world.Warband; var camp = wb != null && wb.Spotted ? world.CampById(wb.CampId) : null;
+            bool show = camp != null && !_campOpen;
+            if (_warbandPanel.activeSelf != show) _warbandPanel.SetActive(show);
+            if (!show) return;
+            int left = wb.ArriveDay - world.Day;
+            string when = left <= 0 ? "arriving now" : left == 1 ? "1 day away" : $"{left} days away";
+            _warbandText.text = $"<b>Warband</b> from the {camp.Name}: {wb.Band} raiders, {when}, coming from the {world.CampSideName(camp)}";
         }
 
         public void Toast(string text, float secs = 3.5f) { _toastText.text = text; _toastUntil = Time.unscaledTime + secs; }
