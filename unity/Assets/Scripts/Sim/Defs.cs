@@ -10,7 +10,7 @@ namespace CrownAndHearth.Sim
     public enum Zone : byte { None, Res, Farm, Comm, Wood, Mine, Pigs, Sheep, Chickens }
 
     /// <summary>Resource keys (JS: S.res).</summary>
-    public enum Res { Food, Wood, Logs, Stone, Ore, Gold, Flax, Metal, Charcoal, SmokedMeat }
+    public enum Res { Food, Wood, Logs, Stone, Ore, Gold, Flax, Metal, Charcoal, SmokedMeat, Wool, Eggs }
 
     public static class Defs
     {

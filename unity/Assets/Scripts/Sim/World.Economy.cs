@@ -73,17 +73,21 @@ namespace CrownAndHearth.Sim
 
             // economy
             double eat = DailyFoodDemand;
-            double fresh = Math.Max(0, food - wheat) + WorkLivestock();
-            food = wheat + fresh;
-            RecentFoodProduction = RecentFoodProduction is double recent ? (6 * recent + food) / 7 : food;
-            _freshMeat = FreshMeatStored + fresh;
+            _freshMeat = FreshMeatStored + Math.Max(0, food - wheat);
             _wheat = WheatStored + wheat;
             ResAmt[Res.Food] += food;
+            var eggs = WorkLivestock();
+            ResAmt[Res.Eggs] += eggs;
+            double foodEquivalent = food + eggs / (double)EggsPerFood;
+            RecentFoodProduction = RecentFoodProduction is double recent ? (6 * recent + foodEquivalent) / 7 : foodEquivalent;
             PreserveMeat();
+            double fromEggs = Math.Min(ResAmt[Res.Eggs] / EggsPerFood, Math.Max(0, eat - ResAmt[Res.Food]));
+            ResAmt[Res.Eggs] -= fromEggs * EggsPerFood;
+            eat -= fromEggs;
             double fromReserve = Math.Min(ResAmt[Res.SmokedMeat], Math.Max(0, eat - ResAmt[Res.Food]));
             ResAmt[Res.SmokedMeat] -= fromReserve;
             eat -= fromReserve;
-            bool reserveCoveredMeal = fromReserve > 0 && eat <= ResAmt[Res.Food];
+            bool reserveCoveredMeal = (fromEggs > 0 || fromReserve > 0) && eat <= ResAmt[Res.Food];
             _freshMeat = FreshMeatStored - FreshMeatShare(eat);
             _wheat -= WheatShare(eat);
             ResAmt[Res.Food] -= eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];

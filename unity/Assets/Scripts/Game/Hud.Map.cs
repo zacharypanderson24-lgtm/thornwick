@@ -32,7 +32,7 @@ namespace CrownAndHearth.Game
 
         void BuildMap(RectTransform root, RectTransform toolbar)
         {
-            _mapMenuButton = MakeButton(toolbar, "Map", new Vector2(1, 0.5f), new Vector2(-55 - 4 * 106, 0), new Vector2(100, 34), ToggleMap);
+            _mapMenuButton = MakeButton(toolbar, "Map", new Vector2(1, 0.5f), new Vector2(-55 - _townButtons.Length * 106, 0), new Vector2(100, 34), ToggleMap);
 
             _mapPanel = MakePanel(root, "WorldMap", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-570, -380), new Vector2(570, 380));
             _mapPanel.GetComponent<UnityEngine.UI.Image>().color = new Color(0.09f, 0.075f, 0.06f, 1f);

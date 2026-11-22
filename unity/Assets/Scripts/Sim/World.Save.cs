@@ -44,7 +44,7 @@ namespace CrownAndHearth.Sim
                 ["livestockPens"] = new JArray(_pens.Select(p => new JObject
                 {
                     ["species"] = SaveKey(p.Species), ["left"] = p.Left, ["top"] = p.Top,
-                    ["right"] = p.Right, ["bottom"] = p.Bottom, ["count"] = p.Count,
+                    ["right"] = p.Right, ["bottom"] = p.Bottom, ["count"] = p.Count, ["lastShearedYear"] = p.LastShearedYear,
                 })),
                 ["rate"] = JObject.FromObject(Rate.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["deco"] = EncodeGrid(DecoMap, value => value == Deco.None ? JValue.CreateNull() : new JValue(SaveKey(value))),
@@ -257,7 +257,8 @@ namespace CrownAndHearth.Sim
                     entry.Value<int>("right") + offset, entry.Value<int>("bottom") + offset);
                 if (!Inb(pen.Left, pen.Top) || !Inb(pen.Right, pen.Bottom) || pen.Capacity < 1 ||
                     pen.Tiles().Any(t => world.Grid[t.y, t.x] != null || world.ZoneMap[t.y, t.x] != Zone.None)) continue;
-                pen.Count = Math.Clamp(entry.Value<int>("count"), 1, pen.Capacity);
+                pen.Count = Math.Clamp(entry.Value<int>("count"), 0, pen.Capacity);
+                pen.LastShearedYear = Math.Clamp(entry.Value<int?>("lastShearedYear") ?? 0, 0, world.Year);
                 world.AddPen(pen);
             }
             world.Recalc();

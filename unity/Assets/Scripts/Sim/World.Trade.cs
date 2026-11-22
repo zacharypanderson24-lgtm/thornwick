@@ -9,6 +9,7 @@ namespace CrownAndHearth.Sim
 
         public int CropStorage(Res resource)
         {
+            if (resource == Res.Eggs) return EggStorage;
             if (resource != Res.Food && resource != Res.Flax) return Storage + StorehouseCapacity(resource);
             int silos = 0;
             foreach (var b in Blds)
