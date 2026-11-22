@@ -15,6 +15,8 @@ namespace CrownAndHearth.Game
         int _used, _cropDay;
         FarmCropArt _crops;
         readonly List<(SpriteRenderer renderer, bool flax, int offset, int planted)> _fields = new();
+        readonly HashSet<LivestockPen> _visiblePens = new();
+        readonly List<(SpriteRenderer renderer, LivestockPen pen, int index, int level, Sprite standing, Sprite stepping)> _livestock = new();
 
         WallArt _walls;
         CampArt _campArt;
@@ -28,6 +30,8 @@ namespace CrownAndHearth.Game
         {
             _used = 0;
             _fields.Clear();
+            _visiblePens.Clear();
+            _livestock.Clear();
             _cropDay = w.Day;
             var fields = w.FarmFields();
             for (int vy = win.yMin; vy < win.yMax; vy++)
@@ -44,6 +48,7 @@ namespace CrownAndHearth.Game
                     if (w.PenAt(x, y) is LivestockPen pen)
                     {
                         PlacePenTile(w, pen, x, y, vx, vy, rot);
+                        _visiblePens.Add(pen);
                         continue;
                     }
                     if (fields.ContainsKey(World.Tk(x, y)))
@@ -73,6 +78,15 @@ namespace CrownAndHearth.Game
                     float lvl = Mathf.Round((float)w.TileLevel(x, y) * LvlPx) / LvlPx;
                     Put(sprite, IsoView.VertexPos(v.x + 1, v.y + 1, lvl), IsoView.SortOrder(v.x, v.y));
                 }
+            foreach (var pen in _visiblePens)
+            {
+                if (pen.Count == 0) continue;
+                int level = w.Vh(pen.Left, pen.Top);
+                var standing = _art.SettlementWork.Animal(pen.Species);
+                var stepping = _art.SettlementWork.Animal(pen.Species, true);
+                for (int i = 0; i < pen.Count; i++)
+                    _livestock.Add((Put(standing, Vector3.zero, 0), pen, i, level, standing, stepping));
+            }
             for (int i = _used; i < _pool.Count; i++) if (_pool[i].enabled) _pool[i].enabled = false;
         }
 
@@ -108,8 +122,20 @@ namespace CrownAndHearth.Game
                 if (w.PenAt(other.x, other.y) != pen) edges |= 1 << edge;
             }
             if ((edges & 9) != 0) Put(_art.SettlementWork.Fence(edges & 9), anchor, sort - 1);
-            if (pen.HasAnimalAt(x, y)) Put(_art.SettlementWork.Animal(pen.Species), anchor, sort);
             if ((edges & 6) != 0) Put(_art.SettlementWork.Fence(edges & 6), anchor, sort + 1);
+        }
+
+        public void AnimateLivestock(int day, float fraction, int rotation)
+        {
+            foreach (var animal in _livestock)
+            {
+                var (pos, order, facesLeft, step) = LivestockMotion.Pose(animal.pen, animal.index, animal.level, day, fraction, rotation);
+                var renderer = animal.renderer;
+                renderer.transform.localPosition = pos;
+                renderer.sortingOrder = order;
+                renderer.flipX = facesLeft;
+                renderer.sprite = step ? animal.stepping : animal.standing;
+            }
         }
 
         void PlaceBuilding(World w, Building b, int rot)
@@ -210,6 +236,7 @@ namespace CrownAndHearth.Game
             }
             _used++;
             r.sprite = s; r.sortingOrder = order; r.enabled = true;
+            r.flipX = false;
             r.transform.localPosition = pos;
             return r;
         }

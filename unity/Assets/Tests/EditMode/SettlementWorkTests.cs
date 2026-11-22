@@ -34,6 +34,43 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
+        public void LivestockProducesWoolAndEggsAutomaticallyButRequiresSlaughterForMeat()
+        {
+            int x = Defs.Start + 1, y = Defs.Start + 4;
+            foreach (var species in new[] { Zone.Pigs, Zone.Sheep, Zone.Chickens })
+            {
+                var original = new World(7);
+                PreparePenSite(original, x, y);
+                Assert.That(original.PlacePen(species, x, y, x + 1, y + 2).Ok, Is.True);
+                var seed = JObject.Parse(original.SaveJson());
+                seed["res"]["food"] = 100;
+                seed["wheatStored"] = 100;
+                var world = World.LoadJson(seed.ToString());
+                world.Tick();
+                Assert.That(world.ResAmt[Res.Wool], Is.EqualTo(species == Zone.Sheep ? World.WoolPerSheep : 0));
+                Assert.That(world.ResAmt[Res.Eggs], Is.EqualTo(species == Zone.Chickens ? World.EggsPerChicken : 0));
+                Assert.That(world.FreshMeatStored, Is.Zero);
+                world = World.LoadJson(world.SaveJson());
+                world.Tick();
+                if (species == Zone.Sheep) Assert.That(world.ResAmt[Res.Wool], Is.EqualTo(World.WoolPerSheep));
+                if (species == Zone.Chickens) Assert.That(world.ResAmt[Res.Eggs], Is.GreaterThan(World.EggsPerChicken));
+                var pen = world.LivestockPens.Single();
+                int count = pen.Count;
+                var slaughter = world.SlaughterLivestock(pen);
+                Assert.That(slaughter.Ok, Is.True, slaughter.Reason);
+                Assert.That(slaughter.Count, Is.EqualTo(World.MeatPerAnimal(species)));
+                Assert.That(pen.Count, Is.EqualTo(count - 1));
+                Assert.That(world.FreshMeatStored, Is.EqualTo(World.MeatPerAnimal(species)));
+                while (pen.Count > 0) Assert.That(world.SlaughterLivestock(pen).Ok, Is.True);
+                world = World.LoadJson(world.SaveJson());
+                pen = world.LivestockPens.Single();
+                Assert.That(pen.Count, Is.Zero);
+                Assert.That(world.BuyLivestock(pen).Ok, Is.True);
+                Assert.That(pen.Count, Is.EqualTo(1));
+            }
+        }
+
+        [Test]
         public void ConnectedWorkshopsKeepSuppliesInTheirRespectiveStocks()
         {
             var initial = new World(7) { Peasants = 18 };
@@ -55,11 +92,8 @@ namespace CrownAndHearth.Tests
             Assert.That(world.ResAmt[Res.SmokedMeat], Is.EqualTo(World.SmokehouseRate));
             Assert.That(world.FreshMeatStored, Is.LessThan(12));
             var legacy = JObject.Parse(world.SaveJson());
-            foreach (var row in (JArray)legacy["statistics"])
-            {
-                ((JArray)row).RemoveAt(row.Count() - 1);
-                ((JArray)row).RemoveAt(row.Count() - 1);
-            }
+            foreach (var row in ((JArray)legacy["statistics"]).Cast<JArray>())
+                while (row.Count > 2 + (int)Res.Charcoal) row.RemoveAt(row.Count - 1);
             Assert.That(World.LoadJson(legacy.ToString()).Statistics.Last().Stockpile(Res.Charcoal), Is.Zero);
         }
 

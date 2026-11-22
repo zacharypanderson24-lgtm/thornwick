@@ -121,7 +121,7 @@ namespace CrownAndHearth.Game
             BuildNeeds(root);
             BuildBar(root);
             var townMenuBar = MakePanel(root, "TownMenuBar", Vector2.right, Vector2.right,
-                new Vector2(-545, BottomH + 8), new Vector2(-8, BottomH + 50));
+                new Vector2(-651, BottomH + 8), new Vector2(-8, BottomH + 50));
             BuildTownMenus(root, townMenuBar);
             BuildMap(root, townMenuBar);
             BuildCamp(root);

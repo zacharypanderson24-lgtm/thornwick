@@ -7,10 +7,10 @@ namespace CrownAndHearth.Game
 {
     public partial class Hud
     {
-        enum TownMenu { Closed, Farming, Mining, Troops, Statistics }
+        enum TownMenu { Closed, Farming, Mining, Troops, Statistics, Livestock }
         TownMenu _townMenu;
-        readonly RectTransform[] _townPanels = new RectTransform[4];
-        readonly UnityEngine.UI.Image[] _townButtons = new UnityEngine.UI.Image[4];
+        readonly RectTransform[] _townPanels = new RectTransform[(int)TownMenu.Livestock];
+        readonly UnityEngine.UI.Image[] _townButtons = new UnityEngine.UI.Image[(int)TownMenu.Livestock];
         readonly UnityEngine.UI.Image[] _depthButtons = new UnityEngine.UI.Image[World.MaxDepth + 1];
         World _menuWorld;
         Text _cropTarget, _cropCount, _supportsLabel, _historyHeader, _resourceTitle, _dayValues, _populationScale, _resourceScale;
@@ -27,9 +27,9 @@ namespace CrownAndHearth.Game
 
         void BuildTownMenus(RectTransform root, RectTransform toolbar)
         {
-            string[] titles = { "Farming", "Mining", "Troops", "Statistics" };
-            int[] widths = { 440, 392, 440, 446 };
-            int[] heights = { 356, 208, 330, 396 };
+            string[] titles = { "Farming", "Mining", "Troops", "Statistics", "Livestock" };
+            int[] widths = { 440, 392, 440, 446, 436 };
+            int[] heights = { 356, 208, 330, 396, 309 };
             for (int i = 0; i < titles.Length; i++)
             {
                 var menu = (TownMenu)(i + 1);
@@ -44,6 +44,7 @@ namespace CrownAndHearth.Game
             BuildMining(_townPanels[1]);
             BuildTroops(_townPanels[2]);
             BuildStatistics(_townPanels[3]);
+            BuildLivestock(_townPanels[4]);
             ShowTownMenu(TownMenu.Closed);
         }
 
@@ -187,6 +188,7 @@ namespace CrownAndHearth.Game
                 _menuWorld = world;
                 _historyEnd = _historyDay = 0;
                 _historyVersion = -1;
+                _livestockPen = null;
             }
             switch (_townMenu)
             {
@@ -226,6 +228,9 @@ namespace CrownAndHearth.Game
                     break;
                 case TownMenu.Statistics:
                     RefreshStatistics(world);
+                    break;
+                case TownMenu.Livestock:
+                    RefreshLivestock(world);
                     break;
             }
         }

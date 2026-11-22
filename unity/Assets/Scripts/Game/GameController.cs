@@ -159,6 +159,7 @@ namespace CrownAndHearth.Game
             _hud.Build(Tools, Cats, _art);
             _hud.BannerPicked += SetBanner;
             _hud.ToolPicked += id => SetTool(Tools.First(t => t.Id == id));
+            _hud.LivestockFocusRequested += (x, y) => _cam.CenterOn(IsoView.TileCenter(World, x, y, _rot));
             _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); _tutorial.SpeedChanged = true; };
             _hud.RotatePicked += Rotate;
             _hud.PrioMoved += MovePrio;
@@ -390,6 +391,7 @@ namespace CrownAndHearth.Game
             if (_campWorld != null) _agents.DrawCamp(_campWorld, _hud.CampView, _rot, _hud.CampFrac);
             else _agents.Draw(World, _rot, Mathf.Clamp01(_dayAcc), _cam.Zoom <= 0.5f);
             _objects.RefreshCropStages(World.Day);
+            _objects.AnimateLivestock(World.Day, Mathf.Clamp01(_dayAcc), _rot);
             if (_campWorld != null) DrawCampOverlay(); else DrawOverlay();
             _hud.SetSettlement(World);
             _hud.SetDemand(World.Dem[Zone.Res]);
@@ -568,6 +570,7 @@ namespace CrownAndHearth.Game
             if (World.IsLivestockZone(_tool.Zone))
             {
                 var pen = World.PlacePen(_tool.Zone, a.x, a.y, b.x, b.y);
+                if (pen.Ok) _hud.SelectLivestockPen(World.PenAt(a.x, a.y));
                 _hud.Toast(pen.Ok ? $"Fenced {_tool.Label}. Stocked 1 of {pen.Count} animals." : pen.Reason, 6);
                 return;
             }
@@ -1041,6 +1044,7 @@ namespace CrownAndHearth.Game
             {
                 lines.Add(ZoneName(pen.Species).ToUpper());
                 lines.Add($"{pen.Count}/{pen.Capacity} animals · {pen.Area} tiles · {World.TilesPerAnimal(pen.Species)} tiles per animal");
+                lines.Add("Buy or slaughter animals in the Livestock menu.");
                 return string.Join("\n", lines);
             }
             var d = w.DecoMap[y, x];

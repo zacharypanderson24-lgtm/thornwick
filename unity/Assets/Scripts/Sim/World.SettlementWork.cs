@@ -13,6 +13,7 @@ namespace CrownAndHearth.Sim
         public int Right { get; }
         public int Bottom { get; }
         public int Count { get; internal set; }
+        public int LastShearedYear { get; internal set; }
         public int Area => (Right - Left + 1) * (Bottom - Top + 1);
         public int Capacity => Area / World.TilesPerAnimal(Species);
         public int FenceLength => 2 * (Right - Left + Bottom - Top + 2);
@@ -31,18 +32,14 @@ namespace CrownAndHearth.Sim
                     yield return (x, y);
         }
 
-        public bool HasAnimalAt(int x, int y)
-        {
-            int index = (y - Top) * (Right - Left + 1) + x - Left;
-            int spacing = World.TilesPerAnimal(Species);
-            return index % spacing == 0 && index / spacing < Count;
-        }
     }
 
     public partial class World
     {
         public const int StorehouseSpace = 80, HaulPerWorker = 4, StarterLivestockGold = 5;
         public const int LogsPerCharcoal = 2, SmokehouseRate = 3;
+        public const int EggsPerChicken = 1, WoolPerSheep = 1, EggsPerFood = 4, EggStorage = 80;
+        public const double WheatPerAnimalPerDay = 0.06;
         readonly Dictionary<int, LivestockPen> _penTiles = new();
         readonly List<LivestockPen> _pens = new();
         double _freshMeat;
@@ -52,6 +49,46 @@ namespace CrownAndHearth.Sim
         public LivestockPen PenAt(int x, int y) => Inb(x, y) && _penTiles.TryGetValue(Tk(x, y), out var pen) ? pen : null;
         public static bool IsLivestockZone(Zone kind) => kind == Zone.Pigs || kind == Zone.Sheep || kind == Zone.Chickens;
         public static int TilesPerAnimal(Zone kind) => kind switch { Zone.Pigs => 3, Zone.Sheep => 2, _ => 1 };
+        public static int MeatPerAnimal(Zone kind) => kind switch { Zone.Pigs => 4, Zone.Sheep => 3, _ => 1 };
+        public bool PenHasRoad(LivestockPen pen) => pen.Tiles().Any(t => BesideConnectedRoad(t.x, t.y));
+
+        public Result CanBuyLivestock(LivestockPen pen)
+        {
+            if (!_pens.Contains(pen)) return Result.No("Select a livestock pen");
+            if (pen.Count >= pen.Capacity) return Result.No("The pen is full");
+            if (!PenHasRoad(pen)) return Result.No("Connect the pen to the Town Hall");
+            return ResAmt[Res.Gold] >= StarterLivestockGold ? Result.Yes() : Result.No($"An animal costs {StarterLivestockGold} gold");
+        }
+
+        public Result BuyLivestock(LivestockPen pen)
+        {
+            var check = CanBuyLivestock(pen);
+            if (!check.Ok) return check;
+            ResAmt[Res.Gold] -= StarterLivestockGold;
+            pen.Count++;
+            Touch();
+            return check;
+        }
+
+        public Result CanSlaughterLivestock(LivestockPen pen)
+        {
+            if (!_pens.Contains(pen)) return Result.No("Select a livestock pen");
+            if (pen.Count == 0) return Result.No("This pen has no livestock");
+            if (!PenHasRoad(pen)) return Result.No("Connect the pen to the Town Hall");
+            int meat = MeatPerAnimal(pen.Species);
+            return ResAmt[Res.Food] + meat <= CropStorage(Res.Food) ? Result.Yes(meat) : Result.No($"Make room for {meat} fresh meat in food storage");
+        }
+
+        public Result SlaughterLivestock(LivestockPen pen)
+        {
+            var check = CanSlaughterLivestock(pen);
+            if (!check.Ok) return check;
+            _freshMeat = FreshMeatStored + check.Count;
+            ResAmt[Res.Food] += check.Count;
+            pen.Count--;
+            Touch();
+            return check;
+        }
 
         public Result CheckPen(Zone kind, int ax, int ay, int bx, int by)
         {
@@ -107,22 +144,30 @@ namespace CrownAndHearth.Sim
             return pen.Area;
         }
 
-        double WorkLivestock()
+        int WorkLivestock()
         {
-            double meat = 0;
+            int eggs = 0;
             foreach (var pen in _pens)
             {
-                if (!pen.Tiles().Any(t => BesideConnectedRoad(t.x, t.y))) continue;
-                int cycle = pen.Species == Zone.Chickens ? 4 : pen.Species == Zone.Sheep ? 7 : 6;
-                if ((Day + Tk(pen.Left, pen.Top)) % cycle != 0) continue;
-                double feed = pen.Count * 0.25;
-                if (WheatStored < feed || ResAmt[Res.Food] - feed < DailyFoodDemand) continue;
+                if (pen.Count == 0 || !PenHasRoad(pen)) continue;
+                double feed = pen.Count * WheatPerAnimalPerDay;
+                if (WheatStored < feed || ResAmt[Res.Food] < feed) continue;
                 _wheat = WheatStored - feed;
                 ResAmt[Res.Food] -= feed;
-                if (pen.Count < pen.Capacity) { pen.Count++; Touch(); }
-                else meat += pen.Count * (pen.Species == Zone.Pigs ? 2.0 : pen.Species == Zone.Sheep ? 1.5 : 1.0);
+                if (pen.Species == Zone.Chickens) eggs += pen.Count * EggsPerChicken;
+                if (pen.Species == Zone.Sheep && YearDay <= SeasonLength && pen.LastShearedYear != Year)
+                {
+                    ResAmt[Res.Wool] += pen.Count * WoolPerSheep;
+                    pen.LastShearedYear = Year;
+                }
+                int cycle = pen.Species == Zone.Chickens ? 4 : pen.Species == Zone.Sheep ? 7 : 6;
+                if (pen.Count < pen.Capacity && (Day + Tk(pen.Left, pen.Top)) % cycle == 0)
+                {
+                    pen.Count++;
+                    Touch();
+                }
             }
-            return meat;
+            return eggs;
         }
 
         void PreserveMeat()
