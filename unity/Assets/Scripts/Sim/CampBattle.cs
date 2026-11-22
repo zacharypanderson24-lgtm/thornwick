@@ -187,7 +187,22 @@ namespace CrownAndHearth.Sim
     }
 
     /// <summary>One landing: a tile on the edge of the camp map and the troops that come ashore there.</summary>
-    public sealed class BattleGroup { public int X, Y, Infantry, Archers; public int Total => Infantry + Archers; }
+    public sealed class BattleGroup
+    {
+        public int X, Y, Infantry, Archers;
+        public int Total => Infantry + Archers;
+        /// <summary>What this landing's soldiers do; can be changed during the fight.</summary>
+        public BattleOrder Order = BattleOrder.Charge;
+        /// <summary>Which raiders they go for first.</summary>
+        public TargetPriority Priority = TargetPriority.Nearest;
+    }
+
+    /// <summary>A landing group's job. Charge: fight the raiders. Warlord: make for the warlord, fighting only who stands in the way.
+    /// Plunder: grab a supply pile and carry it off the map. Hold: stay put and fight whoever comes in reach. Fall back: leave by the nearest edge.</summary>
+    public enum BattleOrder : byte { Charge, Warlord, Plunder, Hold, FallBack }
+
+    /// <summary>Which raider a soldier picks: the nearest, archers first, brutes and the warlord first, or the most wounded.</summary>
+    public enum TargetPriority : byte { Nearest, Archers, Leaders, Weakest }
 
     public enum BKind : byte { Infantry, Archer, Raider, RaiderArcher, Brute, Chief }
 
@@ -200,6 +215,13 @@ namespace CrownAndHearth.Sim
         public double Hp, Hit;
         public int Range = 1;
         public bool Ranged => Range > 1;
+        /// <summary>Soldiers: the landing group they came with (index into CampBattle.Groups); -1 for raiders.</summary>
+        public int Group = -1;
+        /// <summary>A soldier who walked off the map (falling back, or carrying plunder away): alive, out of the fight.</summary>
+        public bool Left;
+        /// <summary>Goods a plundering soldier is carrying.</summary>
+        public int Carry; public Res CarryRes; public SupplyPile CarryPile;
+        public bool OnField => Alive && !Left;
     }
 
     public sealed class CampBattle
@@ -225,16 +247,17 @@ namespace CrownAndHearth.Sim
         public CampBattle(RaiderCamp camp, IList<BattleGroup> groups, int raidersHome = -1)
         {
             Camp = camp; Map = camp.Site.Map;
-            Groups = groups.Where(g => g.Total > 0).Select(g => new BattleGroup { X = g.X, Y = g.Y, Infantry = g.Infantry, Archers = g.Archers }).ToList();
+            Groups = groups.Where(g => g.Total > 0).Select(g => new BattleGroup { X = g.X, Y = g.Y, Infantry = g.Infantry, Archers = g.Archers, Order = g.Order, Priority = g.Priority }).ToList();
             int id = 0;
-            foreach (var g in Groups)
+            for (int gi = 0; gi < Groups.Count; gi++)
             {
+                var g = Groups[gi];
                 var spots = FreeSpots(g.X, g.Y, g.Total);
                 for (int i = 0; i < g.Total; i++)
                 {
                     bool inf = i < g.Infantry;
                     var (x, y) = spots[i % spots.Count];
-                    Units.Add(new BUnit { Id = id++, Attacker = true, Kind = inf ? BKind.Infantry : BKind.Archer, X = x, Y = y, Px = x, Py = y,
+                    Units.Add(new BUnit { Id = id++, Attacker = true, Kind = inf ? BKind.Infantry : BKind.Archer, X = x, Y = y, Px = x, Py = y, Group = gi,
                         Hp = inf ? InfantryHp : ArcherHp, Hit = inf ? InfantryHit : ArcherHit, Range = inf ? 1 : ArcherRange });
                 }
                 SentInfantry += g.Infantry; SentArchers += g.Archers;
@@ -280,19 +303,55 @@ namespace CrownAndHearth.Sim
             return list;
         }
 
-        public int AliveAttackers => Units.Count(u => u.Alive && u.Attacker);
+        /// <summary>Your soldiers still fighting on the camp map (not counting those who have left it).</summary>
+        public int AliveAttackers => Units.Count(u => u.OnField && u.Attacker);
+        /// <summary>Your soldiers who walked off the map alive (fell back or carried plunder away).</summary>
+        public int LeftField => Units.Count(u => u.Attacker && u.Alive && u.Left);
         public int AliveRaiders => Units.Count(u => u.Alive && !u.Attacker);
         public int SurvivingInfantry => Units.Count(u => u.Alive && u.Kind == BKind.Infantry);
         public int SurvivingArchers => Units.Count(u => u.Alive && u.Kind == BKind.Archer);
+        /// <summary>Goods soldiers are carrying on the field right now (plunder not yet off the map).</summary>
+        public int Carried => Units.Where(u => u.OnField).Sum(u => u.Carry);
 
         static int Cheb(int ax, int ay, int bx, int by) => Math.Max(Math.Abs(ax - bx), Math.Abs(ay - by));
 
-        int[] FieldTo(BUnit target)
+        int[] FieldTo(BUnit target) => FieldTo(target.X, target.Y);
+
+        int[] _edgeField;
+        /// <summary>Steps to the nearest open edge tile, from everywhere (the camp's structures never move, so it is worked out once).</summary>
+        int[] EdgeField()
+        {
+            if (_edgeField != null) return _edgeField;
+            var d = new int[CampMap.Size * CampMap.Size];
+            for (int i = 0; i < d.Length; i++) d[i] = -1;
+            var q = new Queue<int>();
+            for (int i = 0; i < CampMap.Size; i++)
+                foreach (var (x, y) in new[] { (i, 0), (i, CampMap.Size - 1), (0, i), (CampMap.Size - 1, i) })
+                    if (d[y * CampMap.Size + x] < 0 && Map.Passable(x, y)) { d[y * CampMap.Size + x] = 0; q.Enqueue(y * CampMap.Size + x); }
+            Flood(d, q);
+            return _edgeField = d;
+        }
+
+        void Flood(int[] d, Queue<int> q)
+        {
+            while (q.Count > 0)
+            {
+                int c = q.Dequeue(), cx = c % CampMap.Size, cy = c / CampMap.Size;
+                for (int k = 0; k < 4; k++)
+                {
+                    int nx = cx + Defs.Nb[k, 0], ny = cy + Defs.Nb[k, 1];
+                    if (!CampMap.Inb(nx, ny) || d[ny * CampMap.Size + nx] >= 0 || !Map.Passable(nx, ny)) continue;
+                    d[ny * CampMap.Size + nx] = d[c] + 1; q.Enqueue(ny * CampMap.Size + nx);
+                }
+            }
+        }
+
+        int[] FieldTo(int tx, int ty)
         {
             var d = new int[CampMap.Size * CampMap.Size];
             for (int i = 0; i < d.Length; i++) d[i] = -1;
             var q = new Queue<int>();
-            d[target.Y * CampMap.Size + target.X] = 0; q.Enqueue(target.Y * CampMap.Size + target.X);
+            d[ty * CampMap.Size + tx] = 0; q.Enqueue(ty * CampMap.Size + tx);
             while (q.Count > 0)
             {
                 int c = q.Dequeue(), cx = c % CampMap.Size, cy = c / CampMap.Size;
@@ -318,37 +377,134 @@ namespace CrownAndHearth.Sim
             return false;
         }
 
-        /// <summary>One tick: units pick the nearest enemy, close in, and swing or shoot; the fallen are removed; the end of the fight is checked.</summary>
+        /// <summary>How much a soldier wants this raider as a target (lower is better): distance, adjusted by the group's priority. With
+        /// Nearest it is the distance alone (ties go to the lowest id), which is how every unit chose before orders existed.</summary>
+        public static int TargetScore(BUnit u, BUnit e, TargetPriority p)
+        {
+            int s = Cheb(u.X, u.Y, e.X, e.Y) * 10;
+            if (p == TargetPriority.Archers && e.Kind == BKind.RaiderArcher) s -= 80;
+            if (p == TargetPriority.Leaders && (e.Kind == BKind.Brute || e.Kind == BKind.Chief)) s -= 80;
+            if (p == TargetPriority.Weakest) s += (int)Math.Round(e.Hp * 10);
+            return s;
+        }
+
+        static BUnit PickTarget(BUnit u, IEnumerable<BUnit> enemies, TargetPriority p)
+        {
+            BUnit t = null; int best = int.MaxValue;
+            foreach (var e in enemies) { int s = TargetScore(u, e, p); if (s < best || (s == best && e.Id < t.Id)) { t = e; best = s; } }
+            return t;
+        }
+
+        /// <summary>The order a soldier actually follows now: its group's, unless that has nothing left to do (the warlord is dead, the
+        /// piles are empty) when it charges; a soldier carrying plunder always heads off the map.</summary>
+        public BattleOrder OrderOf(BUnit u)
+        {
+            if (!u.Attacker || u.Group < 0) return BattleOrder.Charge;
+            if (u.Carry > 0) return BattleOrder.FallBack;
+            var o = Groups[u.Group].Order;
+            if (o == BattleOrder.Warlord && !Units.Any(e => e.Alive && e.Kind == BKind.Chief)) return BattleOrder.Charge;
+            if (o == BattleOrder.Plunder && !Map.Piles.Any(p => p.Amount > 0)) return BattleOrder.Charge;
+            return o;
+        }
+
+        void Swing(BUnit u, BUnit t, Dictionary<BUnit, double> hits)
+        {
+            hits[t] = hits.GetValueOrDefault(t) + u.Hit; u.Attacked = true;
+            if (u.Ranged) { u.Shooting = true; u.ShotX = t.X; u.ShotY = t.Y; }
+        }
+
+        /// <summary>Close in on t (to striking or shooting distance) and hit it if in reach.</summary>
+        void Engage(BUnit u, BUnit t, Dictionary<BUnit, int[]> fields, Dictionary<BUnit, double> hits)
+        {
+            u.Target = t;
+            int want = u.Ranged ? u.Range - 1 : 1;
+            if (Cheb(u.X, u.Y, t.X, t.Y) > want)
+            {
+                if (!fields.TryGetValue(t, out var f)) fields[t] = f = FieldTo(t);
+                StepDown(u, f);
+            }
+            if (Cheb(u.X, u.Y, t.X, t.Y) <= u.Range) Swing(u, t, hits);
+        }
+
+        /// <summary>A soldier walks off the map: out of the fight, alive, and whatever it carries is safely taken.</summary>
+        void Leave(BUnit u)
+        {
+            u.Left = true; u.Target = null;
+            if (u.Carry > 0) { Loot[u.CarryRes] = Loot.GetValueOrDefault(u.CarryRes) + u.Carry; u.Carry = 0; u.CarryPile = null; }
+        }
+
+        void StepSoldier(BUnit u, List<BUnit> raiders, Dictionary<BUnit, int[]> fields, Dictionary<(int, int), int[]> pileFields, Dictionary<BUnit, double> hits)
+        {
+            var prio = Groups[u.Group].Priority;
+            BUnit Adjacent() => PickTarget(u, raiders.Where(e => Cheb(u.X, u.Y, e.X, e.Y) <= 1), prio);
+            switch (OrderOf(u))
+            {
+                case BattleOrder.FallBack:
+                {
+                    u.Target = null;
+                    if (!CampMap.IsEdge(u.X, u.Y)) StepDown(u, EdgeField());
+                    if (CampMap.IsEdge(u.X, u.Y)) Leave(u);
+                    return;
+                }
+                case BattleOrder.Hold:
+                {
+                    var t = PickTarget(u, raiders.Where(e => Cheb(u.X, u.Y, e.X, e.Y) <= u.Range), prio);
+                    u.Target = t;
+                    if (t != null) Swing(u, t, hits);
+                    return;
+                }
+                case BattleOrder.Warlord:
+                {
+                    var chief = raiders.FirstOrDefault(e => e.Kind == BKind.Chief);
+                    if (chief == null) { if (raiders.Count > 0) Engage(u, PickTarget(u, raiders, prio), fields, hits); return; }
+                    if (Cheb(u.X, u.Y, chief.X, chief.Y) <= u.Range) { u.Target = chief; Swing(u, chief, hits); return; }
+                    var blocker = Adjacent();   // someone in the way: cut through
+                    if (blocker != null && !u.Ranged) { u.Target = blocker; Swing(u, blocker, hits); return; }
+                    Engage(u, chief, fields, hits);
+                    return;
+                }
+                case BattleOrder.Plunder:
+                {
+                    var pile = Map.Piles.Where(p => p.Amount > 0).OrderBy(p => Cheb(u.X, u.Y, p.X, p.Y)).ThenBy(p => p.Y * CampMap.Size + p.X).FirstOrDefault();
+                    if (pile == null) break;
+                    if (u.X == pile.X && u.Y == pile.Y)
+                    {
+                        int take = Math.Min(pile.Amount, u.Kind == BKind.Archer ? ArcherCarry : InfantryCarry);
+                        pile.Amount -= take; u.Carry = take; u.CarryRes = pile.Res; u.CarryPile = pile; u.Target = null;
+                        return;
+                    }
+                    var guard = Adjacent();   // defend themselves, but do not go looking for a fight
+                    if (guard != null) { u.Target = guard; Swing(u, guard, hits); return; }
+                    u.Target = null;
+                    if (!pileFields.TryGetValue((pile.X, pile.Y), out var pf)) pileFields[(pile.X, pile.Y)] = pf = FieldTo(pile.X, pile.Y);
+                    StepDown(u, pf);
+                    return;
+                }
+            }
+            if (raiders.Count > 0) Engage(u, PickTarget(u, raiders, prio), fields, hits);   // Charge
+        }
+
+        /// <summary>One tick: each soldier follows its group's order (charge, go for the warlord, plunder, hold or fall back), raiders go for
+        /// the nearest soldier, everyone in reach swings or shoots; the fallen are removed; the end of the fight is checked.</summary>
         public void Step()
         {
             if (Over) return;
             Tick++;
-            foreach (var u in Units) { if (!u.Alive) continue; u.Px = u.X; u.Py = u.Y; u.Hurt = u.Attacked = u.Shooting = false; }
-            var att = Units.Where(u => u.Alive && u.Attacker).ToList();
+            foreach (var u in Units) { if (!u.OnField) continue; u.Px = u.X; u.Py = u.Y; u.Hurt = u.Attacked = u.Shooting = false; }
+            var att = Units.Where(u => u.OnField && u.Attacker).ToList();
             var rai = Units.Where(u => u.Alive && !u.Attacker).ToList();
             if (!Alarm && att.Any(a => rai.Any(r => Cheb(a.X, a.Y, r.X, r.Y) <= AlertR))) Alarm = true;
             var fields = new Dictionary<BUnit, int[]>();
+            var pileFields = new Dictionary<(int, int), int[]>();
             var hits = new Dictionary<BUnit, double>();
-            foreach (var u in att.Concat(rai))
-            {
-                if (!u.Attacker && !Alarm) continue;   // the camp sleeps until the landing is spotted
-                var enemies = u.Attacker ? rai : att;
-                if (enemies.Count == 0) continue;
-                BUnit t = null; int best = int.MaxValue;
-                foreach (var e in enemies) { int d = Cheb(u.X, u.Y, e.X, e.Y); if (d < best || (d == best && e.Id < t.Id)) { t = e; best = d; } }
-                u.Target = t;
-                int want = u.Ranged ? u.Range - 1 : 1;
-                if (best > want)
+            foreach (var u in att) StepSoldier(u, rai, fields, pileFields, hits);
+            var onField = att.Where(a => !a.Left).ToList();
+            if (Alarm)   // the camp sleeps until the landing is spotted
+                foreach (var u in rai)
                 {
-                    if (!fields.TryGetValue(t, out var f)) fields[t] = f = FieldTo(t);
-                    StepDown(u, f);
+                    if (onField.Count == 0) break;
+                    Engage(u, PickTarget(u, onField, TargetPriority.Nearest), fields, hits);
                 }
-                if (Cheb(u.X, u.Y, t.X, t.Y) <= u.Range)
-                {
-                    hits[t] = hits.GetValueOrDefault(t) + u.Hit; u.Attacked = true;
-                    if (u.Ranged) { u.Shooting = true; u.ShotX = t.X; u.ShotY = t.Y; }
-                }
-            }
             foreach (var kv in hits)
             {
                 kv.Key.Hp -= kv.Value; kv.Key.Hurt = true;
@@ -360,19 +516,29 @@ namespace CrownAndHearth.Sim
                     u.Alive = false; u.DeadTick = Tick;
                     if (!u.Attacker) RaidersKilled++;
                     else if (u.Kind == BKind.Infantry) LostInfantry++; else LostArchers++;
+                    if (u.Carry > 0 && u.CarryPile != null) u.CarryPile.Amount += u.Carry;   // the goods fall back onto their pile
+                    u.Carry = 0; u.CarryPile = null;
                 }
             if (AliveRaiders == 0) { Over = true; Victory = true; TakeLoot(); }
-            else if (AliveAttackers == 0) Over = true;
-            else if (Tick >= MaxTicks) { Over = true; Retreated = true; }
+            else if (AliveAttackers == 0) { Over = true; Retreated = LeftField > 0; }
+            else if (Tick >= MaxTicks) Retreat();
         }
 
-        /// <summary>Pull out. The survivors go home with nothing.</summary>
-        public void Retreat() { if (!Over) { Over = true; Retreated = true; } }
+        /// <summary>Pull out: everyone still on the map leaves, keeping whatever plunder they carry.</summary>
+        public void Retreat()
+        {
+            if (Over) return;
+            foreach (var u in Units) if (u.Attacker && u.OnField) Leave(u);
+            Over = true; Retreated = true;
+        }
 
-        /// <summary>The survivors carry as much as they can of what is in the piles, in proportion to each pile.</summary>
+        /// <summary>The survivors still on the map keep what they carry and take as much more as they can from the piles, in proportion to each pile.</summary>
         void TakeLoot()
         {
-            int capacity = SurvivingInfantry * InfantryCarry + SurvivingArchers * ArcherCarry;
+            var here = Units.Where(u => u.Attacker && u.OnField).ToList();
+            int capacity = here.Sum(u => (u.Kind == BKind.Archer ? ArcherCarry : InfantryCarry) - u.Carry);
+            foreach (var u in here)
+                if (u.Carry > 0) { Loot[u.CarryRes] = Loot.GetValueOrDefault(u.CarryRes) + u.Carry; u.Carry = 0; u.CarryPile = null; }
             int total = Map.Piles.Sum(p => p.Amount);
             if (total <= 0 || capacity <= 0) return;
             double fraction = Math.Min(1.0, capacity / (double)total);
@@ -393,7 +559,7 @@ namespace CrownAndHearth.Sim
             string loot = Loot.Count == 0 ? "nothing" : string.Join(", ", Loot.Where(k => k.Value > 0).Select(k => $"{k.Value} {k.Key.ToString().ToLower()}"));
             return $"{outcome}\n{Camp.Name}: {RaidersKilled} of {RaidersTotal} raiders killed.\n" +
                    $"You sent {SentInfantry} infantry and {SentArchers} archers; {LostInfantry} infantry and {LostArchers} archers fell, {SurvivingInfantry} infantry and {SurvivingArchers} archers survive.\n" +
-                   (Victory ? $"They carry home: {loot}." : "");
+                   (Loot.Values.Any(v => v > 0) ? $"They carry home: {loot}." : Victory ? "They carry home: nothing." : "");
         }
     }
 }

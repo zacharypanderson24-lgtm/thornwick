@@ -338,6 +338,8 @@ namespace CrownAndHearth.Game
                 if (_hud.CampSelected.HasValue) _overlay.AddTile(_campWorld, ox + _hud.CampSelected.Value.x, oy + _hud.CampSelected.Value.y, _rot, new Color32(255, 230, 90, 170));
                 if (_hud.CampHoverTile.HasValue) _overlay.AddTile(_campWorld, ox + _hud.CampHoverTile.Value.x, oy + _hud.CampHoverTile.Value.y, _rot, new Color32(255, 255, 255, 90));
             }
+            // during the fight: mark where the selected landing's soldiers stand
+            foreach (var (x, y) in _hud.CampSelectedSoldiers) _overlay.AddTile(_campWorld, ox + x, oy + y, _rot, new Color32(255, 230, 90, 110));
             _overlay.Apply();
         }
 

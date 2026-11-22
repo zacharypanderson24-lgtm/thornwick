@@ -63,6 +63,7 @@ namespace CrownAndHearth.Game
                 foreach (var u in battle.Units)
                 {
                     bool dead = !u.Alive;
+                    if (u.Left) continue;   // walked off the map
                     if (dead && battle.Tick - u.DeadTick > CampBattle.BodyTicks) continue;
                     int x = ox + u.X, y = oy + u.Y, px = ox + u.Px, py = oy + u.Py;
                     bool moving = x != px || y != py;

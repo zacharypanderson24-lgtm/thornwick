@@ -390,5 +390,87 @@ namespace CrownAndHearth.Tests
             Assert.IsNotNull(w.Warband);
             Assert.AreEqual(3 + 2 * 5, w.Warband.Band + w.CampRaidersLost(c), "the band is short by the raiders the camp has lost");
         }
+
+        // ---------- orders for a landing ----------
+
+        static BattleGroup Landing(int x, int y, int inf, int arc, BattleOrder order, TargetPriority prio = TargetPriority.Nearest) =>
+            new BattleGroup { X = x, Y = y, Infantry = inf, Archers = arc, Order = order, Priority = prio };
+
+        [Test]
+        public void SoldiersOrderedToFallBackLeaveTheCampAlive()
+        {
+            var b = new CampBattle(Camp(2), new[] { Landing(0, 16, 5, 2, BattleOrder.FallBack) });
+            for (int i = 0; i < 30 && !b.Over; i++) b.Step();
+            Assert.IsTrue(b.Over && b.Retreated && !b.Victory, b.Summary());
+            Assert.AreEqual(7, b.LeftField, "all of them walked off the map");
+            Assert.AreEqual(5, b.SurvivingInfantry); Assert.AreEqual(2, b.SurvivingArchers);
+            Assert.AreEqual(0, b.AliveAttackers, "none still fighting");
+        }
+
+        [Test]
+        public void SoldiersOrderedToHoldStayWhereTheyAre()
+        {
+            var b = new CampBattle(Camp(2), new[] { Landing(0, 16, 6, 0, BattleOrder.Hold) });
+            var start = b.Units.Where(u => u.Attacker).Select(u => (u.X, u.Y)).ToList();
+            for (int i = 0; i < 10; i++) b.Step();
+            Assert.AreEqual(start, b.Units.Where(u => u.Attacker).Select(u => (u.X, u.Y)).ToList(), "holding soldiers do not move");
+        }
+
+        [Test]
+        public void SoldiersSentForTheWarlordMakeForHim()
+        {
+            var b = new CampBattle(Camp(3), new[] { Landing(0, 16, 12, 0, BattleOrder.Warlord), Landing(31, 16, 12, 0, BattleOrder.Charge) });
+            b.Step();
+            var chief = b.Units.Single(u => u.Kind == BKind.Chief);
+            foreach (var u in b.Units.Where(u => u.Group == 0)) Assert.AreSame(chief, u.Target, "the warlord group heads for the warlord");
+            Assert.IsTrue(b.Units.Where(u => u.Group == 1).Any(u => u.Target != chief), "the charging group goes for whoever is nearest");
+        }
+
+        [Test]
+        public void PlunderersCarryGoodsOffTheMapAndNothingIsLostOrMadeUp()
+        {
+            var camp = Camp(2);
+            int before = camp.Site.Map.Piles.Sum(p => p.Amount);
+            var b = new CampBattle(camp, new[] { Landing(0, 16, 20, 0, BattleOrder.Plunder) });
+            Run(b);
+            Assert.IsTrue(b.Over, b.Summary());
+            Assert.Greater(b.LootTotal, 0, "they got away with goods: " + b.Summary());
+            Assert.AreEqual(before, camp.Site.Map.Piles.Sum(p => p.Amount) + b.LootTotal + b.Carried, "every good taken is either still in a pile, carried, or taken home");
+            Assert.LessOrEqual(b.LootTotal, b.SurvivingInfantry * CampBattle.InfantryCarry + b.LostInfantry * CampBattle.InfantryCarry);
+            if (!b.Victory) Assert.Greater(b.LeftField, 0, "a plunder raid ends with soldiers walking off with the goods");
+            StringAssert.Contains("They carry home", b.Summary(), "a pulled-out army reports its plunder too");
+        }
+
+        [Test]
+        public void OrdersCanChangeMidFight()
+        {
+            var b = new CampBattle(Camp(2), new[] { Landing(0, 16, 8, 0, BattleOrder.Hold) });
+            var start = b.Units.Where(u => u.Attacker).Select(u => (u.X, u.Y)).ToList();
+            for (int i = 0; i < 3; i++) b.Step();
+            Assert.AreEqual(start, b.Units.Where(u => u.Attacker).Select(u => (u.X, u.Y)).ToList());
+            b.Groups[0].Order = BattleOrder.Charge;
+            b.Step();
+            Assert.AreNotEqual(start, b.Units.Where(u => u.Attacker).Select(u => (u.X, u.Y)).ToList(), "charging, they move in");
+            b.Groups[0].Order = BattleOrder.FallBack;
+            for (int i = 0; i < 40 && !b.Over; i++) b.Step();
+            Assert.IsTrue(b.Over && b.Retreated, b.Summary());
+            Assert.AreEqual(b.SurvivingInfantry, b.LeftField, "every survivor walked off");
+        }
+
+        [Test]
+        public void TargetPriorityPicksArchersLeadersOrTheWounded()
+        {
+            var me = new BUnit { X = 0, Y = 0 };
+            var near = new BUnit { Id = 1, X = 2, Y = 0, Kind = BKind.Raider, Hp = 3 };
+            var archer = new BUnit { Id = 2, X = 6, Y = 0, Kind = BKind.RaiderArcher, Hp = 2.5 };
+            var brute = new BUnit { Id = 3, X = 7, Y = 0, Kind = BKind.Brute, Hp = 5 };
+            var hurt = new BUnit { Id = 4, X = 3, Y = 0, Kind = BKind.Raider, Hp = 0.5 };
+            var all = new[] { near, archer, brute, hurt };
+            BUnit Best(TargetPriority p) => all.OrderBy(e => CampBattle.TargetScore(me, e, p)).ThenBy(e => e.Id).First();
+            Assert.AreSame(near, Best(TargetPriority.Nearest));
+            Assert.AreSame(archer, Best(TargetPriority.Archers));
+            Assert.AreSame(brute, Best(TargetPriority.Leaders));
+            Assert.AreSame(hurt, Best(TargetPriority.Weakest));
+        }
     }
 }
