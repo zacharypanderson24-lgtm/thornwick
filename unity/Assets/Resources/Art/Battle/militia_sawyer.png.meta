@@ -1,0 +1,2919 @@
+fileFormatVersion: 2
+guid: ac18cdaf9f23cd74fb0e967b28aad788
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 3894252694277330060
+    second: militia_sawyer_0
+  - first:
+      213: 7720356784343235351
+    second: militia_sawyer_1
+  - first:
+      213: 3838509948742712448
+    second: militia_sawyer_2
+  - first:
+      213: -3257290687240876347
+    second: militia_sawyer_3
+  - first:
+      213: 6780538510622617704
+    second: militia_sawyer_4
+  - first:
+      213: -7488716734268373087
+    second: militia_sawyer_5
+  - first:
+      213: -5114635322696039680
+    second: militia_sawyer_6
+  - first:
+      213: -8996210247217325566
+    second: militia_sawyer_7
+  - first:
+      213: -985292591444623709
+    second: militia_sawyer_8
+  - first:
+      213: 2705364620205121504
+    second: militia_sawyer_9
+  - first:
+      213: -6771917345683543454
+    second: militia_sawyer_10
+  - first:
+      213: 5914402354113682049
+    second: militia_sawyer_11
+  - first:
+      213: 6274912936612478075
+    second: militia_sawyer_12
+  - first:
+      213: 2104033639216301075
+    second: militia_sawyer_13
+  - first:
+      213: -3411015093324618323
+    second: militia_sawyer_14
+  - first:
+      213: -7451801592004676528
+    second: militia_sawyer_15
+  - first:
+      213: -1010454211043680834
+    second: militia_sawyer_16
+  - first:
+      213: -6542405895303539882
+    second: militia_sawyer_17
+  - first:
+      213: 6286817791600748846
+    second: militia_sawyer_18
+  - first:
+      213: -8058239618914874320
+    second: militia_sawyer_19
+  - first:
+      213: -1049719855157142400
+    second: militia_sawyer_20
+  - first:
+      213: -380325808050417810
+    second: militia_sawyer_21
+  - first:
+      213: 3270644520174214794
+    second: militia_sawyer_22
+  - first:
+      213: 7483024439371412321
+    second: militia_sawyer_23
+  - first:
+      213: -6552750153298564458
+    second: militia_sawyer_24
+  - first:
+      213: 885907341578324438
+    second: militia_sawyer_25
+  - first:
+      213: -8522150946664919007
+    second: militia_sawyer_26
+  - first:
+      213: 142503388635847736
+    second: militia_sawyer_27
+  - first:
+      213: 6325729077235173883
+    second: militia_sawyer_28
+  - first:
+      213: 5040755882840839534
+    second: militia_sawyer_29
+  - first:
+      213: 5928577460195485327
+    second: militia_sawyer_30
+  - first:
+      213: 4917511902952703178
+    second: militia_sawyer_31
+  - first:
+      213: -7355935967301698530
+    second: militia_sawyer_32
+  - first:
+      213: 4247212894601898092
+    second: militia_sawyer_33
+  - first:
+      213: 2315544768254725100
+    second: militia_sawyer_34
+  - first:
+      213: -2579195491739897754
+    second: militia_sawyer_35
+  - first:
+      213: -1894324204219440590
+    second: militia_sawyer_36
+  - first:
+      213: -7459334464279925797
+    second: militia_sawyer_37
+  - first:
+      213: 8736338610758943746
+    second: militia_sawyer_38
+  - first:
+      213: 3956160354433824092
+    second: militia_sawyer_39
+  - first:
+      213: -7806337601847031739
+    second: militia_sawyer_40
+  - first:
+      213: 8306904071118628594
+    second: militia_sawyer_41
+  - first:
+      213: -6260239388457486109
+    second: militia_sawyer_42
+  - first:
+      213: 2398102822267959731
+    second: militia_sawyer_43
+  - first:
+      213: -6620236250882639546
+    second: militia_sawyer_44
+  - first:
+      213: -7332670881418714
+    second: militia_sawyer_45
+  - first:
+      213: -1891464800923378650
+    second: militia_sawyer_46
+  - first:
+      213: -8469150842833793395
+    second: militia_sawyer_47
+  - first:
+      213: 5274237614471716114
+    second: militia_sawyer_48
+  - first:
+      213: 384339938664910419
+    second: militia_sawyer_49
+  - first:
+      213: -6170774285427685572
+    second: militia_sawyer_50
+  - first:
+      213: -998788283039680592
+    second: militia_sawyer_51
+  - first:
+      213: 3958282381610984862
+    second: militia_sawyer_52
+  - first:
+      213: -3381613278958524534
+    second: militia_sawyer_53
+  - first:
+      213: -1779737009793295772
+    second: militia_sawyer_54
+  - first:
+      213: -5582159779034311954
+    second: militia_sawyer_55
+  - first:
+      213: 8844772659737414706
+    second: militia_sawyer_56
+  - first:
+      213: -3535517358072409179
+    second: militia_sawyer_57
+  - first:
+      213: 3661456806628031265
+    second: militia_sawyer_58
+  - first:
+      213: -106767784799309604
+    second: militia_sawyer_59
+  - first:
+      213: -2903330179937554801
+    second: militia_sawyer_60
+  - first:
+      213: -2372674477408046934
+    second: militia_sawyer_61
+  - first:
+      213: 6690951993531657291
+    second: militia_sawyer_62
+  - first:
+      213: 707946123002336451
+    second: militia_sawyer_63
+  - first:
+      213: 3600160489482469266
+    second: militia_sawyer_64
+  - first:
+      213: -9062918845513882256
+    second: militia_sawyer_65
+  - first:
+      213: 4009674989799940121
+    second: militia_sawyer_66
+  - first:
+      213: -2214928309894700612
+    second: militia_sawyer_67
+  - first:
+      213: -238110814939690320
+    second: militia_sawyer_68
+  - first:
+      213: -777921033867683479
+    second: militia_sawyer_69
+  - first:
+      213: 1051900218494541610
+    second: militia_sawyer_70
+  - first:
+      213: 3405378858437423079
+    second: militia_sawyer_71
+  - first:
+      213: -6311276429951902423
+    second: militia_sawyer_72
+  - first:
+      213: -5034159492942303834
+    second: militia_sawyer_73
+  - first:
+      213: -4632339923473896663
+    second: militia_sawyer_74
+  - first:
+      213: -8078529484888260287
+    second: militia_sawyer_75
+  - first:
+      213: -4800699935572077970
+    second: militia_sawyer_76
+  - first:
+      213: 5995515903042101126
+    second: militia_sawyer_77
+  - first:
+      213: -6610548935322273151
+    second: militia_sawyer_78
+  - first:
+      213: 911024169546927058
+    second: militia_sawyer_79
+  - first:
+      213: 2216564626788216403
+    second: militia_sawyer_80
+  - first:
+      213: -1888402132056535502
+    second: militia_sawyer_81
+  - first:
+      213: 3404784567865147150
+    second: militia_sawyer_82
+  - first:
+      213: -8100471337102874543
+    second: militia_sawyer_83
+  - first:
+      213: -6074267211831622658
+    second: militia_sawyer_84
+  - first:
+      213: 2576076143832582672
+    second: militia_sawyer_85
+  - first:
+      213: -8441349575460383105
+    second: militia_sawyer_86
+  - first:
+      213: 8704220404119622482
+    second: militia_sawyer_87
+  - first:
+      213: -653881706272164242
+    second: militia_sawyer_88
+  - first:
+      213: 8049033438880606654
+    second: militia_sawyer_89
+  - first:
+      213: -7903716496103742689
+    second: militia_sawyer_90
+  - first:
+      213: 4045758572281982382
+    second: militia_sawyer_91
+  - first:
+      213: -2952882055947420157
+    second: militia_sawyer_92
+  - first:
+      213: 8745957845531998347
+    second: militia_sawyer_93
+  - first:
+      213: -1519741342454736937
+    second: militia_sawyer_94
+  - first:
+      213: 8803159141242632384
+    second: militia_sawyer_95
+  - first:
+      213: 627502477591521405
+    second: militia_sawyer_96
+  - first:
+      213: 25846936377268037
+    second: militia_sawyer_97
+  - first:
+      213: 4349561760561898309
+    second: militia_sawyer_98
+  - first:
+      213: -8393737023312758546
+    second: militia_sawyer_99
+  - first:
+      213: 992719926439050278
+    second: militia_sawyer_100
+  - first:
+      213: -7831695168025258885
+    second: militia_sawyer_101
+  - first:
+      213: -8091415654524819552
+    second: militia_sawyer_102
+  - first:
+      213: 5623603974698016619
+    second: militia_sawyer_103
+  - first:
+      213: 1777049026149244074
+    second: militia_sawyer_104
+  - first:
+      213: 1051176092181394979
+    second: militia_sawyer_105
+  - first:
+      213: -7235419420559795277
+    second: militia_sawyer_106
+  - first:
+      213: 6142455389690998861
+    second: militia_sawyer_107
+  - first:
+      213: 350135440389500126
+    second: militia_sawyer_108
+  - first:
+      213: 7732435372933061568
+    second: militia_sawyer_109
+  - first:
+      213: -2857400680705610817
+    second: militia_sawyer_110
+  - first:
+      213: 5366605763698365962
+    second: militia_sawyer_111
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 9
+  spritePivot: {x: 0.5, y: 0}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: militia_sawyer_0
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c84120c513a2b0630800000000000000
+      internalID: 3894252694277330060
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_1
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 74
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 71b3e065797342b60800000000000000
+      internalID: 7720356784343235351
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 08cbc990670254530800000000000000
+      internalID: 3838509948742712448
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_3
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5cec1d8b067cbc2d0800000000000000
+      internalID: -3257290687240876347
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_4
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 74
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 860748fb9df491e50800000000000000
+      internalID: 6780538510622617704
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_5
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1a7096e9ecbb21890800000000000000
+      internalID: -7488716734268373087
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_6
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0038903c54a2509b0800000000000000
+      internalID: -5114635322696039680
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_7
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 74
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 20ad1e1b17a072380800000000000000
+      internalID: -8996210247217325566
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_8
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3ae7e1fbb998352f0800000000000000
+      internalID: -985292591444623709
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_9
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 74
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ef5c37d9c26b8520800000000000000
+      internalID: 2705364620205121504
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_10
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 74
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 26ae932ad015502a0800000000000000
+      internalID: -6771917345683543454
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_11
+      rect:
+        serializedVersion: 2
+        x: 316
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 18a1eafea9d241250800000000000000
+      internalID: 5914402354113682049
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_12
+      rect:
+        serializedVersion: 2
+        x: 344
+        y: 74
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7c3a47e118f41750800000000000000
+      internalID: 6274912936612478075
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_13
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 74
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 314c5fc7277033d10800000000000000
+      internalID: 2104033639216301075
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_14
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: da5e3ee48d3a9a0d0800000000000000
+      internalID: -3411015093324618323
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_15
+      rect:
+        serializedVersion: 2
+        x: 427
+        y: 74
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 054fed3fee1e59890800000000000000
+      internalID: -7451801592004676528
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_16
+      rect:
+        serializedVersion: 2
+        x: 456
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ebd91f8af352af1f0800000000000000
+      internalID: -1010454211043680834
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_17
+      rect:
+        serializedVersion: 2
+        x: 485
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 653d20a5084b435a0800000000000000
+      internalID: -6542405895303539882
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_18
+      rect:
+        serializedVersion: 2
+        x: 513
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e29e7f3f8734f3750800000000000000
+      internalID: 6286817791600748846
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_19
+      rect:
+        serializedVersion: 2
+        x: 540
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 03c899fc2c16b2090800000000000000
+      internalID: -8058239618914874320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_20
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 08c1fa77a55ae61f0800000000000000
+      internalID: -1049719855157142400
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_21
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e6fcd3051bfc8baf0800000000000000
+      internalID: -380325808050417810
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_22
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a8edf8bccd9a36d20800000000000000
+      internalID: 3270644520174214794
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_23
+      rect:
+        serializedVersion: 2
+        x: 652
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 163bc42b41b09d760800000000000000
+      internalID: 7483024439371412321
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_24
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 74
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 69aa0ca1474ff05a0800000000000000
+      internalID: -6552750153298564458
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_25
+      rect:
+        serializedVersion: 2
+        x: 706
+        y: 74
+        width: 18
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d9cfae88006b4c00800000000000000
+      internalID: 885907341578324438
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_26
+      rect:
+        serializedVersion: 2
+        x: 734
+        y: 74
+        width: 19
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12057c5cddc3bb980800000000000000
+      internalID: -8522150946664919007
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_27
+      rect:
+        serializedVersion: 2
+        x: 763
+        y: 74
+        width: 18
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 83cdde2b3164af100800000000000000
+      internalID: 142503388635847736
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_28
+      rect:
+        serializedVersion: 2
+        x: 6
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bf946f1a41189c750800000000000000
+      internalID: 6325729077235173883
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_29
+      rect:
+        serializedVersion: 2
+        x: 34
+        y: 50
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e655034b4cc54f540800000000000000
+      internalID: 5040755882840839534
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_30
+      rect:
+        serializedVersion: 2
+        x: 62
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f86e6520ac9864250800000000000000
+      internalID: 5928577460195485327
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_31
+      rect:
+        serializedVersion: 2
+        x: 90
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac4404a85038e3440800000000000000
+      internalID: 4917511902952703178
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_32
+      rect:
+        serializedVersion: 2
+        x: 118
+        y: 50
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e1c767e06377ae990800000000000000
+      internalID: -7355935967301698530
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_33
+      rect:
+        serializedVersion: 2
+        x: 146
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c68643cff9121fa30800000000000000
+      internalID: 4247212894601898092
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_34
+      rect:
+        serializedVersion: 2
+        x: 174
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ceb465dc2b7722020800000000000000
+      internalID: 2315544768254725100
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_35
+      rect:
+        serializedVersion: 2
+        x: 202
+        y: 50
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 660fd8c8d5bd43cd0800000000000000
+      internalID: -2579195491739897754
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_36
+      rect:
+        serializedVersion: 2
+        x: 230
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 232631e3c2206b5e0800000000000000
+      internalID: -1894324204219440590
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_37
+      rect:
+        serializedVersion: 2
+        x: 258
+        y: 50
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bdb24c373de1b7890800000000000000
+      internalID: -7459334464279925797
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_38
+      rect:
+        serializedVersion: 2
+        x: 286
+        y: 50
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 20401dbeda5bd3970800000000000000
+      internalID: 8736338610758943746
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_39
+      rect:
+        serializedVersion: 2
+        x: 314
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c55f288b1ea17e630800000000000000
+      internalID: 3956160354433824092
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_40
+      rect:
+        serializedVersion: 2
+        x: 342
+        y: 50
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 54802259f415aa390800000000000000
+      internalID: -7806337601847031739
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_41
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 50
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2f6a546ad3d084370800000000000000
+      internalID: 8306904071118628594
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_42
+      rect:
+        serializedVersion: 2
+        x: 397
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3e83512c1792f19a0800000000000000
+      internalID: -6260239388457486109
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_43
+      rect:
+        serializedVersion: 2
+        x: 429
+        y: 50
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3b9b428afc5c74120800000000000000
+      internalID: 2398102822267959731
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_44
+      rect:
+        serializedVersion: 2
+        x: 452
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 649f9f094323024a0800000000000000
+      internalID: -6620236250882639546
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_45
+      rect:
+        serializedVersion: 2
+        x: 478
+        y: 50
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 622bbd489f2f5eff0800000000000000
+      internalID: -7332670881418714
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_46
+      rect:
+        serializedVersion: 2
+        x: 506
+        y: 50
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62c9ec3f8ca20c5e0800000000000000
+      internalID: -1891464800923378650
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_47
+      rect:
+        serializedVersion: 2
+        x: 538
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d8e01bf0e28877a80800000000000000
+      internalID: -8469150842833793395
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_48
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 21d179f8a2bd13940800000000000000
+      internalID: 5274237614471716114
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_49
+      rect:
+        serializedVersion: 2
+        x: 596
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 35e0e1d4323755500800000000000000
+      internalID: 384339938664910419
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_50
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c37c7f74b710d5aa0800000000000000
+      internalID: -6170774285427685572
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_51
+      rect:
+        serializedVersion: 2
+        x: 649
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b7f89f29579322f0800000000000000
+      internalID: -998788283039680592
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_52
+      rect:
+        serializedVersion: 2
+        x: 676
+        y: 50
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e952c9caad4aee630800000000000000
+      internalID: 3958282381610984862
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_53
+      rect:
+        serializedVersion: 2
+        x: 704
+        y: 50
+        width: 18
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a87eeeba3a81211d0800000000000000
+      internalID: -3381613278958524534
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_54
+      rect:
+        serializedVersion: 2
+        x: 731
+        y: 50
+        width: 19
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 46a97a97e9a1d47e0800000000000000
+      internalID: -1779737009793295772
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_55
+      rect:
+        serializedVersion: 2
+        x: 758
+        y: 50
+        width: 19
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee2df2ba14f2882b0800000000000000
+      internalID: -5582159779034311954
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_56
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 23c4cb65fd1feba70800000000000000
+      internalID: 8844772659737414706
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_57
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 26
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5a3ddded1b15feec0800000000000000
+      internalID: -3535517358072409179
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_58
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12bff7ff09b10d230800000000000000
+      internalID: 3661456806628031265
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_59
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cd0f491f34fa48ef0800000000000000
+      internalID: -106767784799309604
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_60
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 26
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f8ea627759c45b7d0800000000000000
+      internalID: -2903330179937554801
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_61
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa0357e3221921fd0800000000000000
+      internalID: -2372674477408046934
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_62
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b4c65af43690bdc50800000000000000
+      internalID: 6690951993531657291
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_63
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 26
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3c45bad7f3123d900800000000000000
+      internalID: 707946123002336451
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_64
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 29fbff504e656f130800000000000000
+      internalID: 3600160489482469266
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_65
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 26
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 075a3f0d35b0a3280800000000000000
+      internalID: -9062918845513882256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_66
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 26
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9102bc7b82a35a730800000000000000
+      internalID: 4009674989799940121
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_67
+      rect:
+        serializedVersion: 2
+        x: 316
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cb125c5ff6ef241e0800000000000000
+      internalID: -2214928309894700612
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_68
+      rect:
+        serializedVersion: 2
+        x: 344
+        y: 26
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ba4752b97f02bcf0800000000000000
+      internalID: -238110814939690320
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_69
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 26
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9691309f0f44435f0800000000000000
+      internalID: -777921033867683479
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_70
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a2fd58eeca9199e00800000000000000
+      internalID: 1051900218494541610
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_71
+      rect:
+        serializedVersion: 2
+        x: 427
+        y: 26
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7efa9ce7706524f20800000000000000
+      internalID: 3405378858437423079
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_72
+      rect:
+        serializedVersion: 2
+        x: 456
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 92ddb698687d968a0800000000000000
+      internalID: -6311276429951902423
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_73
+      rect:
+        serializedVersion: 2
+        x: 485
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6ad63800d92132ab0800000000000000
+      internalID: -5034159492942303834
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_74
+      rect:
+        serializedVersion: 2
+        x: 513
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 92b6a7ef16f96bfb0800000000000000
+      internalID: -4632339923473896663
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_75
+      rect:
+        serializedVersion: 2
+        x: 540
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 14147b14c3c43ef80800000000000000
+      internalID: -8078529484888260287
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_76
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e625cf208dc706db0800000000000000
+      internalID: -4800699935572077970
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_77
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68f970eb2f9543350800000000000000
+      internalID: 5995515903042101126
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_78
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 18a77cb74cc9244a0800000000000000
+      internalID: -6610548935322273151
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_79
+      rect:
+        serializedVersion: 2
+        x: 652
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2dbc3a7c7ab94ac00800000000000000
+      internalID: 911024169546927058
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_80
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 26
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 35e6861c8c1d2ce10800000000000000
+      internalID: 2216564626788216403
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_81
+      rect:
+        serializedVersion: 2
+        x: 706
+        y: 26
+        width: 18
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 23e0ead144c0bc5e0800000000000000
+      internalID: -1888402132056535502
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_82
+      rect:
+        serializedVersion: 2
+        x: 734
+        y: 26
+        width: 19
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e0f75507689304f20800000000000000
+      internalID: 3404784567865147150
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_83
+      rect:
+        serializedVersion: 2
+        x: 763
+        y: 26
+        width: 18
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 158efbeac38559f80800000000000000
+      internalID: -8100471337102874543
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_84
+      rect:
+        serializedVersion: 2
+        x: 6
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef349f7572ed3bba0800000000000000
+      internalID: -6074267211831622658
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_85
+      rect:
+        serializedVersion: 2
+        x: 34
+        y: 2
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 01acf7baa9f00c320800000000000000
+      internalID: 2576076143832582672
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_86
+      rect:
+        serializedVersion: 2
+        x: 62
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f761ac9094d4ada80800000000000000
+      internalID: -8441349575460383105
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_87
+      rect:
+        serializedVersion: 2
+        x: 90
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 253d142375a9bc870800000000000000
+      internalID: 8704220404119622482
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_88
+      rect:
+        serializedVersion: 2
+        x: 118
+        y: 2
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e6675847d02fce6f0800000000000000
+      internalID: -653881706272164242
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_89
+      rect:
+        serializedVersion: 2
+        x: 146
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eb928bd5449e3bf60800000000000000
+      internalID: 8049033438880606654
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_90
+      rect:
+        serializedVersion: 2
+        x: 174
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f136754f8bb505290800000000000000
+      internalID: -7903716496103742689
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_91
+      rect:
+        serializedVersion: 2
+        x: 202
+        y: 2
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eadebd37cfb652830800000000000000
+      internalID: 4045758572281982382
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_92
+      rect:
+        serializedVersion: 2
+        x: 230
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 30ef0a74a614507d0800000000000000
+      internalID: -2952882055947420157
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_93
+      rect:
+        serializedVersion: 2
+        x: 258
+        y: 2
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b88b97b8252ef5970800000000000000
+      internalID: 8745957845531998347
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_94
+      rect:
+        serializedVersion: 2
+        x: 286
+        y: 2
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7d7928c0d4bc8eae0800000000000000
+      internalID: -1519741342454736937
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_95
+      rect:
+        serializedVersion: 2
+        x: 314
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0c8fffa099a1b2a70800000000000000
+      internalID: 8803159141242632384
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_96
+      rect:
+        serializedVersion: 2
+        x: 342
+        y: 2
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d782580cd2655b800800000000000000
+      internalID: 627502477591521405
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_97
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 2
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5479c45d6a3db5000800000000000000
+      internalID: 25846936377268037
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_98
+      rect:
+        serializedVersion: 2
+        x: 397
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5432ae2506fbc5c30800000000000000
+      internalID: 4349561760561898309
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_99
+      rect:
+        serializedVersion: 2
+        x: 429
+        y: 2
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee8f56336a4738b80800000000000000
+      internalID: -8393737023312758546
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_100
+      rect:
+        serializedVersion: 2
+        x: 452
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62cf9d07389d6cd00800000000000000
+      internalID: 992719926439050278
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_101
+      rect:
+        serializedVersion: 2
+        x: 478
+        y: 2
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7416b02dba305390800000000000000
+      internalID: -7831695168025258885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_102
+      rect:
+        serializedVersion: 2
+        x: 506
+        y: 2
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0a76306155485bf80800000000000000
+      internalID: -8091415654524819552
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_103
+      rect:
+        serializedVersion: 2
+        x: 538
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b6f9955150e0b0e40800000000000000
+      internalID: 5623603974698016619
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_104
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aac54109ca859a810800000000000000
+      internalID: 1777049026149244074
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_105
+      rect:
+        serializedVersion: 2
+        x: 596
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 326fad22617869e00800000000000000
+      internalID: 1051176092181394979
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_106
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3bb12943f50a69b90800000000000000
+      internalID: -7235419420559795277
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_107
+      rect:
+        serializedVersion: 2
+        x: 649
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d40373ff1a26e3550800000000000000
+      internalID: 6142455389690998861
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_108
+      rect:
+        serializedVersion: 2
+        x: 676
+        y: 2
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: edce0b3f35eebd400800000000000000
+      internalID: 350135440389500126
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_109
+      rect:
+        serializedVersion: 2
+        x: 704
+        y: 2
+        width: 18
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0cb1754e0012f4b60800000000000000
+      internalID: 7732435372933061568
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_110
+      rect:
+        serializedVersion: 2
+        x: 731
+        y: 2
+        width: 19
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fbb259558397858d0800000000000000
+      internalID: -2857400680705610817
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_sawyer_111
+      rect:
+        serializedVersion: 2
+        x: 758
+        y: 2
+        width: 19
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a061ec232830a7a40800000000000000
+      internalID: 5366605763698365962
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable: {}
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

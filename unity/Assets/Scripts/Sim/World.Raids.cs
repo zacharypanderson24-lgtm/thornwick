@@ -29,6 +29,7 @@ namespace CrownAndHearth.Sim
         public double Hp = World.RaiderHp;
         public Building Target;
         public Res LootRes; public double Carry;
+        public Fighter Opponent; // visual facing while a soldier blocks the raider
         public bool Hurt, Fighting;   // took a hit today / stopped to fight a soldier today (drawn red / swinging)
         public int DeadDay;           // the body stays on the field for a few days
         public readonly List<int> Path = new List<int>();   // the way in, walked back when fleeing
@@ -57,6 +58,8 @@ namespace CrownAndHearth.Sim
         public readonly Dictionary<Res, int> Stolen = new Dictionary<Res, int>();   // what got away with the raiders
         public readonly List<Raider> Raiders = new List<Raider>();
         public readonly List<Fighter> Fighters = new List<Fighter>();
+        // One animation cue per participating worksite, cleared before each combat tick.
+        public readonly List<(string Trade, int X, int Y, Raider Target)> MilitiaActions = new();
         internal readonly Dictionary<Building, int[]> Fields = new Dictionary<Building, int[]>();
         internal readonly Dictionary<Raider, int[]> Chase = new Dictionary<Raider, int[]>();   // steps to each raider, near it, refreshed daily
 
@@ -277,6 +280,7 @@ namespace CrownAndHearth.Sim
         {
             var r = Raid;
             if (r == null) return;
+            r.MilitiaActions.Clear();
             if (r.Over && r.Fighters.All(f => f.St == FighterState.Idle || f.St == FighterState.Dead)) return;
             if (!r.Over) StepRaiders(r);
             StepFighters(r);
@@ -292,7 +296,7 @@ namespace CrownAndHearth.Sim
             foreach (var a in r.Raiders)
             {
                 if (a.St == RaiderState.Dead || a.St == RaiderState.Gone) continue;
-                a.Px = a.X; a.Py = a.Y; a.Hurt = false; a.Fighting = false;
+                a.Px = a.X; a.Py = a.Y; a.Hurt = false; a.Fighting = false; a.Opponent = null;
                 if (a.St == RaiderState.Waiting)
                 {
                     if (days < a.Delay) continue;
@@ -307,7 +311,8 @@ namespace CrownAndHearth.Sim
                     int d = dist[a.Y * N + a.X];
                     if (d <= 1) { a.St = RaiderState.Loot; continue; }
                     // a soldier right beside the raider: stop and fight instead of walking on
-                    if (r.Fighters.Any(f => f.St != FighterState.Dead && f.St != FighterState.Idle && Cheb(f.X, f.Y, a.X, a.Y) <= 1)) { a.Fighting = true; continue; }
+                    a.Opponent = r.Fighters.FirstOrDefault(f => f.St != FighterState.Dead && f.St != FighterState.Idle && Cheb(f.X, f.Y, a.X, a.Y) <= 1);
+                    if (a.Opponent != null) { a.Fighting = true; continue; }
                     int best = -1;
                     for (int k = 0; k < 4 && best < 0; k++)
                     {
@@ -488,7 +493,22 @@ namespace CrownAndHearth.Sim
             r.Fighters.RemoveAll(f => f.St == FighterState.Dead && Day - f.DeadDay > BodyDays);
         }
 
-        /// <summary>No military: the workers of each building fight raiders in reach with their tools, and raiders at the door hurt them back.</summary>
+        // Put the cosmetic defender on open ground just outside the participating building.
+        (int x, int y) MilitiaPosition(Building b, Raider target)
+        {
+            int x = -1, y = -1, best = int.MaxValue;
+            for (int j = b.Y - 1; j <= b.Y + b.Sz; j++)
+                for (int i = b.X - 1; i <= b.X + b.Sz; i++)
+                {
+                    if (i > b.X - 1 && i < b.X + b.Sz && j > b.Y - 1 && j < b.Y + b.Sz) continue;
+                    if (!Inb(i, j) || IsSolid(i, j) || (Grid[j, i] != null && Grid[j, i].T != "road")) continue;
+                    int distance = Cheb(i, j, target.X, target.Y);
+                    if (distance < best) { x = i; y = j; best = distance; }
+                }
+            return (x, y);
+        }
+
+        /// <summary>Workers fight raiders in reach with their tools, and raiders at the door hurt them back.</summary>
         void MilitiaFight(RaidReport r)
         {
             var active = r.Raiders.Where(a => a.St == RaiderState.Approach || a.St == RaiderState.Loot || a.St == RaiderState.Flee).ToList();
@@ -498,7 +518,11 @@ namespace CrownAndHearth.Sim
                 var t = MilitiaTool(b.T); if (t == null || b.Workers <= 0) continue;
                 var near = active.Where(a => Reach(b, a.X, a.Y) <= t.Value.reach).ToList();
                 if (near.Count == 0) continue;
-                foreach (var a in near) a.Hp -= b.Workers * t.Value.dmg / near.Count;
+                double damage = b.Workers * t.Value.dmg / near.Count;
+                foreach (var a in near) { a.Hp -= damage; a.Hurt = true; }
+                var target = near.OrderBy(a => Reach(b, a.X, a.Y)).ThenBy(a => a.Id).First();
+                var (x, y) = MilitiaPosition(b, target);
+                if (Inb(x, y)) r.MilitiaActions.Add((b.T, x, y, target));
                 r.Tools.Add(t.Value.tool);
                 _militiaWounds += 0.08 * near.Count * Math.Min(1, b.Workers / 2.0);
             }

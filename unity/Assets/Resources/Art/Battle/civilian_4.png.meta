@@ -1,0 +1,919 @@
+fileFormatVersion: 2
+guid: 24fe0474f6cd9904cbf37b388868cc10
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -7668939282535989590
+    second: civilian_4_0
+  - first:
+      213: -7068286294797997474
+    second: civilian_4_1
+  - first:
+      213: 6830598819820001717
+    second: civilian_4_2
+  - first:
+      213: 4503875531540932740
+    second: civilian_4_3
+  - first:
+      213: -2788084925697673234
+    second: civilian_4_4
+  - first:
+      213: -4452834538466101619
+    second: civilian_4_5
+  - first:
+      213: -6553636002242051568
+    second: civilian_4_6
+  - first:
+      213: 863215304387422856
+    second: civilian_4_7
+  - first:
+      213: 3228119401802622102
+    second: civilian_4_8
+  - first:
+      213: 5750715412779993912
+    second: civilian_4_9
+  - first:
+      213: -4860801318939473100
+    second: civilian_4_10
+  - first:
+      213: 4009594552674673160
+    second: civilian_4_11
+  - first:
+      213: -8626413168908717901
+    second: civilian_4_12
+  - first:
+      213: -9004001077119223087
+    second: civilian_4_13
+  - first:
+      213: -8397507975679578570
+    second: civilian_4_14
+  - first:
+      213: -5691223618575637060
+    second: civilian_4_15
+  - first:
+      213: -3058632804931512795
+    second: civilian_4_16
+  - first:
+      213: 3517746813814485362
+    second: civilian_4_17
+  - first:
+      213: 2442226792707979098
+    second: civilian_4_18
+  - first:
+      213: 2335747982893460329
+    second: civilian_4_19
+  - first:
+      213: -4861050516418215082
+    second: civilian_4_20
+  - first:
+      213: 5587667322785194253
+    second: civilian_4_21
+  - first:
+      213: -8476741212723114148
+    second: civilian_4_22
+  - first:
+      213: 6309692214916882544
+    second: civilian_4_23
+  - first:
+      213: -7016268902986540874
+    second: civilian_4_24
+  - first:
+      213: -49391708317741511
+    second: civilian_4_25
+  - first:
+      213: 645971549288086107
+    second: civilian_4_26
+  - first:
+      213: -8507188596218508951
+    second: civilian_4_27
+  - first:
+      213: -3556281385293584720
+    second: civilian_4_28
+  - first:
+      213: 9184604156255659021
+    second: civilian_4_29
+  - first:
+      213: 6514874572954442001
+    second: civilian_4_30
+  - first:
+      213: -2977759939605087801
+    second: civilian_4_31
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 9
+  spritePivot: {x: 0.5, y: 0}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: civilian_4_0
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 74
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aae3764ba54729590800000000000000
+      internalID: -7668939282535989590
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_1
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 74
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e5aadc3701768ed90800000000000000
+      internalID: -7068286294797997474
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 74
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b9d292cf692bce50800000000000000
+      internalID: 6830598819820001717
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_3
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 74
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4882212feeaf08e30800000000000000
+      internalID: 4503875531540932740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_4
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 74
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee73b20388bbe49d0800000000000000
+      internalID: -2788084925697673234
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_5
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 74
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d863323549a5432c0800000000000000
+      internalID: -4452834538466101619
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_6
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 74
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 012c62357cecc05a0800000000000000
+      internalID: -6553636002242051568
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_7
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 74
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 88a61beeeb1cafb00800000000000000
+      internalID: 863215304387422856
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_8
+      rect:
+        serializedVersion: 2
+        x: 9
+        y: 50
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 694edfc1e759ccc20800000000000000
+      internalID: 3228119401802622102
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_9
+      rect:
+        serializedVersion: 2
+        x: 37
+        y: 50
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 83b8d170335aecf40800000000000000
+      internalID: 5750715412779993912
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_10
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 50
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 43bccdc34f6fa8cb0800000000000000
+      internalID: -4860801318939473100
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_11
+      rect:
+        serializedVersion: 2
+        x: 93
+        y: 50
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 802e38d7001f4a730800000000000000
+      internalID: 4009594552674673160
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_12
+      rect:
+        serializedVersion: 2
+        x: 121
+        y: 50
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3b0b1757de2d84880800000000000000
+      internalID: -8626413168908717901
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_13
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 50
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1daf211c9bc5b0380800000000000000
+      internalID: -9004001077119223087
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_14
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 50
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 63eeb1fecfe067b80800000000000000
+      internalID: -8397507975679578570
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_15
+      rect:
+        serializedVersion: 2
+        x: 205
+        y: 50
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cb56c75b546b401b0800000000000000
+      internalID: -5691223618575637060
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_16
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 26
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 52653b35bad8d85d0800000000000000
+      internalID: -3058632804931512795
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_17
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 26
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 271bc2fd61c81d030800000000000000
+      internalID: 3517746813814485362
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_18
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 26
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a57fc48145884e120800000000000000
+      internalID: 2442226792707979098
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_19
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 26
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96b23354a6e3a6020800000000000000
+      internalID: 2335747982893460329
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_20
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 26
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 653c9ad6f441a8cb0800000000000000
+      internalID: -4861050516418215082
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_21
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 26
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d016ba943d16b8d40800000000000000
+      internalID: 5587667322785194253
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_22
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 26
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5f89ba57c09c5a80800000000000000
+      internalID: -8476741212723114148
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_23
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 26
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0702b28a3a7809750800000000000000
+      internalID: 6309692214916882544
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_24
+      rect:
+        serializedVersion: 2
+        x: 9
+        y: 2
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6b81ed44b9431ae90800000000000000
+      internalID: -7016268902986540874
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_25
+      rect:
+        serializedVersion: 2
+        x: 37
+        y: 2
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 93e0fd2c086805ff0800000000000000
+      internalID: -49391708317741511
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_26
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 2
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b5a335a93b3f6f800800000000000000
+      internalID: 645971549288086107
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_27
+      rect:
+        serializedVersion: 2
+        x: 93
+        y: 2
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96944257b0560f980800000000000000
+      internalID: -8507188596218508951
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_28
+      rect:
+        serializedVersion: 2
+        x: 121
+        y: 2
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b6ed3c0cec85aec0800000000000000
+      internalID: -3556281385293584720
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_29
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 2
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d04e13861d4467f70800000000000000
+      internalID: 9184604156255659021
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_30
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 2
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1199c2528eb796a50800000000000000
+      internalID: 6514874572954442001
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: civilian_4_31
+      rect:
+        serializedVersion: 2
+        x: 205
+        y: 2
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c9337d9c1fdca6d0800000000000000
+      internalID: -2977759939605087801
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable: {}
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
