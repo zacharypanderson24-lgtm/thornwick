@@ -153,6 +153,13 @@ namespace CrownAndHearth.Game
             _hud.TutorialClose += () => { _tutorial.Close(); PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
             _hud.SavePicked += SaveSettlement;
             _hud.MapToggled += open => { if (open) EnsureWorldMap(); };
+            _hud.InvasionConfirmed += (camp, groups) => World.BeginInvasion(camp, groups);
+            _hud.InvasionFinished += battle =>
+            {
+                World.FinishInvasion(battle);
+                _hud.SetCamps(World);
+                _hud.Toast(battle.Victory ? $"The {battle.Camp.Name} is destroyed." : $"The attack on the {battle.Camp.Name} is over.", 6);
+            };
             _hud.LoadPicked += LoadSettlement;
             SetTool(_tool); _hud.SetSpeed(_speed);
             EnsureWorldMap();   // the raider camps live on the world map, so it is made at the start (on a worker thread)
@@ -246,6 +253,7 @@ namespace CrownAndHearth.Game
             if (_worldMap == null || _worldMap.Seed != World.Seed || World.Camps.Count > 0) return;
             var home = _worldMap.HomeSite;
             World.SetCamps(RaiderCamps.Generate(_worldMap), home?.X ?? WorldMap.Size / 2, home?.Y ?? WorldMap.Size / 2);
+            _hud.SetCamps(World);
         }
 
         void PollWorldMap()
@@ -333,7 +341,7 @@ namespace CrownAndHearth.Game
             if (_hud.MapOpen)
             {
                 // the map is modal: Esc closes it, Space still pauses, nothing else reaches the town
-                if (kb.escapeKey.wasPressedThisFrame) _hud.CloseMap();
+                if (kb.escapeKey.wasPressedThisFrame) _hud.EscapePanels();
                 if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
                 return;
             }
