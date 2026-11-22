@@ -1,0 +1,2919 @@
+fileFormatVersion: 2
+guid: cf003ebb1fc9766489d6bca567099bc2
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -6988111584505486399
+    second: militia_hunter_0
+  - first:
+      213: 2683250010597499557
+    second: militia_hunter_1
+  - first:
+      213: -150605229612828050
+    second: militia_hunter_2
+  - first:
+      213: -5964680635429723639
+    second: militia_hunter_3
+  - first:
+      213: -8394523917003934003
+    second: militia_hunter_4
+  - first:
+      213: -4605613982847460346
+    second: militia_hunter_5
+  - first:
+      213: 3506382399400162288
+    second: militia_hunter_6
+  - first:
+      213: -6868491366256907283
+    second: militia_hunter_7
+  - first:
+      213: -3905458126515524753
+    second: militia_hunter_8
+  - first:
+      213: -146125212054470175
+    second: militia_hunter_9
+  - first:
+      213: -1351286224506912619
+    second: militia_hunter_10
+  - first:
+      213: 7776310050389697691
+    second: militia_hunter_11
+  - first:
+      213: -5702365931925396925
+    second: militia_hunter_12
+  - first:
+      213: 1868498755563110174
+    second: militia_hunter_13
+  - first:
+      213: 2947776522454516911
+    second: militia_hunter_14
+  - first:
+      213: -1621312612882460217
+    second: militia_hunter_15
+  - first:
+      213: 2284666977851405640
+    second: militia_hunter_16
+  - first:
+      213: 2774538023614524946
+    second: militia_hunter_17
+  - first:
+      213: 35776175478668777
+    second: militia_hunter_18
+  - first:
+      213: 5997807484934811702
+    second: militia_hunter_19
+  - first:
+      213: -8204803146059680783
+    second: militia_hunter_20
+  - first:
+      213: -3915715631421500489
+    second: militia_hunter_21
+  - first:
+      213: 5050919770117254869
+    second: militia_hunter_22
+  - first:
+      213: 7093951337083294610
+    second: militia_hunter_23
+  - first:
+      213: 5712496981700689486
+    second: militia_hunter_24
+  - first:
+      213: -1158754191172850938
+    second: militia_hunter_25
+  - first:
+      213: 3128440031172311542
+    second: militia_hunter_26
+  - first:
+      213: -2640696266099116012
+    second: militia_hunter_27
+  - first:
+      213: -8319654392508964921
+    second: militia_hunter_28
+  - first:
+      213: 3468152811350628800
+    second: militia_hunter_29
+  - first:
+      213: 8374893046498609723
+    second: militia_hunter_30
+  - first:
+      213: -7073453076001925639
+    second: militia_hunter_31
+  - first:
+      213: -1842495918971392256
+    second: militia_hunter_32
+  - first:
+      213: -2279379032533603464
+    second: militia_hunter_33
+  - first:
+      213: -6337345922688791195
+    second: militia_hunter_34
+  - first:
+      213: 3002512306666474056
+    second: militia_hunter_35
+  - first:
+      213: 8870362807650185872
+    second: militia_hunter_36
+  - first:
+      213: 6543494316824262198
+    second: militia_hunter_37
+  - first:
+      213: -2759272686968573677
+    second: militia_hunter_38
+  - first:
+      213: 2040247172599234184
+    second: militia_hunter_39
+  - first:
+      213: 5860737088807426700
+    second: militia_hunter_40
+  - first:
+      213: 4326713426605640092
+    second: militia_hunter_41
+  - first:
+      213: -3600477978956345261
+    second: militia_hunter_42
+  - first:
+      213: 8479610808028756616
+    second: militia_hunter_43
+  - first:
+      213: -8828837777342800411
+    second: militia_hunter_44
+  - first:
+      213: -7379940183989050655
+    second: militia_hunter_45
+  - first:
+      213: -7421158533799019314
+    second: militia_hunter_46
+  - first:
+      213: -1270785708047152005
+    second: militia_hunter_47
+  - first:
+      213: -6338254825170322612
+    second: militia_hunter_48
+  - first:
+      213: -5370106133638007394
+    second: militia_hunter_49
+  - first:
+      213: 1996565738919462290
+    second: militia_hunter_50
+  - first:
+      213: 8181637395228714392
+    second: militia_hunter_51
+  - first:
+      213: 2240808650313770237
+    second: militia_hunter_52
+  - first:
+      213: 4011885750365823360
+    second: militia_hunter_53
+  - first:
+      213: -5842131827902359429
+    second: militia_hunter_54
+  - first:
+      213: 4807309710339069942
+    second: militia_hunter_55
+  - first:
+      213: 7951828846129199241
+    second: militia_hunter_56
+  - first:
+      213: 2698351297089007207
+    second: militia_hunter_57
+  - first:
+      213: -6874085987173162922
+    second: militia_hunter_58
+  - first:
+      213: 8300486587525779884
+    second: militia_hunter_59
+  - first:
+      213: 634630214798499166
+    second: militia_hunter_60
+  - first:
+      213: 8150696068289696824
+    second: militia_hunter_61
+  - first:
+      213: 6405875484968905542
+    second: militia_hunter_62
+  - first:
+      213: -4226567807581176683
+    second: militia_hunter_63
+  - first:
+      213: -1352902025496179799
+    second: militia_hunter_64
+  - first:
+      213: 838263824857737719
+    second: militia_hunter_65
+  - first:
+      213: 5025492380246917113
+    second: militia_hunter_66
+  - first:
+      213: -2008806385699474882
+    second: militia_hunter_67
+  - first:
+      213: 3144764068132099688
+    second: militia_hunter_68
+  - first:
+      213: 1575001548844266512
+    second: militia_hunter_69
+  - first:
+      213: -111749284353110901
+    second: militia_hunter_70
+  - first:
+      213: 6600848127798717640
+    second: militia_hunter_71
+  - first:
+      213: -5833437034505721011
+    second: militia_hunter_72
+  - first:
+      213: -3076148598002397619
+    second: militia_hunter_73
+  - first:
+      213: -4847361298719358872
+    second: militia_hunter_74
+  - first:
+      213: -490838838269115957
+    second: militia_hunter_75
+  - first:
+      213: 6004377355604439836
+    second: militia_hunter_76
+  - first:
+      213: -9175318009923856768
+    second: militia_hunter_77
+  - first:
+      213: 8402011930153703678
+    second: militia_hunter_78
+  - first:
+      213: -6400432381445668833
+    second: militia_hunter_79
+  - first:
+      213: 1996980571234097687
+    second: militia_hunter_80
+  - first:
+      213: 1930812857532062126
+    second: militia_hunter_81
+  - first:
+      213: 5915851135231018863
+    second: militia_hunter_82
+  - first:
+      213: 5983219287255362552
+    second: militia_hunter_83
+  - first:
+      213: -2738767621873755516
+    second: militia_hunter_84
+  - first:
+      213: -8306065835709336137
+    second: militia_hunter_85
+  - first:
+      213: -1372000489489450034
+    second: militia_hunter_86
+  - first:
+      213: 1016739072845040483
+    second: militia_hunter_87
+  - first:
+      213: -4349327379811520748
+    second: militia_hunter_88
+  - first:
+      213: 9081201447502638738
+    second: militia_hunter_89
+  - first:
+      213: 4964241999299281723
+    second: militia_hunter_90
+  - first:
+      213: -3118311556630917512
+    second: militia_hunter_91
+  - first:
+      213: -87969883919939344
+    second: militia_hunter_92
+  - first:
+      213: 718337692454549076
+    second: militia_hunter_93
+  - first:
+      213: -4252245700421649118
+    second: militia_hunter_94
+  - first:
+      213: -5107916381557302057
+    second: militia_hunter_95
+  - first:
+      213: -3269420100691007327
+    second: militia_hunter_96
+  - first:
+      213: -4522960462460630641
+    second: militia_hunter_97
+  - first:
+      213: 5042995456790112550
+    second: militia_hunter_98
+  - first:
+      213: 4098168359615953962
+    second: militia_hunter_99
+  - first:
+      213: 7894024398528042955
+    second: militia_hunter_100
+  - first:
+      213: 5425667141794220203
+    second: militia_hunter_101
+  - first:
+      213: -4669599175306871703
+    second: militia_hunter_102
+  - first:
+      213: 3727386587220862103
+    second: militia_hunter_103
+  - first:
+      213: 4899299770233594045
+    second: militia_hunter_104
+  - first:
+      213: -8465633325376770852
+    second: militia_hunter_105
+  - first:
+      213: 8881737591718963757
+    second: militia_hunter_106
+  - first:
+      213: 3857023419270964913
+    second: militia_hunter_107
+  - first:
+      213: 756825627947673175
+    second: militia_hunter_108
+  - first:
+      213: -991539101264480669
+    second: militia_hunter_109
+  - first:
+      213: -5942755498270178953
+    second: militia_hunter_110
+  - first:
+      213: -2678612768505582355
+    second: militia_hunter_111
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 9
+  spritePivot: {x: 0.5, y: 0}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: militia_hunter_0
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1c322cad98d350f90800000000000000
+      internalID: -6988111584505486399
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_1
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 74
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5a22a3d0ba1dc3520800000000000000
+      internalID: 2683250010597499557
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e6a7c937751f8edf0800000000000000
+      internalID: -150605229612828050
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_3
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9026f867092393da0800000000000000
+      internalID: -5964680635429723639
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_4
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 74
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dc6b57c39f8a08b80800000000000000
+      internalID: -8394523917003934003
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_5
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 60c1ec3fb729510c0800000000000000
+      internalID: -4605613982847460346
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_6
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0f3bde2f63c29a030800000000000000
+      internalID: 3506382399400162288
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_7
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 74
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: deb6b634e773ea0a0800000000000000
+      internalID: -6868491366256907283
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_8
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 74
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f6b21e3a6860dc9c0800000000000000
+      internalID: -3905458126515524753
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_9
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 74
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1e1c3c2d4ebd8fdf0800000000000000
+      internalID: -146125212054470175
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_10
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 74
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 590036696544f3de0800000000000000
+      internalID: -1351286224506912619
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_11
+      rect:
+        serializedVersion: 2
+        x: 316
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b9427c84ac00beb60800000000000000
+      internalID: 7776310050389697691
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_12
+      rect:
+        serializedVersion: 2
+        x: 344
+        y: 74
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3422c48b5602dd0b0800000000000000
+      internalID: -5702365931925396925
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_13
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 74
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e1f399ce7bd3ee910800000000000000
+      internalID: 1868498755563110174
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_14
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fa44322112b98e820800000000000000
+      internalID: 2947776522454516911
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_15
+      rect:
+        serializedVersion: 2
+        x: 427
+        y: 74
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c1d747c4c0ff79e0800000000000000
+      internalID: -1621312612882460217
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_16
+      rect:
+        serializedVersion: 2
+        x: 456
+        y: 74
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 845f5ecf284c4bf10800000000000000
+      internalID: 2284666977851405640
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_17
+      rect:
+        serializedVersion: 2
+        x: 485
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 21eab51e1a3218620800000000000000
+      internalID: 2774538023614524946
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_18
+      rect:
+        serializedVersion: 2
+        x: 513
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9edf3d6fd3a1f7000800000000000000
+      internalID: 35776175478668777
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_19
+      rect:
+        serializedVersion: 2
+        x: 540
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 630f7ba312e7c3350800000000000000
+      internalID: 5997807484934811702
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_20
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1f3fa13720fa22e80800000000000000
+      internalID: -8204803146059680783
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_21
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7b35dab216598a9c0800000000000000
+      internalID: -3915715631421500489
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_22
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5de26de15c8781640800000000000000
+      internalID: 5050919770117254869
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_23
+      rect:
+        serializedVersion: 2
+        x: 652
+        y: 74
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 293d1ccd727c27260800000000000000
+      internalID: 7093951337083294610
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_24
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 74
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e4eb2ce1dbdd64f40800000000000000
+      internalID: 5712496981700689486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_25
+      rect:
+        serializedVersion: 2
+        x: 706
+        y: 74
+        width: 17
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 60ba525d3374befe0800000000000000
+      internalID: -1158754191172850938
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_26
+      rect:
+        serializedVersion: 2
+        x: 734
+        y: 74
+        width: 19
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6f9332712a37a6b20800000000000000
+      internalID: 3128440031172311542
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_27
+      rect:
+        serializedVersion: 2
+        x: 763
+        y: 74
+        width: 18
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 418367bacbc5a5bd0800000000000000
+      internalID: -2640696266099116012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_28
+      rect:
+        serializedVersion: 2
+        x: 7
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7cf1c70d866aa8c80800000000000000
+      internalID: -8319654392508964921
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_29
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 50
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0c9935b5b9a512030800000000000000
+      internalID: 3468152811350628800
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_30
+      rect:
+        serializedVersion: 2
+        x: 63
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b3a407c8ad8993470800000000000000
+      internalID: 8374893046498609723
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_31
+      rect:
+        serializedVersion: 2
+        x: 91
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9f5d28577eb06dd90800000000000000
+      internalID: -7073453076001925639
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_32
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 50
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 00f6a9149b32e66e0800000000000000
+      internalID: -1842495918971392256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_33
+      rect:
+        serializedVersion: 2
+        x: 147
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 87b6c59b8d40e50e0800000000000000
+      internalID: -2279379032533603464
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_34
+      rect:
+        serializedVersion: 2
+        x: 175
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 56d4d53c5793d08a0800000000000000
+      internalID: -6337345922688791195
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_35
+      rect:
+        serializedVersion: 2
+        x: 203
+        y: 50
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 84a0890f8011ba920800000000000000
+      internalID: 3002512306666474056
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_36
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 50
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 09273d2f9fbd91b70800000000000000
+      internalID: 8870362807650185872
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_37
+      rect:
+        serializedVersion: 2
+        x: 259
+        y: 50
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 636f81889692fca50800000000000000
+      internalID: 6543494316824262198
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_38
+      rect:
+        serializedVersion: 2
+        x: 287
+        y: 50
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 311fcc64c1815b9d0800000000000000
+      internalID: -2759272686968573677
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_39
+      rect:
+        serializedVersion: 2
+        x: 315
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 88eb5c86ef9605c10800000000000000
+      internalID: 2040247172599234184
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_40
+      rect:
+        serializedVersion: 2
+        x: 343
+        y: 50
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c8ad25ca455855150800000000000000
+      internalID: 5860737088807426700
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_41
+      rect:
+        serializedVersion: 2
+        x: 371
+        y: 50
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c990eb500f29b0c30800000000000000
+      internalID: 4326713426605640092
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_42
+      rect:
+        serializedVersion: 2
+        x: 399
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 350d0b2ba58880ec0800000000000000
+      internalID: -3600477978956345261
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_43
+      rect:
+        serializedVersion: 2
+        x: 424
+        y: 50
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 88afd1e5a11ada570800000000000000
+      internalID: 8479610808028756616
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_44
+      rect:
+        serializedVersion: 2
+        x: 451
+        y: 50
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5eddee591daa97580800000000000000
+      internalID: -8828837777342800411
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_45
+      rect:
+        serializedVersion: 2
+        x: 478
+        y: 50
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1e2a3b5d08f259990800000000000000
+      internalID: -7379940183989050655
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_46
+      rect:
+        serializedVersion: 2
+        x: 508
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eccfc0be1afb20990800000000000000
+      internalID: -7421158533799019314
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_47
+      rect:
+        serializedVersion: 2
+        x: 539
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7cc436a1234d5ee0800000000000000
+      internalID: -1270785708047152005
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_48
+      rect:
+        serializedVersion: 2
+        x: 568
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4b31d961def908a0800000000000000
+      internalID: -6338254825170322612
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_49
+      rect:
+        serializedVersion: 2
+        x: 597
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e953c5a6cec8975b0800000000000000
+      internalID: -5370106133638007394
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_50
+      rect:
+        serializedVersion: 2
+        x: 624
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 295820716f935bb10800000000000000
+      internalID: 1996565738919462290
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_51
+      rect:
+        serializedVersion: 2
+        x: 651
+        y: 50
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 895e8afdcd30b8170800000000000000
+      internalID: 8181637395228714392
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_52
+      rect:
+        serializedVersion: 2
+        x: 678
+        y: 50
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df4239b5893f81f10800000000000000
+      internalID: 2240808650313770237
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_53
+      rect:
+        serializedVersion: 2
+        x: 705
+        y: 50
+        width: 17
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 081a10685d41da730800000000000000
+      internalID: 4011885750365823360
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_54
+      rect:
+        serializedVersion: 2
+        x: 731
+        y: 50
+        width: 19
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7850e23e049ceea0800000000000000
+      internalID: -5842131827902359429
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_55
+      rect:
+        serializedVersion: 2
+        x: 758
+        y: 50
+        width: 19
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6f7db0a16bef6b240800000000000000
+      internalID: 4807309710339069942
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_56
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9883c3874329a5e60800000000000000
+      internalID: 7951828846129199241
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_57
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 26
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76e643e4538727520800000000000000
+      internalID: 2698351297089007207
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_58
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 650ad0317375a90a0800000000000000
+      internalID: -6874085987173162922
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_59
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ca15e50d290413370800000000000000
+      internalID: 8300486587525779884
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_60
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 26
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e5d5bc461d8aec800800000000000000
+      internalID: 634630214798499166
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_61
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 834949ec3e61d1170800000000000000
+      internalID: 8150696068289696824
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_62
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 64b64f450dd36e850800000000000000
+      internalID: 6405875484968905542
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_63
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 26
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 59cb50ae8f63855c0800000000000000
+      internalID: -4226567807581176683
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_64
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 26
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9abc46a96c6893de0800000000000000
+      internalID: -1352902025496179799
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_65
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 26
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7f9a4b4e18c12ab00800000000000000
+      internalID: 838263824857737719
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_66
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 26
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ffbc0291b22eb540800000000000000
+      internalID: 5025492380246917113
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_67
+      rect:
+        serializedVersion: 2
+        x: 316
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e32b8dd3c394f14e0800000000000000
+      internalID: -2008806385699474882
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_68
+      rect:
+        serializedVersion: 2
+        x: 344
+        y: 26
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8661d6f124274ab20800000000000000
+      internalID: 3144764068132099688
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_69
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 26
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0147d8f50978bd510800000000000000
+      internalID: 1575001548844266512
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_70
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b8c8a323e9cf27ef0800000000000000
+      internalID: -111749284353110901
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_71
+      rect:
+        serializedVersion: 2
+        x: 427
+        y: 26
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8ccaeb1466cea9b50800000000000000
+      internalID: 6600848127798717640
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_72
+      rect:
+        serializedVersion: 2
+        x: 456
+        y: 26
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d4badaa8ce77b0fa0800000000000000
+      internalID: -5833437034505721011
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_73
+      rect:
+        serializedVersion: 2
+        x: 485
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d4e40c3f5235f45d0800000000000000
+      internalID: -3076148598002397619
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_74
+      rect:
+        serializedVersion: 2
+        x: 513
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8604bdbc496babcb0800000000000000
+      internalID: -4847361298719358872
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_75
+      rect:
+        serializedVersion: 2
+        x: 540
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc1010b5da03039f0800000000000000
+      internalID: -490838838269115957
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_76
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c13b3327465d35350800000000000000
+      internalID: 6004377355604439836
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_77
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0869e3502e8baa080800000000000000
+      internalID: -9175318009923856768
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_78
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef8d76fa551f99470800000000000000
+      internalID: 8402011930153703678
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_79
+      rect:
+        serializedVersion: 2
+        x: 652
+        y: 26
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f100607f8a81d27a0800000000000000
+      internalID: -6400432381445668833
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_80
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 26
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 71ad3c3cf33b6bb10800000000000000
+      internalID: 1996980571234097687
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_81
+      rect:
+        serializedVersion: 2
+        x: 706
+        y: 26
+        width: 17
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea994f46010abca10800000000000000
+      internalID: 1930812857532062126
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_82
+      rect:
+        serializedVersion: 2
+        x: 734
+        y: 26
+        width: 19
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f6749839343591250800000000000000
+      internalID: 5915851135231018863
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_83
+      rect:
+        serializedVersion: 2
+        x: 763
+        y: 26
+        width: 18
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8fb2f16cd3aa80350800000000000000
+      internalID: 5983219287255362552
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_84
+      rect:
+        serializedVersion: 2
+        x: 7
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48a9fd7cb51fdf9d0800000000000000
+      internalID: -2738767621873755516
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_85
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 2
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7b5798d312deabc80800000000000000
+      internalID: -8306065835709336137
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_86
+      rect:
+        serializedVersion: 2
+        x: 63
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ecbb150f2dca5fce0800000000000000
+      internalID: -1372000489489450034
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_87
+      rect:
+        serializedVersion: 2
+        x: 91
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 36b4032ccce2c1e00800000000000000
+      internalID: 1016739072845040483
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_88
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 2
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 41f2472bac514a3c0800000000000000
+      internalID: -4349327379811520748
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_89
+      rect:
+        serializedVersion: 2
+        x: 147
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 29e682c2a98e60e70800000000000000
+      internalID: 9081201447502638738
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_90
+      rect:
+        serializedVersion: 2
+        x: 175
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b330f43fbc784e440800000000000000
+      internalID: 4964241999299281723
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_91
+      rect:
+        serializedVersion: 2
+        x: 203
+        y: 2
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 87ec408292889b4d0800000000000000
+      internalID: -3118311556630917512
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_92
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 2
+        width: 14
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0f8050e4bd777cef0800000000000000
+      internalID: -87969883919939344
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_93
+      rect:
+        serializedVersion: 2
+        x: 259
+        y: 2
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 456f68b435c08f900800000000000000
+      internalID: 718337692454549076
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_94
+      rect:
+        serializedVersion: 2
+        x: 287
+        y: 2
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 22d7fa8901dfcf4c0800000000000000
+      internalID: -4252245700421649118
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_95
+      rect:
+        serializedVersion: 2
+        x: 315
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7dcd0e62d190d19b0800000000000000
+      internalID: -5107916381557302057
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_96
+      rect:
+        serializedVersion: 2
+        x: 343
+        y: 2
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1a86ac49dbfa0a2d0800000000000000
+      internalID: -3269420100691007327
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_97
+      rect:
+        serializedVersion: 2
+        x: 371
+        y: 2
+        width: 13
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f89c5ed4c673b31c0800000000000000
+      internalID: -4522960462460630641
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_98
+      rect:
+        serializedVersion: 2
+        x: 399
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62922e526a15cf540800000000000000
+      internalID: 5042995456790112550
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_99
+      rect:
+        serializedVersion: 2
+        x: 424
+        y: 2
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a2c77a8f86e9fd830800000000000000
+      internalID: 4098168359615953962
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_100
+      rect:
+        serializedVersion: 2
+        x: 451
+        y: 2
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc7d78abd553d8d60800000000000000
+      internalID: 7894024398528042955
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_101
+      rect:
+        serializedVersion: 2
+        x: 478
+        y: 2
+        width: 17
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba84720e487db4b40800000000000000
+      internalID: 5425667141794220203
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_102
+      rect:
+        serializedVersion: 2
+        x: 508
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96c70686a40423fb0800000000000000
+      internalID: -4669599175306871703
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_103
+      rect:
+        serializedVersion: 2
+        x: 539
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 794eadf3a565ab330800000000000000
+      internalID: 3727386587220862103
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_104
+      rect:
+        serializedVersion: 2
+        x: 568
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: db02de4fe2fcdf340800000000000000
+      internalID: 4899299770233594045
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_105
+      rect:
+        serializedVersion: 2
+        x: 597
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cdc653ae757048a80800000000000000
+      internalID: -8465633325376770852
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_106
+      rect:
+        serializedVersion: 2
+        x: 624
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d2a64ae3845424b70800000000000000
+      internalID: 8881737591718963757
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_107
+      rect:
+        serializedVersion: 2
+        x: 651
+        y: 2
+        width: 13
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1b6220c4d56e68530800000000000000
+      internalID: 3857023419270964913
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_108
+      rect:
+        serializedVersion: 2
+        x: 678
+        y: 2
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 756abb616e8c08a00800000000000000
+      internalID: 756825627947673175
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_109
+      rect:
+        serializedVersion: 2
+        x: 705
+        y: 2
+        width: 17
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3667838d0785d32f0800000000000000
+      internalID: -991539101264480669
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_110
+      rect:
+        serializedVersion: 2
+        x: 731
+        y: 2
+        width: 19
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7714b924c57178da0800000000000000
+      internalID: -5942755498270178953
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_hunter_111
+      rect:
+        serializedVersion: 2
+        x: 758
+        y: 2
+        width: 19
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dec266201e7a3dad0800000000000000
+      internalID: -2678612768505582355
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable: {}
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

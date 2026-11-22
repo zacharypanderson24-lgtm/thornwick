@@ -1,0 +1,2919 @@
+fileFormatVersion: 2
+guid: 4a2d751bd6888264ebcfe65131a81a86
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -4671597511420001992
+    second: militia_farmer_0
+  - first:
+      213: -3869610079371391910
+    second: militia_farmer_1
+  - first:
+      213: 5529131207276356837
+    second: militia_farmer_2
+  - first:
+      213: 1721782571428113395
+    second: militia_farmer_3
+  - first:
+      213: 4613996644918456771
+    second: militia_farmer_4
+  - first:
+      213: -8918154438045754015
+    second: militia_farmer_5
+  - first:
+      213: -5127720823667411955
+    second: militia_farmer_6
+  - first:
+      213: -3380071891350763527
+    second: militia_farmer_7
+  - first:
+      213: -7240489157397885066
+    second: militia_farmer_8
+  - first:
+      213: -4200246395795084029
+    second: militia_farmer_9
+  - first:
+      213: -5137843789697351104
+    second: militia_farmer_10
+  - first:
+      213: 3951501985985242202
+    second: militia_farmer_11
+  - first:
+      213: 1600769950855120616
+    second: militia_farmer_12
+  - first:
+      213: -2973689378832317057
+    second: militia_farmer_13
+  - first:
+      213: 290351177297167915
+    second: militia_farmer_14
+  - first:
+      213: -1812632344895698520
+    second: militia_farmer_15
+  - first:
+      213: 7244338472244579209
+    second: militia_farmer_16
+  - first:
+      213: -7939770487679758531
+    second: militia_farmer_17
+  - first:
+      213: -78887453655885610
+    second: militia_farmer_18
+  - first:
+      213: 1321617383666877618
+    second: militia_farmer_19
+  - first:
+      213: 828004056920194105
+    second: militia_farmer_20
+  - first:
+      213: 203425463590590331
+    second: militia_farmer_21
+  - first:
+      213: 6523827509797976833
+    second: militia_farmer_22
+  - first:
+      213: -7415261690277217058
+    second: militia_farmer_23
+  - first:
+      213: 1389087346693915273
+    second: militia_farmer_24
+  - first:
+      213: 6100983000278827399
+    second: militia_farmer_25
+  - first:
+      213: 4729845931870998182
+    second: militia_farmer_26
+  - first:
+      213: -4418122977759099939
+    second: militia_farmer_27
+  - first:
+      213: -1779223209989703411
+    second: militia_farmer_28
+  - first:
+      213: 1862304847151078615
+    second: militia_farmer_29
+  - first:
+      213: 3039815040114913221
+    second: militia_farmer_30
+  - first:
+      213: 5057409472992533387
+    second: militia_farmer_31
+  - first:
+      213: -4234479360852730232
+    second: militia_farmer_32
+  - first:
+      213: -833707556057809565
+    second: militia_farmer_33
+  - first:
+      213: 4997838236984154622
+    second: militia_farmer_34
+  - first:
+      213: 3103099274454270057
+    second: militia_farmer_35
+  - first:
+      213: 3310213825563629622
+    second: militia_farmer_36
+  - first:
+      213: -6918958960930369103
+    second: militia_farmer_37
+  - first:
+      213: 1482686258594592949
+    second: militia_farmer_38
+  - first:
+      213: 5491153178334503241
+    second: militia_farmer_39
+  - first:
+      213: 2920725119827124561
+    second: militia_farmer_40
+  - first:
+      213: -6026658961776188649
+    second: militia_farmer_41
+  - first:
+      213: 1516598205547137954
+    second: militia_farmer_42
+  - first:
+      213: -7591727411816401335
+    second: militia_farmer_43
+  - first:
+      213: -4823811663062306294
+    second: militia_farmer_44
+  - first:
+      213: 813311865267030256
+    second: militia_farmer_45
+  - first:
+      213: -1486821479432195986
+    second: militia_farmer_46
+  - first:
+      213: -8133307801496027736
+    second: militia_farmer_47
+  - first:
+      213: -7735732861840744763
+    second: militia_farmer_48
+  - first:
+      213: -2576738442124874019
+    second: militia_farmer_49
+  - first:
+      213: -484960189370967389
+    second: militia_farmer_50
+  - first:
+      213: -8120824819521750368
+    second: militia_farmer_51
+  - first:
+      213: 9126514463401077430
+    second: militia_farmer_52
+  - first:
+      213: -6431862696212258442
+    second: militia_farmer_53
+  - first:
+      213: 3819626840537919962
+    second: militia_farmer_54
+  - first:
+      213: -4194238995335592660
+    second: militia_farmer_55
+  - first:
+      213: -6144192857538368598
+    second: militia_farmer_56
+  - first:
+      213: 6744618810832764738
+    second: militia_farmer_57
+  - first:
+      213: 695666989600389168
+    second: militia_farmer_58
+  - first:
+      213: 7598503448767468880
+    second: militia_farmer_59
+  - first:
+      213: 1534703315466898356
+    second: militia_farmer_60
+  - first:
+      213: 7658327647279268852
+    second: militia_farmer_61
+  - first:
+      213: -4356226717187141570
+    second: militia_farmer_62
+  - first:
+      213: 519353697167924269
+    second: militia_farmer_63
+  - first:
+      213: 8322007066298382291
+    second: militia_farmer_64
+  - first:
+      213: 5839049671501899396
+    second: militia_farmer_65
+  - first:
+      213: 7104304562698690315
+    second: militia_farmer_66
+  - first:
+      213: 485753630367751900
+    second: militia_farmer_67
+  - first:
+      213: 1944036471445179698
+    second: militia_farmer_68
+  - first:
+      213: 804962515599304112
+    second: militia_farmer_69
+  - first:
+      213: 6847852751950350433
+    second: militia_farmer_70
+  - first:
+      213: -5832385219855755159
+    second: militia_farmer_71
+  - first:
+      213: -7369542535970979085
+    second: militia_farmer_72
+  - first:
+      213: 4956600765729708787
+    second: militia_farmer_73
+  - first:
+      213: -5012848709559822582
+    second: militia_farmer_74
+  - first:
+      213: -5906900592091640244
+    second: militia_farmer_75
+  - first:
+      213: -8315597450548995507
+    second: militia_farmer_76
+  - first:
+      213: -7930961309883662516
+    second: militia_farmer_77
+  - first:
+      213: -7142208270402428477
+    second: militia_farmer_78
+  - first:
+      213: 416181373941263743
+    second: militia_farmer_79
+  - first:
+      213: -4678315406050963666
+    second: militia_farmer_80
+  - first:
+      213: -7710570549723947447
+    second: militia_farmer_81
+  - first:
+      213: 5475941664029894979
+    second: militia_farmer_82
+  - first:
+      213: -7683036982953636778
+    second: militia_farmer_83
+  - first:
+      213: 7701587514565303597
+    second: militia_farmer_84
+  - first:
+      213: -5085077126662940096
+    second: militia_farmer_85
+  - first:
+      213: -5017164507641553936
+    second: militia_farmer_86
+  - first:
+      213: -7759623038142278262
+    second: militia_farmer_87
+  - first:
+      213: 8985796201368385905
+    second: militia_farmer_88
+  - first:
+      213: -5510292318044722807
+    second: militia_farmer_89
+  - first:
+      213: 7062346243566027403
+    second: militia_farmer_90
+  - first:
+      213: -6250415089704048785
+    second: militia_farmer_91
+  - first:
+      213: -8272257136317269478
+    second: militia_farmer_92
+  - first:
+      213: -7299654107132234255
+    second: militia_farmer_93
+  - first:
+      213: -6502941136243179430
+    second: militia_farmer_94
+  - first:
+      213: 2206165274924696608
+    second: militia_farmer_95
+  - first:
+      213: 8928216895057833630
+    second: militia_farmer_96
+  - first:
+      213: 123940602931011448
+    second: militia_farmer_97
+  - first:
+      213: -8553504613437088825
+    second: militia_farmer_98
+  - first:
+      213: -1166148091453418546
+    second: militia_farmer_99
+  - first:
+      213: -7372765141630127824
+    second: militia_farmer_100
+  - first:
+      213: 4457266257261131992
+    second: militia_farmer_101
+  - first:
+      213: 6108417440451713000
+    second: militia_farmer_102
+  - first:
+      213: 1076824949802088314
+    second: militia_farmer_103
+  - first:
+      213: -1136449658698856083
+    second: militia_farmer_104
+  - first:
+      213: 6000153223606727276
+    second: militia_farmer_105
+  - first:
+      213: 2557996142885227275
+    second: militia_farmer_106
+  - first:
+      213: 4521709706193524485
+    second: militia_farmer_107
+  - first:
+      213: 7514172307076679511
+    second: militia_farmer_108
+  - first:
+      213: 5225813861856295145
+    second: militia_farmer_109
+  - first:
+      213: -4102146440914162810
+    second: militia_farmer_110
+  - first:
+      213: 943367406155920215
+    second: militia_farmer_111
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 9
+  spritePivot: {x: 0.5, y: 0}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: militia_farmer_0
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 831463680d62b2fb0800000000000000
+      internalID: -4671597511420001992
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_1
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 74
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a5c0cc782226c4ac0800000000000000
+      internalID: -3869610079371391910
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5e4eb36d98b6bbc40800000000000000
+      internalID: 5529131207276356837
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_3
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3fb6e66502005e710800000000000000
+      internalID: 1721782571428113395
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_4
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 74
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3c17537a085380040800000000000000
+      internalID: 4613996644918456771
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_5
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 16d953cf9c95c3480800000000000000
+      internalID: -8918154438045754015
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_6
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d043ee5241da6d8b0800000000000000
+      internalID: -5127720823667411955
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_7
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 74
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9f741c0f5829711d0800000000000000
+      internalID: -3380071891350763527
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_8
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 67f4b3d197d948b90800000000000000
+      internalID: -7240489157397885066
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_9
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 74
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 30de489282ab5b5c0800000000000000
+      internalID: -4200246395795084029
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_10
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 74
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 04284a37b46b2b8b0800000000000000
+      internalID: -5137843789697351104
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_11
+      rect:
+        serializedVersion: 2
+        x: 316
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a54a6ebce1e86d630800000000000000
+      internalID: 3951501985985242202
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_12
+      rect:
+        serializedVersion: 2
+        x: 344
+        y: 74
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8e6c6dff9c3173610800000000000000
+      internalID: 1600769950855120616
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_13
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 74
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f750956e3455bb6d0800000000000000
+      internalID: -2973689378832317057
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_14
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 74
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b260aee7bd8870400800000000000000
+      internalID: 290351177297167915
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_15
+      rect:
+        serializedVersion: 2
+        x: 427
+        y: 74
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8a9cb1e6c7c38d6e0800000000000000
+      internalID: -1812632344895698520
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_16
+      rect:
+        serializedVersion: 2
+        x: 456
+        y: 74
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 98b85d6557f098460800000000000000
+      internalID: 7244338472244579209
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_17
+      rect:
+        serializedVersion: 2
+        x: 485
+        y: 74
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d3fc7b3eec440d190800000000000000
+      internalID: -7939770487679758531
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_18
+      rect:
+        serializedVersion: 2
+        x: 513
+        y: 74
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d81b93674cb7eef0800000000000000
+      internalID: -78887453655885610
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_19
+      rect:
+        serializedVersion: 2
+        x: 540
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2b4027a1204575210800000000000000
+      internalID: 1321617383666877618
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_20
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 93c7f458d49ad7b00800000000000000
+      internalID: 828004056920194105
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_21
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b77169f9166b2d200800000000000000
+      internalID: 203425463590590331
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_22
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 74
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 10bfd613e8a498a50800000000000000
+      internalID: 6523827509797976833
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_23
+      rect:
+        serializedVersion: 2
+        x: 652
+        y: 74
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: edcb67ac7c2b71990800000000000000
+      internalID: -7415261690277217058
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_24
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 74
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9824ea50597074310800000000000000
+      internalID: 1389087346693915273
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_25
+      rect:
+        serializedVersion: 2
+        x: 706
+        y: 74
+        width: 21
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7810150e6bb0ba450800000000000000
+      internalID: 6100983000278827399
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_26
+      rect:
+        serializedVersion: 2
+        x: 734
+        y: 74
+        width: 20
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6ae4f73b0d9c3a140800000000000000
+      internalID: 4729845931870998182
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_27
+      rect:
+        serializedVersion: 2
+        x: 763
+        y: 74
+        width: 18
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd38da85f8cafa2c0800000000000000
+      internalID: -4418122977759099939
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_28
+      rect:
+        serializedVersion: 2
+        x: 5
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d09fe60daedee47e0800000000000000
+      internalID: -1779223209989703411
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_29
+      rect:
+        serializedVersion: 2
+        x: 33
+        y: 50
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7dc9ded346c38d910800000000000000
+      internalID: 1862304847151078615
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_30
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5cf60f06ca79f2a20800000000000000
+      internalID: 3039815040114913221
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_31
+      rect:
+        serializedVersion: 2
+        x: 89
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b8b5a61de178f2640800000000000000
+      internalID: 5057409472992533387
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_32
+      rect:
+        serializedVersion: 2
+        x: 117
+        y: 50
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 88e56afd47b1c35c0800000000000000
+      internalID: -4234479360852730232
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_33
+      rect:
+        serializedVersion: 2
+        x: 145
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 36d7d9a15631e64f0800000000000000
+      internalID: -833707556057809565
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_34
+      rect:
+        serializedVersion: 2
+        x: 173
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef91e489563eb5540800000000000000
+      internalID: 4997838236984154622
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_35
+      rect:
+        serializedVersion: 2
+        x: 201
+        y: 50
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9608e94695c601b20800000000000000
+      internalID: 3103099274454270057
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_36
+      rect:
+        serializedVersion: 2
+        x: 229
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6389e43afed30fd20800000000000000
+      internalID: 3310213825563629622
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_37
+      rect:
+        serializedVersion: 2
+        x: 257
+        y: 50
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1b15d36bb7beaff90800000000000000
+      internalID: -6918958960930369103
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_38
+      rect:
+        serializedVersion: 2
+        x: 285
+        y: 50
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b832eceb4f839410800000000000000
+      internalID: 1482686258594592949
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_39
+      rect:
+        serializedVersion: 2
+        x: 313
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 941a2e9e8be743c40800000000000000
+      internalID: 5491153178334503241
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_40
+      rect:
+        serializedVersion: 2
+        x: 341
+        y: 50
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1512bd59500888820800000000000000
+      internalID: 2920725119827124561
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_41
+      rect:
+        serializedVersion: 2
+        x: 369
+        y: 50
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 713e7e8da910d5ca0800000000000000
+      internalID: -6026658961776188649
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_42
+      rect:
+        serializedVersion: 2
+        x: 396
+        y: 50
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2abc1ac580a0c0510800000000000000
+      internalID: 1516598205547137954
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_43
+      rect:
+        serializedVersion: 2
+        x: 429
+        y: 50
+        width: 12
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 94676134424c4a690800000000000000
+      internalID: -7591727411816401335
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_44
+      rect:
+        serializedVersion: 2
+        x: 451
+        y: 50
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a02f8cf99d06e0db0800000000000000
+      internalID: -4823811663062306294
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_45
+      rect:
+        serializedVersion: 2
+        x: 477
+        y: 50
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0f80ad415d6794b00800000000000000
+      internalID: 813311865267030256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_46
+      rect:
+        serializedVersion: 2
+        x: 505
+        y: 50
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e60f502fdbfbd5be0800000000000000
+      internalID: -1486821479432195986
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_47
+      rect:
+        serializedVersion: 2
+        x: 537
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8ad7aea85afa02f80800000000000000
+      internalID: -8133307801496027736
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_48
+      rect:
+        serializedVersion: 2
+        x: 566
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5ce9aa4a2f725a490800000000000000
+      internalID: -7735732861840744763
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_49
+      rect:
+        serializedVersion: 2
+        x: 595
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ddead0ef9069d3cd0800000000000000
+      internalID: -2576738442124874019
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_50
+      rect:
+        serializedVersion: 2
+        x: 622
+        y: 50
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3aa5656f6431549f0800000000000000
+      internalID: -484960189370967389
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_51
+      rect:
+        serializedVersion: 2
+        x: 648
+        y: 50
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0aafa354ad80d4f80800000000000000
+      internalID: -8120824819521750368
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_52
+      rect:
+        serializedVersion: 2
+        x: 674
+        y: 50
+        width: 18
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6ba6c74dc84e7ae70800000000000000
+      internalID: 9126514463401077430
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_53
+      rect:
+        serializedVersion: 2
+        x: 701
+        y: 50
+        width: 21
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 671ae2c84fe6db6a0800000000000000
+      internalID: -6431862696212258442
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_54
+      rect:
+        serializedVersion: 2
+        x: 730
+        y: 50
+        width: 20
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ad17fcccf5a020530800000000000000
+      internalID: 3819626840537919962
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_55
+      rect:
+        serializedVersion: 2
+        x: 758
+        y: 50
+        width: 19
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c254ee31bd11bc5c0800000000000000
+      internalID: -4194238995335592660
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_56
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aabeeee36217bbaa0800000000000000
+      internalID: -6144192857538368598
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_57
+      rect:
+        serializedVersion: 2
+        x: 36
+        y: 26
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24fba1de213b99d50800000000000000
+      internalID: 6744618810832764738
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_58
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 038b815f07187a900800000000000000
+      internalID: 695666989600389168
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_59
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0559d58c0ae437960800000000000000
+      internalID: 7598503448767468880
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_60
+      rect:
+        serializedVersion: 2
+        x: 120
+        y: 26
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4bbc402c88c5c4510800000000000000
+      internalID: 1534703315466898356
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_61
+      rect:
+        serializedVersion: 2
+        x: 148
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f342ad6b68d74a60800000000000000
+      internalID: 7658327647279268852
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_62
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e309ef881e29b83c0800000000000000
+      internalID: -4356226717187141570
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_63
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 26
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d2cda789f6d153700800000000000000
+      internalID: 519353697167924269
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_64
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3d7710db555bd7370800000000000000
+      internalID: 8322007066298382291
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_65
+      rect:
+        serializedVersion: 2
+        x: 260
+        y: 26
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4866bb75db8780150800000000000000
+      internalID: 5839049671501899396
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_66
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 26
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b0f97db0c5f879260800000000000000
+      internalID: 7104304562698690315
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_67
+      rect:
+        serializedVersion: 2
+        x: 316
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cde1d6a6a5ebdb600800000000000000
+      internalID: 485753630367751900
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_68
+      rect:
+        serializedVersion: 2
+        x: 344
+        y: 26
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 23dc4eeeeda9afa10800000000000000
+      internalID: 1944036471445179698
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_69
+      rect:
+        serializedVersion: 2
+        x: 372
+        y: 26
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b52dcf942dcb2b00800000000000000
+      internalID: 804962515599304112
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_70
+      rect:
+        serializedVersion: 2
+        x: 400
+        y: 26
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1688e22ebc5780f50800000000000000
+      internalID: 6847852751950350433
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_71
+      rect:
+        serializedVersion: 2
+        x: 427
+        y: 26
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96852493b843f0fa0800000000000000
+      internalID: -5832385219855755159
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_72
+      rect:
+        serializedVersion: 2
+        x: 456
+        y: 26
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3f2815aeb102ab990800000000000000
+      internalID: -7369542535970979085
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_73
+      rect:
+        serializedVersion: 2
+        x: 485
+        y: 26
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3fa9fbe922269c440800000000000000
+      internalID: 4956600765729708787
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_74
+      rect:
+        serializedVersion: 2
+        x: 513
+        y: 26
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a0759e968a8ce6ab0800000000000000
+      internalID: -5012848709559822582
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_75
+      rect:
+        serializedVersion: 2
+        x: 540
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4e45d42539760ea0800000000000000
+      internalID: -5906900592091640244
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_76
+      rect:
+        serializedVersion: 2
+        x: 567
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d4a12e83d20199c80800000000000000
+      internalID: -8315597450548995507
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_77
+      rect:
+        serializedVersion: 2
+        x: 594
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4f740d65b09fe190800000000000000
+      internalID: -7930961309883662516
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_78
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 26
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3c16eca4b67c1ec90800000000000000
+      internalID: -7142208270402428477
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_79
+      rect:
+        serializedVersion: 2
+        x: 652
+        y: 26
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f7d27eb21c296c500800000000000000
+      internalID: 416181373941263743
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_80
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 26
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e2f481bcce8431fb0800000000000000
+      internalID: -4678315406050963666
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_81
+      rect:
+        serializedVersion: 2
+        x: 706
+        y: 26
+        width: 21
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 94e9d18ffec8ef490800000000000000
+      internalID: -7710570549723947447
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_82
+      rect:
+        serializedVersion: 2
+        x: 734
+        y: 26
+        width: 20
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 349634f3ee37efb40800000000000000
+      internalID: 5475941664029894979
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_83
+      rect:
+        serializedVersion: 2
+        x: 763
+        y: 26
+        width: 18
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 65c0cda029e506590800000000000000
+      internalID: -7683036982953636778
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_84
+      rect:
+        serializedVersion: 2
+        x: 5
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d2d9f3c2a0981ea60800000000000000
+      internalID: 7701587514565303597
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_85
+      rect:
+        serializedVersion: 2
+        x: 33
+        y: 2
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 04a9ac19b4d2e69b0800000000000000
+      internalID: -5085077126662940096
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_86
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0fbd35e56737f5ab0800000000000000
+      internalID: -5017164507641553936
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_87
+      rect:
+        serializedVersion: 2
+        x: 89
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a85979485f7405490800000000000000
+      internalID: -7759623038142278262
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_88
+      rect:
+        serializedVersion: 2
+        x: 117
+        y: 2
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 179fd9e4906f3bc70800000000000000
+      internalID: 8985796201368385905
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_89
+      rect:
+        serializedVersion: 2
+        x: 145
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 989616ed4528783b0800000000000000
+      internalID: -5510292318044722807
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_90
+      rect:
+        serializedVersion: 2
+        x: 173
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b8241989d7e720260800000000000000
+      internalID: 7062346243566027403
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_91
+      rect:
+        serializedVersion: 2
+        x: 201
+        y: 2
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f67e27f87901249a0800000000000000
+      internalID: -6250415089704048785
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_92
+      rect:
+        serializedVersion: 2
+        x: 229
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a1a7e1b76f9033d80800000000000000
+      internalID: -8272257136317269478
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_93
+      rect:
+        serializedVersion: 2
+        x: 257
+        y: 2
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1f57929c34b62ba90800000000000000
+      internalID: -7299654107132234255
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_94
+      rect:
+        serializedVersion: 2
+        x: 285
+        y: 2
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a5043fa9d79e0c5a0800000000000000
+      internalID: -6502941136243179430
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_95
+      rect:
+        serializedVersion: 2
+        x: 313
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 02440b7f0afdd9e10800000000000000
+      internalID: 2206165274924696608
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_96
+      rect:
+        serializedVersion: 2
+        x: 341
+        y: 2
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e9e209b56f567eb70800000000000000
+      internalID: 8928216895057833630
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_97
+      rect:
+        serializedVersion: 2
+        x: 369
+        y: 2
+        width: 15
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 87f53fa525358b100800000000000000
+      internalID: 123940602931011448
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_98
+      rect:
+        serializedVersion: 2
+        x: 396
+        y: 2
+        width: 16
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7cbda6b5fd8db4980800000000000000
+      internalID: -8553504613437088825
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_99
+      rect:
+        serializedVersion: 2
+        x: 429
+        y: 2
+        width: 12
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ec35b654d7201dfe0800000000000000
+      internalID: -1166148091453418546
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_100
+      rect:
+        serializedVersion: 2
+        x: 451
+        y: 2
+        width: 17
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 031f0c09a2daea990800000000000000
+      internalID: -7372765141630127824
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_101
+      rect:
+        serializedVersion: 2
+        x: 477
+        y: 2
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8d8726d9b046bdd30800000000000000
+      internalID: 4457266257261131992
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_102
+      rect:
+        serializedVersion: 2
+        x: 505
+        y: 2
+        width: 18
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8e7dced5c4575c450800000000000000
+      internalID: 6108417440451713000
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_103
+      rect:
+        serializedVersion: 2
+        x: 537
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a773b3a2696a1fe00800000000000000
+      internalID: 1076824949802088314
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_104
+      rect:
+        serializedVersion: 2
+        x: 566
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d69042c7e058a30f0800000000000000
+      internalID: -1136449658698856083
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_105
+      rect:
+        serializedVersion: 2
+        x: 595
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c627ef21193d44350800000000000000
+      internalID: 6000153223606727276
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_106
+      rect:
+        serializedVersion: 2
+        x: 622
+        y: 2
+        width: 15
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b0b4e7960f3df7320800000000000000
+      internalID: 2557996142885227275
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_107
+      rect:
+        serializedVersion: 2
+        x: 648
+        y: 2
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 507d91f450750ce30800000000000000
+      internalID: 4521709706193524485
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_108
+      rect:
+        serializedVersion: 2
+        x: 674
+        y: 2
+        width: 18
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7570268c6e3b74860800000000000000
+      internalID: 7514172307076679511
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_109
+      rect:
+        serializedVersion: 2
+        x: 701
+        y: 2
+        width: 21
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9e8b1421502d58840800000000000000
+      internalID: 5225813861856295145
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_110
+      rect:
+        serializedVersion: 2
+        x: 730
+        y: 2
+        width: 20
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68badaccb8f3217c0800000000000000
+      internalID: -4102146440914162810
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: militia_farmer_111
+      rect:
+        serializedVersion: 2
+        x: 758
+        y: 2
+        width: 19
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 753fa9068a3871d00800000000000000
+      internalID: 943367406155920215
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable: {}
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
