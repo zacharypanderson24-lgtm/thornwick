@@ -41,6 +41,11 @@ namespace CrownAndHearth.Game
                         if (b.T != "road" && b.X == x && b.Y == y) PlaceBuilding(w, b, rot);
                         continue;
                     }
+                    if (w.PenAt(x, y) is LivestockPen pen)
+                    {
+                        PlacePenTile(w, pen, x, y, vx, vy, rot);
+                        continue;
+                    }
                     if (fields.ContainsKey(World.Tk(x, y)))
                     {
                         int key = World.Tk(x, y);
@@ -90,6 +95,22 @@ namespace CrownAndHearth.Game
         }
 
         Sprite NatureSprite(string slot) => _art.Find(slot) ?? _art.Find("ph_" + slot);
+
+        void PlacePenTile(World w, LivestockPen pen, int x, int y, int vx, int vy, int rotation)
+        {
+            var anchor = IsoView.VertexPos(vx + 1, vy + 1, w.Vh(x, y));
+            int sort = IsoView.SortOrder(vx, vy);
+            int edges = 0;
+            for (int edge = 0; edge < 4; edge++)
+            {
+                var other = IsoView.FromView(vx + (edge == 1 ? 1 : edge == 3 ? -1 : 0),
+                    vy + (edge == 2 ? 1 : edge == 0 ? -1 : 0), rotation);
+                if (w.PenAt(other.x, other.y) != pen) edges |= 1 << edge;
+            }
+            if ((edges & 9) != 0) Put(_art.SettlementWork.Fence(edges & 9), anchor, sort - 1);
+            if (pen.HasAnimalAt(x, y)) Put(_art.SettlementWork.Animal(pen.Species), anchor, sort);
+            if ((edges & 6) != 0) Put(_art.SettlementWork.Fence(edges & 6), anchor, sort + 1);
+        }
 
         void PlaceBuilding(World w, Building b, int rot)
         {

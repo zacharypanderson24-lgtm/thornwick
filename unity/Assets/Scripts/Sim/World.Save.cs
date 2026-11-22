@@ -40,6 +40,12 @@ namespace CrownAndHearth.Sim
                 ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
                 ["res"] = JObject.FromObject(ResAmt.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["wheatStored"] = WheatStored, ["foodProduction"] = RecentFoodProduction, ["waterShortDays"] = WaterShortDays,
+                ["freshMeat"] = FreshMeatStored,
+                ["livestockPens"] = new JArray(_pens.Select(p => new JObject
+                {
+                    ["species"] = SaveKey(p.Species), ["left"] = p.Left, ["top"] = p.Top,
+                    ["right"] = p.Right, ["bottom"] = p.Bottom, ["count"] = p.Count,
+                })),
                 ["rate"] = JObject.FromObject(Rate.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["deco"] = EncodeGrid(DecoMap, value => value == Deco.None ? JValue.CreateNull() : new JValue(SaveKey(value))),
                 ["zone"] = EncodeGrid(ZoneMap, value => value == Zone.None ? JValue.CreateNull() : new JValue(SaveKey(value))),
@@ -116,12 +122,17 @@ namespace CrownAndHearth.Sim
                 RecentFoodProduction = save.Value<double?>("foodProduction"),
                 WaterShortDays = Math.Clamp(save.Value<int?>("waterShortDays") ?? 0, 0, WaterTuning.Grace),
                 _wheat = Math.Max(0, save.Value<double?>("wheatStored") ?? 0),
+                _freshMeat = Math.Max(0, save.Value<double?>("freshMeat") ?? 0),
             };
             var priority = save["prio"]?.ToObject<string[]>() ?? Array.Empty<string>();
             world.Prio = priority.Where(Trades.Contains).Concat(Trades).Distinct().ToArray();
             if (size < N) world.GenTerrain((offset, offset + size));
             ReadGrid(deco, world.DecoMap, size, offset, ReadEnum<Deco>);
-            ReadGrid(save["zone"] as JArray, world.ZoneMap, size, offset, token => { var zone = ReadEnum<Zone>(token); return zone == Zone.Comm ? Zone.None : zone; });
+            ReadGrid(save["zone"] as JArray, world.ZoneMap, size, offset, token =>
+            {
+                var zone = ReadEnum<Zone>(token);
+                return zone == Zone.Comm || IsLivestockZone(zone) ? Zone.None : zone;
+            });
             ReadGrid(save["fert"] as JArray, world.Fert, size, offset, token => token.Value<bool>());
             ReadTiles(save["sownFields"], world._sownFields, size, offset);
             ReadTiles(save["flaxFields"], world.FlaxFields, size, offset);
@@ -233,6 +244,17 @@ namespace CrownAndHearth.Sim
                         if (b.T == "wood" && world.DecoMap[y, x] == Deco.Tree) world.ZoneMap[y, x] = Zone.Wood;
                         if (b.T == "quarry" && world.DecoMap[y, x] == Deco.Rock) world.ZoneMap[y, x] = Zone.Mine;
                     }
+            }
+            foreach (var entry in save["livestockPens"] as JArray ?? new JArray())
+            {
+                var species = ReadEnum<Zone>(entry["species"]);
+                if (!IsLivestockZone(species)) continue;
+                var pen = new LivestockPen(species, entry.Value<int>("left") + offset, entry.Value<int>("top") + offset,
+                    entry.Value<int>("right") + offset, entry.Value<int>("bottom") + offset);
+                if (!Inb(pen.Left, pen.Top) || !Inb(pen.Right, pen.Bottom) || pen.Capacity < 1 ||
+                    pen.Tiles().Any(t => world.Grid[t.y, t.x] != null || world.ZoneMap[t.y, t.x] != Zone.None)) continue;
+                pen.Count = Math.Clamp(entry.Value<int>("count"), 1, pen.Capacity);
+                world.AddPen(pen);
             }
             world.Recalc();
             if (save.Value<bool?>("farmFields") != true) world.AddStarterFarmFields();

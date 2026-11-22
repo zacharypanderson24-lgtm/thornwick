@@ -78,6 +78,7 @@ namespace CrownAndHearth.Sim
                 if (!Inb(tx, ty)) return Result.No("Outside the map");
                 if (!Claimed(tx, ty)) return Result.No(NotYours);
                 if (Grid[ty, tx] != null) return Result.No("That tile is already built on");
+                if (PenAt(tx, ty) != null) return Result.No("Remove the livestock pen first");
                 if (HasTree(tx, ty)) return Result.No(TreeMsg);
                 if (IsSolid(tx, ty))
                     return Result.No(IsMountain(tx, ty) ? "You cannot build on a mountain. Hills and flat ground are fine"
@@ -88,6 +89,8 @@ namespace CrownAndHearth.Sim
             if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
             if (type == "smithery" && !NextToRoad(fp)) return Result.No("Smithery must touch a road");
             if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");
+            if ((type == "storehouse" || type == "smokehouse" || type == "charcoal") && !NextToRoad(fp))
+                return Result.No($"{Names[type]} must touch a road");
             return CanAfford(type);
         }
 
@@ -106,28 +109,34 @@ namespace CrownAndHearth.Sim
         {
             if (!Inb(x, y)) return Result.No("Outside the map");
             if (!Claimed(x, y)) return Result.No(NotYours);
+            if (PenAt(x, y) is LivestockPen pen)
+            {
+                RemovePen(pen);
+                Touch();
+                return Result.Yes();
+            }
             var b = Grid[y, x];
             int k = Tk(x, y);
             if (b != null)
             {
                 if (b.T == "hall") return Result.No("The Town Hall cannot be removed");
-                foreach (var kv in CostOf(b.T, b.Sz)) ResAmt[kv.Key] = Math.Min(Storage, ResAmt[kv.Key] + Math.Floor(kv.Value / 2.0));
                 foreach (var (i, j) in b.Tiles()) { Grid[j, i] = null; ZoneMap[j, i] = Zone.None; }
                 Blds.Remove(b);
+                foreach (var kv in CostOf(b.T, b.Sz)) AddLooseMaterial(kv.Key, Math.Floor(kv.Value / 2.0));
                 Touch(); Recalc();
                 return Result.Yes();
             }
             if (ZoneMap[y, x] != Zone.None) { ZoneMap[y, x] = Zone.None; FlaxFields.Remove(k); _sownFields.Remove(k); Touch(); return Result.Yes(); }
             var d = DecoMap[y, x];
             if (d == Deco.None) return Result.No("Nothing to clear here");
-            if (d == Deco.Tree) ResAmt[Res.Logs] = Math.Min(Storage, ResAmt[Res.Logs] + 2);
+            if (d == Deco.Tree) AddLooseMaterial(Res.Logs, 2);
             else if (d == Deco.Rock)
             {
                 if (RockAmt(x, y) >= 3) return Result.No("A mountain cannot be cleared by hand. Mark it for quarrying");
                 if (PitDepth(x, y) > 0) return Result.No("A quarry pit cannot be filled in");
-                ResAmt[Res.Stone] = Math.Min(Storage, ResAmt[Res.Stone] + 1); RockAmtMap.Remove(k);
+                AddLooseMaterial(Res.Stone, 1); RockAmtMap.Remove(k);
             }
-            else if (d == Deco.Ore) ResAmt[Res.Ore] = Math.Min(Storage, ResAmt[Res.Ore] + 1);
+            else if (d == Deco.Ore) AddLooseMaterial(Res.Ore, 1);
             DecoMap[y, x] = Deco.None; StumpT.Remove(k); SapT.Remove(k);
             Touch();
             return Result.Yes();
@@ -144,6 +153,7 @@ namespace CrownAndHearth.Sim
                 var g = Grid[y, x];
                 if (g != null && g.T == "road") continue;
                 if (g != null) return Result.No("A building is in the way", n);
+                if (PenAt(x, y) != null) return Result.No("A livestock pen is in the way", n);
                 if (HasTree(x, y)) return Result.No(TreeMsg, n);
                 if (IsSolid(x, y)) return Result.No("A mountain, a quarry pit, ore or ground too steep to build on is in the way. Route around it", n);
                 n++;
@@ -173,6 +183,7 @@ namespace CrownAndHearth.Sim
                 if (!Inb(x, y)) return Result.No("Outside the map", n);
                 if (!Claimed(x, y)) return Result.No(NotYours, n);
                 var g = Grid[y, x];
+                if (PenAt(x, y) != null) return Result.No("A livestock pen is in the way", n);
                 if (g != null && (g.T == "wall" || g.T == "road")) continue;   // already a wall, or a road acting as a gate
                 if (g != null) return Result.No("A building is in the way", n);
                 if (HasTree(x, y)) return Result.No(TreeMsg, n);
@@ -209,6 +220,8 @@ namespace CrownAndHearth.Sim
             if (kind == Zone.Comm) return Result.No("Place a market with the build tool.");
             if (!Inb(x, y)) return Result.No("Outside the map");
             if (!Claimed(x, y)) return Result.No(NotYours);
+            if (IsLivestockZone(kind)) return Result.No("Place livestock as a fenced rectangle");
+            if (PenAt(x, y) != null) return Result.No("Remove the livestock pen first");
             if (Grid[y, x] != null) return ZoneMap[y, x] == kind ? Result.Yes() : Result.No("That tile is already built on");
             var dc = DecoMap[y, x];
             if (kind == Zone.Wood)
@@ -236,6 +249,11 @@ namespace CrownAndHearth.Sim
         /// could not be, and the most common reason they could not.</summary>
         public (int zoned, int skipped, string why) ZoneRect(Zone kind, int ax, int ay, int bx, int by, bool flax = false)
         {
+            if (IsLivestockZone(kind))
+            {
+                var pen = PlacePen(kind, ax, ay, bx, by);
+                return pen.Ok ? (new LivestockPen(kind, ax, ay, bx, by).Area, 0, "") : (0, 1, pen.Reason);
+            }
             int zoned = 0, skipped = 0; var reasons = new Dictionary<string, int>();
             for (int y = Math.Min(ay, by); y <= Math.Max(ay, by); y++)
                 for (int x = Math.Min(ax, bx); x <= Math.Max(ax, bx); x++)
@@ -258,6 +276,7 @@ namespace CrownAndHearth.Sim
                 for (int x = Math.Max(0, Math.Min(ax, bx)); x <= Math.Min(N - 1, Math.Max(ax, bx)); x++)
                 {
                     if (Grid[y, x] != null || ZoneMap[y, x] == Zone.None) continue;
+                    if (PenAt(x, y) is LivestockPen pen) { cleared += RemovePen(pen); continue; }
                     ZoneMap[y, x] = Zone.None; FlaxFields.Remove(Tk(x, y)); _sownFields.Remove(Tk(x, y)); cleared++;
                 }
             if (cleared > 0) Touch();

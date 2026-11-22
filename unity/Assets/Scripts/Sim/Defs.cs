@@ -7,10 +7,10 @@ namespace CrownAndHearth.Sim
     public enum Deco : byte { None, Tree, Rock, Ore, Stump, Sapling }
 
     /// <summary>Painted zones (JS: S.zone[y][x]).</summary>
-    public enum Zone : byte { None, Res, Farm, Comm, Wood, Mine }
+    public enum Zone : byte { None, Res, Farm, Comm, Wood, Mine, Pigs, Sheep, Chickens }
 
     /// <summary>Resource keys (JS: S.res).</summary>
-    public enum Res { Food, Wood, Logs, Stone, Ore, Gold, Flax, Metal }
+    public enum Res { Food, Wood, Logs, Stone, Ore, Gold, Flax, Metal, Charcoal, SmokedMeat }
 
     public static class Defs
     {
@@ -55,6 +55,9 @@ namespace CrownAndHearth.Sim
             { "mine", new Dictionary<Res, int> { { Res.Wood, 12 } } },
             { "market", new Dictionary<Res, int> { { Res.Wood, 12 } } },
             { "smithery", new Dictionary<Res, int> { { Res.Wood, 20 }, { Res.Stone, 15 } } },
+            { "storehouse", new Dictionary<Res, int> { { Res.Wood, 24 }, { Res.Stone, 8 } } },
+            { "smokehouse", new Dictionary<Res, int> { { Res.Wood, 12 }, { Res.Stone, 8 } } },
+            { "charcoal", new Dictionary<Res, int> { { Res.Wood, 8 }, { Res.Stone, 4 } } },
             { "sawmill", new Dictionary<Res, int> { { Res.Wood, 15 } } },
             { "forester", new Dictionary<Res, int> { { Res.Wood, 8 } } },
             { "silo", new Dictionary<Res, int> { { Res.Wood, 20 }, { Res.Stone, 5 } } },
@@ -77,6 +80,7 @@ namespace CrownAndHearth.Sim
 
         public static readonly Dictionary<string, string> Names = new Dictionary<string, string>
         {
+            { "storehouse", "Storehouse" }, { "smokehouse", "Smokehouse" }, { "charcoal", "Charcoal Clamp" },
             { "road", "Dirt Road" }, { "tent", "Raider Tent" }, { "chieftent", "Warlord Tent" }, { "campfire", "Campfire" }, { "rack", "Weapon Rack" }, { "supplies", "Supply Pile" }, { "wall", "Palisade" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "quarry", "Quarry" },
             { "mine", "Iron Mine" }, { "market", "Market" }, { "sawmill", "Sawmill" }, { "smithery", "Smithery" }, { "forester", "Forester" }, { "well", "Well" },
             { "barracks", "Barracks" }, { "watchtower", "Watchtower" }, { "hall", "Town Hall" }, { "silo", "Silo" }, { "cistern", "Cistern" },
@@ -84,16 +88,19 @@ namespace CrownAndHearth.Sim
 
         public static readonly Dictionary<string, int> Jobs = new Dictionary<string, int>
         {
+            { "storehouse", 2 }, { "smokehouse", 2 }, { "charcoal", 2 },
             { "farm", 4 }, { "wood", 3 }, { "hunter", 2 }, { "quarry", 3 }, { "mine", 3 }, { "sawmill", 3 }, { "smithery", 3 }, { "forester", 2 },
         };
 
         public static readonly Dictionary<string, string> TradeOf = new Dictionary<string, string>
         {
+            { "storehouse", "hauling" }, { "smokehouse", "preserving" }, { "charcoal", "charcoal" },
             { "farm", "farming" }, { "hunter", "hunting" }, { "wood", "timber" }, { "forester", "timber" }, { "sawmill", "woodwork" }, { "quarry", "quarrying" }, { "mine", "mining" }, { "smithery", "smithing" },
         };
-        public static readonly string[] Trades = { "farming", "hunting", "timber", "woodwork", "quarrying", "mining", "smithing" };
+        public static readonly string[] Trades = { "farming", "hunting", "timber", "woodwork", "quarrying", "mining", "smithing", "preserving", "charcoal", "hauling" };
         public static readonly Dictionary<string, string> TradeNames = new Dictionary<string, string>
         {
+            { "hauling", "Hauling" }, { "preserving", "Food preserving" }, { "charcoal", "Charcoal burning" },
             { "farming", "Farming" }, { "hunting", "Hunting" }, { "timber", "Timber" }, { "woodwork", "Woodworking" }, { "quarrying", "Quarrying" }, { "mining", "Mining" }, { "smithing", "Smithing" },
         };
 
@@ -116,6 +123,6 @@ namespace CrownAndHearth.Sim
         public static readonly int[,] Nb = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
         public static int PlacementSize(string type) => type == "wood" || type == "mine" || type == "quarry" || type == "hunter" || type == "forester" || type == "sawmill" ? 2 : DefaultSize(type);
-        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "market" || type == "farm" || type == "smithery") ? 2 : 1;
+        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "market" || type == "farm" || type == "smithery" || type == "storehouse") ? 2 : 1;
     }
 }

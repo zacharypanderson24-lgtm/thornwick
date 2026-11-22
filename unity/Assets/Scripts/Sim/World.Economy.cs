@@ -48,6 +48,7 @@ namespace CrownAndHearth.Sim
             StepCampRaids();
             StepExpeditions();
             ResAmt[Res.Logs] += got[Res.Logs];
+            BurnCharcoal();
 
             // sawing: sawmills at full yield, then the Town Hall pit-saw at half yield
             foreach (var b in Blds.Where(b => b.T == "sawmill" && b.Served))
@@ -72,23 +73,35 @@ namespace CrownAndHearth.Sim
 
             // economy
             double eat = DailyFoodDemand;
+            double fresh = Math.Max(0, food - wheat) + WorkLivestock();
+            food = wheat + fresh;
             RecentFoodProduction = RecentFoodProduction is double recent ? (6 * recent + food) / 7 : food;
+            _freshMeat = FreshMeatStored + fresh;
             _wheat = WheatStored + wheat;
             ResAmt[Res.Food] += food;
+            PreserveMeat();
+            double fromReserve = Math.Min(ResAmt[Res.SmokedMeat], Math.Max(0, eat - ResAmt[Res.Food]));
+            ResAmt[Res.SmokedMeat] -= fromReserve;
+            eat -= fromReserve;
+            bool reserveCoveredMeal = fromReserve > 0 && eat <= ResAmt[Res.Food];
+            _freshMeat = FreshMeatStored - FreshMeatShare(eat);
             _wheat -= WheatShare(eat);
             ResAmt[Res.Food] -= eat; ResAmt[Res.Wood] += wood; ResAmt[Res.Stone] += got[Res.Stone]; ResAmt[Res.Ore] += got[Res.Ore];
             // Newly delivered ore is available to road-linked smiths on the same day.
             foreach (var b in Blds.Where(b => b.T == "smithery" && b.Served))
             {
-                double room = Storage - ResAmt[Res.Metal];
+                double room = CropStorage(Res.Metal) - ResAmt[Res.Metal];
                 if (room <= 0 || ResAmt[Res.Ore] <= 0) break;
                 double metal = Math.Min(Math.Min(room, SmeltRate * b.Eff), ResAmt[Res.Ore] / OrePerMetal);
+                double boost = Math.Min(Math.Min(room - metal, b.Eff), Math.Min(ResAmt[Res.Charcoal], ResAmt[Res.Ore] / OrePerMetal - metal));
+                ResAmt[Res.Charcoal] -= boost;
+                metal += boost;
                 ResAmt[Res.Ore] -= metal * OrePerMetal;
                 ResAmt[Res.Metal] += metal;
             }
             ResAmt[Res.Gold] += employed * 0.12 - Soldiers * 0.1;
             Starving = false;
-            if (ResAmt[Res.Food] <= 0)
+            if (ResAmt[Res.Food] <= 0 && !reserveCoveredMeal)
             {
                 ResAmt[Res.Food] = 0; Starving = true;
                 if (Peasants > 0) Peasants--; else LoseSoldier();
@@ -113,12 +126,26 @@ namespace CrownAndHearth.Sim
                     TrainOne(NextRecruit); b.Prog = 0;
                 }
             }
+            int haul = Blds.Where(b => b.T == "storehouse" && b.Served).Sum(b => b.Workers) * HaulPerWorker;
+            double hauling = haul;
             foreach (var k in ResAmt.Keys.ToList())
             {
                 int limit = CropStorage(k);
                 // Disconnecting storage prevents additions until the excess is used or sold.
                 double available = k == Res.Food || k == Res.Flax ? Math.Max(limit, before[k]) : limit;
-                if (k == Res.Food) _wheat = WheatStored - WheatShare(Math.Max(0, ResAmt[k] - available));
+                if (StoredByHaulers(k))
+                {
+                    double existing = Math.Max(Storage, before[k]);
+                    double moved = Math.Min(hauling, Math.Max(0, Math.Min(limit, ResAmt[k]) - existing));
+                    available = existing + moved;
+                    hauling -= moved;
+                }
+                if (k == Res.Food)
+                {
+                    double lost = Math.Max(0, ResAmt[k] - available);
+                    _freshMeat = FreshMeatStored - FreshMeatShare(lost);
+                    _wheat = WheatStored - WheatShare(lost);
+                }
                 ResAmt[k] = Math.Max(0, Math.Min(available, ResAmt[k]));
             }
             foreach (var k in ResAmt.Keys.ToList())

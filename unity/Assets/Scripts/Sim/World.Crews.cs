@@ -68,6 +68,7 @@ namespace CrownAndHearth.Sim
         public double WalkCost(int x, int y, int nx, int ny)
         {
             if (!Inb(x, y) || !Inb(nx, ny) || IsSolid(x, y) || IsSolid(nx, ny)) return double.PositiveInfinity;
+            if (PenAt(x, y) != PenAt(nx, ny)) return double.PositiveInfinity;
             double d = System.Math.Abs(TileLevel(nx, ny) - TileLevel(x, y));
             return d >= 1.75 ? double.PositiveInfinity : 1 + d * 1.5;
         }
