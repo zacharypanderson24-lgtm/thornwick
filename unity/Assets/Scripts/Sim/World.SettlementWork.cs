@@ -32,12 +32,6 @@ namespace CrownAndHearth.Sim
                     yield return (x, y);
         }
 
-        public bool HasAnimalAt(int x, int y)
-        {
-            int index = (y - Top) * (Right - Left + 1) + x - Left;
-            int spacing = World.TilesPerAnimal(Species);
-            return index % spacing == 0 && index / spacing < Count;
-        }
     }
 
     public partial class World

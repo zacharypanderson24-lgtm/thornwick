@@ -391,6 +391,7 @@ namespace CrownAndHearth.Game
             if (_campWorld != null) _agents.DrawCamp(_campWorld, _hud.CampView, _rot, _hud.CampFrac);
             else _agents.Draw(World, _rot, Mathf.Clamp01(_dayAcc), _cam.Zoom <= 0.5f);
             _objects.RefreshCropStages(World.Day);
+            _objects.AnimateLivestock(World.Day, Mathf.Clamp01(_dayAcc), _rot);
             if (_campWorld != null) DrawCampOverlay(); else DrawOverlay();
             _hud.SetSettlement(World);
             _hud.SetDemand(World.Dem[Zone.Res]);

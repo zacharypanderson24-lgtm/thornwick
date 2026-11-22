@@ -24,7 +24,8 @@ namespace CrownAndHearth.Game
         }
 
         public Sprite Fence(int mask) => Get("fence", mask, 33, 28, c => DrawFence(c, mask));
-        public Sprite Animal(Zone kind) => Get("animal", (int)kind, 33, 24, c => DrawAnimal(c, kind));
+        public Sprite Animal(Zone kind, bool step = false) =>
+            Get("animal", (int)kind * 2 + (step ? 1 : 0), 17, 10, c => DrawAnimal(c, kind, step));
 
         Sprite Get(string kind, int view, int width, int height, Action<Pixels> draw)
         {
@@ -76,31 +77,31 @@ namespace CrownAndHearth.Game
             }
         }
 
-        static void DrawAnimal(Pixels c, Zone kind)
+        static void DrawAnimal(Pixels c, Zone kind, bool step)
         {
+            int hoof = step ? 1 : 0;
             switch (kind)
             {
                 case Zone.Pigs:
-                    c.Rect(11, 7, 11, 5, Color(159, 100, 89));
-                    c.Rect(12, 11, 8, 2, Color(191, 134, 117));
-                    c.Rect(20, 7, 4, 4, Color(190, 131, 116));
-                    c.Rect(12, 5, 2, 3, DarkWood); c.Rect(19, 5, 2, 3, DarkWood);
-                    c.Set(22, 10, DarkWood); c.Set(21, 12, Color(169, 115, 100));
-                    c.Set(10, 11, Color(191, 134, 117));
+                    c.Set(5 + hoof, 0, DarkWood); c.Set(10 - hoof, 0, DarkWood);
+                    c.Rect(4, 1, 7, 3, Color(159, 100, 89));
+                    c.Rect(5, 4, 5, 1, Color(196, 137, 119));
+                    c.Rect(10, 1, 3, 2, Color(199, 139, 123));
+                    c.Set(11, 3, DarkWood); c.Set(10, 4, Color(169, 115, 100));
+                    c.Set(3, 3, Color(191, 134, 117));
                     break;
                 case Zone.Sheep:
-                    c.Rect(11, 7, 10, 5, Color(174, 160, 132));
-                    c.Rect(12, 10, 8, 3, Color(226, 214, 181));
-                    c.Rect(20, 8, 3, 4, DarkWood);
-                    c.Rect(12, 5, 2, 2, DarkWood); c.Rect(19, 5, 2, 2, DarkWood);
-                    c.Set(21, 10, StoneLight);
+                    c.Set(5 + hoof, 0, DarkWood); c.Set(10 - hoof, 0, DarkWood);
+                    c.Rect(4, 1, 7, 3, Color(174, 160, 132));
+                    c.Rect(5, 3, 5, 2, Color(226, 214, 181));
+                    c.Rect(10, 2, 2, 2, DarkWood);
+                    c.Set(11, 3, StoneLight);
                     break;
                 case Zone.Chickens:
-                    c.Rect(13, 7, 6, 4, Color(197, 169, 119));
-                    c.Rect(18, 9, 3, 4, Plaster);
-                    c.Set(19, 13, Color(166, 72, 46));
-                    c.Set(21, 10, StrawLight); c.Set(15, 6, Oak); c.Set(17, 6, Oak);
-                    c.Set(12, 10, Plaster); c.Set(20, 11, DarkWood);
+                    c.Set(7 + hoof, 0, Oak);
+                    c.Rect(6, 1, 4, 2, Color(197, 169, 119));
+                    c.Set(5, 2, Plaster); c.Set(9, 3, Plaster);
+                    c.Set(9, 4, Color(166, 72, 46)); c.Set(10, 3, StrawLight);
                     break;
             }
         }
