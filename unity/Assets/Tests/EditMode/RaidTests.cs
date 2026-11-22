@@ -143,6 +143,46 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
+        public void WatchtowerRaisesTheAlarmAtItsBoundaryAndDistantTroopsMarch()
+        {
+            var w = Town(false, 3, 0);
+            const int c = Defs.Start;
+            const int towerX = c + 22;
+            for (int y = c - 2; y <= c + 4; y++)
+                for (int x = c + 2; x <= towerX + World.WatchtowerRange + 2; x++)
+                {
+                    w.Hv[y * (Defs.N + 1) + x] = 1;
+                    if (w.Grid[y, x] == null) w.DecoMap[y, x] = Deco.None;
+                }
+
+            Assert.IsTrue(w.Place("watchtower", towerX, c).Ok);
+            Assert.IsFalse(w.Grid[c, towerX].Served, "an isolated lookout needs no road");
+            Assert.AreEqual("watchtower", World.LoadJson(w.SaveJson()).Grid[c, towerX].T);
+            var raid = w.BeginRaid(1);
+            var raider = raid.Raiders[0];
+            void PositionRaider(int x)
+            {
+                raider.St = RaiderState.Flee;
+                raider.X = raider.Px = x;
+                raider.Y = raider.Py = c;
+                raider.Path.Clear();
+                raider.Path.Add(World.Tk(x, c));
+                raider.Path.Add(World.Tk(x, c));
+            }
+
+            PositionRaider(towerX + World.WatchtowerRange + 1);
+            w.Tick();
+            Assert.IsFalse(raid.Alarm);
+            PositionRaider(towerX + World.WatchtowerRange);
+            w.Tick();
+            Assert.IsTrue(raid.Alarm);
+            Assert.IsTrue(w.Events.Any(e => e.Contains("watchtower")));
+            Assert.IsTrue(raid.Fighters.All(f => f.St == FighterState.Engage));
+            Assert.IsTrue(raid.Fighters.Any(f => f.X != f.Px || f.Y != f.Py),
+                "troops begin marching even beyond their ordinary chase range");
+        }
+
+        [Test]
         public void SoldiersWhoFallAreGoneFromYourArmy()
         {
             var w = Town(true, 2, 0);   // two infantry against a big band

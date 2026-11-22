@@ -38,6 +38,12 @@ namespace CrownAndHearth.Tests
             before = w.ResAmt[Res.Food];
             w.Tick();
             Assert.That(w.ResAmt[Res.Food], Is.GreaterThan(before));
+            Assert.That(w.WheatStored, Is.GreaterThan(0).And.LessThan(w.ResAmt[Res.Food]),
+                "the wheat breakdown counts harvested grain separately from the existing food reserve");
+            Assert.That(w.RecentFoodProduction.GetValueOrDefault(), Is.GreaterThan(0));
+            var restored = World.LoadJson(w.SaveJson());
+            Assert.AreEqual(w.WheatStored, restored.WheatStored, 1e-9);
+            Assert.AreEqual(w.RecentFoodProduction, restored.RecentFoodProduction);
             Assert.That(farm.Workers, Is.Zero);
 
             w.Day = 181;

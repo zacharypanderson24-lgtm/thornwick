@@ -208,12 +208,29 @@ namespace CrownAndHearth.Tests
             Assert.IsFalse(first.Parched);
             StringAssert.Contains("short of water", w.Note[Zone.Res], "house growth stops while homes are short");
             Assert.IsNull(w.Grid[C + 7, C + 1], "no home grows meanwhile");
+            Assert.AreEqual(WaterTuning.Grace - 1, w.WaterShortDays);
+            Assert.IsFalse(w.Events.Any(e => e.Contains("dehydration")));
             int civ = w.D.Civ;
             w.ResAmt[Res.Food] = 300; w.Hall.Water = 0; w.Tick();
             Assert.IsTrue(first.Parched, "past its grace");
             Assert.AreEqual(1, first.Lvl, "a parched home drops to level 1");
             Assert.That(w.D.Civ, Is.LessThan(civ), "it now holds fewer people");
             Assert.AreEqual(first.Capacity / 2, first.Housing);
+            Assert.IsTrue(w.Events.Any(e => e.Contains("died from dehydration")));
+            var reloaded = World.LoadJson(w.SaveJson());
+            Assert.AreEqual(WaterTuning.Grace, reloaded.WaterShortDays);
+            reloaded.Hall.Water = WaterTuning.HallCistern;
+            reloaded.Tick();
+            Assert.AreEqual(0, reloaded.WaterShortDays, "a cistern that meets demand resets the dehydration timer");
+        }
+
+        [Test]
+        public void SoldiersDrinkFromTheSameReserveAsCivilians()
+        {
+            var w = new World(7);
+            w.Peasants = 3;
+            w.Soldiers = 2;
+            Assert.AreEqual(5 * WaterTuning.PerHead, w.PlanWater().Demand, 1e-9);
         }
 
         [Test]
