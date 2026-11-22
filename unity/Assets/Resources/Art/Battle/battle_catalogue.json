@@ -870,6 +870,156 @@
       ]
     },
     {
+      "name": "raider_brute",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
+      "name": "raider_chief",
+      "clips": [
+        {
+          "name": "idle",
+          "firstColumn": 0,
+          "frameMs": [
+            260,
+            260
+          ],
+          "loop": true
+        },
+        {
+          "name": "walk",
+          "firstColumn": 2,
+          "frameMs": [
+            105,
+            105,
+            105,
+            105,
+            105,
+            105
+          ],
+          "loop": true
+        },
+        {
+          "name": "run",
+          "firstColumn": 8,
+          "frameMs": [
+            78,
+            78,
+            78,
+            78,
+            78,
+            78
+          ],
+          "loop": true
+        },
+        {
+          "name": "attack",
+          "firstColumn": 14,
+          "frameMs": [
+            100,
+            105,
+            70,
+            70,
+            90,
+            140
+          ],
+          "loop": false
+        },
+        {
+          "name": "hurt",
+          "firstColumn": 20,
+          "frameMs": [
+            85,
+            105,
+            120
+          ],
+          "loop": false
+        },
+        {
+          "name": "fall",
+          "firstColumn": 23,
+          "frameMs": [
+            85,
+            90,
+            95,
+            110,
+            390
+          ],
+          "loop": false
+        }
+      ]
+    },
+    {
       "name": "civilian_0",
       "clips": [
         {

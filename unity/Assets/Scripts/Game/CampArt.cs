@@ -1,22 +1,26 @@
 // Art for a raider camp, drawn in code in the game's own isometric style (32 x 48, standing on a 32 x 16 tile like a 1 x 1 building): a red
-// raider tent, and a pile of supplies (crates with the goods on top) in a colour for each resource.
+// tent, camp props and supplies.
 using System.Collections.Generic;
 using CrownAndHearth.Sim;
 using UnityEngine;
 
 namespace CrownAndHearth.Game
 {
-    public sealed class CampArt
+    public sealed partial class CampArt
     {
         const int W = 32, H = 48, CX = 16, CY = 8;   // the tile centre, 8 pixels above the foot of the sprite
         readonly Dictionary<int, Sprite> _sprites = new Dictionary<int, Sprite>();
         readonly List<Texture2D> _textures = new List<Texture2D>();
 
-        public Sprite Tent() => Get(-1, DrawTent);
-        public Sprite ChiefTent() => Get(-2, DrawChiefTent);
-        public Sprite Fire() => Get(-3, DrawFire);
-        public Sprite Rack() => Get(-4, DrawRack);
-        public Sprite Supplies(Res r) => Get((int)r, px => DrawSupplies(px, r));
+        public Sprite Tent(int rotation) => Get(-1 - rotation, px => DrawTent(px, rotation));
+        public Sprite ChiefTent(int rotation) => Get(-5 - rotation, px => DrawChiefTent(px, rotation));
+        public Sprite Fire() => Get(-9, DrawFire);
+        public Sprite Rack(int rotation) => Get(-10 - (rotation & 1), px => DrawRack(px, (rotation & 1) != 0));
+        public Sprite Supplies(Res r) => Get((int)r, px =>
+        {
+            if (r == Res.Gold) DrawGold(px);
+            else DrawSupplies(px, r);
+        });
 
         public void Dispose() { foreach (var s in _sprites.Values) Object.Destroy(s); foreach (var t in _textures) Object.Destroy(t); _sprites.Clear(); _textures.Clear(); }
 
@@ -52,70 +56,97 @@ namespace CrownAndHearth.Game
         static void Quad(Color32[] px, (int x, int y) a, (int x, int y) b, (int x, int y) c, (int x, int y) d, Color32 fill) { Triangle(px, a, b, c, fill); Triangle(px, a, c, d, fill); }
 
         // ---------- the tent ----------
-        static void DrawTent(Color32[] px)
+        static void Line(Color32[] px, (int x, int y) a, (int x, int y) b, Color32 color)
         {
-            var apex = (CX, CY + 20);
-            var left = (CX - 11, CY + 1); var right = (CX + 11, CY + 1); var front = (CX, CY - 5); var back = (CX, CY + 7);
-            Triangle(px, left, back, apex, new Color32(120, 34, 32, 255));                 // the far side, in shadow
-            Triangle(px, back, right, apex, new Color32(108, 30, 28, 255));
-            Triangle(px, left, front, apex, new Color32(196, 62, 52, 255));                // the two faces towards the camera
-            Triangle(px, front, right, apex, new Color32(150, 42, 38, 255));
-            // seams and the doorway on the right face
-            for (int i = 0; i <= 20; i++) { Set(px, CX, CY - 5 + i, new Color32(96, 26, 24, 255)); }
-            Triangle(px, (CX + 3, CY - 3), (CX + 8, CY - 0), (CX + 5, CY + 8), new Color32(36, 20, 20, 255));
-            for (int i = 0; i < 12; i++) { Set(px, left.Item1 + i, left.Item2 - i / 2, new Color32(84, 22, 22, 255)); Set(px, right.Item1 - i, right.Item2 - i / 2, new Color32(84, 22, 22, 255)); }
-            Rect(px, CX, CY + 20, 1, 5, new Color32(70, 50, 36, 255));                      // the pole
-            Rect(px, CX + 1, CY + 23, 4, 2, new Color32(40, 24, 24, 255));                  // a rag of a pennant
-        }
-
-        // ---------- the warlord's tent: bigger, darker, with gold trim and a banner ----------
-        static void DrawChiefTent(Color32[] px)
-        {
-            var apex = (CX, CY + 28);
-            var left = (CX - 15, CY + 1); var right = (CX + 15, CY + 1); var front = (CX, CY - 7); var back = (CX, CY + 9);
-            Triangle(px, left, back, apex, new Color32(84, 22, 28, 255));
-            Triangle(px, back, right, apex, new Color32(72, 18, 24, 255));
-            Triangle(px, left, front, apex, new Color32(150, 36, 44, 255));
-            Triangle(px, front, right, apex, new Color32(112, 28, 34, 255));
-            var gold = new Color32(232, 190, 70, 255);
-            for (int i = 0; i <= 28; i++) Set(px, CX, CY - 7 + i, gold);   // a gold seam up the front
-            for (int i = 0; i < 15; i++) { Set(px, left.Item1 + i, left.Item2 - i * 8 / 15, gold); Set(px, right.Item1 - i, right.Item2 - i * 8 / 15, gold); }   // gold along the eaves
-            Triangle(px, (CX + 4, CY - 4), (CX + 11, CY + 0), (CX + 7, CY + 12), new Color32(30, 16, 18, 255));   // the doorway
-            Rect(px, CX, CY + 28, 1, 8, new Color32(70, 50, 36, 255));
-            Rect(px, CX + 1, CY + 31, 6, 4, gold);                  // the banner
-            Rect(px, CX + 3, CY + 32, 2, 2, new Color32(140, 30, 30, 255));
-        }
-
-        // ---------- a campfire ----------
-        static void DrawFire(Color32[] px)
-        {
-            for (int dy = -4; dy <= 4; dy++) for (int dx = -9; dx <= 9; dx++)
+            int steps = Mathf.Max(System.Math.Abs(b.x - a.x), System.Math.Abs(b.y - a.y));
+            for (int i = 0; i <= steps; i++)
             {
-                float d = dx * dx / 81f + dy * dy / 16f;
-                if (d <= 1f && d > 0.55f) Set(px, CX + dx, CY + dy - 1, (dx + dy) % 2 == 0 ? new Color32(150, 150, 156, 255) : new Color32(112, 112, 118, 255));   // a ring of stones
-                else if (d <= 0.55f) Set(px, CX + dx, CY + dy - 1, new Color32(48, 36, 30, 255));   // ash
+                float t = steps == 0 ? 0f : (float)i / steps;
+                Set(px, Mathf.RoundToInt(a.x + (b.x - a.x) * t), Mathf.RoundToInt(a.y + (b.y - a.y) * t), color);
             }
-            Rect(px, CX - 5, CY - 1, 10, 2, new Color32(96, 66, 38, 255));   // crossed logs
-            Rect(px, CX - 2, CY - 2, 4, 4, new Color32(80, 54, 30, 255));
-            var flame = new Color32(240, 120, 36, 255); var hot = new Color32(255, 214, 80, 255);
-            for (int i = 0; i < 9; i++) { int w = Mathf.Max(1, 4 - i / 2); Rect(px, CX - w + 1, CY + i, w * 2 - 1, 1, i < 3 ? flame : i < 6 ? hot : flame); }
-            Set(px, CX + 1, CY + 9, new Color32(255, 240, 160, 255));
-            Set(px, CX - 4, CY + 6, hot); Set(px, CX + 5, CY + 4, hot);   // sparks
         }
 
-        // ---------- a weapon rack: a frame of two posts with spears ----------
-        static void DrawRack(Color32[] px)
+        static void DrawTent(Color32[] px, int rotation)
         {
-            var wood = new Color32(112, 78, 44, 255); var dark = new Color32(76, 52, 30, 255); var steel = new Color32(196, 196, 204, 255);
-            for (int i = 0; i < 4; i++)
+            bool mirrored = (rotation & 1) != 0;
+            // The doorway and its pole stay at the same end of the tent as the camera turns.
+            bool entranceVisible = rotation == 0 || rotation == 3;
+            var litCanvas = new Color32(164, 86, 64, 255);
+            var shadeCanvas = new Color32(123, 62, 49, 255);
+            var litFold = new Color32(192, 111, 79, 255);
+            var shadeFold = new Color32(146, 75, 56, 255);
+            var hem = new Color32(71, 38, 33, 255);
+            var wood = new Color32(88, 60, 42, 255);
+            var endGrain = new Color32(157, 116, 73, 255);
+            var stitching = new Color32(190, 146, 93, 255);
+            var rope = new Color32(207, 164, 105, 255);
+
+            (int x, int y) P(int x, int y) => (mirrored ? CX - x : CX + x, y);
+
+            // The three visible corners are inset from the 32 x 16 tile edges.
+            var left = P(-12, 8);
+            var front = P(0, 2);
+            var right = P(12, 8);
+            var nearRidge = P(-6, 21);
+            var farRidge = P(6, 27);
+            Triangle(px, left, front, nearRidge, mirrored ? shadeCanvas : litCanvas);
+            Quad(px, nearRidge, farRidge, right, front, mirrored ? litCanvas : shadeCanvas);
+
+            // Broad folds under the ridge and a stitched patch on the roof.
+            var roofFold = mirrored ? litFold : shadeFold;
+            var roofShade = mirrored ? shadeCanvas : hem;
+            Quad(px, P(-5, 20), P(5, 25), P(8, 20), P(-3, 15), roofFold);
+            Quad(px, P(-1, 8), P(10, 13), right, front, roofShade);
+            Line(px, P(-3, 13), P(9, 19), mirrored ? shadeFold : litCanvas);
+            Line(px, P(-1, 10), P(10, 15), roofShade);
+            Line(px, P(1, 4), P(11, 9), mirrored ? litFold : shadeFold);
+            for (int x = 2; x <= 10; x += 3)
             {
-                int x = CX - 7 + i * 4;
-                Rect(px, x, CY - 1, 1, 16, i % 2 == 0 ? wood : dark);   // a spear shaft
-                Rect(px, x - 1, CY + 15, 3, 3, steel); Set(px, x, CY + 18, steel);   // its head
+                var tie = P(x, 3 + x / 2);
+                Set(px, tie.x, tie.y, stitching);
             }
-            Rect(px, CX - 9, CY - 3, 2, 14, dark); Rect(px, CX + 8, CY - 1, 2, 14, dark);   // the posts
-            Rect(px, CX - 9, CY + 5, 19, 2, wood);   // the crossbar
-            Rect(px, CX - 10, CY - 3, 4, 2, dark); Rect(px, CX + 7, CY - 1, 4, 2, dark);   // feet
+
+            int patch = entranceVisible ? 0 : -5;
+            Quad(px, P(3 + patch, 15), P(6 + patch, 16), P(7 + patch, 13), P(4 + patch, 12),
+                mirrored ? new Color32(167, 120, 78, 255) : new Color32(143, 100, 69, 255));
+            Line(px, P(4 + patch, 12), P(7 + patch, 13), roofShade);
+            Line(px, P(3 + patch, 15), P(6 + patch, 16), stitching);
+
+            if (entranceVisible)
+            {
+                var opening = new Color32(42, 28, 24, 255);
+                Triangle(px, P(-9, 7), P(-3, 4), P(-6, 17), opening);
+                Triangle(px, P(-10, 7), P(-8, 7), P(-6, 18), mirrored ? shadeFold : litFold);
+                Line(px, P(-6, 19), P(-3, 5), mirrored ? endGrain : stitching);
+                Line(px, P(-9, 6), P(-4, 4), wood);
+                Line(px, P(-8, 6), P(-5, 5), endGrain);
+            }
+            else
+            {
+                // The rear gable is closed, with a seam running down the canvas.
+                Triangle(px, P(-7, 6), P(-5, 5), P(-6, 20), mirrored ? shadeFold : litFold);
+            }
+
+            Quad(px, P(-7, 21), P(6, 28), P(7, 27), P(-6, 20), wood);
+            Quad(px, P(-7, 22), P(6, 29), P(6, 28), P(-7, 21), endGrain);
+            Line(px, P(-7, 20), P(-5, 23), rope);
+            Line(px, P(5, 27), P(6, 29), stitching);
+
+            // Guy lines terminate at the two side pegs, inside the tile.
+            Line(px, P(-7, 20), P(-12, 9), stitching);
+            Line(px, P(6, 26), P(12, 9), new Color32(141, 102, 64, 255));
+            foreach (var peg in new[] { left, front, right })
+            {
+                Rect(px, peg.x, peg.y - 1, 2, 4, wood);
+                Set(px, peg.x, peg.y + 2, endGrain);
+            }
+
+            var pole = entranceVisible ? nearRidge : farRidge;
+            Rect(px, pole.x, pole.y, 1, 8, wood);
+            Set(px, pole.x, pole.y + 7, endGrain);
+            Quad(px, (pole.x + 1, pole.y + 6), (pole.x + 7, pole.y + 5), (pole.x + 5, pole.y + 3), (pole.x + 1, pole.y + 3), shadeCanvas);
+            Line(px, (pole.x + 1, pole.y + 6), (pole.x + 6, pole.y + 5), litFold);
+            Set(px, pole.x, pole.y + 5, rope);
         }
 
         // ---------- supplies ----------
@@ -160,7 +191,7 @@ namespace CrownAndHearth.Game
                 case Res.Ore:   // dark rock with orange flecks
                     Rect(px, gx - 5, gy, 10, 5, c); Set(px, gx - 2, gy + 2, new Color32(240, 130, 50, 255)); Set(px, gx + 2, gy + 3, new Color32(240, 130, 50, 255)); Set(px, gx, gy + 1, new Color32(240, 130, 50, 255));
                     break;
-                default:   // gold: little bars
+                default:
                     Rect(px, gx - 5, gy, 5, 2, c); Rect(px, gx + 1, gy, 5, 2, dark); Rect(px, gx - 2, gy + 2, 5, 2, c);
                     break;
             }
