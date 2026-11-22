@@ -46,8 +46,9 @@ namespace CrownAndHearth.Sim
             int previous = 0;
             foreach (var item in rows)
             {
-                if (!(item is JArray row) || (row.Count != 2 + RecordedResources.Length &&
-                    row.Count != 2 + (int)Res.Wool && row.Count != 2 + (int)Res.Charcoal && row.Count != 2 + (int)Res.Metal))
+                // New resources are only ever added at the end of Res, so a row from an older save simply stops early: any length from
+                // the oldest format (before Metal) up to today's is fine, and the resources it lacks read as zero.
+                if (!(item is JArray row) || row.Count < 2 + (int)Res.Metal || row.Count > 2 + RecordedResources.Length)
                     throw new InvalidDataException("Invalid statistics entry.");
                 int day = row[0].Value<int>();
                 int population = row[1].Value<int>();
