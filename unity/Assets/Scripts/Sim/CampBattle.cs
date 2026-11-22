@@ -220,7 +220,9 @@ namespace CrownAndHearth.Sim
         public bool Over, Victory, Retreated, Alarm, Settled;
         public readonly Dictionary<Res, int> Loot = new Dictionary<Res, int>();
 
-        public CampBattle(RaiderCamp camp, IList<BattleGroup> groups)
+        /// <summary>A fight at this camp. raidersHome: how many of its ordinary raiders are in camp (the rest are away raiding you or were
+        /// killed); -1 means all of them. Brutes and the warlord always stay home.</summary>
+        public CampBattle(RaiderCamp camp, IList<BattleGroup> groups, int raidersHome = -1)
         {
             Camp = camp; Map = camp.Site.Map;
             Groups = groups.Where(g => g.Total > 0).Select(g => new BattleGroup { X = g.X, Y = g.Y, Infantry = g.Infantry, Archers = g.Archers }).ToList();
@@ -238,7 +240,7 @@ namespace CrownAndHearth.Sim
                 SentInfantry += g.Infantry; SentArchers += g.Archers;
             }
             var size = CampSize.Of(camp.Strength);
-            int raiders = size.Raiders, brutes = size.Brutes;
+            int raiders = raidersHome < 0 ? size.Raiders : Math.Min(raidersHome, size.Raiders), brutes = size.Brutes;
             for (int i = 0; i < raiders; i++)
             {
                 (int x, int y) tent = Map.Tents.Count > 0 ? Map.Tents[i % Map.Tents.Count] : (16, 16);
@@ -260,7 +262,7 @@ namespace CrownAndHearth.Sim
                 var (x, y) = spots[0];
                 Units.Add(new BUnit { Id = id++, Attacker = false, Kind = BKind.Chief, X = x, Y = y, Px = x, Py = y, Hp = ChiefHp, Hit = ChiefHit, Range = 1 });
             }
-            RaidersTotal = RaiderCount(camp.Strength);
+            RaidersTotal = raiders + brutes + 1;
         }
 
         /// <summary>Open tiles next to (x, y), nearest first, for placing units (the tile itself first if open).</summary>

@@ -284,6 +284,7 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual("south", w.Raid.From);
             Assert.AreEqual(3 + 2 * 2, w.Raid.Band);
             Assert.IsTrue(events.Any(e => e.Contains("spotted a warband of 7 raiders") && e.Contains("from the south")), string.Join(" | ", events));
+            Assert.IsTrue(events.Any(e => e.Contains($"their camp has only {System.Math.Max(0, CampSize.Of(2).Raiders - 7) + CampSize.Of(2).Brutes + 1} fighters at home: a chance to strike it")), string.Join(" | ", events));
             Assert.IsTrue(events.Any(e => e.Contains("is here")), string.Join(" | ", events));
         }
 
@@ -326,6 +327,68 @@ namespace CrownAndHearth.Tests
             for (int i = 0; i < 40 && loaded.Raid == null; i++) { loaded.ResAmt[Res.Food] = 400; loaded.Tick(); }
             Assert.IsNotNull(loaded.Raid, "after loading it still arrives and raids");
             Assert.AreSame(c, loaded.Raid.Camp);
+        }
+
+        [Test]
+        public void ACampIsWeakerWhileItsRaidersAreAwayAndAfterItLosesThem()
+        {
+            var w = Town(0, 0);
+            w.RaidMinPopulation = 0; w.Day = 150;
+            var c = Camp(5, 300, 390); c.Id = 4;   // 6 days away; 24 raiders, 4 brutes and the warlord
+            w.SetCamps(new[] { c }, 300, 300);
+            int full = CampBattle.RaiderCount(5), raiders = CampSize.Of(5).Raiders;
+            Assert.AreEqual(full, w.CampDefenders(c), "everyone is home before any raid");
+
+            for (int i = 0; i < 500 && w.Warband == null; i++) { w.ResAmt[Res.Food] = 400; w.Tick(); }
+            Assert.IsNotNull(w.Warband);
+            int band = w.Warband.Band;
+            Assert.AreEqual(3 + 2 * 5, band);
+            Assert.AreEqual(band, w.CampRaidersAway(c), "the warband on the march is away from camp");
+            Assert.AreEqual(raiders - band, w.CampRaidersHome(c));
+            Assert.AreEqual(full - band, w.CampDefenders(c), "brutes and the warlord stay home");
+            var battle = new CampBattle(c, new List<BattleGroup>(), w.CampRaidersHome(c));
+            Assert.AreEqual(full - band, battle.AliveRaiders, "an invasion now faces fewer raiders");
+            Assert.AreEqual(full - band, battle.RaidersTotal);
+            Assert.AreEqual(1, battle.Units.Count(u => u.Kind == BKind.Chief));
+            Assert.AreEqual(CampSize.Of(5).Brutes, battle.Units.Count(u => u.Kind == BKind.Brute));
+
+            for (int i = 0; i < 40 && w.Raid == null; i++) { w.ResAmt[Res.Food] = 400; w.Tick(); }
+            Assert.IsNotNull(w.Raid);
+            Assert.AreEqual(band, w.CampRaidersAway(c), "the band raiding you is still away");
+
+            // end the raid: five cut down, the rest got away
+            var r = w.Raid;
+            for (int i = 0; i < r.Raiders.Count; i++) { if (i < 5) { r.Raiders[i].St = RaiderState.Dead; r.Killed++; } else { r.Raiders[i].St = RaiderState.Gone; r.Escaped++; } }
+            w.ResAmt[Res.Food] = 400; w.Tick();
+            Assert.IsTrue(r.Over);
+            Assert.AreEqual(5, w.CampRaidersLost(c), "the dead are missing from camp");
+            Assert.AreEqual(band - 5, w.CampRaidersAway(c), "the survivors are marching back");
+            Assert.AreEqual(raiders - band, w.CampRaidersHome(c));
+
+            var loaded = World.LoadJson(w.SaveJson());
+            loaded.SetCamps(new[] { c }, 300, 300);
+            Assert.AreEqual(5, loaded.CampRaidersLost(c), "losses are saved");
+            Assert.AreEqual(band - 5, loaded.CampRaidersAway(c), "so are raiders marching back");
+
+            for (int i = 0; i < w.MarchDays(c); i++) { w.ResAmt[Res.Food] = 400; w.Tick(); }
+            Assert.AreEqual(0, w.CampRaidersAway(c), "the survivors are home again");
+            Assert.AreEqual(raiders - 5, w.CampRaidersHome(c), "but the dead are not replaced yet");
+            for (int i = 0; i < 5 * World.CampRefillDays; i++) { w.ResAmt[Res.Food] = 400; w.Tick(); }
+            Assert.AreEqual(full, w.CampDefenders(c), "in time the camp replaces them");
+            Assert.IsFalse(w.CampForces.ContainsKey(c.Id));
+        }
+
+        [Test]
+        public void ACampThatLostRaidersSendsASmallerWarband()
+        {
+            var w = Town(0, 0);
+            w.RaidMinPopulation = 0; w.Day = 150;
+            var c = Camp(5, 300, 390); c.Id = 4;
+            w.SetCamps(new[] { c }, 300, 300);
+            w.CampForces[c.Id] = new CampForce { Lost = 20 };
+            for (int i = 0; i < 800 && w.Warband == null; i++) { w.ResAmt[Res.Food] = 400; w.Tick(); }
+            Assert.IsNotNull(w.Warband);
+            Assert.AreEqual(3 + 2 * 5, w.Warband.Band + w.CampRaidersLost(c), "the band is short by the raiders the camp has lost");
         }
     }
 }

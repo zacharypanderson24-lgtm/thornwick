@@ -65,6 +65,11 @@ namespace CrownAndHearth.Sim
                     {
                         ["camp"] = Warband.CampId, ["band"] = Warband.Band, ["leaveDay"] = Warband.LeaveDay, ["arriveDay"] = Warband.ArriveDay, ["spotted"] = Warband.Spotted,
                     },
+                    // raiders each camp has lost and not yet replaced, and survivors still marching back to it
+                    ["forces"] = new JArray(CampForces.OrderBy(kv => kv.Key).Select(kv => new JObject
+                    {
+                        ["camp"] = kv.Key, ["lost"] = Math.Round(kv.Value.Lost, 3), ["returning"] = kv.Value.Returning, ["backDay"] = kv.Value.BackDay,
+                    })),
                 },
                 ["gameRecoveryDay"] = JObject.FromObject(_gameRecoveryDay.Where(pair => pair.Value > Day)
                     .ToDictionary(pair => pair.Key, pair => pair.Value)),
@@ -253,6 +258,8 @@ namespace CrownAndHearth.Sim
                 }
                 if (campsSave["warband"] is JObject wb)   // older saves have none
                     world.Warband = new Warband { CampId = (int)wb["camp"], Band = (int)wb["band"], LeaveDay = (int)wb["leaveDay"], ArriveDay = (int)wb["arriveDay"], Spotted = (bool)wb["spotted"] };
+                foreach (var token in campsSave["forces"] as JArray ?? new JArray())   // older saves have none
+                    world.CampForces[(int)token["camp"]] = new CampForce { Lost = (double)token["lost"], Returning = (int)token["returning"], BackDay = (int)token["backDay"] };
             }
             world.SetShaftDepthLimit(save.Value<int?>("shaftDepthLimit") ?? MaxDepth);
             world.SetMineSupportsRequired(save.Value<bool?>("requireMineSupports") ?? false);
