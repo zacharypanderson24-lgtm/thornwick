@@ -139,7 +139,7 @@ namespace CrownAndHearth.Game
             _worldMap = map;
             foreach (var tex in new[] { _terrainTex, _heatTex, _bordersTex, _sitesTex }) if (tex != null) Destroy(tex);
             _terrainTex = WorldMapRenderer.BuildTerrain(map); _heatTex = WorldMapRenderer.BuildHeat(map);
-            _bordersTex = WorldMapRenderer.BuildBorders(); _sitesTex = WorldMapRenderer.BuildSites(map, _world?.Camps, _world?.DestroyedCamps);
+            _bordersTex = WorldMapRenderer.BuildBorders(); _sitesTex = BuildSitesFor(map, _world);
             _mapBorders.texture = _bordersTex; _mapSites.texture = _sitesTex;
             _mapTitle.text = $"World map: {WorldMap.SettingName(map.Setting)} campaign";
             _mapSubtitle.text = $"{WorldMap.Size} x {WorldMap.Size} km  ·  {WorldMap.Regions} x {WorldMap.Regions} regions of {WorldMap.RegionCells} km  ·  seed {map.Seed}";
@@ -154,11 +154,56 @@ namespace CrownAndHearth.Game
         {
             if (_worldMap == null || _sitesTex == null) return;
             _world = w;
-            Destroy(_sitesTex);
-            _sitesTex = WorldMapRenderer.BuildSites(_worldMap, w.Camps, w.DestroyedCamps);
-            _mapSites.texture = _sitesTex;
+            RebuildSites();
             BuildMapLegend();
             OnMapHover(_mapView?.HoverCell);
+        }
+
+        int _warbandMapSig = -1;
+
+        /// <summary>The spotted warband (if any) and where it is: the map's dots are redrawn when this changes (once a day while one marches).</summary>
+        int WarbandSig(World w) => w?.Warband is Warband wb && wb.Spotted ? wb.CampId * 1000000 + w.Day : -1;
+
+        Texture2D BuildSitesFor(WorldMap map, World w)
+        {
+            _warbandMapSig = WarbandSig(w);
+            (double x, double y)? at = null;
+            (int x, int y)? home = null;
+            if (_warbandMapSig >= 0) at = w.WarbandCell(w.Warband);
+            if (w != null) home = (w.HomeCellX, w.HomeCellY);
+            return WorldMapRenderer.BuildSites(map, w?.Camps, w?.DestroyedCamps, at, home);
+        }
+
+        void RebuildSites()
+        {
+            if (_worldMap == null || _sitesTex == null) return;
+            Destroy(_sitesTex);
+            _sitesTex = BuildSitesFor(_worldMap, _world);
+            _mapSites.texture = _sitesTex;
+        }
+
+        /// <summary>Move the warband's marker on the map when it has marched (called every frame; cheap unless something changed).</summary>
+        void RefreshWarbandOnMap(World w)
+        {
+            if (WarbandSig(w) == _warbandMapSig) return;
+            RebuildSites();
+            if (_mapOpen) OnMapHover(_mapView?.HoverCell);
+        }
+
+        /// <summary>The spotted warband if the cursor is on its marker.</summary>
+        Warband WarbandNear(Vector2Int? cell)
+        {
+            if (!cell.HasValue || _world?.Warband is not Warband wb || !wb.Spotted) return null;
+            var (x, y) = _world.WarbandCell(wb);
+            return Math.Max(Math.Abs(x - cell.Value.x), Math.Abs(y - cell.Value.y)) <= CampPick ? wb : null;
+        }
+
+        string DescribeWarband(Warband wb)
+        {
+            var camp = _world.CampById(wb.CampId);
+            int left = wb.ArriveDay - _world.Day;
+            string when = left <= 0 ? "It arrives today." : left == 1 ? "It arrives tomorrow." : $"It arrives in about {left} days.";
+            return $"<b><color=#FF8C1E>WARBAND</color> from the {camp?.Name ?? "raiders"}</b>\n{wb.Band} raiders marching on your settlement. {when}\nThey will come in from the {(camp != null ? _world.CampSideName(camp) : "edge")}.";
         }
 
         const int CampPick = 4;   // cells around a red dot that count as pointing at it
@@ -223,6 +268,7 @@ namespace CrownAndHearth.Game
                 rows.Add((WorldMapRenderer.SiteWhite, "City site", ""));
                 rows.Add((WorldMapRenderer.HomeGold, "Your settlement", ""));
                 rows.Add((new Color32(220, 60, 50, 255), "Raider camp (click)", ""));
+                rows.Add((WorldMapRenderer.WarbandOrange, "Warband marching on you", ""));
             }
             else
             {
@@ -253,6 +299,8 @@ namespace CrownAndHearth.Game
             if (_worldMap == null) return;
             var region = cell.HasValue ? _worldMap.RegionAt(cell.Value.x, cell.Value.y) : _worldMap.Home;
             _mapInfo.text = region == null ? "" : DescribeRegion(_worldMap, region);
+            var wb = WarbandNear(cell);
+            if (wb != null) { _mapCell.text = DescribeWarband(wb); return; }
             var camp = CampNear(cell);
             if (camp != null) { if (!_world.DestroyedCamps.Contains(camp.Id)) camp.PrepareSite(); _mapCell.text = DescribeCamp(camp); return; }
             _mapCell.text = cell.HasValue ? DescribeCell(_worldMap, cell.Value.x, cell.Value.y) : "Move the cursor over the map. Showing your home region.";

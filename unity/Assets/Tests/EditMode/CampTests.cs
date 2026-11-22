@@ -246,5 +246,86 @@ namespace CrownAndHearth.Tests
             for (int i = 0; i < 300; i++) { w4.ResAmt[Res.Food] = 400; w4.Tick(); }
             Assert.IsNull(w4.Raid, "no camps set, no random raids");
         }
+
+        /// <summary>Ticks until the camp's warband sets out, then returns the day it was first spotted and the day the raid began.</summary>
+        static (int leave, int arrive, int spotted, int raided, List<string> events) MarchOn(World w)
+        {
+            var events = new List<string>();
+            for (int i = 0; i < 500 && w.Warband == null && w.Raid == null; i++) { w.ResAmt[Res.Food] = 400; events.AddRange(w.Events); w.Events.Clear(); w.Tick(); }
+            Assert.IsNotNull(w.Warband, "the camp sends a warband before any raid");
+            Assert.IsNull(w.Raid, "the raid has not begun while the warband marches");
+            // a tick runs on day w.Day and then moves the clock on, so what happened in the last tick happened on w.Day - 1
+            int leave = w.Warband.LeaveDay, arrive = w.Warband.ArriveDay, spotted = w.Warband.Spotted ? w.Day - 1 : -1;
+            events.AddRange(w.Events); w.Events.Clear();
+            for (int i = 0; i < 40 && w.Raid == null; i++)
+            {
+                w.ResAmt[Res.Food] = 400; w.Tick();
+                if (spotted < 0 && w.Warband != null && w.Warband.Spotted) spotted = w.Day - 1;
+                events.AddRange(w.Events); w.Events.Clear();
+            }
+            Assert.IsNotNull(w.Raid, "the raid begins when the warband arrives");
+            return (leave, arrive, spotted, w.Day - 1, events);
+        }
+
+        [Test]
+        public void AWarbandMarchesFromItsCampIsSpottedAndThenRaids()
+        {
+            var w = Town(0, 0);
+            w.RaidMinPopulation = 0; w.Day = 150;
+            var c = Camp(2, 300, 390); c.Id = 4;   // 90 km south: 6 days of marching
+            w.SetCamps(new[] { c }, 300, 300);
+            var (leave, arrive, spotted, raided, events) = MarchOn(w);
+            Assert.AreEqual(w.MarchDays(c), arrive - leave, "it marches as long as an army would");
+            Assert.AreEqual(6, arrive - leave);
+            Assert.AreEqual(arrive - World.ScoutSpotDays, spotted, "scouts see it two days out");
+            Assert.AreEqual(arrive, raided, "the raid begins the day it arrives");
+            Assert.IsNull(w.Warband);
+            Assert.AreSame(c, w.Raid.Camp);
+            Assert.AreEqual("south", w.Raid.From);
+            Assert.AreEqual(3 + 2 * 2, w.Raid.Band);
+            Assert.IsTrue(events.Any(e => e.Contains("spotted a warband of 7 raiders") && e.Contains("from the south")), string.Join(" | ", events));
+            Assert.IsTrue(events.Any(e => e.Contains("is here")), string.Join(" | ", events));
+        }
+
+        [Test]
+        public void AWatchtowerSpotsAWarbandSooner()
+        {
+            var w = Town(0, 0);
+            w.RaidMinPopulation = 0; w.Day = 150;
+            w.AddBld("watchtower", Defs.Start + 6, Defs.Start + 6);
+            Assert.AreEqual(World.TowerSpotDays, w.SpotDays);
+            var c = Camp(2, 300, 390); c.Id = 4;
+            w.SetCamps(new[] { c }, 300, 300);
+            var (leave, arrive, spotted, _, events) = MarchOn(w);
+            Assert.AreEqual(arrive - World.TowerSpotDays, spotted, "lookouts see it five days out");
+            Assert.IsTrue(events.Any(e => e.StartsWith("Lookouts on your watchtower")), string.Join(" | ", events));
+        }
+
+        [Test]
+        public void AWarbandOnTheMarchIsSavedAndStillArrives()
+        {
+            var w = Town(0, 0);
+            w.RaidMinPopulation = 0; w.Day = 150;
+            var c = Camp(2, 300, 390); c.Id = 4;
+            w.SetCamps(new[] { c }, 300, 300);
+            for (int i = 0; i < 500 && w.Warband == null; i++) { w.ResAmt[Res.Food] = 400; w.Tick(); }
+            Assert.IsNotNull(w.Warband);
+            var before = w.Warband;
+            var mid = w.WarbandCell(before);
+            Assert.That(mid.y, Is.InRange(300.0, 390.0), "it is on the road between its camp and your settlement");
+
+            var loaded = World.LoadJson(w.SaveJson());
+            Assert.IsNotNull(loaded.Warband, "the warband is saved");
+            Assert.AreEqual(before.CampId, loaded.Warband.CampId);
+            Assert.AreEqual(before.Band, loaded.Warband.Band);
+            Assert.AreEqual(before.ArriveDay, loaded.Warband.ArriveDay);
+            Assert.AreEqual(before.Spotted, loaded.Warband.Spotted);
+            loaded.RaidMinPopulation = 0;
+            loaded.SetCamps(new[] { c }, 300, 300);
+            Assert.IsNotNull(loaded.Warband, "handing the camps over again does not call it off");
+            for (int i = 0; i < 40 && loaded.Raid == null; i++) { loaded.ResAmt[Res.Food] = 400; loaded.Tick(); }
+            Assert.IsNotNull(loaded.Raid, "after loading it still arrives and raids");
+            Assert.AreSame(c, loaded.Raid.Camp);
+        }
     }
 }
