@@ -202,8 +202,8 @@ namespace CrownAndHearth.Game
                 IsoView.VertexPos(here.x + 1, here.y + 1, lvl), IsoView.SortOrder(here.x, here.y));
         }
 
-        // Gates are open road openings on this base branch; closed/broken art is imported
-        // for the walls-gates simulation branch without pretending it is already merged.
+        // A road tile through a palisade is a gate: open, shut (during a raid, a roused town's siege, or kept shut from the
+        // Troops menu) or broken (World.GateAt, World.Walls.cs).
         void PlaceApprovedGate(World w, Building b, int rot)
         {
             bool Wall(int x, int y) => World.Inb(x, y) && w.Grid[y, x]?.T == "wall";
@@ -211,7 +211,9 @@ namespace CrownAndHearth.Game
             bool alongY = Wall(b.X, b.Y - 1) && Wall(b.X, b.Y + 1);
             if (!alongX && !alongY) return;
             int view = (rot + (alongX ? 0 : 1)) % 4;
-            var sprite = _art.Find("gate_open_" + (view + 1));
+            var state = w.GateAt(b.X, b.Y);
+            string kind = state == World.GateState.Broken ? "gate_broken_" : state == World.GateState.Shut ? "gate_closed_" : "gate_open_";
+            var sprite = _art.Find(kind + (view + 1)) ?? _art.Find("gate_open_" + (view + 1));
             if (sprite == null) return;
             var tile = IsoView.ToView(b.X, b.Y, rot);
             float level = Mathf.Round((float)w.TileLevel(b.X, b.Y) * LvlPx) / LvlPx;

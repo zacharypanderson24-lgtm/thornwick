@@ -24,7 +24,8 @@ namespace CrownAndHearth.Sim
         /// <summary>Damage done to palisade and gate tiles, by tile key. Saved.</summary>
         public readonly Dictionary<int, double> BarrierDamage = new Dictionary<int, double>();
         /// <summary>Keep every gate shut, raid or not (Troops menu). Saved. A battle map uses it for "the town is roused".</summary>
-        public bool KeepGatesShut;
+        public bool KeepGatesShut { get => _keepGatesShut; set { if (_keepGatesShut == value) return; _keepGatesShut = value; Touch(); } }   // redrawn at once
+        bool _keepGatesShut;
         bool _gatesWereShut;
 
         bool IsWall(int x, int y) => Inb(x, y) && Grid[y, x]?.T == "wall";
