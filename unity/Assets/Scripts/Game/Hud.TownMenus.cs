@@ -103,7 +103,7 @@ namespace CrownAndHearth.Game
 
         void BuildTroops(RectTransform panel)
         {
-            _troopCounts = PanelLabel(panel, "TroopCounts", "", 17, 42, 92);
+            _troopCounts = PanelLabel(panel, "TroopCounts", "", 14, 40, 96);   // three lines: at home, bunks, away
             _troopMix = PanelLabel(panel, "TroopMix", "", 17, 98, 124);
             var track = MakePanel(panel, "ArcherPercent", Vector2.up, Vector2.one, new Vector2(20, -149), new Vector2(-20, -132));
             track.GetComponent<UnityEngine.UI.Image>().color = Btn;
@@ -237,7 +237,10 @@ namespace CrownAndHearth.Game
 
         void RefreshTroops(World world)
         {
-            _troopCounts.text = $"Infantry {world.Infantry}   |   Archers {world.Archers}\nBunks {world.Soldiers}/{world.D.Bunks} · peasants {world.Peasants}";
+            // where every soldier is: at home, coming home (they keep their bunk), holding settlements or marching to them; all draw wages
+            int coming = world.TroopsReturning, held = world.TroopsStationed;
+            _troopCounts.text = $"At home: infantry {world.Infantry}   |   archers {world.Archers}\nBunks {world.Soldiers + coming}/{world.D.Bunks} · peasants {world.Peasants}" +
+                (coming + held > 0 ? $"\nAway: {coming} coming home · {held} holding settlements or marching to them" : "");
             _troopSlider.SetValueWithoutNotify(world.ArcherPercent);
             _troopMix.text = $"New recruits: Infantry {100 - world.ArcherPercent}%   |   Archers {world.ArcherPercent}%";
             _draftButton.color = world.Drafting ? BtnOn : Btn;
@@ -245,7 +248,7 @@ namespace CrownAndHearth.Game
             _militiaButton.color = world.MilitiaFights ? BtnOn : Btn;
             _militiaButton.GetComponentInChildren<Text>().text = world.MilitiaFights ? "Militia fights: On" : "Militia fights: Off";
             string Cost(Troop t) { var parts = new System.Collections.Generic.List<string>(); foreach (var (res, amount) in World.TrainCost(t)) parts.Add($"{amount} {res.ToString().ToLower()}"); return string.Join(", ", parts); }
-            _troopCosts.text = $"Infantry: {Cost(Troop.Infantry)}. Sword and mail.\nArchers: {Cost(Troop.Archer)}. Bow and string.\nOne recruit per barracks every {World.TrainDays} days; each soldier eats half as much again and costs 0.1 gold a day.";
+            _troopCosts.text = $"Infantry: {Cost(Troop.Infantry)}. Sword and mail.\nArchers: {Cost(Troop.Archer)}. Bow and string.\nOne recruit per barracks every {World.TrainDays} days; each soldier eats half as much again at home and costs 0.1 gold a day wherever he is.";
             int barracks = 0; foreach (var b in world.Blds) if (b.T == "barracks" && b.Served) barracks++;
             _troopNote.text = barracks == 0 ? "Build a Barracks (Military, 8) beside a road to train troops."
                 : world.Soldiers >= world.D.Bunks ? "Bunks are full: more barracks or the Town Hall hold more."

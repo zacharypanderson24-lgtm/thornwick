@@ -17,6 +17,16 @@ namespace CrownAndHearth.Sim
 {
     public enum ConquestChoice : byte { Leave, Sack, Tribute, Occupy }
 
+    /// <summary>The army that took a settlement, waiting there for your decision: its survivors and what they carry. Saved.</summary>
+    public sealed class PendingConquest
+    {
+        public int SettlementId, CampId, Infantry, Archers;
+        public readonly Dictionary<Res, int> Loot = new Dictionary<Res, int>();
+    }
+
+    /// <summary>Soldiers marching from home to join an occupied settlement's garrison. Saved.</summary>
+    public sealed class Detachment { public int SettlementId, Infantry, Archers, ArriveDay; }
+
     public partial class World
     {
         /// <summary>Battle ids of settlements, kept clear of the raider camps' ids.</summary>
@@ -57,8 +67,19 @@ namespace CrownAndHearth.Sim
         /// <summary>Who would fight an invasion here now: a camp's raiders at home, or a settlement's garrison.</summary>
         public int DefendersHome(RaiderCamp c) => c.IsTown ? Garrison(c.Town) : CampRaidersHome(c);
 
-        /// <summary>A won battle at a settlement waiting for you to choose what to do with it (null otherwise). Runtime only.</summary>
-        public CampBattle PendingConquest { get; private set; }
+        /// <summary>The army that took a settlement, waiting for you to decide its fate (null otherwise). Saved, so saving and loading
+        /// can neither lose the army nor skip the decision.</summary>
+        public PendingConquest PendingConquest { get; private set; }
+        /// <summary>The battle the pending decision came from, for the camp panel (runtime only: null after loading).</summary>
+        public CampBattle PendingBattle { get; private set; }
+        /// <summary>What happened when the last decision was made (shown in the report).</summary>
+        public string LastConquestNews { get; private set; } = "";
+
+        /// <summary>Reinforcements on the road to an occupied settlement. Saved.</summary>
+        public readonly List<Detachment> Detachments = new List<Detachment>();
+
+        /// <summary>The town's own carts carry this many times what the soldiers carry on their backs when a settlement is sacked.</summary>
+        public const int SackCartFactor = 2;
 
         void Anger(Settlement s, int amount) { if (s != null) s.Attitude = Math.Clamp(s.Attitude - amount, -100, 100); }
 
@@ -99,56 +120,77 @@ namespace CrownAndHearth.Sim
             s.Population = Math.Max(SettlementRules.TierFloor[0], s.Population - b.RaidersKilled);   // the defenders who fell were its people
             if (b.Victory)
             {
-                PendingConquest = b;
+                var p = new PendingConquest { SettlementId = s.Id, CampId = b.Camp.Id, Infantry = b.SurvivingInfantry, Archers = b.SurvivingArchers };
+                foreach (var kv in b.Loot) if (kv.Value > 0) p.Loot[kv.Key] = kv.Value;
+                PendingConquest = p; PendingBattle = b; LastConquestNews = "";
                 Events.Add($"{s.Name} has fallen. Choose what to do with it.");
                 return;
             }
             Anger(s, 30); HurtRealm(s, 15);
-            SendArmyHome(b, b.SurvivingInfantry, b.SurvivingArchers, $"The army pulls back from {s.Name} and marches home.");
+            var loot = b.Loot.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
+            SendHome(b.Camp.Id, b.SurvivingInfantry, b.SurvivingArchers, loot, MarchDays(b.Camp), $"The army pulls back from {s.Name} and marches home.");
         }
 
-        void SendArmyHome(CampBattle b, int inf, int arc, string news)
+        /// <summary>Soldiers and loot set off home. Loot goes home even when no soldier does: a supply train (escorted by the garrison
+        /// that stays) carries it. Only when nothing at all comes back is there no column on the road.</summary>
+        void SendHome(int campId, int inf, int arc, Dictionary<Res, int> loot, int days, string news)
         {
-            if (inf + arc <= 0) { Events.Add($"No soldiers came back from {b.Camp.Name}."); return; }
-            var e = new Expedition { CampId = b.Camp.Id, Infantry = inf, Archers = arc, ReturnDay = Day + MarchDays(b.Camp) };
-            foreach (var kv in b.Loot) if (kv.Value > 0) e.Loot[kv.Key] = kv.Value;
+            bool goods = loot.Values.Any(v => v > 0);
+            if (inf + arc <= 0 && !goods) { Events.Add(news); return; }
+            var e = new Expedition { CampId = campId, Infantry = inf, Archers = arc, ReturnDay = Day + days };
+            foreach (var kv in loot) if (kv.Value > 0) e.Loot[kv.Key] = kv.Value;
             Expeditions.Add(e);
-            Events.Add(news);
+            Events.Add(inf + arc > 0 ? news : news + " The spoils go home by cart.");
         }
 
         /// <summary>Whether this choice can be made for the fallen settlement (occupying needs enough surviving soldiers to leave behind).</summary>
         public Result CanResolve(ConquestChoice choice, int stationed = 0)
         {
-            var b = PendingConquest;
-            if (b == null) return Result.No("No settlement is waiting for your decision");
+            var p = PendingConquest;
+            if (p == null) return Result.No("No settlement is waiting for your decision");
+            var s = SettlementById(p.SettlementId);
+            if (s == null) return Result.No("The world map is still being made: try again in a moment");
             if (choice != ConquestChoice.Occupy) return Result.Yes();
-            var s = b.Camp.Town; int need = GarrisonNeeded(s), have = b.SurvivingInfantry + b.SurvivingArchers;
+            int need = GarrisonNeeded(s), have = p.Infantry + p.Archers;
             if (have < need) return Result.No($"Holding {s.Name} takes {need} soldiers; only {have} survived");
             if (stationed < need) return Result.No($"Holding {s.Name} takes at least {need} soldiers");
             if (stationed > have) return Result.No($"Only {have} soldiers survived");
             return Result.Yes(stationed);
         }
 
+        /// <summary>Gold and goods a sack can yield (its stores and treasure, by how many people lived there).</summary>
+        public static (int gold, int goods) SackYield(Settlement s) => ((int)Math.Round(s.Population / 4), (int)Math.Round(s.Population / 3));
+
+        /// <summary>What the army can carry from a sack: what its survivors carry on their backs, plus the town's own carts (SackCartFactor
+        /// times as much), less what they already took in the fight.</summary>
+        public static int SackRoom(PendingConquest p) =>
+            Math.Max(0, (p.Infantry * CampBattle.InfantryCarry + p.Archers * CampBattle.ArcherCarry) * (1 + SackCartFactor) - p.Loot.Values.Sum());
+
         /// <summary>Decide the fate of the settlement you took. The army (minus any garrison you leave) marches home with the loot.</summary>
         public Result ResolveConquest(ConquestChoice choice, int stationed = 0)
         {
             var ok = CanResolve(choice, stationed); if (!ok.Ok) return ok;
-            var b = PendingConquest; var s = b.Camp.Town;
-            int inf = b.SurvivingInfantry, arc = b.SurvivingArchers;
+            var p = PendingConquest; var s = SettlementById(p.SettlementId);
+            int inf = p.Infantry, arc = p.Archers;
             string news;
             switch (choice)
             {
                 case ConquestChoice.Sack:
                 {
-                    int gold = (int)Math.Round(s.Population / 4), goods = (int)Math.Round(s.Population / 3);
-                    b.Loot[Res.Gold] = b.Loot.GetValueOrDefault(Res.Gold) + gold;
-                    b.Loot[s.Makes] = b.Loot.GetValueOrDefault(s.Makes) + goods;
+                    var (gold, goods) = SackYield(s);
+                    int room = SackRoom(p);
+                    int takeGold = Math.Min(gold, room); room -= takeGold;
+                    int takeGoods = Math.Min(goods, room);
+                    int burned = gold - takeGold + goods - takeGoods;
+                    if (takeGold > 0) p.Loot[Res.Gold] = p.Loot.GetValueOrDefault(Res.Gold) + takeGold;
+                    if (takeGoods > 0) p.Loot[s.Makes] = p.Loot.GetValueOrDefault(s.Makes) + takeGoods;
                     s.Population = Math.Max(SettlementRules.TierFloor[0], Math.Round(s.Population * 0.4));
                     s.Attitude = -100;
                     HurtRealm(s, 40);
                     foreach (var o in _settlements)
                         if (o != s && Math.Max(Math.Abs(o.X - s.X), Math.Abs(o.Y - s.Y)) <= SackHeardKm) Anger(o, 10);
-                    news = $"{s.Name} is sacked and burned. The army marches home with {gold} gold and {goods} {GoodName(s.Makes)} besides what it carried.";
+                    news = $"{s.Name} is sacked. The carts carry off {takeGold} gold and {takeGoods} {GoodName(s.Makes)}" +
+                           (burned > 0 ? $"; {burned} more burned with the town for want of carts." : ".");
                     break;
                 }
                 case ConquestChoice.Tribute:
@@ -159,44 +201,98 @@ namespace CrownAndHearth.Sim
                     break;
                 case ConquestChoice.Occupy:
                 {
-                    int stInf = Math.Min(inf, stationed), stArc = stationed - stInf;
+                    int stInf = Math.Min(inf, stationed), stArc = stationed - stInf;   // infantry hold a town first, archers make up the rest
                     inf -= stInf; arc -= stArc;
                     HurtRealm(s, 40);
-                    s.Liege = -1; s.Allegiance = Allegiance.Occupied; s.Garrison = stationed; s.Attitude = -30;
+                    s.Liege = -1; s.Allegiance = Allegiance.Occupied; s.GarrisonInfantry = stInf; s.GarrisonArchers = stArc; s.Attitude = -30;
                     RecomputeRealms();
-                    news = $"{s.Name} is yours. {stationed} soldiers stay behind to hold it.";
+                    news = $"{s.Name} is yours. {stInf} infantry and {stArc} archers stay behind to hold it.";
                     break;
                 }
                 default:
                     Anger(s, 40); HurtRealm(s, 25);
-                    news = $"The army leaves {s.Name} with what it can carry and marches home.";
+                    news = $"The army leaves {s.Name} with what it can carry.";
                     break;
             }
-            PendingConquest = null;
-            SendArmyHome(b, inf, arc, news);
+            PendingConquest = null; PendingBattle = null;
+            string home = inf + arc > 0 ? $" {inf} infantry and {arc} archers march home ({SettlementMarchDays(s)} days)." : "";
+            LastConquestNews = news + home;
+            SendHome(p.CampId, inf, arc, p.Loot, SettlementMarchDays(s), news + home);
             return Result.Yes();
         }
 
-        /// <summary>Send more soldiers from home to an occupied settlement's garrison.</summary>
+        /// <summary>Send soldiers from home to an occupied settlement's garrison (infantry first, then archers). They march there and join
+        /// it when they arrive; if the settlement is no longer yours by then, they turn round and come home.</summary>
         public Result ReinforceGarrison(Settlement s, int n)
         {
             if (s == null || s.Allegiance != Allegiance.Occupied) return Result.No("Only a settlement you hold can be reinforced");
             n = Math.Min(n, Infantry + Archers);
             if (n <= 0) return Result.No("You have no soldiers at home");
-            int arc = Math.Max(0, n - Infantry);
+            int inf = Math.Min(n, Infantry), arc = n - inf;
             Soldiers -= n; Archers -= arc;
-            s.Garrison += n;
+            Detachments.Add(new Detachment { SettlementId = s.Id, Infantry = inf, Archers = arc, ArriveDay = Day + SettlementMarchDays(s) });
             return Result.Yes(n);
         }
 
-        /// <summary>Bring an occupied settlement's garrison home: it stays loyal enough to pay tribute instead.</summary>
+        /// <summary>Soldiers marching to a settlement's garrison right now.</summary>
+        public int MarchingTo(Settlement s) => Detachments.Where(d => d.SettlementId == s.Id).Sum(d => d.Infantry + d.Archers);
+
+        /// <summary>Bring an occupied settlement's garrison home, infantry and archers alike: it stays cowed enough to pay tribute instead.</summary>
         public Result WithdrawGarrison(Settlement s)
         {
             if (s == null || s.Allegiance != Allegiance.Occupied) return Result.No("Only a settlement you hold has a garrison");
-            Expeditions.Add(new Expedition { CampId = TownIdBase + s.Id, Infantry = s.Garrison, Archers = 0, ReturnDay = Day + SettlementMarchDays(s) });
-            s.Garrison = 0; s.Allegiance = Allegiance.Tributary;
+            if (s.Garrison > 0)
+                Expeditions.Add(new Expedition { CampId = TownIdBase + s.Id, Infantry = s.GarrisonInfantry, Archers = s.GarrisonArchers, ReturnDay = Day + SettlementMarchDays(s) });
+            s.GarrisonInfantry = 0; s.GarrisonArchers = 0; s.Allegiance = Allegiance.Tributary;
             return Result.Yes();
         }
+
+        /// <summary>Daily: reinforcements that reach their settlement join its garrison, or turn for home if it is no longer yours.</summary>
+        void StepDetachments()
+        {
+            for (int i = Detachments.Count - 1; i >= 0; i--)
+            {
+                var d = Detachments[i];
+                if (Day < d.ArriveDay) continue;
+                Detachments.RemoveAt(i);
+                var s = SettlementById(d.SettlementId);
+                if (s != null && s.Allegiance == Allegiance.Occupied)
+                {
+                    s.GarrisonInfantry += d.Infantry; s.GarrisonArchers += d.Archers;
+                    Events.Add($"{d.Infantry + d.Archers} soldiers have joined the garrison of {s.Name} ({s.Garrison} now).");
+                }
+                else
+                {
+                    int days = s != null ? SettlementMarchDays(s) : 1;
+                    Expeditions.Add(new Expedition { CampId = TownIdBase + d.SettlementId, Infantry = d.Infantry, Archers = d.Archers, ReturnDay = Day + days });
+                    Events.Add($"The soldiers sent to {(s?.Name ?? "a settlement")} found it no longer yours and are marching home.");
+                }
+            }
+        }
+
+        // ---------- where every soldier is ----------
+
+        /// <summary>Soldiers in an invasion being fought right now (set when it starts, cleared when it ends).</summary>
+        public int TroopsInBattleInfantry { get; private set; }
+        public int TroopsInBattleArchers { get; private set; }
+        int _inBattleCamp, _inBattleDays;
+
+        void MarchOut(RaiderCamp camp, int inf, int arc)
+        {
+            TroopsInBattleInfantry = inf; TroopsInBattleArchers = arc; _inBattleCamp = camp.Id; _inBattleDays = MarchDays(camp);
+        }
+
+        void BattleOver() { TroopsInBattleInfantry = 0; TroopsInBattleArchers = 0; }
+
+        /// <summary>Soldiers who will come home: armies on the road home, the army in a fight and the army waiting for your decision.</summary>
+        public int TroopsReturning => Expeditions.Sum(e => e.Infantry + e.Archers) + TroopsInBattleInfantry + TroopsInBattleArchers
+            + (PendingConquest != null ? PendingConquest.Infantry + PendingConquest.Archers : 0);
+
+        /// <summary>Soldiers holding settlements for you, and those marching to join them. They live in the settlement they hold.</summary>
+        public int TroopsStationed => (_settlements.Count > 0 ? _settlements.Sum(s => s.Garrison) : SavedGarrisons()) + Detachments.Sum(d => d.Infantry + d.Archers);
+
+        /// <summary>Every soldier you have away from home. All of them draw wages; those coming home also need a bunk and a home here.</summary>
+        public int TroopsAway => TroopsReturning + TroopsStationed;
 
         /// <summary>Monthly: tributaries pay gold and goods (and may stop paying), occupied settlements pay more (and rise up if the garrison
         /// is too small); both slowly get used to you.</summary>
@@ -216,8 +312,13 @@ namespace CrownAndHearth.Sim
                 {
                     if (s.Garrison < GarrisonNeeded(s) && roll < 0.25)
                     {
-                        Events.Add($"{s.Name} has risen up! Its people overwhelmed your {s.Garrison} soldiers there (it needed {GarrisonNeeded(s)}).");
-                        s.Allegiance = Allegiance.Own; s.Garrison = 0; s.Attitude = -80;
+                        // the garrison is driven out: half of each kind fall, the rest escape and march home (nobody simply vanishes)
+                        int escInf = s.GarrisonInfantry / 2, escArc = s.GarrisonArchers / 2, fell = s.Garrison - escInf - escArc;
+                        if (escInf + escArc > 0)
+                            Expeditions.Add(new Expedition { CampId = TownIdBase + s.Id, Infantry = escInf, Archers = escArc, ReturnDay = Day + SettlementMarchDays(s) });
+                        Events.Add($"{s.Name} has risen up and driven out your garrison (it needed {GarrisonNeeded(s)}, you had {s.Garrison})! " +
+                                   $"{fell} fell; {escInf} infantry and {escArc} archers escaped and are marching home.");
+                        s.Allegiance = Allegiance.Own; s.GarrisonInfantry = 0; s.GarrisonArchers = 0; s.Attitude = -80;
                     }
                 }
                 else

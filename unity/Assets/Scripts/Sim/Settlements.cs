@@ -42,9 +42,11 @@ namespace CrownAndHearth.Sim
         public double Capacity;
         /// <summary>Goods it has sold to you and bought from you this month (World.SettlementTrade.cs); reset each month, saved.</summary>
         public int SoldThisMonth, BoughtThisMonth;
-        /// <summary>Whether it pays you or is held by you, and how many of your soldiers hold it. Saved.</summary>
+        /// <summary>Whether it pays you or is held by you, and which of your soldiers hold it (infantry and archers kept apart). Saved.</summary>
         public Allegiance Allegiance;
-        public int Garrison;
+        public int GarrisonInfantry, GarrisonArchers;
+        /// <summary>Your soldiers stationed there, all told.</summary>
+        public int Garrison => GarrisonInfantry + GarrisonArchers;
 
         public SettlementTier Tier
         {

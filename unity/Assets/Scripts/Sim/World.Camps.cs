@@ -218,6 +218,7 @@ namespace CrownAndHearth.Sim
             if (!ok.Ok) return null;
             int inf = groups.Sum(g => g.Infantry), arc = groups.Sum(g => g.Archers);
             Soldiers -= inf + arc; Archers -= arc;
+            MarchOut(camp, inf, arc);   // World.Conquest.cs: they are away, still paid, and saved if the game is saved mid-fight
             return new CampBattle(camp, groups, DefendersHome(camp));
         }
 
@@ -226,6 +227,7 @@ namespace CrownAndHearth.Sim
         {
             if (battle == null || !battle.Over || battle.Settled) return;
             battle.Settled = true;
+            BattleOver();
             LastInvasion = battle;
             if (battle.Camp.IsTown) { FinishTownBattle(battle); return; }   // World.Conquest.cs: a settlement is not destroyed, you choose its fate
             if (battle.Victory) DestroyedCamps.Add(battle.Camp.Id);
