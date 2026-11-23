@@ -31,24 +31,36 @@ namespace CrownAndHearth.Sim
 
     public sealed class CampMap
     {
+        /// <summary>A raider camp's map is this many tiles across; a settlement's map is bigger the bigger the settlement (N).</summary>
         public const int Size = 32;
-        public readonly CampTile[,] Ground = new CampTile[Size, Size];   // [y, x]: what the terrain has on each tile (trees, rocks and mountains block)
-        public readonly bool[,] Buildable = new bool[Size, Size];        // open, level ground: where tents and the rest can stand
+        /// <summary>This map's size in tiles (Size for a raider camp).</summary>
+        public readonly int N;
+        public readonly CampTile[,] Ground;   // [y, x]: what the terrain has on each tile (trees, rocks and mountains block)
+        public readonly bool[,] Buildable;    // open, level ground: where tents and the rest can stand
+        /// <summary>[y, x]: tiles a settlement's buildings stand on (soldiers cannot walk through them). Raider camps use the lists below.</summary>
+        public readonly bool[,] Blocked;
         public readonly List<(int x, int y)> Tents = new List<(int x, int y)>();
         public readonly List<(int x, int y)> Fires = new List<(int x, int y)>();   // campfires, with tents round them
         public readonly List<(int x, int y)> Racks = new List<(int x, int y)>();   // weapon racks
-        public (int x, int y) Chief;                                                // the warlord's tent
+        public (int x, int y) Chief;                                                // the warlord's tent (a settlement: its hall)
         public readonly List<SupplyPile> Piles = new List<SupplyPile>();
+        /// <summary>A settlement's barracks (one tile of each): its soldiers muster beside them.</summary>
+        public readonly List<(int x, int y)> Barracks = new List<(int x, int y)>();
 
+        public CampMap(int n = Size) { N = n; Ground = new CampTile[n, n]; Buildable = new bool[n, n]; Blocked = new bool[n, n]; }
+
+        public bool In(int x, int y) => x >= 0 && y >= 0 && x < N && y < N;
+        public bool Edge(int x, int y) => x == 0 || y == 0 || x == N - 1 || y == N - 1;
+        /// <summary>On a raider camp's 32 x 32 map (kept for the camp code and tests that know its size).</summary>
         public static bool Inb(int x, int y) => x >= 0 && y >= 0 && x < Size && y < Size;
         public static bool IsEdge(int x, int y) => x == 0 || y == 0 || x == Size - 1 || y == Size - 1;
         static bool Has(List<(int x, int y)> list, int x, int y) { foreach (var t in list) if (t.x == x && t.y == y) return true; return false; }
         public bool HasTent(int x, int y) => Has(Tents, x, y) || (Chief.x == x && Chief.y == y);
-        /// <summary>Anything built here that soldiers cannot walk through: tents, the warlord's tent, fires and racks.</summary>
-        public bool HasStructure(int x, int y) => HasTent(x, y) || Has(Fires, x, y) || Has(Racks, x, y);
+        /// <summary>Anything built here that soldiers cannot walk through: tents, the warlord's tent, fires and racks, or a settlement's buildings.</summary>
+        public bool HasStructure(int x, int y) => (In(x, y) && Blocked[y, x]) || HasTent(x, y) || Has(Fires, x, y) || Has(Racks, x, y);
         public SupplyPile PileAt(int x, int y) { foreach (var p in Piles) if (p.X == x && p.Y == y && p.Amount > 0) return p; return null; }
         /// <summary>Soldiers walk on open ground; trees, rocks, mountains and the camp's structures are in the way.</summary>
-        public bool Passable(int x, int y) => Inb(x, y) && Ground[y, x] == CampTile.Open && !HasStructure(x, y);
+        public bool Passable(int x, int y) => In(x, y) && Ground[y, x] == CampTile.Open && !HasStructure(x, y);
 
         static readonly Res[] Pool = { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Gold, Res.Flax };
 
@@ -56,10 +68,10 @@ namespace CrownAndHearth.Sim
         /// together now, so this keeps them from walling anything (or anyone) in.</summary>
         bool LeavesPath(int bx, int by)
         {
-            var seen = new bool[Size, Size];
+            var seen = new bool[N, N];
             var q = new Queue<(int x, int y)>();
-            for (int i = 0; i < Size; i++)
-                foreach (var (x, y) in new[] { (i, 0), (i, Size - 1), (0, i), (Size - 1, i) })
+            for (int i = 0; i < N; i++)
+                foreach (var (x, y) in new[] { (i, 0), (i, N - 1), (0, i), (N - 1, i) })
                     if (!seen[y, x] && (x != bx || y != by) && Passable(x, y)) { seen[y, x] = true; q.Enqueue((x, y)); }
             while (q.Count > 0)
             {
@@ -67,7 +79,7 @@ namespace CrownAndHearth.Sim
                 for (int k = 0; k < 4; k++)
                 {
                     int nx = cx + Defs.Nb[k, 0], ny = cy + Defs.Nb[k, 1];
-                    if (!Inb(nx, ny) || seen[ny, nx] || (nx == bx && ny == by) || !Passable(nx, ny)) continue;
+                    if (!In(nx, ny) || seen[ny, nx] || (nx == bx && ny == by) || !Passable(nx, ny)) continue;
                     seen[ny, nx] = true; q.Enqueue((nx, ny));
                 }
             }
@@ -83,7 +95,7 @@ namespace CrownAndHearth.Sim
                 for (int k = 0; k < 4; k++)
                 {
                     int nx = tx + Defs.Nb[k, 0], ny = ty + Defs.Nb[k, 1];
-                    if (Inb(nx, ny) && (nx != bx || ny != by) && Passable(nx, ny) && seen[ny, nx]) return true;
+                    if (In(nx, ny) && (nx != bx || ny != by) && Passable(nx, ny) && seen[ny, nx]) return true;
                 }
                 return false;
             }
@@ -96,7 +108,7 @@ namespace CrownAndHearth.Sim
         /// <summary>Room for a structure at (x, y): level open ground away from the edge, and nothing built within `apart` tiles.</summary>
         bool Free(int x, int y, int apart = 0)
         {
-            if (!Inb(x, y) || IsEdge(x, y) || !Buildable[y, x]) return false;
+            if (!In(x, y) || Edge(x, y) || !Buildable[y, x]) return false;
             for (int j = -apart; j <= apart; j++) for (int i = -apart; i <= apart; i++) if (HasStructure(x + i, y + j) || PileAt(x + i, y + j) != null) return false;
             return true;
         }
@@ -106,8 +118,8 @@ namespace CrownAndHearth.Sim
         {
             var m = new CampMap();
             int s = camp.Seed;
-            for (int y = 0; y < Size; y++)
-                for (int x = 0; x < Size; x++)
+            for (int y = 0; y < m.N; y++)
+                for (int x = 0; x < m.N; x++)
                 {
                     int wx = x0 + x, wy = y0 + y;
                     var deco = w.DecoMap[wy, wx];
@@ -222,6 +234,8 @@ namespace CrownAndHearth.Sim
         /// <summary>Goods a plundering soldier is carrying.</summary>
         public int Carry; public Res CarryRes; public SupplyPile CarryPile;
         public bool OnField => Alive && !Left;
+        /// <summary>A settlement's soldier still inside his barracks: not drawn and not in the fight until the town is roused (CampBattle.Alarm).</summary>
+        public bool InBarracks;
     }
 
     public sealed class CampBattle
@@ -267,12 +281,16 @@ namespace CrownAndHearth.Sim
             int raiders = raidersHome < 0 ? size.Raiders : camp.IsTown ? raidersHome : Math.Min(raidersHome, size.Raiders), brutes = size.Brutes;
             for (int i = 0; i < raiders; i++)
             {
-                (int x, int y) tent = Map.Tents.Count > 0 ? Map.Tents[i % Map.Tents.Count] : (16, 16);
-                var spots = FreeSpots(tent.x, tent.y, 3);
-                var (x, y) = spots[(i / Math.Max(1, Map.Tents.Count)) % spots.Count];
+                // a settlement's soldiers wait in their barracks (drawn and fought only once the town is roused); a camp's raiders by their tents
+                bool barracked = Map.Barracks.Count > 0;
+                var homes = barracked ? Map.Barracks : Map.Tents;
+                (int x, int y) tent = homes.Count > 0 ? homes[i % homes.Count] : (Map.N / 2, Map.N / 2);
+                int per = (raiders + Math.Max(1, homes.Count) - 1) / Math.Max(1, homes.Count);
+                var spots = FreeSpots(tent.x, tent.y, barracked ? Math.Max(3, per) : 3);
+                var (x, y) = spots[(i / Math.Max(1, homes.Count)) % spots.Count];
                 bool archer = i % 3 == 2;
                 Units.Add(new BUnit { Id = id++, Attacker = false, Kind = archer ? BKind.RaiderArcher : BKind.Raider, X = x, Y = y, Px = x, Py = y,
-                    Hp = archer ? RaiderArcherHp : RaiderHp, Hit = archer ? RaiderArcherHit : RaiderHit, Range = archer ? RaiderArcherRange : 1 });
+                    Hp = archer ? RaiderArcherHp : RaiderHp, Hit = archer ? RaiderArcherHit : RaiderHit, Range = archer ? RaiderArcherRange : 1, InBarracks = barracked });
             }
             // the brutes stand guard beside the warlord's tent, and the warlord is at its door
             for (int i = 0; i < brutes; i++)
@@ -323,12 +341,12 @@ namespace CrownAndHearth.Sim
         int[] EdgeField()
         {
             if (_edgeField != null) return _edgeField;
-            var d = new int[CampMap.Size * CampMap.Size];
+            var d = new int[Map.N * Map.N];
             for (int i = 0; i < d.Length; i++) d[i] = -1;
             var q = new Queue<int>();
-            for (int i = 0; i < CampMap.Size; i++)
-                foreach (var (x, y) in new[] { (i, 0), (i, CampMap.Size - 1), (0, i), (CampMap.Size - 1, i) })
-                    if (d[y * CampMap.Size + x] < 0 && Map.Passable(x, y)) { d[y * CampMap.Size + x] = 0; q.Enqueue(y * CampMap.Size + x); }
+            for (int i = 0; i < Map.N; i++)
+                foreach (var (x, y) in new[] { (i, 0), (i, Map.N - 1), (0, i), (Map.N - 1, i) })
+                    if (d[y * Map.N + x] < 0 && Map.Passable(x, y)) { d[y * Map.N + x] = 0; q.Enqueue(y * Map.N + x); }
             Flood(d, q);
             return _edgeField = d;
         }
@@ -337,43 +355,43 @@ namespace CrownAndHearth.Sim
         {
             while (q.Count > 0)
             {
-                int c = q.Dequeue(), cx = c % CampMap.Size, cy = c / CampMap.Size;
+                int c = q.Dequeue(), cx = c % Map.N, cy = c / Map.N;
                 for (int k = 0; k < 4; k++)
                 {
                     int nx = cx + Defs.Nb[k, 0], ny = cy + Defs.Nb[k, 1];
-                    if (!CampMap.Inb(nx, ny) || d[ny * CampMap.Size + nx] >= 0 || !Map.Passable(nx, ny)) continue;
-                    d[ny * CampMap.Size + nx] = d[c] + 1; q.Enqueue(ny * CampMap.Size + nx);
+                    if (!Map.In(nx, ny) || d[ny * Map.N + nx] >= 0 || !Map.Passable(nx, ny)) continue;
+                    d[ny * Map.N + nx] = d[c] + 1; q.Enqueue(ny * Map.N + nx);
                 }
             }
         }
 
         int[] FieldTo(int tx, int ty)
         {
-            var d = new int[CampMap.Size * CampMap.Size];
+            var d = new int[Map.N * Map.N];
             for (int i = 0; i < d.Length; i++) d[i] = -1;
             var q = new Queue<int>();
-            d[ty * CampMap.Size + tx] = 0; q.Enqueue(ty * CampMap.Size + tx);
+            d[ty * Map.N + tx] = 0; q.Enqueue(ty * Map.N + tx);
             while (q.Count > 0)
             {
-                int c = q.Dequeue(), cx = c % CampMap.Size, cy = c / CampMap.Size;
+                int c = q.Dequeue(), cx = c % Map.N, cy = c / Map.N;
                 for (int k = 0; k < 4; k++)
                 {
                     int nx = cx + Defs.Nb[k, 0], ny = cy + Defs.Nb[k, 1];
-                    if (!CampMap.Inb(nx, ny) || d[ny * CampMap.Size + nx] >= 0 || !Map.Passable(nx, ny)) continue;
-                    d[ny * CampMap.Size + nx] = d[c] + 1; q.Enqueue(ny * CampMap.Size + nx);
+                    if (!Map.In(nx, ny) || d[ny * Map.N + nx] >= 0 || !Map.Passable(nx, ny)) continue;
+                    d[ny * Map.N + nx] = d[c] + 1; q.Enqueue(ny * Map.N + nx);
                 }
             }
             return d;
         }
 
-        static bool StepDown(BUnit u, int[] d)
+        bool StepDown(BUnit u, int[] d)
         {
-            int cur = d[u.Y * CampMap.Size + u.X];
+            int cur = d[u.Y * Map.N + u.X];
             if (cur <= 0) return false;
             for (int k = 0; k < 4; k++)
             {
                 int nx = u.X + Defs.Nb[k, 0], ny = u.Y + Defs.Nb[k, 1];
-                if (CampMap.Inb(nx, ny) && d[ny * CampMap.Size + nx] == cur - 1) { u.X = nx; u.Y = ny; return true; }
+                if (Map.In(nx, ny) && d[ny * Map.N + nx] == cur - 1) { u.X = nx; u.Y = ny; return true; }
             }
             return false;
         }
@@ -443,8 +461,8 @@ namespace CrownAndHearth.Sim
                 case BattleOrder.FallBack:
                 {
                     u.Target = null;
-                    if (!CampMap.IsEdge(u.X, u.Y)) StepDown(u, EdgeField());
-                    if (CampMap.IsEdge(u.X, u.Y)) Leave(u);
+                    if (!Map.Edge(u.X, u.Y)) StepDown(u, EdgeField());
+                    if (Map.Edge(u.X, u.Y)) Leave(u);
                     return;
                 }
                 case BattleOrder.Hold:
@@ -466,7 +484,7 @@ namespace CrownAndHearth.Sim
                 }
                 case BattleOrder.Plunder:
                 {
-                    var pile = Map.Piles.Where(p => p.Amount > 0).OrderBy(p => Cheb(u.X, u.Y, p.X, p.Y)).ThenBy(p => p.Y * CampMap.Size + p.X).FirstOrDefault();
+                    var pile = Map.Piles.Where(p => p.Amount > 0).OrderBy(p => Cheb(u.X, u.Y, p.X, p.Y)).ThenBy(p => p.Y * Map.N + p.X).FirstOrDefault();
                     if (pile == null) break;
                     if (u.X == pile.X && u.Y == pile.Y)
                     {
@@ -493,8 +511,15 @@ namespace CrownAndHearth.Sim
             Tick++;
             foreach (var u in Units) { if (!u.OnField) continue; u.Px = u.X; u.Py = u.Y; u.Hurt = u.Attacked = u.Shooting = false; }
             var att = Units.Where(u => u.OnField && u.Attacker).ToList();
-            var rai = Units.Where(u => u.Alive && !u.Attacker).ToList();
-            if (!Alarm && att.Any(a => rai.Any(r => Cheb(a.X, a.Y, r.X, r.Y) <= AlertR))) Alarm = true;
+            var rai = Units.Where(u => u.Alive && !u.Attacker && !u.InBarracks).ToList();
+            // a camp wakes when you come near its raiders; a town also when you come near its hall or its barracks
+            if (!Alarm && att.Any(a => rai.Any(r => Cheb(a.X, a.Y, r.X, r.Y) <= AlertR)
+                || Map.Barracks.Any(b => Cheb(a.X, a.Y, b.x, b.y) <= AlertR) || (Camp.IsTown && Cheb(a.X, a.Y, Map.Chief.x, Map.Chief.y) <= AlertR))) Alarm = true;
+            if (Alarm && Units.Any(u => u.InBarracks))   // roused: the soldiers pour out of their barracks
+            {
+                foreach (var u in Units) if (u.InBarracks) { u.InBarracks = false; u.Px = u.X; u.Py = u.Y; }
+                rai = Units.Where(u => u.Alive && !u.Attacker).ToList();
+            }
             var fields = new Dictionary<BUnit, int[]>();
             var pileFields = new Dictionary<(int, int), int[]>();
             var hits = new Dictionary<BUnit, double>();

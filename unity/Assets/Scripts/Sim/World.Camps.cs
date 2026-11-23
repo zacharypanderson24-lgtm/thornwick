@@ -207,7 +207,8 @@ namespace CrownAndHearth.Sim
             int inf = groups.Sum(g => g.Infantry), arc = groups.Sum(g => g.Archers);
             if (inf + arc <= 0) return Result.No("Choose at least one soldier to send");
             if (inf > Infantry || arc > Archers) return Result.No($"You only have {Infantry} infantry and {Archers} archers at home");
-            foreach (var g in groups) if (g.Total > 0 && (!CampMap.IsEdge(g.X, g.Y))) return Result.No("Soldiers can only land on the edge of the camp map");
+            var landMap = camp.Site.Map;
+            foreach (var g in groups) if (g.Total > 0 && !landMap.Edge(g.X, g.Y)) return Result.No("Soldiers can only land on the edge of the map");
             return Result.Yes();
         }
 

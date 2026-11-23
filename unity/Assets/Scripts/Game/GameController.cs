@@ -120,6 +120,7 @@ namespace CrownAndHearth.Game
         int _progressVersion = -1;   // world version the tutorial's progress line was last counted at
         WorldMap _worldMap; System.Threading.Tasks.Task<WorldMap> _worldMapTask;   // the conquest map, made on a background thread the first time the Map opens
         World _campWorld;   // while a raider camp is open the game view shows this little world instead of the settlement
+        float _townAcc;     // how far through its day an NPC settlement being looked at is
         Vector3 _savedCamCenter; int _savedZoomIndex;
         int _ugLevel;   // underground view: 0 off, else the level shown (U cycles)
         float _dayAcc;
@@ -297,7 +298,8 @@ namespace CrownAndHearth.Game
             _savedCamCenter = _cam.Center; _savedZoomIndex = _cam.ZoomIndex;
             _cam.ZoomIndex = 2;   // 1x: the 32 x 32 camp fills the view
             int ox = _campWorld.CampX0, oy = _campWorld.CampY0;
-            _cam.CenterOn(IsoView.TileCenter(_campWorld, ox + CampMap.Size / 2, oy + CampMap.Size / 2, _rot));
+            int half = _hud.CurrentCamp.Site.Map.N / 2;   // a settlement's map is bigger than a camp's
+            _cam.CenterOn(IsoView.TileCenter(_campWorld, ox + half, oy + half, _rot));
             _drawnVersion = -1; _hover = null;
         }
 
@@ -319,7 +321,7 @@ namespace CrownAndHearth.Game
             if (picked.HasValue)
             {
                 int lx = picked.Value.x - _campWorld.CampX0, ly = picked.Value.y - _campWorld.CampY0;
-                if (lx >= 0 && ly >= 0 && lx < CampMap.Size && ly < CampMap.Size) local = (lx, ly);
+                if (_hud.CampView.Map.In(lx, ly)) local = (lx, ly);
             }
             _hud.CampTileHover(local);
             if (local.HasValue && mouse.leftButton.wasPressedThisFrame) _hud.CampTileClick(local.Value.x, local.Value.y);
@@ -333,8 +335,8 @@ namespace CrownAndHearth.Game
             if (_hud.CampPlanning)
             {
                 var map = _hud.CampView.Map;
-                for (int i = 0; i < CampMap.Size; i++)
-                    foreach (var (x, y) in new[] { (i, 0), (i, CampMap.Size - 1), (0, i), (CampMap.Size - 1, i) })
+                for (int i = 0; i < map.N; i++)
+                    foreach (var (x, y) in new[] { (i, 0), (i, map.N - 1), (0, i), (map.N - 1, i) })
                         if (map.Passable(x, y)) _overlay.AddTile(_campWorld, ox + x, oy + y, _rot, new Color32(90, 150, 255, 55));
                 foreach (var g in _hud.CampGroups) _overlay.AddTile(_campWorld, ox + g.X, oy + g.Y, _rot, g.Total > 0 ? new Color32(70, 130, 255, 190) : new Color32(70, 130, 255, 110));
                 if (_hud.CampSelected.HasValue) _overlay.AddTile(_campWorld, ox + _hud.CampSelected.Value.x, oy + _hud.CampSelected.Value.y, _rot, new Color32(255, 230, 90, 170));
@@ -392,7 +394,16 @@ namespace CrownAndHearth.Game
                 _ground.Build(drawn, _rot, window); _objects.Build(drawn, _rot, window);
                 _drawnVersion = drawn.Version; _drawnRot = _rot;
             }
-            if (_campWorld != null) _agents.DrawCamp(_campWorld, _hud.CampView, _rot, _hud.CampFrac);
+            if (_campWorld != null)
+            {
+                // an NPC settlement's own people go about their day (about a day a second) while you plan and fight there
+                if (_hud.CurrentCamp != null && _hud.CurrentCamp.IsTown)
+                {
+                    _townAcc += Time.deltaTime;
+                    while (_townAcc >= 1f) { _townAcc -= 1f; _campWorld.AmbientDay(); }
+                }
+                _agents.DrawCamp(_campWorld, _hud.CampView, _rot, _hud.CampFrac, Mathf.Clamp01(_townAcc));
+            }
             else _agents.Draw(World, _rot, Mathf.Clamp01(_dayAcc), _cam.Zoom <= 0.5f);
             _objects.RefreshCropStages(World.Day);
             _objects.AnimateLivestock(World.Day, Mathf.Clamp01(_dayAcc), _rot);

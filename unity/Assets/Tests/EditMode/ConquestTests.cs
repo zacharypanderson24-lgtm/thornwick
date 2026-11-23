@@ -57,7 +57,8 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(World.Garrison(hamlet) + CampSize.Of(camp.Strength).Brutes + 1, preview.AliveRaiders, "garrison, the lord's guard and the lord");
             Assert.AreEqual(1, preview.Units.Count(u => u.Kind == BKind.Chief), "one lord");
             var site = camp.Site.World;
-            Assert.AreEqual(camp.Site.Map.Tents.Count + 1, site.Blds.Count(b => b.T == "house"), "homes for tents, and the lord's house");
+            Assert.AreEqual(camp.Site.Map.Tents.Count, site.Blds.Count(b => b.T == "house"), "a real town: every home is on the battle map");
+            Assert.AreEqual(1, site.Blds.Count(b => b.T == "hall"), "with a town hall");
             Assert.IsFalse(site.Blds.Any(b => b.T == "tent" || b.T == "chieftent"));
         }
 

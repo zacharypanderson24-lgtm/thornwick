@@ -148,7 +148,7 @@ namespace CrownAndHearth.Game
                 ? _campBattle.Units.Where(u => u.Group == _fightGroup && u.OnField).Select(u => (u.X, u.Y))
                 : Enumerable.Empty<(int x, int y)>();
 
-        static string EdgeName(int x, int y) => y == 0 ? "north edge" : y == CampMap.Size - 1 ? "south edge" : x == 0 ? "west edge" : "east edge";
+        string EdgeName(int x, int y) { int n = (_campBattle ?? _campPreview)?.Map.N ?? CampMap.Size; return y == 0 ? "north edge" : y == n - 1 ? "south edge" : x == 0 ? "west edge" : "east edge"; }
 
         void BuildCamp(RectTransform root)
         {
@@ -338,7 +338,7 @@ namespace CrownAndHearth.Game
         {
             _campHover = tile;
             if (tile.HasValue && _campPhase == CampPhase.Plan)
-                _campHoverText.text = CampMap.IsEdge(tile.Value.x, tile.Value.y) && _campPreview.Map.Passable(tile.Value.x, tile.Value.y)
+                _campHoverText.text = _campPreview.Map.Edge(tile.Value.x, tile.Value.y) && _campPreview.Map.Passable(tile.Value.x, tile.Value.y)
                     ? $"Tile {tile.Value.x},{tile.Value.y} ({EdgeName(tile.Value.x, tile.Value.y)}): click to land here" : "";
             else _campHoverText.text = "";
         }
@@ -355,7 +355,7 @@ namespace CrownAndHearth.Game
                 return;
             }
             if (!_campOpen || _campPhase != CampPhase.Plan) return;
-            if (!CampMap.IsEdge(x, y) || !_campPreview.Map.Passable(x, y)) { _campMessage.text = "Soldiers can only land on the edge of the camp."; return; }
+            if (!_campPreview.Map.Edge(x, y) || !_campPreview.Map.Passable(x, y)) { _campMessage.text = "Soldiers can only land on the edge of the map."; return; }
             _campMessage.text = "";
             _campSelected = (x, y);
             if (SelectedGroup == null) _campGroups.Add(new BattleGroup { X = x, Y = y });
@@ -409,8 +409,9 @@ namespace CrownAndHearth.Game
             {
                 var t = _camp.Town;
                 _campInfo.text = $"<b>{t.Tier.ToString().ToUpper()}</b> of {t.Population:0} people   ·   {_world.CampKm(_camp)} km away, {_world.MarchDays(_camp)} days of marching home\n" +
-                                 $"{tents} homes round {view.Map.Fires.Count} wells and the lord's house\n" +
-                                 $"{view.AliveRaiders} defenders: {view.Units.Count(u => u.Alive && u.Kind == BKind.RaiderArcher)} archers, {view.Units.Count(u => u.Alive && u.Kind == BKind.Brute)} of the lord's guard" + (view.Units.Any(u => u.Alive && u.Kind == BKind.Chief) ? " and the lord\n" : "\n") +
+                                 TownLine(view) +
+                                 $"{view.AliveRaiders} defenders: {view.Units.Count(u => u.Alive && u.Kind == BKind.RaiderArcher)} archers, {view.Units.Count(u => u.Alive && u.Kind == BKind.Brute)} of the lord's guard" + (view.Units.Any(u => u.Alive && u.Kind == BKind.Chief) ? " and the lord" : "") +
+                                 (view.Units.Any(u => u.InBarracks) ? $" ({view.Units.Count(u => u.InBarracks)} in their barracks until the town is roused)\n" : "\n") +
                                  $"{view.Map.Piles.Count(p => p.Amount > 0)} stores holding about {supplies} goods · {Settlements.PersonalityName(t.Personality)}, {Settlements.AttitudeName(t.Attitude).ToLower()} towards you";
             }
             else
@@ -444,6 +445,15 @@ namespace CrownAndHearth.Game
             if (away > 0) parts.Add($"{away} away raiding you");
             if (lost > 0) parts.Add($"{lost} killed and not yet replaced");
             return $"\n<color=#FF8C1E>Fewer defenders: {string.Join(", ", parts)}.</color>";
+        }
+
+        /// <summary>What the settlement's town is made of (World.TownBuilder.cs).</summary>
+        string TownLine(CampBattle view)
+        {
+            var plan = _camp.Site.World.TownLayout;
+            if (plan == null) return $"{view.Map.Tents.Count} homes and the lord's hall\n";
+            return $"A town hall, {plan.Homes} homes, {plan.Barracks} barracks, {plan.Farms} farms with {plan.Fields} fields" +
+                   (plan.WallTiles > 0 ? $", a palisade with {plan.Towers} watchtowers" : "") + "\n";
         }
 
         void RefreshCampButtons()
