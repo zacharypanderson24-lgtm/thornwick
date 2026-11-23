@@ -40,7 +40,7 @@ namespace CrownAndHearth.Sim
         public static readonly Dictionary<string, int> Load = new Dictionary<string, int> { { "wood", 6 }, { "quarry", 5 }, { "mine", 4 } };
 
         public static readonly int[] HouseCap = { 0, 4, 6 };
-        public static readonly int[] HouseCap2 = { 0, 14, 20 };
+        public static readonly int[] HouseCap2 = { 0, 16, 20 };
 
         public static readonly Dictionary<string, Dictionary<Res, int>> Cost = new Dictionary<string, Dictionary<Res, int>>
         {
