@@ -27,6 +27,8 @@ namespace CrownAndHearth.Game
         /// <summary>A building's sprite for camera-relative view 0..3 (file suffix _1.._4), else its single image, else its placeholder.</summary>
         public Sprite Building(string slot, int view)
         {
+            // Keep old one-tile smokehouses inside their saved footprint.
+            if (slot == "smokehouse_legacy") return SettlementWork.Building("smokehouse", view);
             var source = Find(slot + "_" + (view + 1)) ?? Find(slot) ?? SettlementWork.Building(slot, view) ?? Find("ph_" + slot);
             if (source == null && slot == "hunter") return Building("wood2", view);
             if (source == null || !_bannerColor.HasValue || (slot != "hall" && slot != "barracks") || !source.texture.isReadable)

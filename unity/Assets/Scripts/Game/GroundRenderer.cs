@@ -14,6 +14,8 @@ namespace CrownAndHearth.Game
         static bool Unowned(World w, int x, int y) => World.Inb(x, y) && !w.Claimed(x, y);
 
         Mesh _mesh;
+        Texture2D _baseAtlas;
+        int _atlasCellCount = ArtLibrary.CellCount;
         readonly List<Vector3> _v = new List<Vector3>(N * N * 4);
         readonly List<Vector2> _uv = new List<Vector2>(N * N * 4);
         readonly List<Color32> _c = new List<Color32>(N * N * 4);
@@ -21,6 +23,7 @@ namespace CrownAndHearth.Game
 
         public void Init(Material mat, Texture2D atlas)
         {
+            _baseAtlas = atlas;
             _mesh = new Mesh { name = "Ground", indexFormat = IndexFormat.UInt32 };
             GetComponent<MeshFilter>().sharedMesh = _mesh;
             var mr = GetComponent<MeshRenderer>();
@@ -40,14 +43,17 @@ namespace CrownAndHearth.Game
         public void Build(World w, int rot, RectInt win)
         {
             _v.Clear(); _uv.Clear(); _c.Clear(); _t.Clear();
-            float cw = 1f / ArtLibrary.CellCount, inU = 0.5f / (ArtLibrary.CellCount * 32f), inV = 0.5f / 16f;
+            var biomeAtlas = BiomeArt.Atlas(w);
+            _atlasCellCount = biomeAtlas != null ? BiomeArt.CellCount : ArtLibrary.CellCount;
+            GetComponent<MeshRenderer>().sharedMaterial.mainTexture = biomeAtlas != null ? biomeAtlas : _baseAtlas;
+            float cw = 1f / _atlasCellCount, inU = 0.5f / (_atlasCellCount * 32f), inV = 0.5f / 16f;
             for (int vy = win.yMin; vy < win.yMax; vy++)
                 for (int vx = win.xMin; vx < win.xMax; vx++)
                 {
                     var wt = IsoView.FromView(vx, vy, rot); int x = wt.x, y = wt.y;
                     if (!w.InPlay(x, y)) continue;
                     int cT = IsoView.VhView(w, vx, vy, rot), cR = IsoView.VhView(w, vx + 1, vy, rot), cL = IsoView.VhView(w, vx, vy + 1, rot), cB = IsoView.VhView(w, vx + 1, vy + 1, rot);
-                    int cell = CellFor(w, x, y);
+                    int cell = biomeAtlas != null ? BiomeArt.GroundCell(w, x, y) : CellFor(w, x, y);
 
                     int i0 = _v.Count;
                     _v.Add(IsoView.VertexPos(vx, vy, cT));           // top
@@ -116,7 +122,7 @@ namespace CrownAndHearth.Game
                     top + (west - top) * v + (bottom - west) * u;
                 _v.Add(point);
                 const float uvInset = 0.969f;
-                float atlasU = (ArtLibrary.CellRoad + 0.5f + (u - v) * 0.5f * uvInset) / ArtLibrary.CellCount;
+                float atlasU = (ArtLibrary.CellRoad + 0.5f + (u - v) * 0.5f * uvInset) / _atlasCellCount;
                 _uv.Add(new Vector2(atlasU, 0.5f + (1 - u - v) * 0.46875f));
                 _c.Add(tint);
             }

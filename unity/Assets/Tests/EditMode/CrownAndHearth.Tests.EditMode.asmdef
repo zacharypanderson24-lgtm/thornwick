@@ -3,6 +3,7 @@
     "rootNamespace": "CrownAndHearth.Tests",
     "references": [
         "CrownAndHearth.Sim",
+        "CrownAndHearth.Game",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
