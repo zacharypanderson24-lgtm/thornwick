@@ -46,8 +46,13 @@ namespace CrownAndHearth.Sim
         public readonly List<SupplyPile> Piles = new List<SupplyPile>();
         /// <summary>A settlement's barracks (one tile of each): its soldiers muster beside them.</summary>
         public readonly List<(int x, int y)> Barracks = new List<(int x, int y)>();
+        /// <summary>A settlement's gates (y * N + x): road tiles through its palisade. Open until the town is roused, then shut (CampBattle).</summary>
+        public readonly HashSet<int> Gates = new HashSet<int>();
+        /// <summary>[y, x]: strength left in a palisade or gate tile (0: none there, or broken).</summary>
+        public readonly double[,] BarrierHp;
+        public bool IsGate(int x, int y) => In(x, y) && Gates.Contains(y * N + x);
 
-        public CampMap(int n = Size) { N = n; Ground = new CampTile[n, n]; Buildable = new bool[n, n]; Blocked = new bool[n, n]; }
+        public CampMap(int n = Size) { N = n; Ground = new CampTile[n, n]; Buildable = new bool[n, n]; Blocked = new bool[n, n]; BarrierHp = new double[n, n]; }
 
         public bool In(int x, int y) => x >= 0 && y >= 0 && x < N && y < N;
         public bool Edge(int x, int y) => x == 0 || y == 0 || x == N - 1 || y == N - 1;
