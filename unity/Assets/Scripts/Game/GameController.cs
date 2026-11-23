@@ -264,12 +264,13 @@ namespace CrownAndHearth.Game
             _worldMapTask = System.Threading.Tasks.Task.Run(() => WorldMap.Generate(seed, relief));
         }
 
-        /// <summary>Give the settlement the raider camps of its world, once the map for its seed exists.</summary>
+        /// <summary>Give the settlement the raider camps and the NPC settlements of its world, once the map for its seed exists.</summary>
         void AttachCamps()
         {
-            if (_worldMap == null || _worldMap.Seed != World.Seed || World.Camps.Count > 0) return;
+            if (_worldMap == null || _worldMap.Seed != World.Seed || (World.Camps.Count > 0 && World.Settlements.Count > 0)) return;
             var home = _worldMap.HomeSite;
-            World.SetCamps(RaiderCamps.Generate(_worldMap), home?.X ?? WorldMap.Size / 2, home?.Y ?? WorldMap.Size / 2);
+            if (World.Camps.Count == 0) World.SetCamps(RaiderCamps.Generate(_worldMap), home?.X ?? WorldMap.Size / 2, home?.Y ?? WorldMap.Size / 2);
+            if (World.Settlements.Count == 0) World.SetSettlements(Settlements.Generate(_worldMap, World.Camps));
             _hud.SetCamps(World);
         }
 

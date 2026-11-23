@@ -508,6 +508,9 @@ namespace CrownAndHearth.Sim
             "dun", "wick", "mere", "ford", "stead", "holm", "ton", "by", "gard", "burg", "vale", "moor", "wen", "ia", "land", "mark", "combe", "thorpe", "ness", "reach", "ham", "stan",
         };
 
+        /// <summary>A place name in the world's style, not yet in `used` (which it is added to). For settlements beyond the region sites.</summary>
+        public string PlaceName(HashSet<string> used, int id) => UniqueName(used, id, 7);
+
         string UniqueName(HashSet<string> used, int id, int kind)
         {
             for (int t = 0; t < 40; t++)
