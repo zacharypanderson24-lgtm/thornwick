@@ -47,13 +47,17 @@ namespace CrownAndHearth.Tests
                 seed["wheatStored"] = 100;
                 var world = World.LoadJson(seed.ToString());
                 world.Tick();
+                Assert.That(world.LivestockPens.Single().Keepers, Is.EqualTo(1), "a villager keeps the pen");
                 Assert.That(world.ResAmt[Res.Wool], Is.EqualTo(species == Zone.Sheep ? World.WoolPerSheep : 0));
-                Assert.That(world.ResAmt[Res.Eggs], Is.EqualTo(species == Zone.Chickens ? World.EggsPerChicken : 0));
+                for (int i = 1; i < World.DaysPerEgg; i++) world.Tick();   // hens lay every few days
+                if (species == Zone.Chickens) Assert.That(world.ResAmt[Res.Eggs], Is.GreaterThanOrEqualTo(World.EggsPerChicken));
+                else Assert.That(world.ResAmt[Res.Eggs], Is.Zero);
                 Assert.That(world.FreshMeatStored, Is.Zero);
+                double eggs = world.ResAmt[Res.Eggs];
                 world = World.LoadJson(world.SaveJson());
-                world.Tick();
+                for (int i = 0; i < World.DaysPerEgg; i++) world.Tick();
                 if (species == Zone.Sheep) Assert.That(world.ResAmt[Res.Wool], Is.EqualTo(World.WoolPerSheep));
-                if (species == Zone.Chickens) Assert.That(world.ResAmt[Res.Eggs], Is.GreaterThan(World.EggsPerChicken));
+                if (species == Zone.Chickens) Assert.That(world.ResAmt[Res.Eggs], Is.GreaterThan(eggs));
                 var pen = world.LivestockPens.Single();
                 int count = pen.Count;
                 var slaughter = world.SlaughterLivestock(pen);
@@ -68,6 +72,37 @@ namespace CrownAndHearth.Tests
                 Assert.That(world.BuyLivestock(pen).Ok, Is.True);
                 Assert.That(pen.Count, Is.EqualTo(1));
             }
+        }
+
+        [Test]
+        public void HensLayEveryFewDaysAndOnlyWithAKeeper()
+        {
+            int x = Defs.Start + 1, y = Defs.Start + 4;
+            var original = new World(7);
+            PreparePenSite(original, x, y);
+            Assert.That(original.PlacePen(Zone.Chickens, x, y, x + 1, y + 2).Ok, Is.True);
+            var seed = JObject.Parse(original.SaveJson());
+            seed["res"]["food"] = 200;
+            seed["wheatStored"] = 200;
+
+            // with a keeper: a hen lays once every DaysPerEgg days
+            var kept = World.LoadJson(seed.ToString());
+            int days = 4 * World.DaysPerEgg;
+            for (int i = 0; i < days; i++) { kept.ResAmt[Res.Food] = 200; kept.Tick(); }
+            var pen = kept.LivestockPens.Single();
+            Assert.That(pen.Keepers, Is.EqualTo(1));
+            Assert.That(kept.ResAmt[Res.Eggs], Is.GreaterThan(0));
+            Assert.That(kept.ResAmt[Res.Eggs], Is.LessThanOrEqualTo(pen.Count * (days / World.DaysPerEgg + 1)), "no more than an egg a hen every few days");
+
+            // nobody free to keep it: no eggs and no new hens
+            var unkept = World.LoadJson(seed.ToString());
+            int hens = unkept.LivestockPens.Single().Count;
+            for (int i = 0; i < days; i++) { unkept.Peasants = 0; unkept.ResAmt[Res.Food] = 200; unkept.Tick(); }
+            Assert.That(unkept.LivestockPens.Single().Keepers, Is.Zero);
+            Assert.That(unkept.ResAmt[Res.Eggs], Is.Zero, "an unkept pen gives nothing");
+            Assert.That(unkept.LivestockPens.Single().Count, Is.EqualTo(hens), "and does not breed");
+            unkept.Peasants = 0;
+            Assert.That(unkept.Recalc().Work["farming"].jobs, Is.GreaterThanOrEqualTo(1), "the keeper shows as a farming job");
         }
 
         [Test]

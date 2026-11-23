@@ -1013,7 +1013,13 @@ namespace CrownAndHearth.Game
                 if (b.Jobs > 0)
                 {
                     int need = w.ActiveJobs(b);
-                    lines.Add(need < b.Jobs ? $"Workers {b.Workers}/{need} needed ({b.Jobs} jobs; " + (b.T == "farm" ? "farmers are needed when fields need sowing or harvesting)" : "more are needed as more tiles are marked or zoned)") : $"Workers {b.Workers}/{b.Jobs} ({b.Eff * 100:0}%)");
+                    lines.Add(need < b.Jobs ? $"Workers {b.Workers}/{need} needed ({b.Jobs} jobs; " + (b.T == "farm" ? $"one farmer for every {World.FieldsPerFarmer} fields from sowing to harvest)" : "more are needed as more tiles are marked or zoned)") : $"Workers {b.Workers}/{b.Jobs} ({b.Eff * 100:0}%)");
+                }
+                if (b.T == "farm" && w.SeasonalFarming)
+                {
+                    lines.Add($"Works {w.FieldsOf(b)}/{b.Jobs * World.FieldsPerFarmer} fields of Farmland within {World.FarmReach} tiles ({World.FieldsPerFarmer} per farmer).");
+                    int fallow = w.FallowFields();
+                    if (fallow > 0) lines.Add($"{fallow} Farmland tiles in town lie fallow: out of reach of a farm, or more than the farms can work. Build another farm near them.");
                 }
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "mine") lines.Add(w.MineStatus(b));
@@ -1047,6 +1053,9 @@ namespace CrownAndHearth.Game
             {
                 lines.Add(ZoneName(pen.Species).ToUpper());
                 lines.Add($"{pen.Count}/{pen.Capacity} animals · {pen.Area} tiles · {World.TilesPerAnimal(pen.Species)} tiles per animal");
+                if (pen.Count > 0)
+                    lines.Add(pen.Keepers > 0 ? "Keeper: 1 villager (farming) looks after it." + (pen.Species == Zone.Chickens ? $" Hens lay every {World.DaysPerEgg} days." : "")
+                        : "No keeper: the animals give nothing and do not breed. Free a villager or raise Farming in the Workforce panel.");
                 lines.Add("Buy or slaughter animals in the Livestock menu.");
                 return string.Join("\n", lines);
             }

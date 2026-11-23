@@ -14,6 +14,9 @@ namespace CrownAndHearth.Sim
         public int Bottom { get; }
         public int Count { get; internal set; }
         public int LastShearedYear { get; internal set; }
+        /// <summary>The villager looking after this pen (0 or 1), from the farming trade (World.Recalc). Without one the animals give
+        /// nothing and do not breed. Runtime only.</summary>
+        public int Keepers { get; internal set; }
         public int Area => (Right - Left + 1) * (Bottom - Top + 1);
         public int Capacity => Area / World.TilesPerAnimal(Species);
         public int FenceLength => 2 * (Right - Left + Bottom - Top + 2);
@@ -39,6 +42,12 @@ namespace CrownAndHearth.Sim
         public const int StorehouseSpace = 80, HaulPerWorker = 4, StarterLivestockGold = 5;
         public const int LogsPerCharcoal = 2, SmokehouseRate = 3;
         public const int EggsPerChicken = 1, WoolPerSheep = 1, EggsPerFood = 4, EggStorage = 80;
+        /// <summary>A hen lays an egg every this many days (with EggsPerFood 4: a twelfth of a food a day).</summary>
+        public const int DaysPerEgg = 3;
+        /// <summary>Every pen with animals needs one keeper from the farming trade.</summary>
+        public const int KeepersPerPen = 1;
+        /// <summary>A pen that needs a keeper: it has animals and a road to the Town Hall.</summary>
+        bool PenNeedsKeeper(LivestockPen pen) => pen.Count > 0 && PenHasRoad(pen);
         public const double WheatPerAnimalPerDay = 0.06;
         readonly Dictionary<int, LivestockPen> _penTiles = new();
         readonly List<LivestockPen> _pens = new();
@@ -150,11 +159,12 @@ namespace CrownAndHearth.Sim
             foreach (var pen in _pens)
             {
                 if (pen.Count == 0 || !PenHasRoad(pen)) continue;
+                if (pen.Keepers <= 0) continue;   // nobody to feed them, gather eggs or shear: nothing comes of the pen today
                 double feed = pen.Count * WheatPerAnimalPerDay;
                 if (WheatStored < feed || ResAmt[Res.Food] < feed) continue;
                 _wheat = WheatStored - feed;
                 ResAmt[Res.Food] -= feed;
-                if (pen.Species == Zone.Chickens) eggs += pen.Count * EggsPerChicken;
+                if (pen.Species == Zone.Chickens && (Day + Tk(pen.Left, pen.Top)) % DaysPerEgg == 0) eggs += pen.Count * EggsPerChicken;
                 if (pen.Species == Zone.Sheep && YearDay <= SeasonLength && pen.LastShearedYear != Year)
                 {
                     ResAmt[Res.Wool] += pen.Count * WoolPerSheep;

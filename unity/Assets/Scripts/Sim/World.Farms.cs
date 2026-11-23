@@ -7,8 +7,12 @@ namespace CrownAndHearth.Sim
 {
     public partial class World
     {
-        const int StarterFieldRange = 3;   // only where the starting farm gets its first fields; farms have no work radius
+        const int StarterFieldRange = 3;   // only where the starting farm gets its first fields
         const int FieldsPerWorker = 2;
+        /// <summary>Seasonal farming: one farmer sows, tends and reaps this many fields a year (about 255 food: enough for 3 to 4 people).</summary>
+        public const int FieldsPerFarmer = 3;
+        /// <summary>A farm only works Farmland within this many tiles of its farmhouse; farther fields lie fallow.</summary>
+        public const int FarmReach = 8;
         const double FoodPerField = 0.4;   // two plots a farmer: about 0.8 food a farmer a day, as the old farms gave
         const int StarterFields = 8;
         internal readonly Dictionary<int, bool> FlaxFields = new Dictionary<int, bool>();
@@ -66,16 +70,39 @@ namespace CrownAndHearth.Sim
             ZoneMap[y, x] == Zone.Farm && Fert[y, x] && DecoMap[y, x] == Deco.None &&
             !IsSolid(x, y);
 
-        // Farms have no work radius. The farmhouses decide how many farmers there can be (their jobs); the Farmland tiles decide the crops
-        // and how many farmers are needed. Every field on the map is worked by the road-served farmhouses together: the fields are
-        // shared out so each farmhouse's share stays in proportion to its jobs (a farmhouse with twice the jobs gets twice the fields).
+        // Seasonal farming: a farmhouse works the Farmland within FarmReach of it, nearest first, up to FieldsPerFarmer fields for each of
+        // its jobs; fields out of reach of every farm, or beyond what the farms can work, lie fallow. (Classic farming, kept for the parity
+        // tests against the browser prototype: farms have no reach and share out every field in proportion to their jobs.)
         Dictionary<int, Building> _farmFieldCache; int _farmFieldVersion = -1;
         public Dictionary<int, Building> FarmFields()
         {
             if (_farmFieldCache != null && _farmFieldVersion == Version) return _farmFieldCache;
             var farms = Blds.Where(f => f.T == "farm" && f.Served).ToList();
             var fields = new Dictionary<int, Building>();
-            if (farms.Count > 0)
+            if (farms.Count > 0 && SeasonalFarming)
+            {
+                // every (field, farm) pair within reach, nearest first; each field goes to the nearest farm that still has room for it
+                var pairs = new List<(int dist, int key, int farm)>();
+                for (int i = 0; i < farms.Count; i++)
+                {
+                    var f = farms[i];
+                    for (int y = f.Y - FarmReach; y <= f.Y + f.Sz - 1 + FarmReach; y++)
+                        for (int x = f.X - FarmReach; x <= f.X + f.Sz - 1 + FarmReach; x++)
+                        {
+                            if (!IsFarmField(x, y)) continue;
+                            int dx = Math.Max(0, Math.Max(f.X - x, x - (f.X + f.Sz - 1))), dy = Math.Max(0, Math.Max(f.Y - y, y - (f.Y + f.Sz - 1)));
+                            pairs.Add((Math.Max(dx, dy), Tk(x, y), i));
+                        }
+                }
+                pairs.Sort((a, b) => a.dist != b.dist ? a.dist.CompareTo(b.dist) : a.key != b.key ? a.key.CompareTo(b.key) : a.farm.CompareTo(b.farm));
+                var load = new int[farms.Count];
+                foreach (var (_, key, i) in pairs)
+                {
+                    if (fields.ContainsKey(key) || load[i] >= farms[i].Jobs * FieldsPerFarmer) continue;
+                    fields[key] = farms[i]; load[i]++;
+                }
+            }
+            else if (farms.Count > 0)
             {
                 var load = new int[farms.Count];
                 for (int y = 0; y < N; y++)
@@ -142,12 +169,43 @@ namespace CrownAndHearth.Sim
             }
         }
 
-        /// <summary>How many workers a building really needs: its jobs (what its size allows) capped by the work there is. Farms: the fields
-        /// that need sowing or harvesting today. Lodges, quarries and mines: the marked or zoned tiles within their reach. Everything
-        /// else: all its jobs.</summary>
+        Dictionary<Building, int> _farmFieldCounts; int _farmFieldCountVersion = -1;
+        /// <summary>How many fields this farm works (seasonal farming: at most FieldsPerFarmer for each of its jobs).</summary>
+        public int FieldsOf(Building farm)
+        {
+            if (_farmFieldCounts == null || _farmFieldCountVersion != Version)
+            {
+                _farmFieldCounts = new Dictionary<Building, int>();
+                foreach (var f in FarmFields().Values) _farmFieldCounts[f] = _farmFieldCounts.GetValueOrDefault(f) + 1;
+                _farmFieldCountVersion = Version;
+            }
+            return _farmFieldCounts.GetValueOrDefault(farm);
+        }
+
+        /// <summary>Farmland tiles no farm works: out of every farm's reach, or more than the farms can manage.</summary>
+        public int FallowFields()
+        {
+            if (!SeasonalFarming) return 0;
+            if (_fallowVersion == Version) return _fallow;
+            int all = 0;
+            for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) if (IsFarmField(x, y)) all++;
+            _fallowVersion = Version;
+            return _fallow = all - FarmFields().Count;
+        }
+        int _fallow, _fallowVersion = -1;
+
+        /// <summary>How many workers a building really needs: its jobs (what its size allows) capped by the work there is. Farms (seasonal):
+        /// from sowing to the end of harvest (the first half of the year) one farmer for every FieldsPerFarmer fields, all season long, as
+        /// fields are sown, tended and reaped; after that only while stubble is cleared. Lodges, quarries and mines: the marked or zoned
+        /// tiles within their reach. Everything else: all its jobs.</summary>
         public int ActiveJobs(Building b)
         {
-            if (SeasonalFarming && b.T == "farm") return _fieldJobs.TryGetValue(b, out var jobs) ? Math.Min(b.Jobs, jobs.Count) : 0;
+            if (SeasonalFarming && b.T == "farm")
+            {
+                int owned = FieldsOf(b);
+                if (YearDay <= 2 * SeasonLength && owned > 0) return Math.Min(b.Jobs, (owned + FieldsPerFarmer - 1) / FieldsPerFarmer);
+                return _fieldJobs.TryGetValue(b, out var jobs) ? Math.Min(b.Jobs, jobs.Count) : 0;
+            }
             return _workTiles.TryGetValue(b, out int tiles) ? Math.Min(b.Jobs, tiles) : b.Jobs;
         }
 
@@ -180,7 +238,14 @@ namespace CrownAndHearth.Sim
             bool changed = false;
             foreach (var pair in _fieldJobs)
             {
-                foreach (int key in pair.Value.Take(pair.Key.Workers))
+                int today = pair.Key.Workers;
+                if (YearDay <= 90)
+                {
+                    // a short-handed farm sows only what its farmers can tend all season: FieldsPerFarmer each
+                    int sown = FarmFields().Count(f => f.Value == pair.Key && SownOn(f.Key) >= YearStart);
+                    today = Math.Min(today, Math.Max(0, pair.Key.Workers * FieldsPerFarmer - sown));
+                }
+                foreach (int key in pair.Value.Take(today))
                 {
                     if (YearDay <= 90)
                         _sownFields[key] = IsFlaxField(key % N, key / N) ? -Day : Day;
