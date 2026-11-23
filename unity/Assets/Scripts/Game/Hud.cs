@@ -505,6 +505,7 @@ namespace CrownAndHearth.Game
             UpdateStockpiles(world);
             UpdateNeeds(world);
             UpdateWarband(world);
+            RefreshSettlementPanel();
             // prices turn red on the cards the town cannot afford yet
             foreach (var t in _tools)
                 if (t.Build != null && _cardCost.TryGetValue(t.Id, out var cost)) cost.color = world.CanAfford(t.Build).Ok ? Ink : BadInk;

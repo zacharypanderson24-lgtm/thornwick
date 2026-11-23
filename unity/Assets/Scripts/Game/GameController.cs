@@ -38,7 +38,7 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Forestry, Label = "Wood", Key = "4", Hotkey = Key.Digit4, Icon = "wood2", Desc = "Fell trees for logs, replant forests, and saw logs into wood." },
             new CatDef { Cat = Cat.Hunting, Label = "Hunting", Key = "5", Hotkey = Key.Digit5, Icon = "hunter", Desc = "Hunting lodges bring back food from the forest all year, even in winter." },
             new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "6", Hotkey = Key.Digit6, Icon = "mine", Desc = "Quarries for stone, mines for iron ore, and smitheries for metal." },
-            new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "7", Hotkey = Key.Digit7, Icon = "market", Desc = "Markets." },
+            new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "7", Hotkey = Key.Digit7, Icon = "market", Desc = "Markets send trade caravans to settlements on the world map; storehouses hold more." },
             new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Train troops, build palisades, and place watchtowers to spot incoming raiders." },
             new CatDef { Cat = Cat.Water, Label = "Water", Key = "9", Hotkey = Key.Digit9, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
             new CatDef { Cat = Cat.Land, Label = "Land", Key = "L", Hotkey = Key.L, Desc = "Your district is 64 x 64 tiles. claim the land beyond it, one 16 x 16 parcel at a time, for free." },
@@ -87,7 +87,7 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "zoneMine", Cat = Cat.Mining, Label = "Mining Zone", Zone = Zone.Mine,
                 Desc = "Drag over rock, hills and mountains for a nearby quarry or mine to work. The shaded area shows how far they work." },
             new ToolDef { Id = "market", Cat = Cat.Trade, Label = "Market", Build = "market",
-                Desc = "Must touch a road. Trading is paused for now." },
+                Desc = "Must touch a road. Sends one trade caravan at a time to settlements willing to deal with you: open the world map (M) and click a settlement." },
             new ToolDef { Id = "storehouse", Cat = Cat.Trade, Label = "Storehouse", Build = "storehouse",
                 Desc = $"Haulers move construction supplies, ores, and fuel into extra storage via connected roads. Holds {World.StorehouseSpace} extra of each material." },
             new ToolDef { Id = "barracks", Cat = Cat.Military, Label = "Barracks", Build = "barracks",
@@ -1047,7 +1047,7 @@ namespace CrownAndHearth.Game
                     lines.Add(b.Served ? $"+{World.SiloFood} wheat and +{World.SiloFlax} flax storage" : "Connect to the Town Hall to use its crop storage.");
                 if (b.T == "silo" && w.SeasonalFarming && w.DailyFoodDemand > 0)
                     lines.Add($"Town reserve: {w.ResAmt[Res.Food]:0}/{w.CropStorage(Res.Food)} food, about {System.Math.Floor(w.ResAmt[Res.Food] / w.DailyFoodDemand):0} days without a harvest.");
-                if (b.T == "market") lines.Add("Trading is paused.");
+                if (b.T == "market") lines.Add($"Trade caravans on the road: {w.TradeCaravansOut} of {w.Markets} (one per market). Trade from the world map (M): click a settlement.");
                 lines.AddRange(WaterLines(b));
             }
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");

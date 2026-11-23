@@ -37,6 +37,8 @@ namespace CrownAndHearth.Sim
         public double Potential;
         /// <summary>How many people its land can hold (it grows towards this).</summary>
         public double Capacity;
+        /// <summary>Goods it has sold to you and bought from you this month (World.SettlementTrade.cs); reset each month, saved.</summary>
+        public int SoldThisMonth, BoughtThisMonth;
 
         public SettlementTier Tier
         {

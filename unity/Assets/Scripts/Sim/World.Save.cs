@@ -59,7 +59,8 @@ namespace CrownAndHearth.Sim
                 // land ownership (World.Claims.cs): the parcels you own, by index
                 ["claimed"] = new JArray(Enumerable.Range(0, _claimed.Length).Where(i => _claimed[i])),
                 // raider camps (World.Camps.cs): which you have destroyed, and the armies still on the road home
-                ["settlements"] = SaveSettlements(),   // NPC settlements (World.Settlements.cs): id, people, attitude
+                ["settlements"] = SaveSettlements(),   // NPC settlements (World.Settlements.cs): id, people, attitude, sold and bought this month
+                ["caravans"] = SaveCaravans(),         // trade caravans and gifts on the road (World.SettlementTrade.cs)
                 ["camps"] = new JObject
                 {
                     ["destroyed"] = new JArray(DestroyedCamps.OrderBy(i => i)),
@@ -271,7 +272,7 @@ namespace CrownAndHearth.Sim
             if (save.Value<bool?>("farmFields") != true) world.AddStarterFarmFields();
             if (save.Value<int?>("flaxPercent") is int mix) world.SetFlaxPercent(mix);
             world.SetArcherPercent(save.Value<int?>("archerPercent") ?? 0);
-            world.LoadSettlements(save["settlements"] as JArray);
+            world.LoadSettlements(save["settlements"] as JArray, save["caravans"] as JArray);
             if (save["camps"] is JObject campsSave)
             {
                 foreach (var id in campsSave["destroyed"] as JArray ?? new JArray()) world.DestroyedCamps.Add((int)id);
