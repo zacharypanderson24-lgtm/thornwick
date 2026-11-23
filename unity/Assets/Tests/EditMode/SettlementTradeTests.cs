@@ -105,7 +105,7 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(0, World.LeftToBuy(p));
             while (w.Day % World.SettlementMonth != 0) Days(w, 1);
             Days(w, 1);
-            Assert.AreEqual(month, World.LeftToBuy(p), "a new month, a new supply");
+            Assert.AreEqual(World.MonthlyTrade(p), World.LeftToBuy(p), "a new month, a new supply (it may have grown a little)");
             Assert.That(World.MonthlyTrade(w.Settlements.OrderByDescending(s => s.Population).First()), Is.GreaterThan(World.MonthlyTrade(p) - 1), "bigger places trade more");
         }
 
@@ -119,11 +119,13 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(2000 - World.GiftGold, w.ResAmt[Res.Gold], 1e-9);
             Days(w, w.SettlementMarchDays(cold) + 1);
             Assert.AreEqual(System.Math.Min(World.GiftCap, before + World.GiftWarmth), cold.Attitude);
+            w.ResAmt[Res.Gold] = 2000;   // gold is capped by storage each day: top it up for the gifts
             for (int i = 0; i < 60 && w.SendGift(cold).Ok; i++) { }
             Days(w, w.SettlementMarchDays(cold) + 1);
             Assert.LessOrEqual(cold.Attitude, World.GiftCap, "gifts alone only go so far");
             Assert.IsFalse(w.SendGift(cold).Ok);
-            Assert.IsTrue(cold.WillTrade || Settlements.TradeThreshold(cold.Personality) > World.GiftCap, "enough gifts win it over");
+            Assert.IsTrue(cold.WillTrade || Settlements.TradeThreshold(cold.Personality) > World.GiftCap,
+                $"enough gifts win it over: attitude {cold.Attitude}, needs {Settlements.TradeThreshold(cold.Personality)}, {cold.Tier}, {cold.Personality}, {w.Caravans.Count} still on the road, day {w.Day}");
         }
 
         [Test]
