@@ -26,7 +26,9 @@ namespace CrownAndHearth.Sim
 
     public static class RaiderCamps
     {
-        public const int Count = 14, MinApart = 45, NearMin = 50, NearMax = 220;
+        /// <summary>The world has Count camps. The first FirstCount are placed exactly as they always were (MinApart apart), so camp ids in
+        /// older saves (destroyed camps, losses) still mean the same camps; the rest fill in between them, at least MoreApart from any other.</summary>
+        public const int Count = 32, FirstCount = 14, MinApart = 45, MoreApart = 28, NearMin = 50, NearMax = 220;
         static readonly string[] Adjectives = { "Black", "Red", "Grey", "Iron", "Ash", "Wolf", "Crow", "Pale", "Broken", "Bitter", "Hollow", "Cold" };
         static readonly string[] Nouns = { "Hand", "Fang", "Banner", "Spear", "Hollow", "Ford", "Cairn", "Knife", "Brand", "Tooth" };
 
@@ -37,16 +39,19 @@ namespace CrownAndHearth.Sim
             var home = map.HomeSite;
             int hx = home?.X ?? WorldMap.Size / 2, hy = home?.Y ?? WorldMap.Size / 2;
             int seed = map.Seed;
-            for (int attempt = 0; attempt < 6000 && camps.Count < Count; attempt++)
+            // two passes: the original camps (unchanged, so old saves keep their meaning), then more of them filling the land in between
+            foreach (var (upTo, apartBy, saltX, saltY) in new[] { (FirstCount, MinApart, 701, 702), (Count, MoreApart, 711, 712) })
+            for (int attempt = 0; attempt < 6000 && camps.Count < upTo; attempt++)
             {
-                int x = 8 + (int)(Noise.Hash2(attempt, seed, 701) * (WorldMap.Size - 16)), y = 8 + (int)(Noise.Hash2(attempt, seed, 702) * (WorldMap.Size - 16));
+                int x = 8 + (int)(Noise.Hash2(attempt, seed, saltX) * (WorldMap.Size - 16)), y = 8 + (int)(Noise.Hash2(attempt, seed, saltY) * (WorldMap.Size - 16));
                 if (!map.IsLand(x, y)) continue;
                 int dist = Math.Max(Math.Abs(x - hx), Math.Abs(y - hy));
                 if (dist < NearMin) continue;
-                bool needNear = camps.Count < Count / 2;   // half of them are within a few days' march
+                int passStart = upTo == FirstCount ? 0 : FirstCount;
+                bool needNear = camps.Count - passStart < (upTo - passStart) / 2;   // half of each pass is within a few days' march
                 if (needNear && dist > NearMax) continue;
                 bool apart = true;
-                foreach (var c in camps) if (Math.Max(Math.Abs(c.X - x), Math.Abs(c.Y - y)) < MinApart) { apart = false; break; }
+                foreach (var c in camps) if (Math.Max(Math.Abs(c.X - x), Math.Abs(c.Y - y)) < apartBy) { apart = false; break; }
                 if (!apart) continue;
                 double s = Noise.Hash2(x, y, seed + 703);
                 int strength = s < 0.25 ? 1 : s < 0.55 ? 2 : s < 0.8 ? 3 : s < 0.92 ? 4 : 5;

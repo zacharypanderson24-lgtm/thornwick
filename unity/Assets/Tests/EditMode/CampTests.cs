@@ -18,17 +18,41 @@ namespace CrownAndHearth.Tests
 
         static int Max(int a, int b) => System.Math.Max(a, b);
 
+        /// <summary>The first camps are still exactly where the old generator (14 camps, 45 km apart) put them, so saved camp ids keep their meaning.</summary>
+        [Test]
+        public void TheOriginalCampsStayPutWhenMoreAreAdded()
+        {
+            var home = Map.HomeSite; int seed = Map.Seed;
+            var old = new List<(int x, int y)>();
+            for (int attempt = 0; attempt < 6000 && old.Count < 14; attempt++)
+            {
+                int x = 8 + (int)(Noise.Hash2(attempt, seed, 701) * (WorldMap.Size - 16)), y = 8 + (int)(Noise.Hash2(attempt, seed, 702) * (WorldMap.Size - 16));
+                if (!Map.IsLand(x, y)) continue;
+                int dist = Max(System.Math.Abs(x - home.X), System.Math.Abs(y - home.Y));
+                if (dist < 50 || (old.Count < 7 && dist > 220)) continue;
+                if (old.Any(c => Max(System.Math.Abs(c.x - x), System.Math.Abs(c.y - y)) < 45)) continue;
+                old.Add((x, y));
+            }
+            var camps = RaiderCamps.Generate(Map);
+            Assert.AreEqual(old, camps.Take(14).Select(c => (c.X, c.Y)).ToList());
+            Assert.Greater(camps.Count, old.Count, "and there are more of them now");
+        }
+
         [Test]
         public void CampsAreSpreadOverLandAwayFromHomeAndSomeAreWithinReach()
         {
             var camps = RaiderCamps.Generate(Map);
             Assert.AreEqual(RaiderCamps.Count, camps.Count);
+            Assert.AreEqual(Enumerable.Range(0, camps.Count), camps.Select(c => c.Id), "ids run 0, 1, 2...");
             foreach (var c in camps) { Assert.IsTrue(Map.IsLand(c.X, c.Y), c.ToString()); Assert.That(c.Strength, Is.InRange(1, 5)); }
             for (int i = 0; i < camps.Count; i++) for (int j = i + 1; j < camps.Count; j++)
-                Assert.GreaterOrEqual(Max(System.Math.Abs(camps[i].X - camps[j].X), System.Math.Abs(camps[i].Y - camps[j].Y)), RaiderCamps.MinApart);
+            {
+                int apart = Max(System.Math.Abs(camps[i].X - camps[j].X), System.Math.Abs(camps[i].Y - camps[j].Y));
+                Assert.GreaterOrEqual(apart, j < RaiderCamps.FirstCount ? RaiderCamps.MinApart : RaiderCamps.MoreApart, $"camps {i} and {j}");
+            }
             var home = Map.HomeSite;
             int near = camps.Count(c => Max(System.Math.Abs(c.X - home.X), System.Math.Abs(c.Y - home.Y)) <= RaiderCamps.NearMax);
-            Assert.GreaterOrEqual(near, RaiderCamps.Count / 2, "half of them are within a few days of marching");
+            Assert.GreaterOrEqual(near, RaiderCamps.FirstCount / 2 + (RaiderCamps.Count - RaiderCamps.FirstCount) / 2, "half of them are within a few days of marching");
             Assert.IsTrue(camps.Select(c => c.Name).Distinct().Count() > 3, "they have different names");
             Assert.AreEqual(string.Join(";", camps.Select(c => c.ToString())), string.Join(";", RaiderCamps.Generate(Map).Select(c => c.ToString())), "the same world always has the same camps");
         }
@@ -186,6 +210,18 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual("chieftent", w.Grid[oy + map.Chief.y, ox + map.Chief.x].T);
             foreach (var p in map.Piles) Assert.AreEqual((int)p.Res, w.Grid[oy + p.Y, ox + p.X].Var, "a pile shows its goods");
             foreach (var t in map.Tents) Assert.AreEqual("tent", w.Grid[oy + t.y, ox + t.x].T);
+
+            // a looted pile disappears from the camp; one with goods left stays
+            Assert.IsFalse(w.ClearLootedPiles(map), "nothing to take away while every pile holds goods");
+            var looted = map.Piles[0];
+            int full = map.Piles.Count, version = w.Version;
+            looted.Amount = 0;
+            Assert.IsTrue(w.ClearLootedPiles(map));
+            Assert.IsNull(w.Grid[oy + looted.Y, ox + looted.X], "the emptied pile is gone");
+            Assert.AreEqual(full - 1, w.Blds.Count(b => b.T == "supplies"), "the others stay");
+            Assert.Greater(w.Version, version, "the view redraws");
+            Assert.IsFalse(w.ClearLootedPiles(map), "taken away once");
+            Assert.IsFalse(new World(7).ClearLootedPiles(map), "a settlement is left alone");
             for (int y = 0; y < CampMap.Size; y++)
                 for (int x = 0; x < CampMap.Size; x++)
                 {

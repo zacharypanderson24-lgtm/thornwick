@@ -34,6 +34,8 @@ namespace CrownAndHearth.Sim
     public partial class World
     {
         public const int MarchKmPerDay = 15, RaidFarKm = 220;
+        /// <summary>About how many camps were in reach before the world had more of them: raids are paced as if there were this many.</summary>
+        public const int RaidPaceCamps = 7;
         /// <summary>Camps leave a town alone until it has this many people (peasants and soldiers); tests lower it.</summary>
         public int RaidMinPopulation = 20;
 
@@ -157,13 +159,17 @@ namespace CrownAndHearth.Sim
             if (Warband != null) { StepWarband(); return; }
             if (_camps.Count == 0 || Day < 100 || Peasants + Soldiers < RaidMinPopulation) return;
             if (Raid != null && !Raid.Over) return;
+            // with many camps in reach each one raids less often, so the town is raided about as often as it was with a handful of
+            // camps (RaidPaceCamps); destroying camps leaves the rest raiding more often, until only a few are left
+            int inReach = LiveCamps.Count(c => CampKm(c) <= RaidFarKm);
+            double spread = Math.Max(1.0, inReach / (double)RaidPaceCamps);
             foreach (var c in LiveCamps)
             {
                 int km = CampKm(c);
                 if (km > RaidFarKm) continue;
-                if (!_nextCampRaid.TryGetValue(c.Id, out int due)) { _nextCampRaid[c.Id] = Day + 60 + (int)(Noise.Hash2(c.Id, Day, 94) * 120) + km / 2; continue; }
+                if (!_nextCampRaid.TryGetValue(c.Id, out int due)) { _nextCampRaid[c.Id] = Day + (int)((60 + Noise.Hash2(c.Id, Day, 94) * 120) * spread) + km / 2; continue; }
                 if (Day < due) continue;
-                _nextCampRaid[c.Id] = Day + 160 - 14 * c.Strength + (int)(Noise.Hash2(c.Id, Day, 95) * 60) + km / 2;
+                _nextCampRaid[c.Id] = Day + (int)((160 - 14 * c.Strength + Noise.Hash2(c.Id, Day, 95) * 60) * spread) + km / 2;
                 // a camp that lost raiders (to your soldiers, or out on another raid) sends a smaller band, or none until it has recovered
                 int band = 3 + 2 * c.Strength - CampRaidersLost(c) - CampRaidersAway(c);
                 if (band < 2) continue;
