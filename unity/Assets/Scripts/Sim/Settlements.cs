@@ -58,6 +58,12 @@ namespace CrownAndHearth.Sim
         /// <summary>Whether it pays you or is held by you, and which of your soldiers hold it (infantry and archers kept apart). Saved.</summary>
         public Allegiance Allegiance;
         public int GarrisonInfantry, GarrisonArchers;
+        /// <summary>Its defenders killed fighting you and not yet replaced (World.Conquest.cs RecoverSettlements). Saved.</summary>
+        public double DefendersLost;
+        /// <summary>Sacked: until this day it is laid waste (it does not grow, and trades and pays tribute at a fraction). Saved.</summary>
+        public int DevastatedUntil;
+        /// <summary>Laid waste now (set each month by the game, from DevastatedUntil and the day).</summary>
+        public bool Devastated;
         /// <summary>Your soldiers stationed there, all told.</summary>
         public int Garrison => GarrisonInfantry + GarrisonArchers;
 
@@ -360,6 +366,7 @@ namespace CrownAndHearth.Sim
             var grew = new List<Settlement>();
             foreach (var s in list)
             {
+                if (s.Devastated) continue;   // a sacked place does not grow until it has recovered
                 var before = s.Tier;
                 double rate = (0.01 + 0.04 * s.Potential) / 12;
                 s.Population = Math.Max(TierFloor[0], s.Population + s.Population * rate * (1 - s.Population / Math.Max(1, s.Capacity)));

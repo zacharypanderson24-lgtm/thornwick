@@ -51,6 +51,38 @@ namespace CrownAndHearth.Sim
         /// <summary>[y, x]: strength left in a palisade or gate tile (0: none there, or broken).</summary>
         public readonly double[,] BarrierHp;
         public bool IsGate(int x, int y) => In(x, y) && Gates.Contains(y * N + x);
+        /// <summary>A settlement's watchtowers: its watch sees an army coming from them.</summary>
+        public readonly List<(int x, int y)> Towers = new List<(int x, int y)>();
+        /// <summary>The gates are shut (the town is roused). A shut gate holds until it is broken.</summary>
+        public bool GatesShut { get; private set; }
+        /// <summary>Goes up whenever who can walk where changes (gates shut, a barrier breaks): cached paths are worked out again.</summary>
+        public int Version { get; private set; }
+        /// <summary>Palisade and gate tiles broken in this fight (map tiles), in the order they fell.</summary>
+        public readonly List<(int x, int y)> Broken = new List<(int x, int y)>();
+
+        public void ShutGates() { if (GatesShut) return; GatesShut = true; Version++; }
+        /// <summary>A shut gate that still holds.</summary>
+        public bool IsShutGate(int x, int y) => GatesShut && IsGate(x, y) && BarrierHp[y, x] > 0;
+        /// <summary>Something soldiers cannot pass that can be hacked down: a standing palisade tile or a shut gate.</summary>
+        public bool IsBarrier(int x, int y) => In(x, y) && BarrierHp[y, x] > 0 && (Blocked[y, x] || IsShutGate(x, y));
+        /// <summary>Hit a barrier; true when it gives way (a palisade tile falls, a gate hangs broken and open).</summary>
+        public bool HitBarrier(int x, int y, double hit)
+        {
+            if (!IsBarrier(x, y)) return false;
+            BarrierHp[y, x] = Math.Max(0, BarrierHp[y, x] - hit);
+            if (BarrierHp[y, x] > 0) return false;
+            Blocked[y, x] = false; Broken.Add((x, y)); Version++;
+            return true;
+        }
+        /// <summary>A melee blow from a to b: side by side and no palisade or shut gate between them (on a diagonal, one of the two tiles
+        /// between must be open). Arrows fly over walls and need no such check.</summary>
+        public bool MeleeReach(int ax, int ay, int bx, int by)
+        {
+            int dx = Math.Abs(ax - bx), dy = Math.Abs(ay - by);
+            if (Math.Max(dx, dy) > 1) return false;
+            if (dx == 0 || dy == 0) return true;
+            return !IsBarrier(ax, by) || !IsBarrier(bx, ay);
+        }
 
         public CampMap(int n = Size) { N = n; Ground = new CampTile[n, n]; Buildable = new bool[n, n]; Blocked = new bool[n, n]; BarrierHp = new double[n, n]; }
 
@@ -68,7 +100,7 @@ namespace CrownAndHearth.Sim
         public bool IsTownMap;
         public SupplyPile PileAt(int x, int y) { foreach (var p in Piles) if (p.X == x && p.Y == y && p.Amount > 0) return p; return null; }
         /// <summary>Soldiers walk on open ground; trees, rocks, mountains and the camp's structures are in the way.</summary>
-        public bool Passable(int x, int y) => In(x, y) && Ground[y, x] == CampTile.Open && !HasStructure(x, y);
+        public bool Passable(int x, int y) => In(x, y) && Ground[y, x] == CampTile.Open && !HasStructure(x, y) && !IsShutGate(x, y);
 
         static readonly Res[] Pool = { Res.Food, Res.Wood, Res.Logs, Res.Stone, Res.Ore, Res.Gold, Res.Flax };
 
@@ -254,7 +286,11 @@ namespace CrownAndHearth.Sim
 
         /// <summary>Everyone in a camp of this strength: raiders and archers, brutes round the warlord, and the warlord.</summary>
         public static int RaiderCount(int strength) { var c = CampSize.Of(strength); return c.Raiders + c.Brutes + 1; }
-        public const int ArcherRange = 7, RaiderArcherRange = 6, AlertR = 6, MaxTicks = 500, InfantryCarry = 8, ArcherCarry = 5, BodyTicks = 12;
+        /// <summary>A palisade or gate tile in a battle takes this many blows' worth of damage (a soldier hits it as hard as a man).</summary>
+        public const double BattleWallHp = 30, BattleGateHp = 45;
+        /// <summary>A barrier counts as this many steps on the way in when there is no open way.</summary>
+        public const int BreachCost = 10;
+        public const int TowerSight = 10, ArcherRange = 7, RaiderArcherRange = 6, AlertR = 6, MaxTicks = 500, InfantryCarry = 8, ArcherCarry = 5, BodyTicks = 12;
 
         public readonly RaiderCamp Camp;
         public readonly CampMap Map;
@@ -344,11 +380,12 @@ namespace CrownAndHearth.Sim
 
         int[] FieldTo(BUnit target) => FieldTo(target.X, target.Y);
 
-        int[] _edgeField;
-        /// <summary>Steps to the nearest open edge tile, from everywhere (the camp's structures never move, so it is worked out once).</summary>
+        int[] _edgeField; int _edgeVersion = -1;
+        /// <summary>Steps to the nearest open edge tile, from everywhere (worked out again only when gates shut or a barrier breaks).</summary>
         int[] EdgeField()
         {
-            if (_edgeField != null) return _edgeField;
+            if (_edgeField != null && _edgeVersion == Map.Version) return _edgeField;
+            _edgeVersion = Map.Version;
             var d = new int[Map.N * Map.N];
             for (int i = 0; i < d.Length; i++) d[i] = -1;
             var q = new Queue<int>();
@@ -371,6 +408,61 @@ namespace CrownAndHearth.Sim
                     d[ny * Map.N + nx] = d[c] + 1; q.Enqueue(ny * Map.N + nx);
                 }
             }
+        }
+
+        readonly Dictionary<bool, (int version, int[] d)> _breach = new Dictionary<bool, (int, int[])>();
+        /// <summary>The cheapest way to the hall (or, with toEdge, off the map) when barriers may be hacked through: each costs BreachCost
+        /// steps; other buildings, trees and rocks still block.</summary>
+        int[] BreachField(bool toEdge)
+        {
+            if (_breach.TryGetValue(toEdge, out var c) && c.version == Map.Version) return c.d;
+            int n = Map.N;
+            var d = new int[n * n];
+            for (int i = 0; i < d.Length; i++) d[i] = int.MaxValue;
+            var open = new SortedSet<(int d, int c)>();
+            void Seed(int x, int y) { if (Map.In(x, y) && Map.Passable(x, y) && d[y * n + x] != 0) { d[y * n + x] = 0; open.Add((0, y * n + x)); } }
+            if (toEdge) for (int i = 0; i < n; i++) { Seed(i, 0); Seed(i, n - 1); Seed(0, i); Seed(n - 1, i); }
+            else for (int j = -2; j <= 2; j++) for (int i = -2; i <= 2; i++) Seed(Map.Chief.x + i, Map.Chief.y + j);
+            while (open.Count > 0)
+            {
+                var (cd, cc) = open.Min; open.Remove(open.Min);
+                if (cd > d[cc]) continue;
+                int cx = cc % n, cy = cc / n;
+                for (int k = 0; k < 4; k++)
+                {
+                    int nx = cx + Defs.Nb[k, 0], ny = cy + Defs.Nb[k, 1];
+                    if (!Map.In(nx, ny)) continue;
+                    bool barrier = Map.IsBarrier(nx, ny);
+                    if (!barrier && !Map.Passable(nx, ny)) continue;
+                    int nd = cd + (barrier ? BreachCost : 1);
+                    if (nd >= d[ny * n + nx]) continue;
+                    d[ny * n + nx] = nd; open.Add((nd, ny * n + nx));
+                }
+            }
+            for (int i = 0; i < d.Length; i++) if (d[i] == int.MaxValue) d[i] = -1;
+            _breach[toEdge] = (Map.Version, d);
+            return d;
+        }
+
+        /// <summary>Walk down a field; where it does not reach (walls in the way), take the way through the walls instead, hacking at the
+        /// barrier in front when there is one. Only attackers break in (or out); defenders hold behind their walls.</summary>
+        void Approach(BUnit u, int[] f, bool toEdge = false)
+        {
+            if (f[u.Y * Map.N + u.X] >= 0 || !u.Attacker || !Map.IsTownMap) { StepDown(u, f); return; }
+            var b = BreachField(toEdge);
+            int cur = b[u.Y * Map.N + u.X];
+            if (cur <= 0) return;
+            int bx = -1, by = -1, bd = cur;
+            for (int k = 0; k < 4; k++)
+            {
+                int nx = u.X + Defs.Nb[k, 0], ny = u.Y + Defs.Nb[k, 1];
+                if (!Map.In(nx, ny)) continue;
+                int nd = b[ny * Map.N + nx];
+                if (nd >= 0 && nd < bd) { bd = nd; bx = nx; by = ny; }
+            }
+            if (bx < 0) return;
+            if (Map.IsBarrier(bx, by)) { u.Attacked = true; u.Target = null; Map.HitBarrier(bx, by, u.Hit); }
+            else { u.X = bx; u.Y = by; }
         }
 
         int[] FieldTo(int tx, int ty)
@@ -445,12 +537,13 @@ namespace CrownAndHearth.Sim
         {
             u.Target = t;
             int want = u.Ranged ? u.Range - 1 : 1;
-            if (Cheb(u.X, u.Y, t.X, t.Y) > want)
+            if (Cheb(u.X, u.Y, t.X, t.Y) > want || (!u.Ranged && !Map.MeleeReach(u.X, u.Y, t.X, t.Y)))
             {
                 if (!fields.TryGetValue(t, out var f)) fields[t] = f = FieldTo(t);
-                StepDown(u, f);
+                if (u.Ranged && Cheb(u.X, u.Y, t.X, t.Y) <= u.Range) { }   // in range: an archer shoots from where it stands, over walls too
+                else Approach(u, f);
             }
-            if (Cheb(u.X, u.Y, t.X, t.Y) <= u.Range) Swing(u, t, hits);
+            if (u.Ranged ? Cheb(u.X, u.Y, t.X, t.Y) <= u.Range : Map.MeleeReach(u.X, u.Y, t.X, t.Y)) Swing(u, t, hits);
         }
 
         /// <summary>A soldier walks off the map: out of the fight, alive, and whatever it carries is safely taken.</summary>
@@ -463,19 +556,19 @@ namespace CrownAndHearth.Sim
         void StepSoldier(BUnit u, List<BUnit> raiders, Dictionary<BUnit, int[]> fields, Dictionary<(int, int), int[]> pileFields, Dictionary<BUnit, double> hits)
         {
             var prio = Groups[u.Group].Priority;
-            BUnit Adjacent() => PickTarget(u, raiders.Where(e => Cheb(u.X, u.Y, e.X, e.Y) <= 1), prio);
+            BUnit Adjacent() => PickTarget(u, raiders.Where(e => Map.MeleeReach(u.X, u.Y, e.X, e.Y)), prio);
             switch (OrderOf(u))
             {
                 case BattleOrder.FallBack:
                 {
                     u.Target = null;
-                    if (!Map.Edge(u.X, u.Y)) StepDown(u, EdgeField());
+                    if (!Map.Edge(u.X, u.Y)) Approach(u, EdgeField(), toEdge: true);
                     if (Map.Edge(u.X, u.Y)) Leave(u);
                     return;
                 }
                 case BattleOrder.Hold:
                 {
-                    var t = PickTarget(u, raiders.Where(e => Cheb(u.X, u.Y, e.X, e.Y) <= u.Range), prio);
+                    var t = PickTarget(u, raiders.Where(e => u.Ranged ? Cheb(u.X, u.Y, e.X, e.Y) <= u.Range : Map.MeleeReach(u.X, u.Y, e.X, e.Y)), prio);
                     u.Target = t;
                     if (t != null) Swing(u, t, hits);
                     return;
@@ -484,7 +577,7 @@ namespace CrownAndHearth.Sim
                 {
                     var chief = raiders.FirstOrDefault(e => e.Kind == BKind.Chief);
                     if (chief == null) { if (raiders.Count > 0) Engage(u, PickTarget(u, raiders, prio), fields, hits); return; }
-                    if (Cheb(u.X, u.Y, chief.X, chief.Y) <= u.Range) { u.Target = chief; Swing(u, chief, hits); return; }
+                    if (u.Ranged ? Cheb(u.X, u.Y, chief.X, chief.Y) <= u.Range : Map.MeleeReach(u.X, u.Y, chief.X, chief.Y)) { u.Target = chief; Swing(u, chief, hits); return; }
                     var blocker = Adjacent();   // someone in the way: cut through
                     if (blocker != null && !u.Ranged) { u.Target = blocker; Swing(u, blocker, hits); return; }
                     Engage(u, chief, fields, hits);
@@ -504,7 +597,7 @@ namespace CrownAndHearth.Sim
                     if (guard != null) { u.Target = guard; Swing(u, guard, hits); return; }
                     u.Target = null;
                     if (!pileFields.TryGetValue((pile.X, pile.Y), out var pf)) pileFields[(pile.X, pile.Y)] = pf = FieldTo(pile.X, pile.Y);
-                    StepDown(u, pf);
+                    Approach(u, pf);
                     return;
                 }
             }
@@ -522,7 +615,9 @@ namespace CrownAndHearth.Sim
             var rai = Units.Where(u => u.Alive && !u.Attacker && !u.InBarracks).ToList();
             // a camp wakes when you come near its raiders; a town also when you come near its hall or its barracks
             if (!Alarm && att.Any(a => rai.Any(r => Cheb(a.X, a.Y, r.X, r.Y) <= AlertR)
-                || Map.Barracks.Any(b => Cheb(a.X, a.Y, b.x, b.y) <= AlertR) || (Camp.IsTown && Cheb(a.X, a.Y, Map.Chief.x, Map.Chief.y) <= AlertR))) Alarm = true;
+                || Map.Barracks.Any(b => Cheb(a.X, a.Y, b.x, b.y) <= AlertR) || (Camp.IsTown && Cheb(a.X, a.Y, Map.Chief.x, Map.Chief.y) <= AlertR)
+                || Map.Towers.Any(t => Cheb(a.X, a.Y, t.x, t.y) <= TowerSight))) Alarm = true;
+            if (Alarm && Map.IsTownMap && !Map.GatesShut) Map.ShutGates();   // roused: the gates are barred
             if (Alarm && Units.Any(u => u.InBarracks))   // roused: the soldiers pour out of their barracks
             {
                 foreach (var u in Units) if (u.InBarracks) { u.InBarracks = false; u.Px = u.X; u.Py = u.Y; }
@@ -544,6 +639,7 @@ namespace CrownAndHearth.Sim
                 kv.Key.Hp -= kv.Value; kv.Key.Hurt = true;
                 if (!kv.Key.Attacker) Alarm = true;
             }
+            if (Map.Broken.Count > 0) Alarm = true;   // nobody hacks at a palisade unheard
             foreach (var u in Units)
                 if (u.Alive && u.Hp <= 0)
                 {

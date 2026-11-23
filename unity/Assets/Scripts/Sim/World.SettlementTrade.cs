@@ -43,7 +43,7 @@ namespace CrownAndHearth.Sim
         public int TradeCaravansOut => Caravans.Count(c => c.Kind != CaravanKind.Gift);
 
         /// <summary>How much a settlement trades in a month, all its goods together: about one unit for every 8 people, from 10 up to 400.</summary>
-        public static int MonthlyTrade(Settlement s) => Math.Clamp((int)Math.Round(s.Population / 8), 10, 400);
+        public static int MonthlyTrade(Settlement s) => (int)Math.Round(Math.Clamp((int)Math.Round(s.Population / 8), 10, 400) * (s.Devastated ? WasteFactor : 1));
 
         /// <summary>How much of one good it trades in a month: its share of the whole, a main good more than a side one (at least 5).</summary>
         public static int MonthlyTrade(Settlement s, Res r) => Math.Max(5, (int)Math.Round(MonthlyTrade(s) * s.ShareOf(r) * 1.6));

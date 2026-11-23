@@ -65,7 +65,31 @@ namespace CrownAndHearth.Sim
         public static int GarrisonNeeded(Settlement s) => Math.Max(2, (int)Math.Ceiling(s.Population / 40));
 
         /// <summary>Who would fight an invasion here now: a camp's raiders at home, or a settlement's garrison.</summary>
-        public int DefendersHome(RaiderCamp c) => c.IsTown ? Garrison(c.Town) : CampRaidersHome(c);
+        public int DefendersHome(RaiderCamp c) => c.IsTown ? DefendersOf(c.Town) : CampRaidersHome(c);
+
+        /// <summary>Defenders a settlement has now: its garrison less those killed fighting you and not yet replaced (at least one).</summary>
+        public static int DefendersOf(Settlement s) => Math.Max(1, Garrison(s) - (int)Math.Ceiling(s.DefendersLost - 1e-9));
+
+        /// <summary>How fast a settlement replaces its fallen defenders, a share of its full garrison each month: a proud place rebuilds and
+        /// fortifies fastest, a sacked one slowest.</summary>
+        public static double RecoverShare(Settlement s) => s.Devastated ? 0.08 : s.Personality == Personality.Proud ? 0.4 : 0.25;
+
+        /// <summary>A sacked settlement lies waste this long.</summary>
+        public const int SackWasteDays = 360;
+        /// <summary>While laid waste it trades and pays tribute at this fraction.</summary>
+        public const double WasteFactor = 0.4;
+
+        /// <summary>Monthly: settlements replace the defenders they lost, and those laid waste by a sack recover when their time is up.</summary>
+        void RecoverSettlements()
+        {
+            foreach (var s in _settlements)
+            {
+                bool was = s.Devastated;
+                s.Devastated = Day < s.DevastatedUntil;
+                if (was && !s.Devastated && SettlementKm(s) <= RaidFarKm) Events.Add($"{s.Name} has recovered from its sacking.");
+                if (s.DefendersLost > 0) s.DefendersLost = Math.Max(0, s.DefendersLost - Garrison(s) * RecoverShare(s));
+            }
+        }
 
         /// <summary>The army that took a settlement, waiting for you to decide its fate (null otherwise). Saved, so saving and loading
         /// can neither lose the army nor skip the decision.</summary>
@@ -118,6 +142,7 @@ namespace CrownAndHearth.Sim
         {
             var s = b.Camp.Town;
             s.Population = Math.Max(SettlementRules.TierFloor[0], s.Population - b.RaidersKilled);   // the defenders who fell were its people
+            s.DefendersLost += b.Units.Count(u => !u.Alive && !u.Attacker && (u.Kind == BKind.Raider || u.Kind == BKind.RaiderArcher));   // and are missing until replaced
             if (b.Victory)
             {
                 var p = new PendingConquest { SettlementId = s.Id, CampId = b.Camp.Id, Infantry = b.SurvivingInfantry, Archers = b.SurvivingArchers };
@@ -211,6 +236,8 @@ namespace CrownAndHearth.Sim
                     foreach (var (r, n) in taken) p.Loot[r] = p.Loot.GetValueOrDefault(r) + n;
                     s.Population = Math.Max(SettlementRules.TierFloor[0], Math.Round(s.Population * 0.4));
                     s.Attitude = -100;
+                    s.DevastatedUntil = Day + SackWasteDays; s.Devastated = true;
+                    s.DefendersLost = Math.Max(s.DefendersLost, Garrison(s));   // nobody is left to man the walls
                     HurtRealm(s, 40);
                     foreach (var o in _settlements)
                         if (o != s && Math.Max(Math.Abs(o.X - s.X), Math.Abs(o.Y - s.Y)) <= SackHeardKm) Anger(o, 10);
@@ -327,7 +354,8 @@ namespace CrownAndHearth.Sim
             {
                 if (s.Allegiance == Allegiance.Own) continue;
                 bool held = s.Allegiance == Allegiance.Occupied;
-                int gold = Math.Max(1, (int)Math.Round(s.Population / (held ? 15.0 : 25.0))), goods = MonthlyTrade(s) / (held ? 1 : 2);
+                double waste = s.Devastated ? WasteFactor : 1;
+                int gold = Math.Max(1, (int)Math.Round(s.Population / (held ? 15.0 : 25.0) * waste)), goods = (int)(MonthlyTrade(s) / (held ? 1 : 2) * waste);
                 ResAmt[Res.Gold] += gold;
                 var sent = new List<(Res res, int n)>();
                 foreach (var (r, n) in SplitGoods(s, goods))

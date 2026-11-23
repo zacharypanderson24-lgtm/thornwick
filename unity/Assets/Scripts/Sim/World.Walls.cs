@@ -99,6 +99,33 @@ namespace CrownAndHearth.Sim
             }
         }
 
+        public enum GateState : byte { None, Open, Shut, Broken }
+
+        /// <summary>What a tile's gate looks like now (None: not a gate). For drawing the gate art (gate_open_N, gate_closed_N, gate_broken_N).</summary>
+        public GateState GateAt(int x, int y) => !IsGateway(x, y) ? GateState.None : GateBroken(x, y) ? GateState.Broken : GatesShut ? GateState.Shut : GateState.Open;
+
+        int _mirrored;
+        /// <summary>A town's battle world: show the fight's walls and gates (the gates shut when the town is roused; broken palisade tiles
+        /// fall, broken gates hang open). Cheap; called every frame while a town is shown. True if anything changed.</summary>
+        public bool MirrorBattle(CampMap map)
+        {
+            if (!IsCamp || map == null || !map.IsTownMap) return false;
+            bool changed = false;
+            if (KeepGatesShut != map.GatesShut) { KeepGatesShut = map.GatesShut; changed = true; }
+            if (map.Broken.Count < _mirrored) _mirrored = 0;   // a new fight on the same map
+            for (; _mirrored < map.Broken.Count; _mirrored++)
+            {
+                var (mx, my) = map.Broken[_mirrored];
+                int x = CampX0 + mx, y = CampY0 + my;
+                if (!Inb(x, y)) continue;
+                if (Grid[y, x] is Building b && b.T == "wall") { Blds.Remove(b); Grid[y, x] = null; }
+                else BarrierDamage[Tk(x, y)] = GateHp;
+                changed = true;
+            }
+            if (changed) Touch();
+            return changed;
+        }
+
         // ---------- breaching ----------
 
         public const int BreachCost = 8;   // a barrier counts as this many steps on the way in

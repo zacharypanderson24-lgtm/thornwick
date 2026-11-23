@@ -178,7 +178,13 @@ namespace CrownAndHearth.Game
             else
                 sb.AppendLine(liege != null ? $"Answers to {liege.Name}" + (seat != null && seat != liege ? $", in the realm of {seat.Name}" : "")
                     : seat == s ? $"Seat of a realm of {_world.AllSubjects(s)} settlements" : "Free: answers to nobody");
-            if (s.Allegiance == Allegiance.Own) sb.AppendLine($"Garrison: about {World.Garrison(s)} defenders, its lord and his guard");
+            if (s.Allegiance == Allegiance.Own)
+            {
+                int now = World.DefendersOf(s), full = World.Garrison(s);
+                sb.AppendLine(now < full ? $"Garrison: about {now} defenders of its usual {full} (it lost men fighting you and is replacing them), its lord and his guard"
+                                         : $"Garrison: about {full} defenders, its lord and his guard");
+            }
+            if (s.Devastated) sb.AppendLine($"<color=#FF8C70>Laid waste by a sack</color>: it trades and pays at a fraction and does not grow for {Math.Max(0, s.DevastatedUntil - _world.Day)} more days");
             sb.AppendLine($"{Settlements.PersonalityName(s.Personality)}: {Settlements.PersonalityNote(s.Personality)}");
             sb.AppendLine($"Towards you: <b>{Settlements.AttitudeName(s.Attitude)}</b> ({s.Attitude:+0;-0;0})");
             var can = _world.CanTrade(s);
