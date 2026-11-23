@@ -81,5 +81,23 @@ namespace CrownAndHearth.Sim
             foreach (var p in map.Piles) { Clear(p.X, p.Y); w.AddBld("supplies", x0 + p.X, y0 + p.Y).Var = (int)p.Res; }
             return new CampSite { World = w, Map = map, X0 = x0, Y0 = y0 };
         }
+
+        /// <summary>A camp world: take away the supply piles that have been emptied (plundered, or carried off after a victory) so they are no
+        /// longer drawn. Cheap; called every frame while the camp is shown. True if anything was taken away.</summary>
+        public bool ClearLootedPiles(CampMap map)
+        {
+            if (!IsCamp || map == null) return false;
+            bool changed = false;
+            foreach (var p in map.Piles)
+            {
+                if (p.Amount > 0) continue;
+                int x = CampX0 + p.X, y = CampY0 + p.Y;
+                var b = Grid[y, x];
+                if (b == null || b.T != "supplies") continue;
+                Grid[y, x] = null; Blds.Remove(b); changed = true;
+            }
+            if (changed) Touch();
+            return changed;
+        }
     }
 }

@@ -382,6 +382,7 @@ namespace CrownAndHearth.Game
             var camera = _cam.Cam; float halfH = camera.orthographicSize, halfW = halfH * camera.aspect; Vector2 at = camera.transform.position;
             var visible = new Rect(at.x - halfW, at.y - halfH, halfW * 2, halfH * 2);
             var drawn = _campWorld ?? World;
+            if (_campWorld != null) _campWorld.ClearLootedPiles(_hud.CampView?.Map);   // emptied supply piles disappear (bumps Version, so it redraws)
             if (drawn.Version != _drawnVersion || _rot != _drawnRot || !_builtRect.Contains(visible.min) || !_builtRect.Contains(visible.max)
                 || _builtRect.width > visible.width * 3.5f)   // zoomed back in after being zoomed right out: do not keep drawing the whole map
             {
