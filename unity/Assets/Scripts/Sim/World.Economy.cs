@@ -46,6 +46,7 @@ namespace CrownAndHearth.Sim
             StepFolk();
             StepRaid();
             StepCampRaids();
+            StepSettlements();
             StepExpeditions();
             ResAmt[Res.Logs] += got[Res.Logs];
             BurnCharcoal();

@@ -171,8 +171,10 @@ namespace CrownAndHearth.Game
             (int x, int y)? home = null;
             if (_warbandMapSig >= 0) at = w.WarbandCell(w.Warband);
             if (w != null) home = (w.HomeCellX, w.HomeCellY);
-            return WorldMapRenderer.BuildSites(map, w?.Camps, w?.DestroyedCamps, at, home);
+            _sitesMonth = w != null ? w.Day / World.SettlementMonth : -1;
+            return WorldMapRenderer.BuildSites(map, w?.Camps, w?.DestroyedCamps, at, home, w?.Settlements);
         }
+        int _sitesMonth = -1;   // settlements grow monthly: their markers are redrawn when the month turns
 
         void RebuildSites()
         {
@@ -185,7 +187,7 @@ namespace CrownAndHearth.Game
         /// <summary>Move the warband's marker on the map when it has marched (called every frame; cheap unless something changed).</summary>
         void RefreshWarbandOnMap(World w)
         {
-            if (WarbandSig(w) == _warbandMapSig) return;
+            if (WarbandSig(w) == _warbandMapSig && (w == null || w.Day / World.SettlementMonth == _sitesMonth)) return;
             RebuildSites();
             if (_mapOpen) OnMapHover(_mapView?.HoverCell);
         }
@@ -219,6 +221,43 @@ namespace CrownAndHearth.Game
             }
             return best;
         }
+
+        /// <summary>The settlement under the cursor: the nearest within a few cells (bigger markers are easier to point at).</summary>
+        Settlement SettlementNear(Vector2Int? cell)
+        {
+            if (!cell.HasValue || _world == null) return null;
+            Settlement best = null; int bestD = int.MaxValue;
+            foreach (var s in _world.Settlements)
+            {
+                int d = Math.Max(Math.Abs(s.X - cell.Value.x), Math.Abs(s.Y - cell.Value.y));
+                if (d > WorldMapRenderer.SettlementRadius(s.Tier) + 2) continue;
+                if (d < bestD || (d == bestD && best != null && s.Tier > best.Tier)) { best = s; bestD = d; }
+            }
+            return best;
+        }
+
+        string DescribeSettlement(Settlement s)
+        {
+            var sb = new StringBuilder();
+            string tier = s.Tier.ToString().ToUpper();
+            string hex = ColorUtility.ToHtmlStringRGB(WorldMapRenderer.RealmColor(s));
+            sb.AppendLine($"<b><color=#{hex}>{tier}</color> {s.Name}</b>   {s.Population:0} people");
+            var liege = _world.SettlementById(s.Liege);
+            var seat = _world.SettlementById(s.Realm);
+            if (liege != null) sb.AppendLine($"Answers to {liege.Name} ({liege.Tier.ToString().ToLower()})" + (seat != null && seat != liege ? $", in the realm of {seat.Name}" : ""));
+            else if (seat == s) sb.AppendLine($"Seat of a realm: {_world.AllSubjects(s)} settlements answer to it");
+            else sb.AppendLine("Free: answers to nobody");
+            int subjects = _world.SubjectsOf(s).Count();
+            if (subjects > 0 && seat != s) sb.AppendLine($"{subjects} smaller settlements answer to it");
+            sb.AppendLine($"{Settlements.PersonalityName(s.Personality)}: {Settlements.PersonalityNote(s.Personality)}");
+            sb.AppendLine($"Towards you: {Settlements.AttitudeName(s.Attitude)} ({s.Attitude:+0;-0;0})" +
+                (s.WillTrade ? "  ·  willing to trade" : s.Tier == SettlementTier.Hamlet ? "  ·  too small to trade" : "  ·  will not trade yet"));
+            sb.AppendLine($"Makes {ResName(s.Makes)}, needs {ResName(s.Needs)}");
+            sb.Append($"{_world.SettlementKm(s)} km away: {_world.SettlementMarchDays(s)} days of marching.");
+            return sb.ToString();
+        }
+
+        static string ResName(Res r) => r switch { Res.Food => "grain", Res.Wood => "timber", Res.Ore => "iron ore", _ => r.ToString().ToLower() };
 
         void OnMapClick(Vector2Int cell)
         {
@@ -267,7 +306,15 @@ namespace CrownAndHearth.Game
                 rows.Add((WorldMapRenderer.ColorOf(Biome.Ocean), "Sea", ""));
                 rows.Add((WorldMapRenderer.ColorOf(Biome.Lake), "Lake", ""));
                 rows.Add((WorldMapRenderer.River, "River", ""));
-                rows.Add((WorldMapRenderer.SiteWhite, "City site", ""));
+                var towns = _world?.Settlements;
+                if (towns != null && towns.Count > 0)
+                {
+                    var inRealm = towns.FirstOrDefault(s => s.Realm >= 0);
+                    rows.Add((inRealm != null ? WorldMapRenderer.RealmColor(inRealm) : WorldMapRenderer.FreeSettlement, "Settlement (realm colour)", $"{towns.Count(s => s.Realm >= 0)}"));
+                    rows.Add((WorldMapRenderer.FreeSettlement, "Free settlement", $"{towns.Count(s => s.Realm < 0)}"));
+                    rows.Add((WorldMapRenderer.HomeGold, "Capital (gold heart)", $"{towns.Count(s => s.Tier == SettlementTier.Capital)}"));
+                }
+                else rows.Add((WorldMapRenderer.SiteWhite, "City site", ""));
                 rows.Add((WorldMapRenderer.HomeGold, "Your settlement", ""));
                 rows.Add((new Color32(220, 60, 50, 255), "Raider camp (click)", ""));
                 rows.Add((WorldMapRenderer.WarbandOrange, "Warband marching on you", ""));
@@ -305,6 +352,8 @@ namespace CrownAndHearth.Game
             if (wb != null) { _mapCell.text = DescribeWarband(wb); return; }
             var camp = CampNear(cell);
             if (camp != null) { if (!_world.DestroyedCamps.Contains(camp.Id)) camp.PrepareSite(); _mapCell.text = DescribeCamp(camp); return; }
+            var town = SettlementNear(cell);
+            if (town != null) { _mapCell.text = DescribeSettlement(town); return; }
             _mapCell.text = cell.HasValue ? DescribeCell(_worldMap, cell.Value.x, cell.Value.y) : "Move the cursor over the map. Showing your home region.";
         }
 
@@ -322,7 +371,7 @@ namespace CrownAndHearth.Game
             sb.AppendLine($"Climate: {r.Temperature:0.#} °C a year, {r.Rain:0} mm of rain");
             sb.AppendLine($"Height: {r.ElevAvg:0} m on average, {r.ElevMax:0} m at the highest. Relief: {r.Relief}");
             sb.AppendLine($"Fertile land {r.Fertile:P0}, forest {r.Forest:P0}, mountains {r.Mountain:P0}, rivers {r.RiverKm} km");
-            if (r.Site != null) sb.AppendLine(home ? $"Your settlement: {r.Site.Name}" : $"City site: {r.Site.Name} (unclaimed)");
+            if (r.Site != null) sb.AppendLine(home ? $"Your settlement: {r.Site.Name}" : $"Its main settlement: {r.Site.Name}");
             return sb.ToString();
         }
 

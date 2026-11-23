@@ -1,6 +1,7 @@
 // Draws the world map (Sim/WorldMap.cs) into textures: terrain (biome colours, relief shading, rivers), a heat map (temperature, cold at the
 // top, hot at the bottom), region borders, and city sites. One pixel per strategic cell; the texture's row 0 is the BOTTOM of the picture,
 // so cell row y (0 = north) is written to pixel row Size - 1 - y. Point filtering keeps cells crisp when zoomed.
+using System.Linq;
 using CrownAndHearth.Sim;
 using UnityEngine;
 
@@ -153,19 +154,60 @@ namespace CrownAndHearth.Game
 
         /// <summary>City sites, camps and your settlement; a spotted warband (warband = where it is now, home = where it is going) is drawn
         /// as an orange marker with a dashed line along the rest of its road.</summary>
+        /// <summary>Realm colours, picked by the realm's seat; free settlements are pale grey.</summary>
+        static readonly Color32[] RealmPalette =
+        {
+            new Color32(70, 120, 230, 255), new Color32(60, 190, 90, 255), new Color32(200, 90, 210, 255), new Color32(40, 200, 200, 255),
+            new Color32(240, 220, 70, 255), new Color32(230, 130, 160, 255), new Color32(150, 110, 60, 255), new Color32(120, 220, 160, 255),
+            new Color32(255, 160, 90, 255), new Color32(160, 160, 255, 255), new Color32(190, 230, 80, 255), new Color32(120, 70, 170, 255),
+        };
+        public static readonly Color32 FreeSettlement = new Color32(214, 210, 200, 255);
+
+        public static Color32 RealmColor(Settlement s) => s.Realm < 0 ? FreeSettlement : RealmPalette[s.Realm % RealmPalette.Length];
+
+        /// <summary>Marker half-size by how developed a settlement is: a hamlet is a single dot, a capital a big square.</summary>
+        public static int SettlementRadius(SettlementTier t) => t switch
+        {
+            SettlementTier.Hamlet => 0, SettlementTier.Village => 1, SettlementTier.Town => 1, SettlementTier.City => 2, _ => 3,
+        };
+
         public static Texture2D BuildSites(WorldMap m, System.Collections.Generic.IReadOnlyList<RaiderCamp> camps = null, System.Collections.Generic.ISet<int> destroyed = null,
-            (double x, double y)? warband = null, (int x, int y)? home = null)
+            (double x, double y)? warband = null, (int x, int y)? home = null, System.Collections.Generic.IReadOnlyList<Settlement> settlements = null)
         {
             var px = new Color32[S * S]; var outline = new Color32(10, 10, 16, 210);
             void Square(int cx, int cy, int r, Color32 c)
             {
                 for (int y = cy - r; y <= cy + r; y++) for (int x = cx - r; x <= cx + r; x++) if (WorldMap.Inb(x, y)) px[Px(x, y)] = c;
             }
-            foreach (var reg in m.RegionList)
+            if (settlements != null && settlements.Count > 0)
             {
-                if (reg.Site == null || reg.Id == m.HomeRegion) continue;
-                Square(reg.Site.X, reg.Site.Y, 2, outline); Square(reg.Site.X, reg.Site.Y, 1, SiteWhite);
+                // faint lines from each settlement to the one it answers to, in its realm's colour
+                foreach (var s in settlements)
+                {
+                    if (s.Liege < 0 || s.Liege >= settlements.Count) continue;
+                    var l = settlements[s.Liege]; var c = RealmColor(s); c.a = 110;
+                    int steps = System.Math.Max(System.Math.Abs(l.X - s.X), System.Math.Abs(l.Y - s.Y));
+                    for (int i = 1; i < steps; i++)
+                    {
+                        int x = s.X + (l.X - s.X) * i / steps, y = s.Y + (l.Y - s.Y) * i / steps;
+                        if (WorldMap.Inb(x, y) && px[Px(x, y)].a == 0) px[Px(x, y)] = c;
+                    }
+                }
+                // markers, smallest first so the big places sit on top; towns and up get a dark outline, capitals a gold heart
+                foreach (var s in settlements.OrderBy(s => (int)s.Tier).ThenBy(s => s.Id))
+                {
+                    var t = s.Tier; int r = SettlementRadius(t);
+                    if (t >= SettlementTier.Town) Square(s.X, s.Y, r + 1, outline);
+                    Square(s.X, s.Y, r, RealmColor(s));
+                    if (t == SettlementTier.Capital) Square(s.X, s.Y, 1, HomeGold);
+                }
             }
+            else
+                foreach (var reg in m.RegionList)
+                {
+                    if (reg.Site == null || reg.Id == m.HomeRegion) continue;
+                    Square(reg.Site.X, reg.Site.Y, 2, outline); Square(reg.Site.X, reg.Site.Y, 1, SiteWhite);
+                }
             if (camps != null)
                 foreach (var c in camps)
                 {
