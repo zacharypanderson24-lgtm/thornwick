@@ -11,6 +11,10 @@ namespace CrownAndHearth.Sim
         public int Id, X, Y, Strength, Seed;   // X, Y: world cell (1 km); Strength 1..5 sets how many raiders live there and how big their raids are
         public string Name;
         public Relief Relief = Relief.Upland;   // how mountainous the camp's region is: its map is made by the settlement terrain generator with this relief
+        /// <summary>Set when this "camp" is really an NPC settlement being attacked (World.Conquest.cs): the same battle, with houses for tents,
+        /// the lord for the warlord and the settlement's garrison for raiders.</summary>
+        public Settlement Town;
+        public bool IsTown => Town != null;
         CampSite _site;
         System.Threading.Tasks.Task _making;
         readonly object _siteLock = new object();

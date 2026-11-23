@@ -74,9 +74,13 @@ namespace CrownAndHearth.Sim
                     }
             var map = CampMap.FromTerrain(w, x0, y0, camp);
             void Clear(int x, int y) => w.DecoMap[y0 + y, x0 + x] = Deco.None;
-            foreach (var t in map.Tents) { Clear(t.x, t.y); w.AddBld("tent", x0 + t.x, y0 + t.y); }
-            Clear(map.Chief.x, map.Chief.y); w.AddBld("chieftent", x0 + map.Chief.x, y0 + map.Chief.y);
-            foreach (var f in map.Fires) { Clear(f.x, f.y); w.AddBld("campfire", x0 + f.x, y0 + f.y); }
+            // an NPC settlement under attack is laid out the same way, but with homes for tents, the lord's house for the warlord's tent and
+            // wells for campfires (drawn with the town's own art until settlements get theirs)
+            string tent = camp.IsTown ? "house" : "tent", chief = camp.IsTown ? "house" : "chieftent", fire = camp.IsTown ? "well" : "campfire";
+            foreach (var t in map.Tents) { Clear(t.x, t.y); w.AddBld(tent, x0 + t.x, y0 + t.y); }
+            Clear(map.Chief.x, map.Chief.y); var lordHouse = w.AddBld(chief, x0 + map.Chief.x, y0 + map.Chief.y);
+            if (camp.IsTown) lordHouse.Lvl = 2;
+            foreach (var f in map.Fires) { Clear(f.x, f.y); w.AddBld(fire, x0 + f.x, y0 + f.y); }
             foreach (var r in map.Racks) { Clear(r.x, r.y); w.AddBld("rack", x0 + r.x, y0 + r.y); }
             foreach (var p in map.Piles) { Clear(p.X, p.Y); w.AddBld("supplies", x0 + p.X, y0 + p.Y).Var = (int)p.Res; }
             return new CampSite { World = w, Map = map, X0 = x0, Y0 = y0 };

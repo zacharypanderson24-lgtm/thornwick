@@ -280,7 +280,10 @@ namespace CrownAndHearth.EditorTools
             ti.textureCompression = TextureImporterCompression.Uncompressed;
             ti.alphaIsTransparency = true;
             string slot = Path.GetFileNameWithoutExtension(assetPath);
-            ti.isReadable = slot == "hall" || slot == "barracks" ||
+            // readable: art recoloured at runtime (BannerTint): the hall and barracks take your banner colour, and our infantry and archer
+            // battle sheets take a settlement's realm colour when they are its soldiers (BattleArt.PoseTinted)
+            bool battleSoldier = assetPath.Replace('\\', '/').Contains("/Battle/") && (slot == "infantry" || slot == "archer");
+            ti.isReadable = battleSoldier || slot == "hall" || slot == "barracks" ||
                 slot.StartsWith("hall_", StringComparison.Ordinal) || slot.StartsWith("barracks_", StringComparison.Ordinal);
             ti.wrapMode = TextureWrapMode.Clamp;
             ti.npotScale = TextureImporterNPOTScale.None;

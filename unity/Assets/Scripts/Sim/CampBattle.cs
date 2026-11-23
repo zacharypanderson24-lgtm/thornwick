@@ -263,7 +263,8 @@ namespace CrownAndHearth.Sim
                 SentInfantry += g.Infantry; SentArchers += g.Archers;
             }
             var size = CampSize.Of(camp.Strength);
-            int raiders = raidersHome < 0 ? size.Raiders : Math.Min(raidersHome, size.Raiders), brutes = size.Brutes;
+            // a camp never has more than its size allows; a town's garrison is as big as its people make it (World.Conquest.cs)
+            int raiders = raidersHome < 0 ? size.Raiders : camp.IsTown ? raidersHome : Math.Min(raidersHome, size.Raiders), brutes = size.Brutes;
             for (int i = 0; i < raiders; i++)
             {
                 (int x, int y) tent = Map.Tents.Count > 0 ? Map.Tents[i % Map.Tents.Count] : (16, 16);
@@ -555,9 +556,10 @@ namespace CrownAndHearth.Sim
 
         public string Summary()
         {
-            string outcome = Victory ? "Victory: the camp is destroyed." : Retreated ? "The army pulled out." : Over ? "Defeat: the army was wiped out." : "The fight goes on.";
+            string outcome = Victory ? (Camp.IsTown ? $"Victory: {Camp.Name} has fallen." : "Victory: the camp is destroyed.") : Retreated ? "The army pulled out." : Over ? "Defeat: the army was wiped out." : "The fight goes on.";
             string loot = Loot.Count == 0 ? "nothing" : string.Join(", ", Loot.Where(k => k.Value > 0).Select(k => $"{k.Value} {k.Key.ToString().ToLower()}"));
-            return $"{outcome}\n{Camp.Name}: {RaidersKilled} of {RaidersTotal} raiders killed.\n" +
+            string who = Camp.IsTown ? "defenders" : "raiders";
+            return $"{outcome}\n{Camp.Name}: {RaidersKilled} of {RaidersTotal} {who} killed.\n" +
                    $"You sent {SentInfantry} infantry and {SentArchers} archers; {LostInfantry} infantry and {LostArchers} archers fell, {SurvivingInfantry} infantry and {SurvivingArchers} archers survive.\n" +
                    (Loot.Values.Any(v => v > 0) ? $"They carry home: {loot}." : Victory ? "They carry home: nothing." : "");
         }

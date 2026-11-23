@@ -15,7 +15,7 @@ namespace CrownAndHearth.Game
         RectTransform _townPanel;
         Text _townTitle, _townInfo, _townSells, _townBuys, _townMessage, _townRoad;
         UnityEngine.UI.Image[] _buyButtons, _sellButtons;
-        UnityEngine.UI.Image _giftButton;
+        UnityEngine.UI.Image _giftButton, _attackButton, _reinforceButton, _withdrawButton;
         Settlement _town;
         static readonly int[] TradeAmounts = { 10, 50, 100 };
 
@@ -42,6 +42,20 @@ namespace CrownAndHearth.Game
                 _sellButtons[i] = MakeButton(_townPanel, $"Sell {amount}", Vector2.up, new Vector2(8 + 58 + i * 124, -312), new Vector2(116, 28), () => TradeWithTown(false, amount));
             }
             _giftButton = MakeButton(_townPanel, $"Send a gift ({World.GiftGold} gold)", Vector2.up, new Vector2(8 + 110, -356), new Vector2(220, 30), GiftToTown);
+            _attackButton = MakeButton(_townPanel, "Attack", Vector2.up, new Vector2(8 + 228 + 8 + 80, -356), new Vector2(160, 30), AttackTown);
+            // a settlement you hold: send more soldiers, or bring the garrison home (it then pays tribute)
+            _reinforceButton = MakeButton(_townPanel, "Send 5 more soldiers", Vector2.up, new Vector2(8 + 110, -356), new Vector2(220, 30), () =>
+            {
+                var r = _world.ReinforceGarrison(_town, 5);
+                _townMessage.text = r.Ok ? $"{r.Count} soldiers march to join the garrison of {_town.Name}." : r.Reason;
+                RefreshSettlementPanel();
+            });
+            _withdrawButton = MakeButton(_townPanel, "Bring them home", Vector2.up, new Vector2(8 + 228 + 8 + 80, -356), new Vector2(160, 30), () =>
+            {
+                var r = _world.WithdrawGarrison(_town);
+                _townMessage.text = r.Ok ? $"The garrison leaves {_town.Name}, which will pay you tribute instead." : r.Reason;
+                RefreshSettlementPanel();
+            });
             _townMessage = MakeText(_townPanel, "Message", 13, TextAnchor.UpperLeft); _townMessage.color = new Color(1f, 0.7f, 0.5f);
             TopStretch(_townMessage.rectTransform, 378, 430);
             _townRoad = MakeText(_townPanel, "Road", 13, TextAnchor.UpperLeft); _townRoad.color = Dim;
@@ -55,6 +69,7 @@ namespace CrownAndHearth.Game
         void OpenSettlement(Settlement s)
         {
             _town = s; _townMessage.text = "";
+            if (_world != null && _world.CanAttack(s).Ok) _world.TownCamp(s).PrepareSite();   // its battle ground is made in the background, in case you attack
             _townPanel.gameObject.SetActive(true);
             _townPanel.SetAsLastSibling(); _tip.SetAsLastSibling(); _cursorTip.SetAsLastSibling();
             RefreshSettlementPanel();
@@ -64,6 +79,18 @@ namespace CrownAndHearth.Game
         {
             _town = null;
             if (_townPanel != null) _townPanel.gameObject.SetActive(false);
+        }
+
+        /// <summary>Plan an attack: the settlement opens in the game view like a raider camp, with its garrison and its lord.</summary>
+        void AttackTown()
+        {
+            if (_town == null || _world == null) return;
+            var ok = _world.CanAttack(_town);
+            if (!ok.Ok) { _townMessage.text = ok.Reason; return; }
+            var camp = _world.TownCamp(_town);
+            if (!camp.SiteReady) { camp.PrepareSite(); _townMessage.text = $"Scouts are mapping {_town.Name}. Try again in a moment."; return; }
+            CloseSettlement();
+            OpenCamp(camp);
         }
 
         void TradeWithTown(bool buy, int amount)
@@ -95,8 +122,14 @@ namespace CrownAndHearth.Game
             var sb = new StringBuilder();
             sb.AppendLine($"{s.Population:0} people · {_world.SettlementKm(s)} km away, {_world.SettlementMarchDays(s)} days by caravan");
             var liege = _world.SettlementById(s.Liege); var seat = _world.SettlementById(s.Realm);
-            sb.AppendLine(liege != null ? $"Answers to {liege.Name}" + (seat != null && seat != liege ? $", in the realm of {seat.Name}" : "")
-                : seat == s ? $"Seat of a realm of {_world.AllSubjects(s)} settlements" : "Free: answers to nobody");
+            if (s.Allegiance == Allegiance.Occupied)
+                sb.AppendLine($"<color=#FFC428>Yours</color>: held by {s.Garrison} of your soldiers" + (s.Garrison < World.GarrisonNeeded(s) ? $" (<color=#FF8C70>needs {World.GarrisonNeeded(s)}: it may rise up</color>)" : $" (needs {World.GarrisonNeeded(s)})"));
+            else if (s.Allegiance == Allegiance.Tributary)
+                sb.AppendLine("<color=#FFC428>Pays you tribute</color> every month (it may stop paying)");
+            else
+                sb.AppendLine(liege != null ? $"Answers to {liege.Name}" + (seat != null && seat != liege ? $", in the realm of {seat.Name}" : "")
+                    : seat == s ? $"Seat of a realm of {_world.AllSubjects(s)} settlements" : "Free: answers to nobody");
+            if (s.Allegiance == Allegiance.Own) sb.AppendLine($"Garrison: about {World.Garrison(s)} defenders, its lord and his guard");
             sb.AppendLine($"{Settlements.PersonalityName(s.Personality)}: {Settlements.PersonalityNote(s.Personality)}");
             sb.AppendLine($"Towards you: <b>{Settlements.AttitudeName(s.Attitude)}</b> ({s.Attitude:+0;-0;0})");
             var can = _world.CanTrade(s);
@@ -114,6 +147,10 @@ namespace CrownAndHearth.Game
             foreach (var b in _sellButtons) b.gameObject.SetActive(trading);
             foreach (var b in _buyButtons.Concat(_sellButtons)) b.color = can.Ok ? Btn : new Color(0.2f, 0.17f, 0.13f, 1f);
             _giftButton.color = _world.ResAmt[Res.Gold] >= World.GiftGold && s.Attitude < World.GiftCap ? Btn : new Color(0.2f, 0.17f, 0.13f, 1f);
+            bool held = s.Allegiance == Allegiance.Occupied;
+            _giftButton.gameObject.SetActive(!held); _attackButton.gameObject.SetActive(!held);
+            _reinforceButton.gameObject.SetActive(held); _withdrawButton.gameObject.SetActive(held);
+            _attackButton.color = _world.CanAttack(s).Ok ? new Color(0.45f, 0.16f, 0.12f, 1f) : new Color(0.2f, 0.17f, 0.13f, 1f);
 
             var road = _world.Caravans.OrderBy(c => c.ArriveDay).ToList();
             var lines = new StringBuilder($"<b>On the road</b> ({_world.TradeCaravansOut} of {_world.Markets} market caravans out)\n");
