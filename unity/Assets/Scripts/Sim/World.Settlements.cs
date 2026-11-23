@@ -41,6 +41,16 @@ namespace CrownAndHearth.Sim
                     // rows of 9 keep infantry and archers apart; older rows of 8 held one total, which was all infantry then
                     s.GarrisonInfantry = row[7].Value<int>(); s.GarrisonArchers = row.Count >= 9 ? row[8].Value<int>() : 0;
                 }
+                s.SoldOf.Clear(); s.BoughtOf.Clear();
+                if (row.Count >= 10 && row[9] is JObject goods)
+                {
+                    ReadGoods(goods["sold"] as JObject, s.SoldOf); ReadGoods(goods["bought"] as JObject, s.BoughtOf);
+                }
+                else
+                {   // older rows kept one total each: it was all the main good then
+                    if (s.SoldThisMonth > 0) s.SoldOf[s.Makes] = s.SoldThisMonth;
+                    if (s.BoughtThisMonth > 0) s.BoughtOf[s.Needs] = s.BoughtThisMonth;
+                }
             }
             _settlementRows.Clear();
             if (realmsChanged) RecomputeRealms();
@@ -68,7 +78,7 @@ namespace CrownAndHearth.Sim
             StepCaravans();
             StepDetachments();   // World.Conquest.cs: reinforcements reaching their garrisons
             if (_settlements.Count == 0 || Day % SettlementMonth != 0) return;
-            foreach (var s in _settlements) { s.SoldThisMonth = 0; s.BoughtThisMonth = 0; }
+            foreach (var s in _settlements) { s.SoldThisMonth = 0; s.BoughtThisMonth = 0; s.SoldOf.Clear(); s.BoughtOf.Clear(); }
             StepConquered();   // World.Conquest.cs: tribute and occupied settlements
             foreach (var s in SettlementRules.Grow(_settlements))
                 if (s.Tier >= SettlementTier.Town && SettlementKm(s) <= RaidFarKm)
@@ -83,10 +93,23 @@ namespace CrownAndHearth.Sim
             if (_settlements.Count > 0)
                 foreach (var s in _settlements)
                     rows.Add(new JArray(s.Id, Math.Round(s.Population, 2), s.Attitude, s.SoldThisMonth, s.BoughtThisMonth, s.Liege, (int)s.Allegiance,
-                        s.GarrisonInfantry, s.GarrisonArchers));
+                        s.GarrisonInfantry, s.GarrisonArchers, GoodsTraded(s)));
             else
                 foreach (var kv in _settlementRows.OrderBy(k => k.Key)) rows.Add(kv.Value.DeepClone());
             return rows;
+        }
+
+        // this month's trade by good: { sold: { Food: 20 }, bought: { Metal: 5 } }
+        static JObject GoodsTraded(Settlement s) => new JObject
+        {
+            ["sold"] = new JObject(s.SoldOf.Where(kv => kv.Value > 0).Select(kv => new JProperty(kv.Key.ToString(), kv.Value))),
+            ["bought"] = new JObject(s.BoughtOf.Where(kv => kv.Value > 0).Select(kv => new JProperty(kv.Key.ToString(), kv.Value))),
+        };
+
+        static void ReadGoods(JObject o, Dictionary<Res, int> into)
+        {
+            foreach (var prop in o?.Properties() ?? Enumerable.Empty<JProperty>())
+                if (Enum.TryParse<Res>(prop.Name, out var r)) into[r] = (int)prop.Value;
         }
 
         /// <summary>Your soldiers in garrisons according to the saved rows, before the settlements themselves have arrived.</summary>

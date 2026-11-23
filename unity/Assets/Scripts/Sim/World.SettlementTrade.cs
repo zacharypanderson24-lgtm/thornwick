@@ -42,16 +42,25 @@ namespace CrownAndHearth.Sim
         /// <summary>Trading caravans on the road (gifts go by messenger and do not count).</summary>
         public int TradeCaravansOut => Caravans.Count(c => c.Kind != CaravanKind.Gift);
 
-        /// <summary>How much of a good a settlement trades in a month: about one unit for every 8 people, from 10 up to 400.</summary>
+        /// <summary>How much a settlement trades in a month, all its goods together: about one unit for every 8 people, from 10 up to 400.</summary>
         public static int MonthlyTrade(Settlement s) => Math.Clamp((int)Math.Round(s.Population / 8), 10, 400);
 
-        /// <summary>Gold you pay for one unit of what it makes: cheap where it is plentiful (80% of its worth), cheaper the more it likes you.</summary>
-        public static double PriceToBuy(Settlement s) => BasePrice(s.Makes) * 0.8 * (1 - s.Attitude / 400.0);
-        /// <summary>Gold it pays you for one unit of what it needs: dear where it is scarce (150% of its worth), more the more it likes you.</summary>
-        public static double PriceToSell(Settlement s) => BasePrice(s.Needs) * 1.5 * (1 + s.Attitude / 400.0);
+        /// <summary>How much of one good it trades in a month: its share of the whole, a main good more than a side one (at least 5).</summary>
+        public static int MonthlyTrade(Settlement s, Res r) => Math.Max(5, (int)Math.Round(MonthlyTrade(s) * s.ShareOf(r) * 1.6));
 
-        public static int LeftToBuy(Settlement s) => Math.Max(0, MonthlyTrade(s) - s.SoldThisMonth);
-        public static int LeftToSell(Settlement s) => Math.Max(0, MonthlyTrade(s) - s.BoughtThisMonth);
+        /// <summary>Gold you pay for one unit of a good it produces: cheap where it is plentiful (80% of its worth, its main goods cheapest),
+        /// cheaper the more it likes you.</summary>
+        public static double PriceToBuy(Settlement s, Res r) => BasePrice(r) * 0.8 * (1.15 - 0.3 * s.ShareOf(r)) * (1 - s.Attitude / 400.0);
+        /// <summary>Gold it pays you for one unit of a good it needs: dear where it is scarce (150% of its worth, its main needs dearest),
+        /// more the more it likes you.</summary>
+        public static double PriceToSell(Settlement s, Res r) => BasePrice(r) * 1.5 * (0.85 + 0.3 * s.ShareOf(r)) * (1 + s.Attitude / 400.0);
+        public static double PriceToBuy(Settlement s) => PriceToBuy(s, s.Makes);
+        public static double PriceToSell(Settlement s) => PriceToSell(s, s.Needs);
+
+        public static int LeftToBuy(Settlement s, Res r) => s.Produces(r) ? Math.Max(0, MonthlyTrade(s, r) - s.SoldOf.GetValueOrDefault(r)) : 0;
+        public static int LeftToSell(Settlement s, Res r) => s.Wanting(r) ? Math.Max(0, MonthlyTrade(s, r) - s.BoughtOf.GetValueOrDefault(r)) : 0;
+        public static int LeftToBuy(Settlement s) => LeftToBuy(s, s.Makes);
+        public static int LeftToSell(Settlement s) => LeftToSell(s, s.Needs);
 
         /// <summary>Whether a caravan can set out for this settlement now, and why not.</summary>
         public Result CanTrade(Settlement s)
@@ -64,31 +73,35 @@ namespace CrownAndHearth.Sim
             return Result.Yes();
         }
 
-        /// <summary>Buy goods it makes: pay now, the caravan brings them home after the march.</summary>
-        public Result BuyFrom(Settlement s, int amount)
+        /// <summary>Buy a good it produces (its main good if none is named): pay now, the caravan brings it home after the march.</summary>
+        public Result BuyFrom(Settlement s, int amount, Res? good = null)
         {
             var ok = CanTrade(s); if (!ok.Ok) return ok;
-            amount = Math.Min(Math.Min(amount, CaravanLoad), LeftToBuy(s));
-            if (amount <= 0) return Result.No($"{s.Name} has no more {GoodName(s.Makes)} to sell this month");
-            int cost = (int)Math.Ceiling(amount * PriceToBuy(s));
+            var r = good ?? s.Makes;
+            if (!s.Produces(r)) return Result.No($"{s.Name} does not produce {GoodName(r)}");
+            amount = Math.Min(Math.Min(amount, CaravanLoad), LeftToBuy(s, r));
+            if (amount <= 0) return Result.No($"{s.Name} has no more {GoodName(r)} to sell this month");
+            int cost = (int)Math.Ceiling(amount * PriceToBuy(s, r));
             if (ResAmt[Res.Gold] < cost) return Result.No($"That costs {cost} gold; you have {ResAmt[Res.Gold]:0}");
             ResAmt[Res.Gold] -= cost;
-            s.SoldThisMonth += amount;
-            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Buy, Res = s.Makes, Amount = amount, Gold = cost, ArriveDay = Day + SettlementMarchDays(s) });
+            s.SoldThisMonth += amount; s.SoldOf[r] = s.SoldOf.GetValueOrDefault(r) + amount;
+            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Buy, Res = r, Amount = amount, Gold = cost, ArriveDay = Day + SettlementMarchDays(s) });
             return Result.Yes(amount);
         }
 
-        /// <summary>Sell it goods it needs: they leave now, the gold comes home after the march.</summary>
-        public Result SellTo(Settlement s, int amount)
+        /// <summary>Sell it a good it needs (its main need if none is named): it leaves now, the gold comes home after the march.</summary>
+        public Result SellTo(Settlement s, int amount, Res? good = null)
         {
             var ok = CanTrade(s); if (!ok.Ok) return ok;
-            amount = Math.Min(Math.Min(amount, CaravanLoad), LeftToSell(s));
-            if (amount <= 0) return Result.No($"{s.Name} wants no more {GoodName(s.Needs)} this month");
-            if (ResAmt[s.Needs] < amount) return Result.No($"You have only {ResAmt[s.Needs]:0} {GoodName(s.Needs)}");
-            int gold = (int)Math.Floor(amount * PriceToSell(s));
-            ResAmt[s.Needs] -= amount;
-            s.BoughtThisMonth += amount;
-            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Sell, Res = s.Needs, Amount = amount, Gold = gold, ArriveDay = Day + SettlementMarchDays(s) });
+            var r = good ?? s.Needs;
+            if (!s.Wanting(r)) return Result.No($"{s.Name} does not need {GoodName(r)}");
+            amount = Math.Min(Math.Min(amount, CaravanLoad), LeftToSell(s, r));
+            if (amount <= 0) return Result.No($"{s.Name} wants no more {GoodName(r)} this month");
+            if (ResAmt[r] < amount) return Result.No($"You have only {ResAmt[r]:0} {GoodName(r)}");
+            int gold = (int)Math.Floor(amount * PriceToSell(s, r));
+            ResAmt[r] -= amount;
+            s.BoughtThisMonth += amount; s.BoughtOf[r] = s.BoughtOf.GetValueOrDefault(r) + amount;
+            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Sell, Res = r, Amount = amount, Gold = gold, ArriveDay = Day + SettlementMarchDays(s) });
             return Result.Yes(amount);
         }
 

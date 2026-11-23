@@ -166,6 +166,30 @@ namespace CrownAndHearth.Sim
         public static int SackRoom(PendingConquest p) =>
             Math.Max(0, (p.Infantry * CampBattle.InfantryCarry + p.Archers * CampBattle.ArcherCarry) * (1 + SackCartFactor) - p.Loot.Values.Sum());
 
+        /// <summary>A number of goods split across what a settlement produces, by each good's share (largest first, nothing left over).</summary>
+        public static List<(Res res, int n)> SplitGoods(Settlement s, int total)
+        {
+            var list = new List<(Res res, int n)>();
+            if (total <= 0) return list;
+            var produce = s.Produce.Count > 0 ? s.Produce.OrderByDescending(p => p.share).ToList() : new List<(Res res, double share)> { (s.Makes, 1) };
+            double sum = produce.Sum(p => p.share);
+            int left = total;
+            for (int i = 0; i < produce.Count; i++)
+            {
+                int n = i == produce.Count - 1 ? left : Math.Min(left, (int)Math.Round(total * produce[i].share / sum));
+                left -= n;
+                if (n > 0) list.Add((produce[i].res, n));
+            }
+            return list;
+        }
+
+        /// <summary>"20 grain, 8 timber and 3 metal".</summary>
+        public static string GoodsAmounts(IEnumerable<(Res res, int n)> goods)
+        {
+            var parts = goods.Select(g => $"{g.n} {GoodName(g.res)}").ToList();
+            return parts.Count <= 1 ? string.Join("", parts) : string.Join(", ", parts.Take(parts.Count - 1)) + " and " + parts[^1];
+        }
+
         /// <summary>Decide the fate of the settlement you took. The army (minus any garrison you leave) marches home with the loot.</summary>
         public Result ResolveConquest(ConquestChoice choice, int stationed = 0)
         {
@@ -183,13 +207,14 @@ namespace CrownAndHearth.Sim
                     int takeGoods = Math.Min(goods, room);
                     int burned = gold - takeGold + goods - takeGoods;
                     if (takeGold > 0) p.Loot[Res.Gold] = p.Loot.GetValueOrDefault(Res.Gold) + takeGold;
-                    if (takeGoods > 0) p.Loot[s.Makes] = p.Loot.GetValueOrDefault(s.Makes) + takeGoods;
+                    var taken = SplitGoods(s, takeGoods);
+                    foreach (var (r, n) in taken) p.Loot[r] = p.Loot.GetValueOrDefault(r) + n;
                     s.Population = Math.Max(SettlementRules.TierFloor[0], Math.Round(s.Population * 0.4));
                     s.Attitude = -100;
                     HurtRealm(s, 40);
                     foreach (var o in _settlements)
                         if (o != s && Math.Max(Math.Abs(o.X - s.X), Math.Abs(o.Y - s.Y)) <= SackHeardKm) Anger(o, 10);
-                    news = $"{s.Name} is sacked. The carts carry off {takeGold} gold and {takeGoods} {GoodName(s.Makes)}" +
+                    news = $"{s.Name} is sacked. The carts carry off {takeGold} gold" + (taken.Count > 0 ? " and " + GoodsAmounts(taken) : "") +
                            (burned > 0 ? $"; {burned} more burned with the town for want of carts." : ".");
                     break;
                 }
@@ -303,9 +328,15 @@ namespace CrownAndHearth.Sim
                 if (s.Allegiance == Allegiance.Own) continue;
                 bool held = s.Allegiance == Allegiance.Occupied;
                 int gold = Math.Max(1, (int)Math.Round(s.Population / (held ? 15.0 : 25.0))), goods = MonthlyTrade(s) / (held ? 1 : 2);
-                double stored = Math.Min(goods, Math.Max(0, CropStorage(s.Makes) - ResAmt[s.Makes]));
-                ResAmt[Res.Gold] += gold; ResAmt[s.Makes] += stored;
-                Events.Add($"{s.Name} sends {gold} gold and {stored:0} {GoodName(s.Makes)}" + (held ? "." : " in tribute."));
+                ResAmt[Res.Gold] += gold;
+                var sent = new List<(Res res, int n)>();
+                foreach (var (r, n) in SplitGoods(s, goods))
+                {
+                    int stored = (int)Math.Min(n, Math.Max(0, CropStorage(r) - ResAmt[r]));   // what does not fit in your stores is left behind
+                    ResAmt[r] += stored;
+                    if (stored > 0) sent.Add((r, stored));
+                }
+                Events.Add($"{s.Name} sends {gold} gold" + (sent.Count > 0 ? " and " + GoodsAmounts(sent) : "") + (held ? "." : " in tribute."));
                 if (s.Attitude < 0) s.Attitude++;
                 double roll = Noise.Hash2(s.Id, Day, Seed + 977);
                 if (held)
