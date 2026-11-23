@@ -53,9 +53,9 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "zoneRes", Cat = Cat.Housing, Label = "Housing Zone", Zone = Zone.Res,
                 Desc = "Drag over land to mark it for homes. Villagers build houses here by themselves, on tiles touching a connected road, when the town needs room." },
             new ToolDef { Id = "farmhouse", Cat = Cat.Farming, Label = "Farmhouse", Build = "farm",
-                Desc = "Its jobs are how many farmers you can have. All your Farmland is worked by the farmhouses together, wherever it lies: the fields decide the crops and how many farmers are needed. Needs a road to the Town Hall." },
+                Desc = $"Works the Farmland within {World.FarmReach} tiles (the shaded ring), nearest first. Each farmer sows, tends and reaps {World.FieldsPerFarmer} fields a year, enough to feed about 10 people; its jobs are how many farmers it can have. Needs a road to the Town Hall." },
             new ToolDef { Id = "zoneFarm", Cat = Cat.Farming, Label = "Farmland", Zone = Zone.Farm,
-                Desc = "Drag over fertile land anywhere. Every farmhouse with a road works it. Set the wheat and flax percentages in the Farming menu above the build bar." },
+                Desc = $"Drag over fertile land within {World.FarmReach} tiles of a farmhouse (shaded). Farmland out of reach lies fallow. Set the wheat and flax percentages in the Farming menu above the build bar." },
             new ToolDef { Id = "silo", Cat = Cat.Farming, Label = "Silo", Build = "silo",
                 Desc = $"Stores {World.SiloFood} more wheat and {World.SiloFlax} more flax. Needs a road to the Town Hall." },
             new ToolDef { Id = "pigPen", Cat = Cat.Farming, Label = "Pig Pen", Zone = Zone.Pigs,
@@ -627,7 +627,7 @@ namespace CrownAndHearth.Game
         /// <summary>How far a work building reaches, in tiles around its footprint (0 = it has no local reach).</summary>
         static int ReachOf(string type) => type switch
         {
-            "wood" => WorkR, "hunter" => World.HuntingRange, "quarry" => WorkR, "mine" => WorkR, "forester" => ForesterR, _ => 0,
+            "wood" => WorkR, "hunter" => World.HuntingRange, "quarry" => WorkR, "mine" => WorkR, "forester" => ForesterR, "farm" => World.FarmReach, _ => 0,
         };
 
         void AddReach(string type, int bx, int by, int sz, Color32 col, HashSet<int> seen)
@@ -665,6 +665,7 @@ namespace CrownAndHearth.Game
         {
             Zone.Wood => type == "wood" || type == "forester",
             Zone.Mine => type == "quarry" || type == "mine",
+            Zone.Farm => type == "farm",
             _ => false,
         };
 
@@ -679,7 +680,7 @@ namespace CrownAndHearth.Game
             _overlay.Clear();
             if (_ugLevel > 0) DrawUnderground();
             // zone tools: shade where the buildings that work this zone can reach, so the player knows where to paint
-            if (_tool.Zone == Zone.Wood || _tool.Zone == Zone.Mine)
+            if (_tool.Zone == Zone.Wood || _tool.Zone == Zone.Mine || (_tool.Zone == Zone.Farm && World.SeasonalFarming))
             {
                 var seen = new HashSet<int>();
                 foreach (var b in World.Blds) if (Works(_tool.Zone, b.T)) AddReach(b.T, b.X, b.Y, b.Sz, Reach, seen);

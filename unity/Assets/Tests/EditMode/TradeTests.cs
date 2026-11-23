@@ -33,7 +33,7 @@ namespace CrownAndHearth.Tests
             int c = Defs.Start;
             Assert.That(world.Place("silo", c + 1, c + 4).Ok, Is.True);
             Assert.That(world.Grid[c + 4, c + 1].Sz, Is.EqualTo(1));
-            Assert.That(world.CropStorage(Res.Food), Is.EqualTo(620));
+            Assert.That(world.CropStorage(Res.Food), Is.EqualTo(260 + World.SiloFood), "the town's own store plus one silo");
             Assert.That(world.CropStorage(Res.Flax), Is.EqualTo(90));
             world.ResAmt[Res.Flax] = 65;
             Assert.That(world.Remove(c + 1, c + 4).Ok, Is.True);

@@ -28,7 +28,7 @@ namespace CrownAndHearth.Tests
             w = World.LoadJson(w.SaveJson());
             farm = w.Blds.Single(b => b.T == "farm");
             w.SetFlaxPercent(100);
-            for (int i = 0; i < 5 && fields.Any(key => w.SownOn(key) == 0); i++) w.Tick();
+            for (int i = 0; i < 20 && fields.Any(key => w.SownOn(key) == 0); i++) w.Tick();   // each farmer sows one field a day
             Assert.That(fields.Count(key => w.SownOn(key) >= 2 && w.PlantedFlax(key)), Is.EqualTo(fields.Length - planted), "the rest are sown with flax");
             Assert.AreEqual(crew, farm.Workers, "farmers stay at work while the crops grow");
             Assert.That(fields.Count(key => w.SownOn(key) == 1 && !w.PlantedFlax(key)), Is.EqualTo(planted));
@@ -77,16 +77,21 @@ namespace CrownAndHearth.Tests
             w.Touch();
             Assume.That(zoned, Is.GreaterThan(farm.Jobs * World.FieldsPerFarmer + 10), "seed 7 has plenty of fertile ground");
             var fields = w.FarmFields();
-            Assert.AreEqual(farm.Jobs * World.FieldsPerFarmer, w.FieldsOf(farm), "a farm works at most 3 fields per job");
-            foreach (var key in fields.Keys)
+            int Dist(int key)
             {
                 int x = key % N, y = key / N;
-                int dist = Math.Max(Math.Max(0, Math.Max(farm.X - x, x - (farm.X + farm.Sz - 1))), Math.Max(0, Math.Max(farm.Y - y, y - (farm.Y + farm.Sz - 1))));
-                Assert.LessOrEqual(dist, World.FarmReach, "only fields within reach of the farmhouse");
+                return Math.Max(Math.Max(0, Math.Max(farm.X - x, x - (farm.X + farm.Sz - 1))), Math.Max(0, Math.Max(farm.Y - y, y - (farm.Y + farm.Sz - 1))));
             }
+            int inReach = 0;
+            for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
+                if (w.ZoneMap[y, x] == Zone.Farm && w.Fert[y, x] && w.Grid[y, x] == null && w.DecoMap[y, x] == Deco.None && !w.IsSolid(x, y) && Dist(World.Tk(x, y)) <= World.FarmReach) inReach++;
+            int cap = farm.Jobs * World.FieldsPerFarmer;
+            Assert.AreEqual(Math.Min(cap, inReach), w.FieldsOf(farm), "a farm works the fields in its reach, at most FieldsPerFarmer per job");
+            foreach (var key in fields.Keys) Assert.LessOrEqual(Dist(key), World.FarmReach, "only fields within reach of the farmhouse");
             Assert.Greater(w.FallowFields(), 0, "the rest of the Farmland lies fallow");
             w.Recalc();
-            Assert.AreEqual(Math.Min(farm.Jobs, w.Peasants), farm.Workers, "a full farm needs all its farmers");
+            int crew = (w.FieldsOf(farm) + World.FieldsPerFarmer - 1) / World.FieldsPerFarmer;
+            Assert.AreEqual(Math.Min(w.Peasants, Math.Min(farm.Jobs, crew)), farm.Workers, "one farmer for every FieldsPerFarmer fields");
         }
 
         [Test]
@@ -94,10 +99,16 @@ namespace CrownAndHearth.Tests
         {
             var w = new World(7) { Peasants = 1 };
             var farm = w.Blds.Single(b => b.T == "farm");
+            // more Farmland in the farm's reach than one farmer can tend
+            int c = Defs.Start;
+            for (int y = c - 12; y <= c + 12; y++)
+                for (int x = c - 12; x <= c + 12; x++)
+                    if (w.Fert[y, x] && w.Grid[y, x] == null && w.ZoneMap[y, x] == Zone.None && w.DecoMap[y, x] == Deco.None && !w.IsSolid(x, y)) w.ZoneMap[y, x] = Zone.Farm;
+            w.Touch();
             var fields = w.FarmFields().Keys.ToArray();
-            Assume.That(fields.Length, Is.GreaterThan(World.FieldsPerFarmer));
-            for (int i = 0; i < 20; i++) { w.Peasants = 1; w.ResAmt[Res.Food] = 200; w.Tick(); }
-            Assert.AreEqual(World.FieldsPerFarmer, fields.Count(key => w.SownOn(key) >= 1), "one farmer sows only three fields a year");
+            Assume.That(fields.Length, Is.GreaterThan(World.FieldsPerFarmer + 5));
+            for (int i = 0; i < 30; i++) { w.Peasants = 1; w.ResAmt[Res.Food] = 200; w.Tick(); }
+            Assert.AreEqual(World.FieldsPerFarmer, fields.Count(key => w.SownOn(key) >= 1), "one farmer sows only the fields one farmer can tend");
         }
 
 
@@ -120,16 +131,26 @@ namespace CrownAndHearth.Tests
         {
             var w = new World(7);
             var farm = w.Blds.Single(b => b.T == "farm");
+            // seasonal farming: a field gives WheatYield once a year; FarmFood spreads that over the year
+            int c = Defs.Start, added = 0;
+            for (int y = c - 8; y <= c + 8 && added < 20; y++)   // a few more plots than one farmer can tend, fewer than the farm can
+                for (int x = c - 8; x <= c + 8 && added < 20; x++)
+                    if (w.Fert[y, x] && w.Grid[y, x] == null && w.ZoneMap[y, x] == Zone.None && w.DecoMap[y, x] == Deco.None && !w.IsSolid(x, y)) { w.ZoneMap[y, x] = Zone.Farm; added++; }
+            w.Touch();
+            w.SetFlaxPercent(0);   // all wheat, so every plot is food
             var plots = w.FarmFields().Where(p => p.Value == farm).Select(p => p.Key).ToArray();
+            Assume.That(plots.Length, Is.GreaterThan(World.FieldsPerFarmer));
+            double perField = World.WheatYield / (double)World.YearLength;
             farm.Workers = 0;
             Assert.AreEqual(0, w.FarmFood(), 1e-9, "no farmers, no food");
             farm.Workers = 1;
-            Assert.AreEqual(0.8, w.FarmFood(), 1e-9, "one farmer tends 2 plots");
-            farm.Workers = 10;
-            Assert.AreEqual(plots.Length * 0.4, w.FarmFood(), 1e-9, "plenty of farmers: the plots are the limit");
+            Assert.AreEqual(World.FieldsPerFarmer * perField, w.FarmFood(), 1e-9, "one farmer tends FieldsPerFarmer plots");
+            farm.Workers = farm.Jobs;
+            Assert.AreEqual(Math.Min(plots.Length, farm.Jobs * World.FieldsPerFarmer) * perField, w.FarmFood(), 1e-9, "plenty of farmers: the plots are the limit");
+            Assume.That(plots.Length, Is.LessThan(farm.Jobs * World.FieldsPerFarmer), "the farm has room for one more plot");
             w.ZoneMap[plots[0] / N, plots[0] % N] = Zone.None;
             w.Touch();   // direct edits must report themselves (the field list is cached per world change)
-            Assert.AreEqual((plots.Length - 1) * 0.4, w.FarmFood(), 1e-9, "an unzoned tile is no longer a plot");
+            Assert.AreEqual((plots.Length - 1) * perField, w.FarmFood(), 1e-9, "an unzoned tile is no longer a plot");
             Assert.IsFalse(w.FarmFields().ContainsKey(plots[0]));
         }
 

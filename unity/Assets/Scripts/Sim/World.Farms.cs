@@ -9,10 +9,12 @@ namespace CrownAndHearth.Sim
     {
         const int StarterFieldRange = 3;   // only where the starting farm gets its first fields
         const int FieldsPerWorker = 2;
-        /// <summary>Seasonal farming: one farmer sows, tends and reaps this many fields a year (about 255 food: enough for 3 to 4 people).</summary>
-        public const int FieldsPerFarmer = 3;
-        /// <summary>A farm only works Farmland within this many tiles of its farmhouse; farther fields lie fallow.</summary>
-        public const int FarmReach = 8;
+        /// <summary>Seasonal farming: one farmer sows, tends and reaps this many fields a year (9 x 85 = 765 food: about 10 people, who eat
+        /// 72 a year each).</summary>
+        public const int FieldsPerFarmer = 9;
+        /// <summary>A farm only works Farmland within this many tiles of its farmhouse (shown as a shaded ring); farther fields lie fallow.
+        /// A full 2x2 farmhouse (10 farmers, 90 fields) fits comfortably inside it.</summary>
+        public const int FarmReach = 10;
         const double FoodPerField = 0.4;   // two plots a farmer: about 0.8 food a farmer a day, as the old farms gave
         const int StarterFields = 8;
         internal readonly Dictionary<int, bool> FlaxFields = new Dictionary<int, bool>();
@@ -324,7 +326,21 @@ namespace CrownAndHearth.Sim
             return (wheat, flax, wheatTarget, flaxTarget, firstHarvest, emptyDay, wheatYield, flaxYield, overflow);
         }
 
-        public double FarmFood() => FarmOutput().food;
+        /// <summary>Food the farms make on an average day. Seasonal farming: the wheat fields the farmers can tend (FieldsPerFarmer each)
+        /// times WheatYield, spread over the year. Classic farming: today's output.</summary>
+        public double FarmFood()
+        {
+            if (!SeasonalFarming) return FarmOutput().food;
+            double food = 0;
+            foreach (var farm in Blds.Where(b => b.T == "farm" && b.Served))
+            {
+                var mine = FarmFields().Where(f => f.Value == farm).Select(f => f.Key).ToList();
+                int wheat = mine.Count(k => !IsFlaxField(k % N, k / N));
+                double tended = Math.Min(1.0, farm.Workers * FieldsPerFarmer / (double)Math.Max(1, mine.Count));
+                food += wheat * tended * WheatYield / (double)YearLength;
+            }
+            return food;
+        }
 
         public (double food, double flax) FarmOutput()
         {
