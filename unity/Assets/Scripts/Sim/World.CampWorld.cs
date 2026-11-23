@@ -34,6 +34,7 @@ namespace CrownAndHearth.Sim
         /// walkable edge and a clearing `half` tiles round its middle.</summary>
         (int x0, int y0) PickWindow(int seed, int n, int half)
         {
+            if (n >= N - 16) return ((N - n) / 2, (N - n) / 2);   // a map nearly as big as the world: all of it
             int bestX = Start - n / 2, bestY = bestX; double bestScore = -1;
             int mid = n / 2;
             for (int i = 0; i < 32; i++)

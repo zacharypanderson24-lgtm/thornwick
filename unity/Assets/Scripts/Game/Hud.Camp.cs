@@ -255,7 +255,7 @@ namespace CrownAndHearth.Game
             var occupy = _world.CanResolve(ConquestChoice.Occupy, _occupyCount);
             return $"\n\n<b>{s.Name} is yours to decide</b> ({p.Infantry} infantry and {p.Archers} archers survived, carrying {p.Loot.Values.Sum()} goods).\n" +
                    $"· Leave: march home with what they carry.\n" +
-                   $"· Sack: it holds about {gold} gold and {goods} {World.GoodName(s.Makes)}; with the town's carts your army can take {room} more, the rest burns. Most of its people are lost.\n" +
+                   $"· Sack: it holds about {gold} gold and {goods} goods ({Settlements.GoodsList(s.Produce)}); with the town's carts your army can take {room} more, the rest burns. Most of its people are lost.\n" +
                    $"· Tribute: it pays you every month and breaks from its realm.\n" +
                    $"· Occupy: leave at least {need} soldiers; it pays more each month." + (occupy.Ok ? "" : $" <color=#FFB080>{occupy.Reason}.</color>") +
                    "\nYou can also close this and decide later from its panel on the world map.";
@@ -452,7 +452,7 @@ namespace CrownAndHearth.Game
         {
             var plan = _camp.Site.World.TownLayout;
             if (plan == null) return $"{view.Map.Tents.Count} homes and the lord's hall\n";
-            return $"A town hall, {plan.Homes} homes, {plan.Barracks} barracks, {plan.Farms} farms with {plan.Fields} fields" +
+            return $"{Settlements.KindName(plan.Kind)} {_camp.Town?.Tier.ToString().ToLower() ?? "town"}: a town hall, {plan.Homes} homes, {plan.Barracks} barracks, {plan.Farms} farms with {plan.Fields} fields" +
                    (plan.WallTiles > 0 ? $", a palisade with {plan.Towers} watchtowers" : "") + "\n";
         }
 

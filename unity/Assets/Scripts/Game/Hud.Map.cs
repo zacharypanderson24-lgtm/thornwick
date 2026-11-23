@@ -254,7 +254,8 @@ namespace CrownAndHearth.Game
             sb.AppendLine($"{Settlements.PersonalityName(s.Personality)}: {Settlements.PersonalityNote(s.Personality)}");
             sb.AppendLine($"Towards you: {Settlements.AttitudeName(s.Attitude)} ({s.Attitude:+0;-0;0})" +
                 (s.WillTrade ? "  ·  willing to trade" : s.Tier == SettlementTier.Hamlet ? "  ·  too small to trade" : "  ·  will not trade yet"));
-            sb.AppendLine($"Makes {ResName(s.Makes)}, needs {ResName(s.Needs)}");
+            sb.AppendLine($"{Settlements.KindName(s.Kind)} {Settlements.TierName(s.Tier).ToLower()}. Produces {Settlements.GoodsList(s.Produce)}");
+            sb.AppendLine($"Needs {Settlements.GoodsList(s.Wants)}");
             sb.Append($"{_world.SettlementKm(s)} km away: {_world.SettlementMarchDays(s)} days of marching.");
             return sb.ToString();
         }
