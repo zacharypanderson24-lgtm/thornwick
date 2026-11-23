@@ -110,8 +110,7 @@ namespace CrownAndHearth.Sim
         /// <summary>Everyone above this settlement in its realm takes an attack on it badly; those that answer to it a little less so.</summary>
         public void HurtRealm(Settlement s, int amount)
         {
-            var l = SettlementById(s.Liege);
-            for (int guard = 0; l != null && guard < 10; guard++) { Anger(l, amount); l = SettlementById(l.Liege); }
+            foreach (var l in LiegesOf(s)) Anger(l, amount);
             foreach (var sub in SubjectsOf(s)) Anger(sub, amount / 2);
         }
 
@@ -121,9 +120,8 @@ namespace CrownAndHearth.Sim
             var hasSubjects = new HashSet<int>(_settlements.Where(o => o.Liege >= 0).Select(o => o.Liege));
             foreach (var s in _settlements)
             {
-                var top = s;
-                for (int guard = 0; top.Liege >= 0 && guard < 10; guard++) top = _settlements[top.Liege];
-                s.Realm = top.Liege < 0 && (hasSubjects.Contains(top.Id) || top.IsSeat) ? top.Id : -1;
+                var top = LiegesOf(s).LastOrDefault() ?? s;   // the top of its chain (missing lieges and loops cut off)
+                s.Realm = SettlementById(top.Liege) == null && (hasSubjects.Contains(top.Id) || top.IsSeat) ? top.Id : -1;
             }
         }
 
@@ -152,6 +150,7 @@ namespace CrownAndHearth.Sim
                 return;
             }
             Anger(s, 30); HurtRealm(s, 15);
+            ConsiderResponse(s, s.Liege);
             var loot = b.Loot.Where(kv => kv.Value > 0).ToDictionary(kv => kv.Key, kv => kv.Value);
             SendHome(b.Camp.Id, b.SurvivingInfantry, b.SurvivingArchers, loot, MarchDays(b.Camp), $"The army pulls back from {s.Name} and marches home.");
         }
@@ -220,6 +219,7 @@ namespace CrownAndHearth.Sim
         {
             var ok = CanResolve(choice, stationed); if (!ok.Ok) return ok;
             var p = PendingConquest; var s = SettlementById(p.SettlementId);
+            int liege = s.Liege;   // its realm answers for it (World.Realms.cs), whatever becomes of it
             int inf = p.Infantry, arc = p.Archers;
             string news;
             switch (choice)
@@ -249,6 +249,7 @@ namespace CrownAndHearth.Sim
                     HurtRealm(s, 40);
                     s.Liege = -1; s.Allegiance = Allegiance.Tributary; s.Attitude = -20;
                     RecomputeRealms();
+                    FreeSubjects(s);
                     news = $"{s.Name} bows and will pay you tribute every month. Its old realm will not forget it.";
                     break;
                 case ConquestChoice.Occupy:
@@ -257,7 +258,9 @@ namespace CrownAndHearth.Sim
                     inf -= stInf; arc -= stArc;
                     HurtRealm(s, 40);
                     s.Liege = -1; s.Allegiance = Allegiance.Occupied; s.GarrisonInfantry = stInf; s.GarrisonArchers = stArc; s.Attitude = -30;
+                    s.ConqueredDay = Day; s.Unrest = 30; s.LastNeeded = GarrisonNeeded(s);
                     RecomputeRealms();
+                    FreeSubjects(s);
                     news = $"{s.Name} is yours. {stInf} infantry and {stArc} archers stay behind to hold it.";
                     break;
                 }
@@ -267,6 +270,7 @@ namespace CrownAndHearth.Sim
                     break;
             }
             PendingConquest = null; PendingBattle = null;
+            ConsiderResponse(s, liege);
             string home = inf + arc > 0 ? $" {inf} infantry and {arc} archers march home ({SettlementMarchDays(s)} days)." : "";
             LastConquestNews = news + home;
             SendHome(p.CampId, inf, arc, p.Loot, SettlementMarchDays(s), news + home);
@@ -367,19 +371,7 @@ namespace CrownAndHearth.Sim
                 Events.Add($"{s.Name} sends {gold} gold" + (sent.Count > 0 ? " and " + GoodsAmounts(sent) : "") + (held ? "." : " in tribute."));
                 if (s.Attitude < 0) s.Attitude++;
                 double roll = Noise.Hash2(s.Id, Day, Seed + 977);
-                if (held)
-                {
-                    if (s.Garrison < GarrisonNeeded(s) && roll < 0.25)
-                    {
-                        // the garrison is driven out: half of each kind fall, the rest escape and march home (nobody simply vanishes)
-                        int escInf = s.GarrisonInfantry / 2, escArc = s.GarrisonArchers / 2, fell = s.Garrison - escInf - escArc;
-                        if (escInf + escArc > 0)
-                            Expeditions.Add(new Expedition { CampId = TownIdBase + s.Id, Infantry = escInf, Archers = escArc, ReturnDay = Day + SettlementMarchDays(s) });
-                        Events.Add($"{s.Name} has risen up and driven out your garrison (it needed {GarrisonNeeded(s)}, you had {s.Garrison})! " +
-                                   $"{fell} fell; {escInf} infantry and {escArc} archers escaped and are marching home.");
-                        s.Allegiance = Allegiance.Own; s.GarrisonInfantry = 0; s.GarrisonArchers = 0; s.Attitude = -80;
-                    }
-                }
+                if (held) StepUnrest(s);   // World.Realms.cs: unrest, warnings and risings
                 else
                 {
                     bool defiant = s.Personality is Personality.Proud or Personality.Vengeful or Personality.Warlike;

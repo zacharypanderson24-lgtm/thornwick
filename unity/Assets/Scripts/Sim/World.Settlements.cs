@@ -42,6 +42,7 @@ namespace CrownAndHearth.Sim
                     s.GarrisonInfantry = row[7].Value<int>(); s.GarrisonArchers = row.Count >= 9 ? row[8].Value<int>() : 0;
                 }
                 if (row.Count >= 12) { s.DefendersLost = row[10].Value<double>(); s.DevastatedUntil = row[11].Value<int>(); s.Devastated = Day < s.DevastatedUntil; }
+                if (row.Count >= 15) { s.NextMarchDay = row[12].Value<int>(); s.Unrest = row[13].Value<double>(); s.ConqueredDay = row[14].Value<int>(); }
                 s.SoldOf.Clear(); s.BoughtOf.Clear();
                 if (row.Count >= 10 && row[9] is JObject goods)
                 {
@@ -54,6 +55,9 @@ namespace CrownAndHearth.Sim
                 }
             }
             _settlementRows.Clear();
+            foreach (var s in _settlements)   // a liege that does not exist (or is itself) is no liege
+                if (s.Liege >= 0 && (SettlementById(s.Liege) == null || s.Liege == s.Id)) { s.Liege = -1; realmsChanged = true; }
+            foreach (var s in _settlements) s.LastNeeded = s.Allegiance == Allegiance.Occupied ? GarrisonNeeded(s) : 0;
             if (realmsChanged) RecomputeRealms();
         }
 
@@ -67,9 +71,9 @@ namespace CrownAndHearth.Sim
         /// <summary>Everyone below this one in its realm (subjects, their subjects, and so on).</summary>
         public int AllSubjects(Settlement s)
         {
-            int n = 0; var stack = new Stack<Settlement>(SubjectsOf(s));
-            while (stack.Count > 0) { var o = stack.Pop(); n++; foreach (var c in SubjectsOf(o)) stack.Push(c); }
-            return n;
+            var seen = new HashSet<int> { s.Id }; var stack = new Stack<Settlement>(SubjectsOf(s));
+            while (stack.Count > 0) { var o = stack.Pop(); if (!seen.Add(o.Id)) continue; foreach (var c in SubjectsOf(o)) stack.Push(c); }
+            return seen.Count - 1;
         }
 
         /// <summary>Caravans arrive every day; once a month the settlements grow towards what their land can hold (a big one near you
@@ -78,6 +82,7 @@ namespace CrownAndHearth.Sim
         {
             StepCaravans();
             StepDetachments();   // World.Conquest.cs: reinforcements reaching their garrisons
+            StepRealmArmies();   // World.Realms.cs: armies mustering, setting out and arriving
             if (_settlements.Count == 0 || Day % SettlementMonth != 0) return;
             foreach (var s in _settlements) { s.SoldThisMonth = 0; s.BoughtThisMonth = 0; s.SoldOf.Clear(); s.BoughtOf.Clear(); }
             RecoverSettlements();   // World.Conquest.cs: fallen defenders replaced, sacked places recovering
@@ -95,7 +100,8 @@ namespace CrownAndHearth.Sim
             if (_settlements.Count > 0)
                 foreach (var s in _settlements)
                     rows.Add(new JArray(s.Id, Math.Round(s.Population, 2), s.Attitude, s.SoldThisMonth, s.BoughtThisMonth, s.Liege, (int)s.Allegiance,
-                        s.GarrisonInfantry, s.GarrisonArchers, GoodsTraded(s), Math.Round(s.DefendersLost, 2), s.DevastatedUntil));
+                        s.GarrisonInfantry, s.GarrisonArchers, GoodsTraded(s), Math.Round(s.DefendersLost, 2), s.DevastatedUntil,
+                        s.NextMarchDay, Math.Round(s.Unrest, 2), s.ConqueredDay));
             else
                 foreach (var kv in _settlementRows.OrderBy(k => k.Key)) rows.Add(kv.Value.DeepClone());
             return rows;
@@ -122,6 +128,7 @@ namespace CrownAndHearth.Sim
         {
             var o = new JObject
             {
+                ["realmArmies"] = SaveRealmArmies(),   // World.Realms.cs
                 ["detachments"] = new JArray(Detachments.Select(d => new JObject
                     { ["to"] = d.SettlementId, ["infantry"] = d.Infantry, ["archers"] = d.Archers, ["arrive"] = d.ArriveDay })),
             };
@@ -139,8 +146,9 @@ namespace CrownAndHearth.Sim
 
         void LoadConquest(JObject o)
         {
-            Detachments.Clear(); PendingConquest = null; PendingBattle = null;
+            Detachments.Clear(); PendingConquest = null; PendingBattle = null; RealmArmies.Clear();
             if (o == null) return;   // older saves have none
+            LoadRealmArmies(o["realmArmies"] as JArray);
             foreach (var item in o["detachments"] as JArray ?? new JArray())
                 Detachments.Add(new Detachment { SettlementId = (int)item["to"], Infantry = (int)item["infantry"], Archers = (int)item["archers"], ArriveDay = (int)item["arrive"] });
             if (o["pending"] is JObject p)
