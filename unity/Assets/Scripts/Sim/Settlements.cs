@@ -16,6 +16,9 @@ namespace CrownAndHearth.Sim
     /// Warlike: raids its neighbours.</summary>
     public enum Personality : byte { Mercantile, Proud, Vengeful, Cautious, Warlike }
 
+    /// <summary>Its standing with you: its own master, paying you tribute, or held by your soldiers (World.Conquest.cs).</summary>
+    public enum Allegiance : byte { Own, Tributary, Occupied }
+
     public sealed class Settlement
     {
         public int Id, X, Y, Seed;
@@ -39,6 +42,9 @@ namespace CrownAndHearth.Sim
         public double Capacity;
         /// <summary>Goods it has sold to you and bought from you this month (World.SettlementTrade.cs); reset each month, saved.</summary>
         public int SoldThisMonth, BoughtThisMonth;
+        /// <summary>Whether it pays you or is held by you, and how many of your soldiers hold it. Saved.</summary>
+        public Allegiance Allegiance;
+        public int Garrison;
 
         public SettlementTier Tier
         {

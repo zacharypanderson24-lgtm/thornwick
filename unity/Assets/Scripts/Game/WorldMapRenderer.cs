@@ -163,7 +163,8 @@ namespace CrownAndHearth.Game
         };
         public static readonly Color32 FreeSettlement = new Color32(214, 210, 200, 255);
 
-        public static Color32 RealmColor(Settlement s) => s.Realm < 0 ? FreeSettlement : RealmPalette[s.Realm % RealmPalette.Length];
+        /// <summary>Settlements you hold or that pay you tribute are drawn in your own gold.</summary>
+        public static Color32 RealmColor(Settlement s) => s.Allegiance != Allegiance.Own ? HomeGold : s.Realm < 0 ? FreeSettlement : RealmPalette[s.Realm % RealmPalette.Length];
 
         /// <summary>Marker half-size by how developed a settlement is: a hamlet is a single dot, a capital a big square.</summary>
         public static int SettlementRadius(SettlementTier t) => t switch

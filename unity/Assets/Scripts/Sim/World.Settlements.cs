@@ -15,8 +15,9 @@ namespace CrownAndHearth.Sim
         public const int SettlementMonth = 30;
 
         List<Settlement> _settlements = new List<Settlement>();
-        /// <summary>Saved state by settlement id, from a loaded save, waiting for (or already applied to) the settlements.</summary>
-        Dictionary<int, (double pop, int att, int sold, int bought)> _settlementState = new Dictionary<int, (double, int, int, int)>();
+        /// <summary>Saved rows by settlement id (id, people, attitude, sold, bought, liege, allegiance, garrison; older saves have fewer),
+        /// from a loaded save, waiting for the settlements to arrive.</summary>
+        readonly Dictionary<int, JArray> _settlementRows = new Dictionary<int, JArray>();
 
         public IReadOnlyList<Settlement> Settlements => _settlements;
         public Settlement SettlementById(int id) => id >= 0 && id < _settlements.Count ? _settlements[id] : null;
@@ -25,13 +26,22 @@ namespace CrownAndHearth.Sim
         public void SetSettlements(IEnumerable<Settlement> settlements)
         {
             _settlements = settlements.ToList();
-            foreach (var kv in _settlementState)
-                if (SettlementById(kv.Key) is Settlement s)
+            bool realmsChanged = false;
+            foreach (var kv in _settlementRows)
+            {
+                if (!(SettlementById(kv.Key) is Settlement s)) continue;
+                var row = kv.Value;
+                s.Population = row[1].Value<double>(); s.Attitude = Math.Clamp(row[2].Value<int>(), -100, 100);
+                if (row.Count >= 5) { s.SoldThisMonth = row[3].Value<int>(); s.BoughtThisMonth = row[4].Value<int>(); }
+                if (row.Count >= 8)
                 {
-                    s.Population = kv.Value.pop; s.Attitude = Math.Clamp(kv.Value.att, -100, 100);
-                    s.SoldThisMonth = kv.Value.sold; s.BoughtThisMonth = kv.Value.bought;
+                    int liege = row[5].Value<int>();
+                    if (liege != s.Liege) { s.Liege = liege; realmsChanged = true; }
+                    s.Allegiance = (Allegiance)row[6].Value<int>(); s.Garrison = row[7].Value<int>();
                 }
-            _settlementState.Clear();
+            }
+            _settlementRows.Clear();
+            if (realmsChanged) RecomputeRealms();
         }
 
         /// <summary>Distance in km (straight line) from your settlement.</summary>
@@ -56,6 +66,7 @@ namespace CrownAndHearth.Sim
             StepCaravans();
             if (_settlements.Count == 0 || Day % SettlementMonth != 0) return;
             foreach (var s in _settlements) { s.SoldThisMonth = 0; s.BoughtThisMonth = 0; }
+            StepConquered();   // World.Conquest.cs: tribute and occupied settlements
             foreach (var s in SettlementRules.Grow(_settlements))
                 if (s.Tier >= SettlementTier.Town && SettlementKm(s) <= RaidFarKm)
                     Events.Add($"{s.Name} has grown into a {SettlementRules.TierName(s.Tier).ToLower()} ({SettlementKm(s)} km away).");
@@ -67,9 +78,10 @@ namespace CrownAndHearth.Sim
         {
             var rows = new JArray();
             if (_settlements.Count > 0)
-                foreach (var s in _settlements) rows.Add(new JArray(s.Id, Math.Round(s.Population, 2), s.Attitude, s.SoldThisMonth, s.BoughtThisMonth));
+                foreach (var s in _settlements)
+                    rows.Add(new JArray(s.Id, Math.Round(s.Population, 2), s.Attitude, s.SoldThisMonth, s.BoughtThisMonth, s.Liege, (int)s.Allegiance, s.Garrison));
             else
-                foreach (var kv in _settlementState.OrderBy(k => k.Key)) rows.Add(new JArray(kv.Key, Math.Round(kv.Value.pop, 2), kv.Value.att, kv.Value.sold, kv.Value.bought));
+                foreach (var kv in _settlementRows.OrderBy(k => k.Key)) rows.Add(kv.Value.DeepClone());
             return rows;
         }
 
@@ -80,12 +92,10 @@ namespace CrownAndHearth.Sim
 
         void LoadSettlements(JArray rows, JArray caravans)
         {
-            _settlementState.Clear();
+            _settlementRows.Clear();
             if (rows != null)   // older saves have none: the settlements start as generated
                 foreach (var item in rows)
-                    if (item is JArray row && row.Count >= 3)
-                        _settlementState[row[0].Value<int>()] = (row[1].Value<double>(), row[2].Value<int>(),
-                            row.Count >= 5 ? row[3].Value<int>() : 0, row.Count >= 5 ? row[4].Value<int>() : 0);
+                    if (item is JArray row && row.Count >= 3) _settlementRows[row[0].Value<int>()] = (JArray)row.DeepClone();
             Caravans.Clear();
             foreach (var item in caravans ?? new JArray())
                 if (item is JObject c && Enum.TryParse<CaravanKind>((string)c["kind"], out var kind))

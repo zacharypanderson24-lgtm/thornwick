@@ -215,6 +215,8 @@ namespace CrownAndHearth.Game
             _campReportBox = MakePanel(_campPanel, "Report", Vector2.zero, Vector2.one, new Vector2(0, 0), new Vector2(0, -150));
             _campReportBox.GetComponent<UnityEngine.UI.Image>().color = Color.clear;
             _campReportText = MakeText(_campReportBox, "ReportText", 15, TextAnchor.UpperLeft); TopStretch(_campReportText.rectTransform, 0, 330);
+            BuildConquest(_campReportBox);
+            WriteReportHidden();
             MakeButton(_campReportBox, "Back to the map", Vector2.zero, new Vector2(8 + 80, 14 + 18), new Vector2(160, 36), CloseCamp);
 
             _campPanel.gameObject.SetActive(false);
@@ -226,7 +228,7 @@ namespace CrownAndHearth.Game
             if (camp == null || _world == null) return;
             _camp = camp; _campOpen = true; _campPhase = CampPhase.Plan;
             _campGroups.Clear(); _campSelected = null; _campHover = null; _campBattle = null; _campPaused = false; _campSpeedIndex = 0; _campAcc = 0;
-            _campPreview = new CampBattle(camp, new List<BattleGroup>(), _world.CampRaidersHome(camp));   // shows only who is home
+            _campPreview = new CampBattle(camp, new List<BattleGroup>(), _world.DefendersHome(camp));   // shows only who is home
             _campTitle.text = camp.Name;
             _mapPanel.gameObject.SetActive(false);   // the camp is shown in the game view; the map comes back when this closes
             _campPanel.gameObject.SetActive(true);
@@ -235,9 +237,66 @@ namespace CrownAndHearth.Game
             RefreshCamp();
         }
 
+        // ---------- a taken settlement: what to do with it ----------
+        UnityEngine.UI.Image[] _conquestButtons;
+        Text _occupyLabel;
+        UnityEngine.UI.Image _occupyLess, _occupyMore;
+        int _occupyCount;
+        bool ConquestPending => _campBattle != null && _world != null && _world.PendingConquest == _campBattle;
+
+        void BuildConquest(RectTransform box)
+        {
+            var choices = new[]
+            {
+                (ConquestChoice.Leave, "Take the loot, leave", 0, 0), (ConquestChoice.Sack, "Sack it", 1, 0),
+                (ConquestChoice.Tribute, "Demand tribute", 0, 1), (ConquestChoice.Occupy, "Occupy it", 1, 1),
+            };
+            _conquestButtons = new UnityEngine.UI.Image[choices.Length];
+            for (int i = 0; i < choices.Length; i++)
+            {
+                var (choice, label, col, row) = choices[i];
+                _conquestButtons[i] = MakeButton(box, label, Vector2.up, new Vector2(8 + 90 + col * 188, -(346 + row * 36)), new Vector2(180, 30), () => Conquer(choice));
+            }
+            _occupyLess = MakeButton(box, "-", Vector2.up, new Vector2(8 + 188 + 20, -418), new Vector2(34, 26), () => { _occupyCount = Math.Max(0, _occupyCount - 1); WriteReport(""); });
+            _occupyMore = MakeButton(box, "+", Vector2.up, new Vector2(8 + 188 + 156, -418), new Vector2(34, 26), () => { _occupyCount++; WriteReport(""); });
+            _occupyLabel = MakeText(box, "OccupyLabel", 13, TextAnchor.MiddleLeft);
+            var lr = _occupyLabel.rectTransform; lr.anchorMin = lr.anchorMax = Vector2.up; lr.pivot = new Vector2(0, 0.5f); lr.sizeDelta = new Vector2(190, 26); lr.anchoredPosition = new Vector2(8, -418);
+        }
+
+        void WriteReportHidden()
+        {
+            foreach (var b in _conquestButtons) b.gameObject.SetActive(false);
+            _occupyLess.gameObject.SetActive(false); _occupyMore.gameObject.SetActive(false); _occupyLabel.gameObject.SetActive(false);
+        }
+
+        void Conquer(ConquestChoice choice)
+        {
+            if (!ConquestPending) return;
+            var r = _world.ResolveConquest(choice, _occupyCount);
+            if (!r.Ok) { WriteReport(r.Reason); return; }
+            _campTitle.text = _camp.Name + (choice == ConquestChoice.Sack ? ": sacked" : choice == ConquestChoice.Tribute ? ": pays tribute" : choice == ConquestChoice.Occupy ? ": yours" : ": left behind");
+            WriteReport("");
+        }
+
+        /// <summary>The fight report, with the choices for a taken settlement while they are open (and `note` under them).</summary>
+        void WriteReport(string note)
+        {
+            if (_campBattle == null) return;
+            bool pending = ConquestPending;
+            var home = _world.Expeditions.LastOrDefault(e => e.CampId == _camp.Id);
+            string after = pending
+                ? $"\n\n<b>{_camp.Name} is yours to decide.</b> Leave with the loot; sack it for far more and burn it; make it pay tribute every month; or occupy it with a garrison (it needs {World.GarrisonNeeded(_camp.Town)} soldiers)."
+                : home != null ? $"\n\nThe army marches home and arrives on day {home.ReturnDay} ({_world.MarchDays(_camp)} days)." : "";
+            _campReportText.text = $"<b>Fight report</b>\n\n{_campBattle.Summary()}{after}" + (note.Length > 0 ? $"\n<color=#FFB080>{note}</color>" : "");
+            foreach (var b in _conquestButtons) b.gameObject.SetActive(pending);
+            _occupyLess.gameObject.SetActive(pending); _occupyMore.gameObject.SetActive(pending); _occupyLabel.gameObject.SetActive(pending);
+            if (pending) _occupyLabel.text = $"Garrison to leave: {_occupyCount} of {_campBattle.SurvivingInfantry + _campBattle.SurvivingArchers}";
+        }
+
         public void CloseCamp()
         {
             if (!_campOpen || _campPhase == CampPhase.Fight) return;
+            if (ConquestPending) _world.ResolveConquest(ConquestChoice.Leave);   // walking away without deciding: the army takes its loot and leaves
             _campOpen = false;
             _campPanel.gameObject.SetActive(false);
             if (_mapOpen) _mapPanel.gameObject.SetActive(true);
@@ -324,6 +383,15 @@ namespace CrownAndHearth.Game
             if (!_campOpen) return;
             var view = _campBattle ?? _campPreview;
             int tents = view.Map.Tents.Count, supplies = view.Map.Piles.Sum(p => Math.Max(0, p.Amount));
+            if (_camp.IsTown)
+            {
+                var t = _camp.Town;
+                _campInfo.text = $"<b>{t.Tier.ToString().ToUpper()}</b> of {t.Population:0} people   ·   {_world.CampKm(_camp)} km away, {_world.MarchDays(_camp)} days of marching home\n" +
+                                 $"{tents} homes round {view.Map.Fires.Count} wells and the lord's house\n" +
+                                 $"{view.AliveRaiders} defenders: {view.Units.Count(u => u.Alive && u.Kind == BKind.RaiderArcher)} archers, {view.Units.Count(u => u.Alive && u.Kind == BKind.Brute)} of the lord's guard" + (view.Units.Any(u => u.Alive && u.Kind == BKind.Chief) ? " and the lord\n" : "\n") +
+                                 $"{view.Map.Piles.Count(p => p.Amount > 0)} stores holding about {supplies} goods · {Settlements.PersonalityName(t.Personality)}, {Settlements.AttitudeName(t.Attitude).ToLower()} towards you";
+            }
+            else
             _campInfo.text = $"<b>Strength {_camp.Strength} of 5</b>   ·   {_world.CampKm(_camp)} km away, {_world.MarchDays(_camp)} days of marching home\n" +
                              $"{tents} tents round {view.Map.Fires.Count} campfires, the warlord's tent and {view.Map.Racks.Count} weapon racks\n" +
                              $"{view.AliveRaiders} raiders: {view.Units.Count(u => u.Alive && u.Kind == BKind.RaiderArcher)} archers, {view.Units.Count(u => u.Alive && u.Kind == BKind.Brute)} brutes" + (view.Units.Any(u => u.Alive && u.Kind == BKind.Chief) ? " and the warlord\n" : "\n") +
@@ -373,16 +441,16 @@ namespace CrownAndHearth.Game
             var cb = _campBattle;
             string away = (cb.LeftField > 0 ? $", {cb.LeftField} left the camp" : "") + (cb.Carried > 0 ? $", carrying {cb.Carried} goods" : "") + (cb.LootTotal > 0 ? $", {cb.LootTotal} goods taken" : "");
             _campFightText.text = $"<b>The fight is on</b>   tick {cb.Tick}\nYour soldiers: {cb.AliveAttackers} fighting (lost {cb.LostInfantry + cb.LostArchers}{away})\n" +
-                                  $"Raiders: {cb.AliveRaiders} left ({cb.RaidersKilled} killed)" + (cb.Alarm ? "\nThe camp is awake." : "\nThe camp has not seen you yet.");
+                                  $"{(_camp.IsTown ? "Defenders" : "Raiders")}: {cb.AliveRaiders} left ({cb.RaidersKilled} killed)" +
+                                  (cb.Alarm ? $"\nThe {(_camp.IsTown ? "town" : "camp")} is awake." : $"\nThe {(_camp.IsTown ? "town" : "camp")} has not seen you yet.");
             RefreshFightGroups();
             if (_campBattle.Over)
             {
                 _campPhase = CampPhase.Report;
                 InvasionFinished?.Invoke(_campBattle);
-                var home = _world.Expeditions.LastOrDefault(e => e.CampId == _camp.Id);
-                _campReportText.text = $"<b>Fight report</b>\n\n{_campBattle.Summary()}" +
-                    (home != null ? $"\n\nThe army marches home and arrives on day {home.ReturnDay} ({_world.MarchDays(_camp)} days)." : "");
-                _campTitle.text = _camp.Name + (_campBattle.Victory ? ": destroyed" : "");
+                _occupyCount = _camp.IsTown ? Math.Min(_campBattle.SurvivingInfantry + _campBattle.SurvivingArchers, World.GarrisonNeeded(_camp.Town)) : 0;
+                WriteReport("");
+                _campTitle.text = _camp.Name + (_campBattle.Victory ? (_camp.IsTown ? ": taken" : ": destroyed") : "");
                 RefreshCamp();
             }
         }

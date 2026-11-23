@@ -203,6 +203,7 @@ namespace CrownAndHearth.Sim
         public Result CanInvade(RaiderCamp camp, IList<BattleGroup> groups)
         {
             if (camp == null || DestroyedCamps.Contains(camp.Id)) return Result.No("That camp is already destroyed");
+            if (camp.IsTown) { var town = CanAttack(camp.Town); if (!town.Ok) return town; }
             int inf = groups.Sum(g => g.Infantry), arc = groups.Sum(g => g.Archers);
             if (inf + arc <= 0) return Result.No("Choose at least one soldier to send");
             if (inf > Infantry || arc > Archers) return Result.No($"You only have {Infantry} infantry and {Archers} archers at home");
@@ -217,7 +218,7 @@ namespace CrownAndHearth.Sim
             if (!ok.Ok) return null;
             int inf = groups.Sum(g => g.Infantry), arc = groups.Sum(g => g.Archers);
             Soldiers -= inf + arc; Archers -= arc;
-            return new CampBattle(camp, groups, CampRaidersHome(camp));
+            return new CampBattle(camp, groups, DefendersHome(camp));
         }
 
         /// <summary>The fight is over: a won camp is destroyed (its raids stop) and the survivors set off home with their loot.</summary>
@@ -226,6 +227,7 @@ namespace CrownAndHearth.Sim
             if (battle == null || !battle.Over || battle.Settled) return;
             battle.Settled = true;
             LastInvasion = battle;
+            if (battle.Camp.IsTown) { FinishTownBattle(battle); return; }   // World.Conquest.cs: a settlement is not destroyed, you choose its fate
             if (battle.Victory) DestroyedCamps.Add(battle.Camp.Id);
             if (battle.Victory) { battle.Camp.ReleaseSite(); CampForces.Remove(battle.Camp.Id); }   // the camp is gone: its map is no longer kept
             else

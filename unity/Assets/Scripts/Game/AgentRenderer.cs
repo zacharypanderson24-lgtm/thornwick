@@ -69,7 +69,10 @@ namespace CrownAndHearth.Game
                     bool moving = x != px || y != py;
                     int tx = u.Shooting ? ox + u.ShotX : u.Target != null ? ox + u.Target.X : x, ty = u.Shooting ? oy + u.ShotY : u.Target != null ? oy + u.Target.Y : y;
                     int facing = Facing(rot, moving ? x - px : tx - x, moving ? y - py : ty - y);
-                    string actor = u.Kind switch
+                    // a settlement's defenders are soldiers like ours (archers, and infantry for the rest, the lord and his guard included)
+                    // in their realm's colours; a raider camp's are raiders
+                    bool townSoldier = battle.Camp.IsTown && !u.Attacker;
+                    string actor = townSoldier ? (u.Kind == BKind.RaiderArcher ? "archer" : "infantry") : u.Kind switch
                     {
                         BKind.Infantry => "infantry",
                         BKind.Archer => "archer",
@@ -80,7 +83,10 @@ namespace CrownAndHearth.Game
                     bool recoiling = u.Hurt && !u.Shooting && frac < 0.30f;
                     string pose = dead ? "fall" : recoiling ? "hurt" : u.Attacked ? "attack" : moving ? "run" : "idle";
                     float phase = dead ? battle.Tick - u.DeadTick - 1 + frac : HitPhase(u.Hurt && !u.Shooting, frac);
-                    Put(cw, rot, _battle.Pose(actor, pose, facing, battle.Tick, phase, u.Id), dead ? x : px, dead ? y : py, x, y, frac, Jitter(u.Id), (u.Id * 7) % 3 - 1);
+                    var sprite = townSoldier
+                        ? _battle.PoseTinted(actor, WorldMapRenderer.RealmColor(battle.Camp.Town), pose, facing, battle.Tick, phase, u.Id)
+                        : _battle.Pose(actor, pose, facing, battle.Tick, phase, u.Id);
+                    Put(cw, rot, sprite, dead ? x : px, dead ? y : py, x, y, frac, Jitter(u.Id), (u.Id * 7) % 3 - 1);
                     if (u.Shooting && !dead) DrawArrow(cw, rot, x, y, ox + u.ShotX, oy + u.ShotY, frac);
                     if (!dead) DrawBattleEffects(cw, rot, px, py, x, y, frac, u.Hurt, pose == "run");
                 }
