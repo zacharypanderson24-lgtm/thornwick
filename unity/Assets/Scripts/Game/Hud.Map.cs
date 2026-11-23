@@ -84,6 +84,7 @@ namespace CrownAndHearth.Game
             MakeButton(side, "Whole world", Vector2.zero, new Vector2(8 + 170 + 6 + 60, 14 + 15), new Vector2(120, 30), () => _mapView.ShowAll());
             MakeButton(side, "Close", Vector2.zero, new Vector2(8 + 170 + 6 + 120 + 6 + 40, 14 + 15), new Vector2(80, 30), CloseMap);
 
+            BuildSettlementPanel(_mapPanel);   // Hud.Trade.cs: opens over the side column when a settlement is clicked
             _mapPanel.gameObject.SetActive(false);
             RefreshMapLayers();
         }
@@ -126,6 +127,7 @@ namespace CrownAndHearth.Game
         {
             if (!_mapOpen) return;
             if (_campOpen) { if (_campPhase == CampPhase.Fight) return; CloseCamp(); }
+            CloseSettlement();
             _mapOpen = false;
             _mapPanel.gameObject.SetActive(false);
             _mapMenuButton.color = Btn;
@@ -262,7 +264,12 @@ namespace CrownAndHearth.Game
         void OnMapClick(Vector2Int cell)
         {
             var camp = CampNear(cell);
-            if (camp == null) return;
+            if (camp == null)
+            {
+                var town = SettlementNear(cell);
+                if (town != null) OpenSettlement(town);
+                return;
+            }
             if (_world.DestroyedCamps.Contains(camp.Id)) { Toast($"The {camp.Name} is already destroyed."); return; }
             if (!camp.SiteReady) { camp.PrepareSite(); Toast("The scouts are still mapping the camp. Try again in a moment."); return; }
             OpenCamp(camp);
