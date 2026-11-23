@@ -37,7 +37,9 @@ namespace CrownAndHearth.Sim
                 {
                     int liege = row[5].Value<int>();
                     if (liege != s.Liege) { s.Liege = liege; realmsChanged = true; }
-                    s.Allegiance = (Allegiance)row[6].Value<int>(); s.Garrison = row[7].Value<int>();
+                    s.Allegiance = (Allegiance)row[6].Value<int>();
+                    // rows of 9 keep infantry and archers apart; older rows of 8 held one total, which was all infantry then
+                    s.GarrisonInfantry = row[7].Value<int>(); s.GarrisonArchers = row.Count >= 9 ? row[8].Value<int>() : 0;
                 }
             }
             _settlementRows.Clear();
@@ -64,6 +66,7 @@ namespace CrownAndHearth.Sim
         void StepSettlements()
         {
             StepCaravans();
+            StepDetachments();   // World.Conquest.cs: reinforcements reaching their garrisons
             if (_settlements.Count == 0 || Day % SettlementMonth != 0) return;
             foreach (var s in _settlements) { s.SoldThisMonth = 0; s.BoughtThisMonth = 0; }
             StepConquered();   // World.Conquest.cs: tribute and occupied settlements
@@ -79,10 +82,55 @@ namespace CrownAndHearth.Sim
             var rows = new JArray();
             if (_settlements.Count > 0)
                 foreach (var s in _settlements)
-                    rows.Add(new JArray(s.Id, Math.Round(s.Population, 2), s.Attitude, s.SoldThisMonth, s.BoughtThisMonth, s.Liege, (int)s.Allegiance, s.Garrison));
+                    rows.Add(new JArray(s.Id, Math.Round(s.Population, 2), s.Attitude, s.SoldThisMonth, s.BoughtThisMonth, s.Liege, (int)s.Allegiance,
+                        s.GarrisonInfantry, s.GarrisonArchers));
             else
                 foreach (var kv in _settlementRows.OrderBy(k => k.Key)) rows.Add(kv.Value.DeepClone());
             return rows;
+        }
+
+        /// <summary>Your soldiers in garrisons according to the saved rows, before the settlements themselves have arrived.</summary>
+        int SavedGarrisons() => _settlementRows.Values.Sum(r => r.Count >= 8 ? r[7].Value<int>() + (r.Count >= 9 ? r[8].Value<int>() : 0) : 0);
+
+        // the army waiting for a decision, reinforcements on the road, and an army caught mid-fight by a save
+        JObject SaveConquest()
+        {
+            var o = new JObject
+            {
+                ["detachments"] = new JArray(Detachments.Select(d => new JObject
+                    { ["to"] = d.SettlementId, ["infantry"] = d.Infantry, ["archers"] = d.Archers, ["arrive"] = d.ArriveDay })),
+            };
+            if (PendingConquest is PendingConquest p)
+                o["pending"] = new JObject
+                {
+                    ["town"] = p.SettlementId, ["camp"] = p.CampId, ["infantry"] = p.Infantry, ["archers"] = p.Archers,
+                    ["loot"] = new JObject(p.Loot.Where(kv => kv.Value > 0).Select(kv => new JProperty(kv.Key.ToString(), kv.Value))),
+                };
+            // a fight cannot be saved: an army in one when the game is saved is written as marching home, so it is never lost
+            if (TroopsInBattleInfantry + TroopsInBattleArchers > 0)
+                o["inBattle"] = new JObject { ["camp"] = _inBattleCamp, ["infantry"] = TroopsInBattleInfantry, ["archers"] = TroopsInBattleArchers, ["returnDay"] = Day + _inBattleDays };
+            return o;
+        }
+
+        void LoadConquest(JObject o)
+        {
+            Detachments.Clear(); PendingConquest = null; PendingBattle = null;
+            if (o == null) return;   // older saves have none
+            foreach (var item in o["detachments"] as JArray ?? new JArray())
+                Detachments.Add(new Detachment { SettlementId = (int)item["to"], Infantry = (int)item["infantry"], Archers = (int)item["archers"], ArriveDay = (int)item["arrive"] });
+            if (o["pending"] is JObject p)
+            {
+                var pc = new PendingConquest { SettlementId = (int)p["town"], CampId = (int)p["camp"], Infantry = (int)p["infantry"], Archers = (int)p["archers"] };
+                foreach (var prop in (p["loot"] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>())
+                    if (Enum.TryParse<Res>(prop.Name, out var r)) pc.Loot[r] = (int)prop.Value;
+                PendingConquest = pc;
+                Events.Add("Your army is waiting at the settlement it took for your decision: open the world map (M) and click it.");
+            }
+            if (o["inBattle"] is JObject b)
+            {
+                Expeditions.Add(new Expedition { CampId = (int)b["camp"], Infantry = (int)b["infantry"], Archers = (int)b["archers"], ReturnDay = (int)b["returnDay"] });
+                Events.Add("The game was saved during a fight: the army broke off and is marching home.");
+            }
         }
 
         JArray SaveCaravans() => new JArray(Caravans.Select(c => new JObject

@@ -47,15 +47,31 @@ namespace CrownAndHearth.Game
             _reinforceButton = MakeButton(_townPanel, "Send 5 more soldiers", Vector2.up, new Vector2(8 + 110, -356), new Vector2(220, 30), () =>
             {
                 var r = _world.ReinforceGarrison(_town, 5);
-                _townMessage.text = r.Ok ? $"{r.Count} soldiers march to join the garrison of {_town.Name}." : r.Reason;
+                _townMessage.text = r.Ok ? $"{r.Count} soldiers march to join the garrison of {_town.Name}: they arrive in {_world.SettlementMarchDays(_town)} days." : r.Reason;
                 RefreshSettlementPanel();
             });
             _withdrawButton = MakeButton(_townPanel, "Bring them home", Vector2.up, new Vector2(8 + 228 + 8 + 80, -356), new Vector2(160, 30), () =>
             {
                 var r = _world.WithdrawGarrison(_town);
-                _townMessage.text = r.Ok ? $"The garrison leaves {_town.Name}, which will pay you tribute instead." : r.Reason;
+                _townMessage.text = r.Ok ? $"The garrison leaves {_town.Name} and marches home ({_world.SettlementMarchDays(_town)} days); it will pay you tribute instead." : r.Reason;
                 RefreshSettlementPanel();
             });
+            // your army waiting here after taking it: the same four choices as the battle report (they replace the trade rows)
+            var fates = new[]
+            {
+                (ConquestChoice.Leave, "Take the loot, leave", 0, 0), (ConquestChoice.Sack, "Sack it", 1, 0),
+                (ConquestChoice.Tribute, "Demand tribute", 0, 1), (ConquestChoice.Occupy, "Occupy it", 1, 1),
+            };
+            _fateButtons = new UnityEngine.UI.Image[fates.Length];
+            for (int i = 0; i < fates.Length; i++)
+            {
+                var (choice, label, col, row) = fates[i];
+                _fateButtons[i] = MakeButton(_townPanel, label, Vector2.up, new Vector2(8 + 98 + col * 204, -(232 + row * 36)), new Vector2(196, 30), () => DecideFate(choice));
+            }
+            _fateLess = MakeButton(_townPanel, "-", Vector2.up, new Vector2(8 + 230, -310), new Vector2(34, 26), () => { _fateGarrison = Math.Max(0, _fateGarrison - 1); RefreshSettlementPanel(); });
+            _fateMore = MakeButton(_townPanel, "+", Vector2.up, new Vector2(8 + 380, -310), new Vector2(34, 26), () => { _fateGarrison++; RefreshSettlementPanel(); });
+            _fateLabel = MakeText(_townPanel, "FateLabel", 13, TextAnchor.MiddleLeft);
+            var fr = _fateLabel.rectTransform; fr.anchorMin = fr.anchorMax = Vector2.up; fr.pivot = new Vector2(0, 0.5f); fr.sizeDelta = new Vector2(210, 26); fr.anchoredPosition = new Vector2(8, -310);
             _townMessage = MakeText(_townPanel, "Message", 13, TextAnchor.UpperLeft); _townMessage.color = new Color(1f, 0.7f, 0.5f);
             TopStretch(_townMessage.rectTransform, 378, 430);
             _townRoad = MakeText(_townPanel, "Road", 13, TextAnchor.UpperLeft); _townRoad.color = Dim;
@@ -104,6 +120,22 @@ namespace CrownAndHearth.Game
             RefreshSettlementPanel();
         }
 
+        UnityEngine.UI.Image[] _fateButtons;
+        UnityEngine.UI.Image _fateLess, _fateMore;
+        Text _fateLabel;
+        int _fateGarrison = -1;
+
+        bool FateHere(Settlement s) => _world?.PendingConquest is PendingConquest p && p.SettlementId == s.Id;
+
+        void DecideFate(ConquestChoice choice)
+        {
+            if (_town == null || _world == null || !FateHere(_town)) return;
+            var r = _world.ResolveConquest(choice, _fateGarrison);
+            _townMessage.text = r.Ok ? _world.LastConquestNews : r.Reason;
+            _fateGarrison = -1;
+            RefreshSettlementPanel();
+        }
+
         void GiftToTown()
         {
             if (_town == null || _world == null) return;
@@ -123,7 +155,12 @@ namespace CrownAndHearth.Game
             sb.AppendLine($"{s.Population:0} people · {_world.SettlementKm(s)} km away, {_world.SettlementMarchDays(s)} days by caravan");
             var liege = _world.SettlementById(s.Liege); var seat = _world.SettlementById(s.Realm);
             if (s.Allegiance == Allegiance.Occupied)
-                sb.AppendLine($"<color=#FFC428>Yours</color>: held by {s.Garrison} of your soldiers" + (s.Garrison < World.GarrisonNeeded(s) ? $" (<color=#FF8C70>needs {World.GarrisonNeeded(s)}: it may rise up</color>)" : $" (needs {World.GarrisonNeeded(s)})"));
+            {
+                int marching = _world.MarchingTo(s);
+                sb.AppendLine($"<color=#FFC428>Yours</color>: held by {s.GarrisonInfantry} infantry and {s.GarrisonArchers} archers" +
+                    (s.Garrison < World.GarrisonNeeded(s) ? $" (<color=#FF8C70>needs {World.GarrisonNeeded(s)}: it may rise up</color>)" : $" (needs {World.GarrisonNeeded(s)})") +
+                    (marching > 0 ? $"; {marching} more on the way" : ""));
+            }
             else if (s.Allegiance == Allegiance.Tributary)
                 sb.AppendLine("<color=#FFC428>Pays you tribute</color> every month (it may stop paying)");
             else
@@ -151,6 +188,28 @@ namespace CrownAndHearth.Game
             _giftButton.gameObject.SetActive(!held); _attackButton.gameObject.SetActive(!held);
             _reinforceButton.gameObject.SetActive(held); _withdrawButton.gameObject.SetActive(held);
             _attackButton.color = _world.CanAttack(s).Ok ? new Color(0.45f, 0.16f, 0.12f, 1f) : new Color(0.2f, 0.17f, 0.13f, 1f);
+
+            // your army waiting here: the four choices take the place of the trade rows
+            bool fate = FateHere(s);
+            foreach (var b in _fateButtons) b.gameObject.SetActive(fate);
+            _fateLess.gameObject.SetActive(fate); _fateMore.gameObject.SetActive(fate); _fateLabel.gameObject.SetActive(fate);
+            if (fate)
+            {
+                var p = _world.PendingConquest; int have = p.Infantry + p.Archers;
+                if (_fateGarrison < 0) _fateGarrison = Math.Min(have, World.GarrisonNeeded(s));
+                _fateGarrison = Math.Clamp(_fateGarrison, 0, have);
+                foreach (var b in _buyButtons.Concat(_sellButtons)) b.gameObject.SetActive(false);
+                _giftButton.gameObject.SetActive(false); _attackButton.gameObject.SetActive(false);
+                var (gold, goods) = World.SackYield(s);
+                _townSells.text = $"<b>Your army holds {s.Name}</b>: {p.Infantry} infantry and {p.Archers} archers, carrying {p.Loot.Values.Sum()} goods. Decide its fate:";
+                _townBuys.text = "";
+                _fateLabel.text = $"Garrison if you occupy: {_fateGarrison} of {have}";
+                var occupy = _world.CanResolve(ConquestChoice.Occupy, _fateGarrison);
+                _fateButtons[3].color = occupy.Ok ? Btn : new Color(0.2f, 0.17f, 0.13f, 1f);
+                if (_townMessage.text.Length == 0 || !occupy.Ok)
+                    _townMessage.text = $"Sacking: about {gold} gold and {goods} {World.GoodName(s.Makes)} there; the carts can take {World.SackRoom(p)}, the rest burns." +
+                                        (occupy.Ok ? "" : $" Occupy: {occupy.Reason}.");
+            }
 
             var road = _world.Caravans.OrderBy(c => c.ArriveDay).ToList();
             var lines = new StringBuilder($"<b>On the road</b> ({_world.TradeCaravansOut} of {_world.Markets} market caravans out)\n");

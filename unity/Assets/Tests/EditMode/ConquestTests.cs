@@ -108,19 +108,24 @@ namespace CrownAndHearth.Tests
             var b = Fight(w, s, 70);
             Assert.IsTrue(b.Victory, b.Summary());
             w.FinishInvasion(b);
-            Assert.AreSame(b, w.PendingConquest, "you choose what happens to it");
+            Assert.AreSame(b, w.PendingBattle, "you choose what happens to it");
+            var p = w.PendingConquest;
+            Assert.AreEqual((s.Id, b.SurvivingInfantry, b.SurvivingArchers), (p.SettlementId, p.Infantry, p.Archers));
             Assert.IsFalse(w.CanAttack(w.Settlements[0]).Ok && w.PendingConquest != null, "one decision at a time");
-            int gold = b.Loot.GetValueOrDefault(Res.Gold);
+            int gold = p.Loot.GetValueOrDefault(Res.Gold), carried = p.Loot.Values.Sum();
+            int capacity = (p.Infantry * CampBattle.InfantryCarry + p.Archers * CampBattle.ArcherCarry) * (1 + World.SackCartFactor);
             var near = w.Settlements.Where(o => o != s && System.Math.Max(System.Math.Abs(o.X - s.X), System.Math.Abs(o.Y - s.Y)) <= World.SackHeardKm).ToList();
             var nearBefore = near.Select(o => o.Attitude).ToList();
             Assert.IsTrue(w.ResolveConquest(ConquestChoice.Sack).Ok);
             Assert.IsNull(w.PendingConquest);
-            Assert.Greater(b.Loot.GetValueOrDefault(Res.Gold), gold, "sacking takes much more");
+            Assert.IsFalse(w.ResolveConquest(ConquestChoice.Sack).Ok, "deciding twice does nothing");
+            var e = w.Expeditions.Single();
+            Assert.Greater(e.Loot.GetValueOrDefault(Res.Gold), gold, "sacking takes much more");
+            Assert.LessOrEqual(e.Loot.Values.Sum(), System.Math.Max(capacity, carried), "but no more than the army and the town's carts can haul");
+            StringAssert.Contains("carts carry off", w.LastConquestNews);
             Assert.Less(s.Population, pop * 0.5, "and burns it");
             Assert.AreEqual(-100, s.Attitude);
             Assert.IsTrue(near.Select((o, i) => o.Attitude < nearBefore[i] || o.Attitude == -100).All(x => x), "every settlement nearby hears of it");
-            var e = w.Expeditions.Single();
-            Assert.AreEqual(b.Loot[Res.Gold], e.Loot[Res.Gold], "the army carries the spoils home");
         }
 
         [Test]
@@ -168,12 +173,17 @@ namespace CrownAndHearth.Tests
             var ls = loaded.SettlementById(s.Id);
             Assert.AreEqual((Allegiance.Occupied, need, -1), (ls.Allegiance, ls.Garrison, ls.Liege));
 
-            // reinforce from home, then strip it bare: sooner or later it rises up
-            w.Soldiers = 10;
+            // reinforce from home: they march there and join on arrival
+            w.Soldiers = 10; w.Archers = 0;
             Assert.IsTrue(w.ReinforceGarrison(s, 5).Ok);
-            Assert.AreEqual(need + 5, s.Garrison);
+            Assert.AreEqual(need, s.Garrison, "not there yet");
+            Assert.AreEqual(5, w.MarchingTo(s));
             Assert.AreEqual(5, w.Soldiers);
-            s.Garrison = 0;
+            for (int i = 0; i < w.SettlementMarchDays(s) + 1 && w.Detachments.Count > 0; i++) { w.ResAmt[Res.Food] = 150; w.Tick(); }
+            Assert.AreEqual(need + 5, s.Garrison, "they joined on arrival");
+
+            // strip it bare: sooner or later it rises up, and the garrison is driven out rather than vanishing
+            s.GarrisonInfantry = 0; s.GarrisonArchers = 0;
             for (int i = 0; i < 24 * World.SettlementMonth && s.Allegiance == Allegiance.Occupied; i++) { w.ResAmt[Res.Food] = 150; w.Tick(); }
             Assert.AreEqual(Allegiance.Own, s.Allegiance, "an unguarded settlement throws you out");
             Assert.LessOrEqual(s.Attitude, -60);
@@ -188,10 +198,208 @@ namespace CrownAndHearth.Tests
             Assume.That(b.Victory, b.Summary());
             w.FinishInvasion(b);
             Assert.IsTrue(w.ResolveConquest(ConquestChoice.Occupy, World.GarrisonNeeded(s)).Ok);
+            s.GarrisonArchers = 2;   // a mixed garrison
+            int inf = s.GarrisonInfantry, arc = s.GarrisonArchers;
             Assert.IsTrue(w.WithdrawGarrison(s).Ok);
             Assert.AreEqual(Allegiance.Tributary, s.Allegiance);
             Assert.AreEqual(0, s.Garrison);
             Assert.AreEqual(2, w.Expeditions.Count, "the garrison marches home too");
+            var home = w.Expeditions.Last();
+            Assert.AreEqual((inf, arc), (home.Infantry, home.Archers), "infantry come home as infantry, archers as archers");
+        }
+
+        // ---------- stage 1 regressions: every soldier accounted for, loot always delivered, decisions survive saves ----------
+
+        /// <summary>Every soldier you have, wherever he is.</summary>
+        static int AllSoldiers(World w) => w.Soldiers + w.TroopsAway;
+
+        /// <summary>Barracks for `bunks` soldiers (a soldier with no bunk at home is let go each day, which these tests must not mistake
+        /// for a soldier lost on the road), and peasants enough that a housing shortfall comes out of them rather than the soldiers.</summary>
+        static void Billet(World w, int bunks)
+        {
+            int c = Defs.Start;
+            w.ClaimAll();
+            // a long street south from the hall's road, with barracks along it
+            foreach (var (x, y) in World.LPath(c, c + 7, c, c + 28).Concat(World.LPath(c - 14, c + 28, c + 14, c + 28)))
+            {
+                if (w.Grid[y, x] != null) continue;
+                w.DecoMap[y, x] = Deco.None;
+                w.AddBld("road", x, y);
+            }
+            w.Touch();
+            for (int i = 0; i < 61 * 61 && w.Recalc().Bunks < bunks; i++)
+            {
+                int x = c - 30 + i % 61, y = c - 30 + i / 61;
+                foreach (var r in System.Enum.GetValues(typeof(Res)).Cast<Res>()) w.ResAmt[r] = 300;
+                if (!w.CanPlace("barracks", x, y).Ok || !w.Place("barracks", x, y).Ok) continue;
+                w.Recalc();
+                if (!w.Grid[y, x].Served) w.Remove(x, y);   // only a barracks with a road to the hall has bunks
+            }
+            Assume.That(w.Recalc().Bunks, Is.GreaterThanOrEqualTo(bunks), $"room for enough road-connected barracks near the hall (got {w.Recalc().Bunks})");
+            w.Peasants = 120; w.Drafting = false;
+        }
+
+        static (World w, Settlement s, CampBattle b) Taken(int army = 40, SettlementTier tier = SettlementTier.Hamlet, int archers = 0)
+        {
+            var w = Town(army);
+            Billet(w, army + 20);
+            w.Archers = archers;
+            var s = Target(w, tier);
+            var camp = w.TownCamp(s);
+            var land = Landing(camp.Site.Map, army - archers); land.Archers = archers;
+            var b = w.BeginInvasion(camp, new[] { land });
+            for (int i = 0; i < CampBattle.MaxTicks + 5 && !b.Over; i++) b.Step();
+            Assume.That(b.Victory, b.Summary());
+            w.FinishInvasion(b);
+            return (w, s, b);
+        }
+
+        [Test]
+        public void SoldiersAreConservedThroughOccupationReinforcementAndWithdrawal()
+        {
+            var (w, s, b) = Taken(40, archers: 10);
+            int survivors = b.SurvivingInfantry + b.SurvivingArchers, home = w.Soldiers;
+            Assert.AreEqual(home + survivors, AllSoldiers(w), "the army waiting for your decision still counts");
+            int need = World.GarrisonNeeded(s);
+            Assert.IsTrue(w.ResolveConquest(ConquestChoice.Occupy, need + 2).Ok);
+            Assert.AreEqual(home + survivors, AllSoldiers(w), "garrison plus marchers home");
+            w.Soldiers += 6; w.Archers += 3;   // some recruits at home
+            int total = AllSoldiers(w);
+            Assert.IsTrue(w.ReinforceGarrison(s, 6).Ok);
+            Assert.AreEqual(total, AllSoldiers(w), "reinforcements on the road still count");
+            var d = w.Detachments.Single();
+            Assert.AreEqual(6, d.Infantry + d.Archers);
+            for (int i = 0; i < 60 && (w.Detachments.Count > 0 || w.Expeditions.Count > 0); i++) { w.ResAmt[Res.Food] = 150; w.Tick(); }
+            Assert.AreEqual(total, AllSoldiers(w), "nobody lost or duplicated on the road");
+            int gInf = s.GarrisonInfantry, gArc = s.GarrisonArchers, hInf = w.Infantry, hArc = w.Archers;
+            Assert.IsTrue(w.WithdrawGarrison(s).Ok);
+            for (int i = 0; i < 60 && w.Expeditions.Count > 0; i++) { w.ResAmt[Res.Food] = 150; w.Tick(); }
+            Assert.AreEqual((hInf + gInf, hArc + gArc), (w.Infantry, w.Archers), "the garrison comes home as the same infantry and archers");
+        }
+
+        [Test]
+        public void SoldiersAwayStillDrawWagesAndKeepTheirBunks()
+        {
+            var w = Town(10);
+            w.ResAmt[Res.Gold] = 100; w.Peasants = 0; w.Drafting = false;
+            double before = w.ResAmt[Res.Gold];
+            w.ResAmt[Res.Food] = 150; w.Tick();
+            double payHome = before - w.ResAmt[Res.Gold];
+            var (t, s, b) = Taken(40);
+            Assert.IsTrue(t.ResolveConquest(ConquestChoice.Occupy, World.GarrisonNeeded(s)).Ok);
+            Assert.Greater(t.TroopsStationed, 0);
+            t.Peasants = 0; t.ResAmt[Res.Gold] = 100; t.Drafting = false;
+            int away = t.TroopsAway, athome = t.Soldiers;
+            t.ResAmt[Res.Food] = 150; t.Tick();
+            Assert.AreEqual(100 - (athome + away) * 0.1, t.ResAmt[Res.Gold], 0.2, "soldiers away are paid like those at home");
+            Assert.Greater(payHome, 0);
+        }
+
+        [Test]
+        public void LootGoesHomeEvenWhenEverySurvivorStaysAsTheGarrison()
+        {
+            var (w, s, b) = Taken(40);
+            var p = w.PendingConquest;
+            p.Loot[Res.Gold] = 25;   // make sure there is something to carry
+            int all = p.Infantry + p.Archers;
+            Assume.That(all >= World.GarrisonNeeded(s));
+            Assert.IsTrue(w.ResolveConquest(ConquestChoice.Occupy, all).Ok);
+            Assert.AreEqual(all, s.Garrison);
+            var cart = w.Expeditions.Single();
+            Assert.AreEqual(0, cart.Infantry + cart.Archers, "no soldier goes home");
+            Assert.AreEqual(25, cart.Loot[Res.Gold], "but the spoils do, by cart");
+            double gold = 0;
+            for (int i = 0; i < 60 && w.Expeditions.Count > 0; i++) { w.ResAmt[Res.Food] = 150; w.ResAmt[Res.Gold] = 0; w.Tick(); gold = System.Math.Max(gold, w.ResAmt[Res.Gold]); }
+            Assert.Greater(gold, 0, "and arrive in the treasury");
+        }
+
+        [Test]
+        public void AFallenSettlementStillAwaitsItsFateAfterSavingAndLoading()
+        {
+            var (w, s, b) = Taken(40);
+            var p = w.PendingConquest;
+            p.Loot[Res.Gold] = 17;
+            var loaded = World.LoadJson(w.SaveJson());
+            Assert.IsNotNull(loaded.PendingConquest, "the decision is saved");
+            Assert.IsNull(loaded.PendingBattle, "the battle itself is not");
+            var lp = loaded.PendingConquest;
+            Assert.AreEqual((p.SettlementId, p.Infantry, p.Archers, 17), (lp.SettlementId, lp.Infantry, lp.Archers, lp.Loot[Res.Gold]));
+            Assert.AreEqual(w.TroopsReturning, loaded.TroopsReturning, "the waiting army still counts after loading");
+            Assert.IsFalse(loaded.ResolveConquest(ConquestChoice.Leave).Ok, "before the settlements arrive it cannot be decided yet");
+            Assert.IsNotNull(loaded.PendingConquest, "and is not lost by trying");
+            loaded.SetSettlements(Settlements.Generate(Map));
+            Assert.IsFalse(loaded.CanAttack(loaded.Settlements.First(o => o.Id != s.Id)).Ok, "still one decision at a time");
+            Assert.IsTrue(loaded.ResolveConquest(ConquestChoice.Tribute).Ok, "it can be decided after loading");
+            Assert.AreEqual(Allegiance.Tributary, loaded.SettlementById(s.Id).Allegiance);
+            Assert.AreEqual(17, loaded.Expeditions.Single().Loot[Res.Gold], "and the army goes home with its loot");
+        }
+
+        [Test]
+        public void AnArmySavedMidFightMarchesHomeAfterLoading()
+        {
+            var w = Town(30);
+            w.Archers = 5;
+            var s = Target(w, SettlementTier.Village);
+            var camp = w.TownCamp(s);
+            var land = Landing(camp.Site.Map, 20); land.Archers = 5;
+            var b = w.BeginInvasion(camp, new[] { land });
+            Assert.IsNotNull(b);
+            Assert.AreEqual(25, w.TroopsReturning, "the army in the fight counts");
+            var loaded = World.LoadJson(w.SaveJson());
+            var e = loaded.Expeditions.Single();
+            Assert.AreEqual((20, 5), (e.Infantry, e.Archers), "saved during the fight, it breaks off and marches home whole");
+        }
+
+        [Test]
+        public void ReinforcementsTravelAndAreSaved()
+        {
+            var (w, s, b) = Taken(40);
+            Assert.IsTrue(w.ResolveConquest(ConquestChoice.Occupy, World.GarrisonNeeded(s)).Ok);
+            w.Soldiers = 8; w.Archers = 3;
+            Assert.IsTrue(w.ReinforceGarrison(s, 8).Ok);
+            var d = w.Detachments.Single();
+            Assert.AreEqual((5, 3), (d.Infantry, d.Archers), "infantry first, then archers");
+            var loaded = World.LoadJson(w.SaveJson());
+            var ld = loaded.Detachments.Single();
+            Assert.AreEqual((d.SettlementId, d.Infantry, d.Archers, d.ArriveDay), (ld.SettlementId, ld.Infantry, ld.Archers, ld.ArriveDay));
+            loaded.SetSettlements(Settlements.Generate(Map));
+            var ls = loaded.SettlementById(s.Id);
+            Assert.AreEqual((s.GarrisonInfantry, s.GarrisonArchers), (ls.GarrisonInfantry, ls.GarrisonArchers), "garrison kinds are saved");
+            // the settlement is lost before they arrive: they turn round
+            ls.Allegiance = Allegiance.Own; ls.GarrisonInfantry = 0; ls.GarrisonArchers = 0;
+            for (int i = 0; i < 60 && loaded.Detachments.Count > 0; i++) { loaded.ResAmt[Res.Food] = 150; loaded.Tick(); }
+            var back = loaded.Expeditions.Last();
+            Assert.AreEqual((5, 3), (back.Infantry, back.Archers), "they march home instead");
+        }
+
+        [Test]
+        public void OldGarrisonRowsLoadAsInfantry()
+        {
+            var w = Town();
+            var s = w.Settlements[3];
+            s.Allegiance = Allegiance.Occupied; s.GarrisonInfantry = 4; s.GarrisonArchers = 0;
+            var save = Newtonsoft.Json.Linq.JObject.Parse(w.SaveJson());
+            foreach (Newtonsoft.Json.Linq.JArray row in (Newtonsoft.Json.Linq.JArray)save["settlements"]) row.RemoveAt(8);   // the older 8-number rows
+            var loaded = World.LoadJson(save.ToString());
+            loaded.SetSettlements(Settlements.Generate(Map));
+            Assert.AreEqual((4, 0), (loaded.Settlements[3].GarrisonInfantry, loaded.Settlements[3].GarrisonArchers));
+        }
+
+        [Test]
+        public void TheBarracksDoNotTrainSoldiersIntoTheBunksOfAnArmyAway()
+        {
+            var (w, s, b) = Taken(40);
+            Assert.IsTrue(w.ResolveConquest(ConquestChoice.Leave).Ok);
+            int coming = w.TroopsReturning;
+            Assert.Greater(coming, 0);
+            int bunks = w.Recalc().Bunks;
+            // the barracks are ready to train and the town can pay; the only free bunks belong to the army on its way home
+            w.Soldiers = System.Math.Max(0, bunks - coming); w.Archers = 0; w.Drafting = true; w.Peasants = 100;
+            foreach (var bk in w.Blds.Where(x => x.T == "barracks")) bk.Prog = World.TrainDays;
+            int before = w.Soldiers;
+            foreach (var r in System.Enum.GetValues(typeof(Res)).Cast<Res>()) w.ResAmt[r] = 300;
+            w.Tick();
+            Assert.AreEqual(before, w.Soldiers, "no recruit takes a bunk kept for a soldier coming home");
         }
     }
 }

@@ -242,7 +242,24 @@ namespace CrownAndHearth.Game
         Text _occupyLabel;
         UnityEngine.UI.Image _occupyLess, _occupyMore;
         int _occupyCount;
-        bool ConquestPending => _campBattle != null && _world != null && _world.PendingConquest == _campBattle;
+        bool ConquestPending => _campBattle != null && _world != null && _world.PendingConquest != null && _world.PendingBattle == _campBattle;
+        int PendingSurvivors => _world?.PendingConquest is PendingConquest p ? p.Infantry + p.Archers : 0;
+
+        /// <summary>What each choice would do, from the pending army and the settlement: shown under the buttons.</summary>
+        string ConquestPreview(Settlement s)
+        {
+            var p = _world.PendingConquest;
+            var (gold, goods) = World.SackYield(s);
+            int room = World.SackRoom(p);
+            int need = World.GarrisonNeeded(s);
+            var occupy = _world.CanResolve(ConquestChoice.Occupy, _occupyCount);
+            return $"\n\n<b>{s.Name} is yours to decide</b> ({p.Infantry} infantry and {p.Archers} archers survived, carrying {p.Loot.Values.Sum()} goods).\n" +
+                   $"· Leave: march home with what they carry.\n" +
+                   $"· Sack: it holds about {gold} gold and {goods} {World.GoodName(s.Makes)}; with the town's carts your army can take {room} more, the rest burns. Most of its people are lost.\n" +
+                   $"· Tribute: it pays you every month and breaks from its realm.\n" +
+                   $"· Occupy: leave at least {need} soldiers; it pays more each month." + (occupy.Ok ? "" : $" <color=#FFB080>{occupy.Reason}.</color>") +
+                   "\nYou can also close this and decide later from its panel on the world map.";
+        }
 
         void BuildConquest(RectTransform box)
         {
@@ -284,19 +301,24 @@ namespace CrownAndHearth.Game
             if (_campBattle == null) return;
             bool pending = ConquestPending;
             var home = _world.Expeditions.LastOrDefault(e => e.CampId == _camp.Id);
-            string after = pending
-                ? $"\n\n<b>{_camp.Name} is yours to decide.</b> Leave with the loot; sack it for far more and burn it; make it pay tribute every month; or occupy it with a garrison (it needs {World.GarrisonNeeded(_camp.Town)} soldiers)."
+            string after = pending ? ConquestPreview(_camp.Town)
+                : _camp.IsTown && _world.LastConquestNews.Length > 0 ? $"\n\n{_world.LastConquestNews}"
                 : home != null ? $"\n\nThe army marches home and arrives on day {home.ReturnDay} ({_world.MarchDays(_camp)} days)." : "";
             _campReportText.text = $"<b>Fight report</b>\n\n{_campBattle.Summary()}{after}" + (note.Length > 0 ? $"\n<color=#FFB080>{note}</color>" : "");
             foreach (var b in _conquestButtons) b.gameObject.SetActive(pending);
             _occupyLess.gameObject.SetActive(pending); _occupyMore.gameObject.SetActive(pending); _occupyLabel.gameObject.SetActive(pending);
-            if (pending) _occupyLabel.text = $"Garrison to leave: {_occupyCount} of {_campBattle.SurvivingInfantry + _campBattle.SurvivingArchers}";
+            if (pending)
+            {
+                _occupyCount = Math.Clamp(_occupyCount, 0, PendingSurvivors);
+                _occupyLabel.text = $"Garrison to leave: {_occupyCount} of {PendingSurvivors}";
+                _conquestButtons[3].color = _world.CanResolve(ConquestChoice.Occupy, _occupyCount).Ok ? Btn : new Color(0.2f, 0.17f, 0.13f, 1f);
+            }
         }
 
         public void CloseCamp()
         {
             if (!_campOpen || _campPhase == CampPhase.Fight) return;
-            if (ConquestPending) _world.ResolveConquest(ConquestChoice.Leave);   // walking away without deciding: the army takes its loot and leaves
+            // closing without deciding keeps the army waiting there: decide later from the settlement's panel on the world map
             _campOpen = false;
             _campPanel.gameObject.SetActive(false);
             if (_mapOpen) _mapPanel.gameObject.SetActive(true);
