@@ -676,6 +676,9 @@ namespace CrownAndHearth.Sim
             {
                 if (b.T == "barracks") m.Barracks.Add((b.X - x0, b.Y - y0));
                 if (b.T == "house") m.Tents.Add((b.X - x0, b.Y - y0));
+                if (b.T == "watchtower") m.Towers.Add((b.X - x0, b.Y - y0));
+                if (b.T == "wall" && InSquare(b.X, b.Y, x0, y0, n)) m.BarrierHp[b.Y - y0, b.X - x0] = CampBattle.BattleWallHp;
+                if (b.T == "road" && InSquare(b.X, b.Y, x0, y0, n) && IsGateway(b.X, b.Y)) { m.Gates.Add((b.Y - y0) * n + b.X - x0); m.BarrierHp[b.Y - y0, b.X - x0] = CampBattle.BattleGateHp; }
             }
             // what can be carried off, in the open beside the buildings that hold it
             double pop = s.Population;

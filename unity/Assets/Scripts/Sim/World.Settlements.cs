@@ -41,6 +41,7 @@ namespace CrownAndHearth.Sim
                     // rows of 9 keep infantry and archers apart; older rows of 8 held one total, which was all infantry then
                     s.GarrisonInfantry = row[7].Value<int>(); s.GarrisonArchers = row.Count >= 9 ? row[8].Value<int>() : 0;
                 }
+                if (row.Count >= 12) { s.DefendersLost = row[10].Value<double>(); s.DevastatedUntil = row[11].Value<int>(); s.Devastated = Day < s.DevastatedUntil; }
                 s.SoldOf.Clear(); s.BoughtOf.Clear();
                 if (row.Count >= 10 && row[9] is JObject goods)
                 {
@@ -79,6 +80,7 @@ namespace CrownAndHearth.Sim
             StepDetachments();   // World.Conquest.cs: reinforcements reaching their garrisons
             if (_settlements.Count == 0 || Day % SettlementMonth != 0) return;
             foreach (var s in _settlements) { s.SoldThisMonth = 0; s.BoughtThisMonth = 0; s.SoldOf.Clear(); s.BoughtOf.Clear(); }
+            RecoverSettlements();   // World.Conquest.cs: fallen defenders replaced, sacked places recovering
             StepConquered();   // World.Conquest.cs: tribute and occupied settlements
             foreach (var s in SettlementRules.Grow(_settlements))
                 if (s.Tier >= SettlementTier.Town && SettlementKm(s) <= RaidFarKm)
@@ -93,7 +95,7 @@ namespace CrownAndHearth.Sim
             if (_settlements.Count > 0)
                 foreach (var s in _settlements)
                     rows.Add(new JArray(s.Id, Math.Round(s.Population, 2), s.Attitude, s.SoldThisMonth, s.BoughtThisMonth, s.Liege, (int)s.Allegiance,
-                        s.GarrisonInfantry, s.GarrisonArchers, GoodsTraded(s)));
+                        s.GarrisonInfantry, s.GarrisonArchers, GoodsTraded(s), Math.Round(s.DefendersLost, 2), s.DevastatedUntil));
             else
                 foreach (var kv in _settlementRows.OrderBy(k => k.Key)) rows.Add(kv.Value.DeepClone());
             return rows;

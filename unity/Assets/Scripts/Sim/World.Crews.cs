@@ -69,6 +69,7 @@ namespace CrownAndHearth.Sim
         {
             if (!Inb(x, y) || !Inb(nx, ny) || IsSolid(x, y) || IsSolid(nx, ny)) return double.PositiveInfinity;
             if (PenAt(x, y) != PenAt(nx, ny)) return double.PositiveInfinity;
+            if (IsShutGate(x, y) || IsShutGate(nx, ny)) return double.PositiveInfinity;   // World.Walls.cs: a shut gate blocks crews too
             double d = System.Math.Abs(TileLevel(nx, ny) - TileLevel(x, y));
             return d >= 1.75 ? double.PositiveInfinity : 1 + d * 1.5;
         }
@@ -225,7 +226,7 @@ namespace CrownAndHearth.Sim
         readonly HashSet<Building> _folkHouseSet = new HashSet<Building>();
         int _folkPlacesStamp = -1;
 
-        bool IsRoadAt(int x, int y) => Inb(x, y) && Grid[y, x] != null && Grid[y, x].T == "road";
+        bool IsRoadAt(int x, int y) => Inb(x, y) && Grid[y, x] != null && Grid[y, x].T == "road" && !IsShutGate(x, y);   // a shut gate blocks townsfolk too
 
         /// <summary>A road tile touching the building, preferring the one its door faces (JS roadBeside). -1 when none.</summary>
         public int RoadBeside(Building b)

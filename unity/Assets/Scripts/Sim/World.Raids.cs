@@ -31,6 +31,8 @@ namespace CrownAndHearth.Sim
         public Res LootRes; public double Carry, WheatLoot;
         public Fighter Opponent; // visual facing while a soldier blocks the raider
         public bool Hurt, Fighting;   // took a hit today / stopped to fight a soldier today (drawn red / swinging)
+        /// <summary>Its target is behind a palisade or a shut gate: it is hacking its way in (World.Walls.cs).</summary>
+        public bool Breaching;
         public int DeadDay;           // the body stays on the field for a few days
         public readonly List<int> Path = new List<int>();   // the way in, walked back when fleeing
     }
@@ -259,6 +261,7 @@ namespace CrownAndHearth.Sim
                     int nx = cx + Nb[k, 0], ny = cy + Nb[k, 1];
                     if (!Inb(nx, ny) || dist[ny * N + nx] >= 0) continue;
                     var g = Grid[ny, nx]; if (g != null && g.T != "road") continue;
+                    if (IsShutGate(nx, ny)) continue;   // World.Walls.cs
                     if (double.IsPositiveInfinity(WalkCost(cx, cy, nx, ny)) && !(Grid[cy, cx] == target)) continue;
                     if (IsSolid(nx, ny)) continue;
                     dist[ny * N + nx] = dist[c] + 1; queue.Enqueue(ny * N + nx);
@@ -269,12 +272,19 @@ namespace CrownAndHearth.Sim
         }
 
         /// <summary>The building a raider at (x, y) would go for now: best loot for its distance and danger, among those it can reach.</summary>
-        public Building RaidTarget(int x, int y)
+        public Building RaidTarget(int x, int y) => RaidTarget(x, y, out _);
+
+        /// <summary>As above; when nothing worth taking can be reached on foot (the town is walled and its gates are shut), the best target that
+        /// can be reached by breaking through a palisade or gate, with `breach` set: the raiders do not simply give up.</summary>
+        public Building RaidTarget(int x, int y, out bool breach)
         {
+            breach = false;
             var r = Raid ?? new RaidReport();
-            var candidates = Blds.Where(b => RaidScore(b, x, y) > 0).OrderByDescending(b => RaidScore(b, x, y)).ThenBy(b => b.X).ThenBy(b => b.Y).Take(6);
+            var candidates = Blds.Where(b => RaidScore(b, x, y) > 0).OrderByDescending(b => RaidScore(b, x, y)).ThenBy(b => b.X).ThenBy(b => b.Y).Take(6).ToList();
             foreach (var b in candidates)
                 if (RaidField(r, b)[y * N + x] >= 0) return b;
+            foreach (var b in candidates)
+                if (BreachField(b)[y * N + x] >= 0) { breach = true; return b; }
             return null;
         }
 
@@ -302,26 +312,33 @@ namespace CrownAndHearth.Sim
                 if (a.St == RaiderState.Waiting)
                 {
                     if (days < a.Delay) continue;
-                    a.Target = RaidTarget(a.X, a.Y);
+                    a.Target = RaidTarget(a.X, a.Y, out a.Breaching);
                     if (a.Target == null) { a.St = RaiderState.Gone; continue; }
                     a.Path.Add(a.Y * N + a.X); a.St = RaiderState.Approach;
                 }
                 else if (a.St == RaiderState.Approach)
                 {
-                    if (a.Target == null || !Blds.Contains(a.Target)) { a.Target = RaidTarget(a.X, a.Y); if (a.Target == null) { a.St = RaiderState.Flee; continue; } }
+                    if (a.Target == null || !Blds.Contains(a.Target)) { a.Target = RaidTarget(a.X, a.Y, out a.Breaching); if (a.Target == null) { a.St = RaiderState.Flee; continue; } }
+                    // on foot if it can be walked to now; otherwise through the palisade or a shut gate (World.Walls.cs)
                     var dist = RaidField(r, a.Target);
+                    a.Breaching = dist[a.Y * N + a.X] < 0;
+                    if (a.Breaching) dist = BreachField(a.Target);
                     int d = dist[a.Y * N + a.X];
+                    if (d < 0) { a.St = RaiderState.Flee; continue; }   // no way in at all
                     if (d <= 1) { a.St = RaiderState.Loot; continue; }
-                    // a soldier right beside the raider: stop and fight instead of walking on
-                    a.Opponent = r.Fighters.FirstOrDefault(f => f.St != FighterState.Dead && f.St != FighterState.Idle && Cheb(f.X, f.Y, a.X, a.Y) <= 1);
+                    // a soldier right beside the raider (no palisade between): stop and fight instead of walking on
+                    a.Opponent = r.Fighters.FirstOrDefault(f => f.St != FighterState.Dead && f.St != FighterState.Idle && MeleeReach(f.X, f.Y, a.X, a.Y));
                     if (a.Opponent != null) { a.Fighting = true; continue; }
-                    int best = -1;
-                    for (int k = 0; k < 4 && best < 0; k++)
+                    int best = -1, bestD = d;
+                    for (int k = 0; k < 4; k++)
                     {
                         int nx = a.X + Nb[k, 0], ny = a.Y + Nb[k, 1];
-                        if (Inb(nx, ny) && dist[ny * N + nx] == d - 1) best = ny * N + nx;
+                        if (!Inb(nx, ny)) continue;
+                        int nd = dist[ny * N + nx];
+                        if (nd >= 0 && nd < bestD) { best = ny * N + nx; bestD = nd; }
                     }
                     if (best < 0) { a.St = RaiderState.Flee; continue; }   // cut off
+                    if (IsBarrier(best % N, best / N)) { DamageBarrier(best % N, best / N, 1); a.Fighting = true; continue; }   // hack at it
                     a.X = best % N; a.Y = best / N; a.Path.Add(best);
                 }
                 else if (a.St == RaiderState.Loot)
@@ -375,7 +392,7 @@ namespace CrownAndHearth.Sim
 
         static bool RaiderLive(Raider a) => a.St == RaiderState.Approach || a.St == RaiderState.Loot || a.St == RaiderState.Flee;
 
-        bool FighterPass(int x, int y) => Inb(x, y) && !IsSolid(x, y) && (Grid[y, x] == null || Grid[y, x].T == "road");
+        bool FighterPass(int x, int y) => Inb(x, y) && !IsSolid(x, y) && (Grid[y, x] == null || Grid[y, x].T == "road") && !IsShutGate(x, y);   // World.Walls.cs
 
         /// <summary>Steps from every tile within reach of a raider to that raider (BFS over ground soldiers can cross), -1 elsewhere.</summary>
         int[] ChaseField(RaidReport r, Raider a, HashSet<int> responders)
@@ -480,7 +497,8 @@ namespace CrownAndHearth.Sim
                     var field = FieldOf(t);
                     for (int s = 0; s < FighterSpeed && Cheb(f.X, f.Y, t.X, t.Y) > want; s++) if (!StepDown(f, field)) break;
                     int range = f.Kind == Troop.Archer ? ArcherRange : 1;
-                    if (Cheb(f.X, f.Y, t.X, t.Y) <= range)
+                    // a sword needs to reach (no palisade between, World.Walls.cs); arrows arc over the palisade
+                    if (Cheb(f.X, f.Y, t.X, t.Y) <= range && (f.Kind == Troop.Archer || MeleeReach(f.X, f.Y, t.X, t.Y)))
                     {
                         hitRaider[t] = hitRaider.GetValueOrDefault(t) + (f.Kind == Troop.Archer ? ArcherHit : InfantryHit);
                         f.Attacked = true;
@@ -502,7 +520,7 @@ namespace CrownAndHearth.Sim
                 foreach (var f in r.Fighters)
                 {
                     if (f.St == FighterState.Dead || f.St == FighterState.Idle) continue;
-                    int d = Cheb(f.X, f.Y, a.X, a.Y); if (d <= 1 && (d < nd || (d == nd && f.Id < near.Id))) { near = f; nd = d; }
+                    int d = Cheb(f.X, f.Y, a.X, a.Y); if (MeleeReach(f.X, f.Y, a.X, a.Y) && (d < nd || (d == nd && f.Id < near.Id))) { near = f; nd = d; }
                 }
                 if (near != null) hitFighter[near] = hitFighter.GetValueOrDefault(near) + RaiderHit;
             }

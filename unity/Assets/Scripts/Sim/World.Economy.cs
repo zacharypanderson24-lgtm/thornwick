@@ -44,6 +44,7 @@ namespace CrownAndHearth.Sim
             StepCrews(got);
             food = got[Res.Food];
             StepFolk();
+            StepGates();   // World.Walls.cs: shut or open the gates, mend walls
             StepRaid();
             StepCampRaids();
             StepSettlements();

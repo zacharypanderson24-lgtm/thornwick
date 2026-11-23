@@ -36,7 +36,9 @@ namespace CrownAndHearth.Sim
                 ["surveyed"] = new JArray(Enumerable.Range(0, N * N).Where(k => Surveyed[k])),
                 ["oreTaken"] = JObject.FromObject(OreTaken), ["minerDeaths"] = MinerDeaths, ["caveIns"] = CaveIns,
                 ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["archers"] = Archers, ["archerPercent"] = ArcherPercent, ["trained"] = Trained,
-                ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["militia"] = MilitiaFights, ["starving"] = Starving,
+                ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["militia"] = MilitiaFights, ["gatesShut"] = KeepGatesShut,
+                ["barrierDamage"] = new JObject(BarrierDamage.Where(kv => kv.Value > 0).Select(kv => new JProperty(kv.Key.ToString(), Math.Round(kv.Value, 2)))),   // World.Walls.cs
+                ["starving"] = Starving,
                 ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
                 ["res"] = JObject.FromObject(ResAmt.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["wheatStored"] = WheatStored, ["foodProduction"] = RecentFoodProduction, ["waterShortDays"] = WaterShortDays,
@@ -130,6 +132,7 @@ namespace CrownAndHearth.Sim
                 PopAcc = save.Value<double?>("popAcc") ?? 0,
                 Drafting = save.Value<bool?>("drafting") ?? true,
                 MilitiaFights = save.Value<bool?>("militia") ?? true,
+                KeepGatesShut = save.Value<bool?>("gatesShut") ?? false,
                 Starving = save.Value<bool?>("starving") ?? false,
                 RecentFoodProduction = save.Value<double?>("foodProduction"),
                 WaterShortDays = Math.Clamp(save.Value<int?>("waterShortDays") ?? 0, 0, WaterTuning.Grace),
@@ -275,6 +278,8 @@ namespace CrownAndHearth.Sim
             world.SetArcherPercent(save.Value<int?>("archerPercent") ?? 0);
             world.LoadSettlements(save["settlements"] as JArray, save["caravans"] as JArray);
             world.LoadConquest(save["conquest"] as JObject);
+            foreach (var p in (save["barrierDamage"] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>())   // World.Walls.cs; older saves have none
+                if (int.TryParse(p.Name, out int key)) world.BarrierDamage[key] = (double)p.Value;
             if (save["camps"] is JObject campsSave)
             {
                 foreach (var id in campsSave["destroyed"] as JArray ?? new JArray()) world.DestroyedCamps.Add((int)id);
