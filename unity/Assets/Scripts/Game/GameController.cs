@@ -94,6 +94,8 @@ namespace CrownAndHearth.Game
                 Desc = "Trains infantry and archers from your peasants, one every 4 days (set the mix in the Troops menu). Troops eat more and do no other work. Must touch a road." },
             new ToolDef { Id = "wall", Cat = Cat.Military, Label = "Palisade", Wall = true,
                 Desc = "A wooden palisade, 2 wood a tile: press and drag a line. It is a thin wall through the middle of each tile, and people and raiders must go around it. A road through the line is a gate." },
+            new ToolDef { Id = "wall2", Cat = Cat.Military, Label = "Palisade + Walkway", Wall = true,
+                Desc = "Palisades with a plank walkway. Drag a line; existing palisades in the line receive the walkway. Guard patrols on the platform are not implemented yet." },
             new ToolDef { Id = "watchtower", Cat = Cat.Military, Label = "Watchtower", Build = "watchtower",
                 Desc = $"Spots raiders within {World.WatchtowerRange} tiles and alerts every garrison. Place it along an approach to town. Works without a road." },
             new ToolDef { Id = "well", Cat = Cat.Water, Label = "Well", Build = "well",
@@ -268,6 +270,12 @@ namespace CrownAndHearth.Game
         /// <summary>Give the settlement the raider camps and the NPC settlements of its world, once the map for its seed exists.</summary>
         void AttachCamps()
         {
+            if (_worldMap != null && _worldMap.Seed == World.Seed) {
+                var site = _worldMap.HomeSite;
+                int bx = site?.X ?? World.HomeCellX, by = site?.Y ?? World.HomeCellY;
+                BiomeArt.Bind(World, _worldMap.Biomes[WorldMap.Cell(bx,by)]);
+                if (_campWorld != null && _hud.CurrentCamp != null) BiomeArt.Bind(_campWorld, _worldMap.Biomes[WorldMap.Cell(_hud.CurrentCamp.X,_hud.CurrentCamp.Y)]);
+            }
             if (_worldMap == null || _worldMap.Seed != World.Seed || (World.Camps.Count > 0 && World.Settlements.Count > 0)) return;
             var home = _worldMap.HomeSite;
             if (World.Camps.Count == 0) World.SetCamps(RaiderCamps.Generate(_worldMap), home?.X ?? WorldMap.Size / 2, home?.Y ?? WorldMap.Size / 2);
@@ -294,7 +302,8 @@ namespace CrownAndHearth.Game
 
         void EnterCamp()
         {
-            _campWorld = _hud.CurrentCamp.Site.World;   // the camp, made by the settlement terrain generator
+            _campWorld = _hud.CurrentCamp.Site.World;
+            if (_worldMap != null) BiomeArt.Bind(_campWorld, _worldMap.Biomes[WorldMap.Cell(_hud.CurrentCamp.X,_hud.CurrentCamp.Y)]);   // the camp, made by the settlement terrain generator
             _savedCamCenter = _cam.Center; _savedZoomIndex = _cam.ZoomIndex;
             _cam.ZoomIndex = 2;   // 1x: the 32 x 32 camp fills the view
             int ox = _campWorld.CampX0, oy = _campWorld.CampY0;
@@ -551,6 +560,11 @@ namespace CrownAndHearth.Game
                     var line = World.LPath(_roadAnchor.Value.x, _roadAnchor.Value.y, end.x, end.y);
                     var r = _tool.Wall ? World.PlaceWallPath(line) : World.PlaceRoadPath(line);
                     if (!r.Ok) _hud.Toast(r.Reason);
+                    else if (_tool.Id == "wall2")
+                    {
+                        foreach (var (x, y) in line) if (World.Grid[y, x]?.T == "wall") World.Grid[y, x].Lvl = 2;
+                        World.Touch();
+                    }
                     _roadAnchor = null;
                 }
                 return;

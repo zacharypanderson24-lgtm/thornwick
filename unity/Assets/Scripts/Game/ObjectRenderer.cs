@@ -42,7 +42,8 @@ namespace CrownAndHearth.Game
                     var b = w.Grid[y, x];
                     if (b != null)
                     {
-                        if (b.T != "road" && b.X == x && b.Y == y) PlaceBuilding(w, b, rot);
+                        if (b.T == "road") PlaceApprovedGate(w, b, rot);
+                        else if (b.X == x && b.Y == y) PlaceBuilding(w, b, rot);
                         continue;
                     }
                     if (w.PenAt(x, y) is LivestockPen pen)
@@ -71,7 +72,11 @@ namespace CrownAndHearth.Game
                         continue;
                     }
                     var d = w.DecoMap[y, x];
-                    if (d == Deco.None) continue;
+                    if (d == Deco.None) {
+                        var plant = BiomeArt.Understory(w, x, y);
+                        if (plant != null) { var tile = IsoView.ToView(x,y,rot); Put(plant, IsoView.VertexPos(tile.x+1,tile.y+1,(float)w.TileLevel(x,y)),IsoView.SortOrder(tile.x,tile.y)); }
+                        continue;
+                    }
                     var sprite = DecoSprite(w, x, y, d);
                     if (sprite == null) continue;
                     var v = IsoView.ToView(x, y, rot);
@@ -95,15 +100,19 @@ namespace CrownAndHearth.Game
             switch (d)
             {
                 case Deco.Tree:
+                    var biomeTree = BiomeArt.Tree(w,x,y);
+                    if (biomeTree != null) return biomeTree;
                     var (n, kind) = w.TreeGrove(x, y);
                     return (n > 1 && kind != null ? _art.Find($"tree_{kind}_{n}") : null) ?? _art.Find("tree_" + w.TreeVariant(x, y));
                 case Deco.Rock:
                     if (w.IsMountain(x, y)) return null;            // mountains are part of the ground mesh
                     int lv = w.RockLevel(x, y);
+                    var biomeRock = BiomeArt.Rock(w,x,y);
+                    if (lv > 0 && biomeRock != null) return biomeRock;
                     return lv >= 2 ? NatureSprite("rock_1") : lv == 1 ? NatureSprite("rock_0") : null;
                 case Deco.Ore: return NatureSprite(Noise.Hash2(x, y, 11) < 0.5 ? "ore_0" : "ore_1");
                 case Deco.Stump: return NatureSprite("stump");
-                case Deco.Sapling: return NatureSprite("sapling");
+                case Deco.Sapling: return BiomeArt.Tree(w,x,y,true) ?? NatureSprite("sapling");
             }
             return null;
         }
@@ -188,12 +197,31 @@ namespace CrownAndHearth.Game
                 mask |= dx == 1 ? WallArt.E : dx == -1 ? WallArt.W : dy == 1 ? WallArt.S : WallArt.N;
             }
             float lvl = Mathf.Round((float)w.TileLevel(b.X, b.Y) * LvlPx) / LvlPx;
-            Put(_walls.Get(mask), IsoView.VertexPos(here.x + 1, here.y + 1, lvl), IsoView.SortOrder(here.x, here.y));
+            var inside = w.Hall != null ? IsoView.ToView(w.Hall.X, w.Hall.Y, rot) : here;
+            Put(_walls.Get(mask, b.Lvl, inside.x >= here.x ? 1 : -1, inside.y >= here.y ? 1 : -1),
+                IsoView.VertexPos(here.x + 1, here.y + 1, lvl), IsoView.SortOrder(here.x, here.y));
+        }
+
+        // Gates are open road openings on this base branch; closed/broken art is imported
+        // for the walls-gates simulation branch without pretending it is already merged.
+        void PlaceApprovedGate(World w, Building b, int rot)
+        {
+            bool Wall(int x, int y) => World.Inb(x, y) && w.Grid[y, x]?.T == "wall";
+            bool alongX = Wall(b.X - 1, b.Y) && Wall(b.X + 1, b.Y);
+            bool alongY = Wall(b.X, b.Y - 1) && Wall(b.X, b.Y + 1);
+            if (!alongX && !alongY) return;
+            int view = (rot + (alongX ? 0 : 1)) % 4;
+            var sprite = _art.Find("gate_open_" + (view + 1));
+            if (sprite == null) return;
+            var tile = IsoView.ToView(b.X, b.Y, rot);
+            float level = Mathf.Round((float)w.TileLevel(b.X, b.Y) * LvlPx) / LvlPx;
+            Put(sprite, IsoView.VertexPos(tile.x + 1, tile.y + 1, level), IsoView.SortOrder(tile.x, tile.y));
         }
 
         /// <summary>The art slot for a building (JS slotName + the hut-variant rule).</summary>
         public static string SlotName(Building b)
         {
+            if (b.T == "smokehouse" && b.Sz == 1) return "smokehouse_legacy";
             if (b.T == "hunter" && b.Sz == 1) return "wood";   // pre-release hunting saves
             if (b.Sz == 2)
             {
