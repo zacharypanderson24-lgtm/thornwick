@@ -273,6 +273,7 @@ namespace CrownAndHearth.EditorTools
             if (!assetPath.Replace('\\', '/').StartsWith(PrototypeArtImporter.OutDir)) return;
             var ti = (TextureImporter)assetImporter;
             ti.textureType = TextureImporterType.Sprite;
+            ti.textureShape = TextureImporterShape.Texture2D;   // a near-empty .meta can come in as a cube map, which cannot be a sprite
             ti.spriteImportMode = SpriteImportMode.Single;
             ti.spritePixelsPerUnit = 32;
             ti.filterMode = FilterMode.Point;
