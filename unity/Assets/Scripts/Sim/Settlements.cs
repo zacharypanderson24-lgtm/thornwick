@@ -64,6 +64,14 @@ namespace CrownAndHearth.Sim
         public int DevastatedUntil;
         /// <summary>Laid waste now (set each month by the game, from DevastatedUntil and the day).</summary>
         public bool Devastated;
+        /// <summary>An occupied settlement's unrest, 0 (calm) to 100 (it rises). Saved. World.Realms.cs.</summary>
+        public double Unrest;
+        /// <summary>The day you occupied it (recent conquests are restless). Saved.</summary>
+        public int ConqueredDay;
+        /// <summary>It will not send another army before this day. Saved.</summary>
+        public int NextMarchDay;
+        /// <summary>The garrison it needed last month, to warn when growth raises it (runtime).</summary>
+        public int LastNeeded;
         /// <summary>Your soldiers stationed there, all told.</summary>
         public int Garrison => GarrisonInfantry + GarrisonArchers;
 
@@ -104,11 +112,11 @@ namespace CrownAndHearth.Sim
 
         public static string PersonalityNote(Personality p) => p switch
         {
-            Personality.Mercantile => "keen to trade",
-            Personality.Proud => "will not bow; rebuilds and fortifies",
-            Personality.Vengeful => "strikes back when wronged",
-            Personality.Cautious => "pays to stay safe",
-            _ => "raids its neighbours",
+            Personality.Mercantile => "keen to trade; will not go to war over a wrong",
+            Personality.Proud => "will not bow: replaces its fallen fast, and marches to free its own people",
+            Personality.Vengeful => "strikes back when wronged: sends soldiers against your town",
+            Personality.Cautious => "pays to stay safe; fights back only when pushed hard",
+            _ => "quick to war: answers any attack with soldiers, and trades only with friends",
         };
 
         public static string AttitudeName(int a) => a <= -50 ? "Hostile" : a <= -15 ? "Wary" : a < 15 ? "Neutral" : a < 50 ? "Friendly" : "Trusting";

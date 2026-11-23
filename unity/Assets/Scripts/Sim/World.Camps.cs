@@ -90,7 +90,8 @@ namespace CrownAndHearth.Sim
             if (Raid != null && Raid.Over && Raid != _settledRaid)
             {
                 _settledRaid = Raid;
-                if (Raid.Camp != null && !DestroyedCamps.Contains(Raid.Camp.Id))
+                if (Raid.Camp != null && Raid.Camp.IsTown) TownRaidOver(Raid.Camp, Math.Max(0, Raid.Band - Raid.Killed));   // World.Realms.cs
+                else if (Raid.Camp != null && !DestroyedCamps.Contains(Raid.Camp.Id))
                 {
                     var f = ForceOf(Raid.Camp.Id);
                     f.Lost += Raid.Killed;
@@ -137,7 +138,10 @@ namespace CrownAndHearth.Sim
         /// <summary>The warband on its way here, or null. It is only shown to the player once Spotted.</summary>
         public Warband Warband { get; private set; }
 
-        public RaiderCamp CampById(int id) => _camps.FirstOrDefault(c => c.Id == id);
+        public RaiderCamp CampById(int id) => id >= TownIdBase ? (SettlementById(id - TownIdBase) is Settlement s ? TownCamp(s) : null) : _camps.FirstOrDefault(c => c.Id == id);
+
+        /// <summary>How a band's home is named in news: "the Red Fang camp", or a settlement's own name.</summary>
+        static string FromName(RaiderCamp c) => c.IsTown ? c.Name : "the " + c.Name;
 
         /// <summary>Where on the world map a warband is now (world cells): on the straight road from its camp to your settlement.</summary>
         public (double x, double y) WarbandCell(Warband wb)
@@ -189,12 +193,14 @@ namespace CrownAndHearth.Sim
                 wb.Spotted = true;
                 string who = Blds.Any(b => b.T == "watchtower") ? "Lookouts on your watchtower" : "Scouts";
                 string when = left <= 0 ? "today" : left == 1 ? "tomorrow" : $"in about {left} days";
-                Events.Add($"{who} spotted a warband of {wb.Band} raiders from the {c.Name}! They will reach you {when}, from the {CampSideName(c)}." +
-                    (DestroyedCamps.Contains(c.Id) ? "" : $" With them gone, their camp has only {CampDefenders(c)} fighters at home: a chance to strike it."));
+                Events.Add(c.IsTown
+                    ? $"{who} spotted {wb.Band} soldiers from {c.Name}! They will reach you {when}, from the {CampSideName(c)}."
+                    : $"{who} spotted a warband of {wb.Band} raiders from {FromName(c)}! They will reach you {when}, from the {CampSideName(c)}." +
+                      (DestroyedCamps.Contains(c.Id) ? "" : $" With them gone, their camp has only {CampDefenders(c)} fighters at home: a chance to strike it."));
             }
             if (left > 0 || (Raid != null && !Raid.Over)) return;
             Warband = null;
-            Events.Add($"The warband from the {c.Name} is here! Watch the {CampSideName(c)}.");
+            Events.Add($"The {(c.IsTown ? "soldiers" : "warband")} from {FromName(c)} {(c.IsTown ? "are" : "is")} here! Watch the {CampSideName(c)}.");
             BeginRaid(wb.Band, c);
         }
 

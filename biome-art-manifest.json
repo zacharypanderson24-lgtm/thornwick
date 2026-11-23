@@ -1,0 +1,798 @@
+{
+  "biomes": [
+    {
+      "id": "TemperateGrassland",
+      "trees": [
+        "grassland_oak_0",
+        "grassland_birch_0"
+      ],
+      "plants": [
+        "grassland_shrub_0",
+        "grassland_shrub_1",
+        "grassland_shrub_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "grassland_meadow_0",
+        "grassland_meadow_1",
+        "grassland_meadow_2",
+        "grassland_meadow_3",
+        "grassland_fertile_0",
+        "grassland_fertile_1",
+        "grassland_dry_0",
+        "grassland_dry_1"
+      ],
+      "vegetation": [
+        "grassland_birch_0",
+        "grassland_birch_1",
+        "grassland_birch_grove_2",
+        "grassland_birch_grove_3",
+        "grassland_birch_grove_4",
+        "grassland_birch_sapling",
+        "grassland_oak_0",
+        "grassland_oak_1",
+        "grassland_oak_grove_2",
+        "grassland_oak_grove_3",
+        "grassland_oak_grove_4",
+        "grassland_oak_sapling",
+        "grassland_shrub_0",
+        "grassland_shrub_1",
+        "grassland_shrub_2"
+      ]
+    },
+    {
+      "id": "TemperateForest",
+      "trees": [
+        "forest_oak_0",
+        "forest_beech_0",
+        "forest_birch_0"
+      ],
+      "plants": [
+        "forest_shrub_0",
+        "forest_shrub_1",
+        "forest_shrub_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "forest_moss_0",
+        "forest_moss_1",
+        "forest_moss_2",
+        "forest_moss_3",
+        "forest_loam_0",
+        "forest_loam_1",
+        "forest_leaf_litter_0",
+        "forest_leaf_litter_1"
+      ],
+      "vegetation": [
+        "forest_beech_0",
+        "forest_beech_1",
+        "forest_beech_grove_2",
+        "forest_beech_grove_3",
+        "forest_beech_grove_4",
+        "forest_beech_sapling",
+        "forest_birch_0",
+        "forest_birch_1",
+        "forest_birch_grove_2",
+        "forest_birch_grove_3",
+        "forest_birch_grove_4",
+        "forest_birch_sapling",
+        "forest_oak_0",
+        "forest_oak_1",
+        "forest_oak_grove_2",
+        "forest_oak_grove_3",
+        "forest_oak_grove_4",
+        "forest_oak_sapling",
+        "forest_shrub_0",
+        "forest_shrub_1",
+        "forest_shrub_2"
+      ]
+    },
+    {
+      "id": "BorealForest",
+      "trees": [
+        "boreal_spruce_0",
+        "boreal_pine_0",
+        "boreal_birch_0"
+      ],
+      "plants": [
+        "boreal_shrub_0",
+        "boreal_shrub_1",
+        "boreal_shrub_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "boreal_moss_0",
+        "boreal_moss_1",
+        "boreal_moss_2",
+        "boreal_moss_3",
+        "boreal_pine_needles_0",
+        "boreal_pine_needles_1",
+        "boreal_lichen_0",
+        "boreal_lichen_1"
+      ],
+      "vegetation": [
+        "boreal_birch_0",
+        "boreal_birch_1",
+        "boreal_birch_grove_2",
+        "boreal_birch_grove_3",
+        "boreal_birch_grove_4",
+        "boreal_birch_sapling",
+        "boreal_pine_0",
+        "boreal_pine_1",
+        "boreal_pine_grove_2",
+        "boreal_pine_grove_3",
+        "boreal_pine_grove_4",
+        "boreal_pine_sapling",
+        "boreal_shrub_0",
+        "boreal_shrub_1",
+        "boreal_shrub_2",
+        "boreal_spruce_0",
+        "boreal_spruce_1",
+        "boreal_spruce_grove_2",
+        "boreal_spruce_grove_3",
+        "boreal_spruce_grove_4",
+        "boreal_spruce_sapling"
+      ]
+    },
+    {
+      "id": "Highlands",
+      "trees": [
+        "highlands_scots_pine_0",
+        "highlands_rowan_0",
+        "highlands_silver_birch_0"
+      ],
+      "plants": [
+        "highlands_heather_0",
+        "highlands_heather_1",
+        "highlands_heather_2"
+      ],
+      "outcrops": [
+        "highlands_outcrop_0",
+        "highlands_outcrop_1",
+        "highlands_outcrop_2",
+        "highlands_outcrop_3"
+      ],
+      "ground": [
+        "highlands_rough_grass_0",
+        "highlands_rough_grass_1",
+        "highlands_rough_grass_2",
+        "highlands_rough_grass_3",
+        "highlands_stony_soil_0",
+        "highlands_stony_soil_1",
+        "highlands_moorland_0",
+        "highlands_moorland_1"
+      ],
+      "vegetation": [
+        "highlands_heather_0",
+        "highlands_heather_1",
+        "highlands_heather_2",
+        "highlands_outcrop_0",
+        "highlands_outcrop_1",
+        "highlands_outcrop_2",
+        "highlands_outcrop_3",
+        "highlands_rowan_0",
+        "highlands_rowan_1",
+        "highlands_rowan_grove_2",
+        "highlands_rowan_grove_3",
+        "highlands_rowan_grove_4",
+        "highlands_rowan_sapling",
+        "highlands_scots_pine_0",
+        "highlands_scots_pine_1",
+        "highlands_scots_pine_grove_2",
+        "highlands_scots_pine_grove_3",
+        "highlands_scots_pine_grove_4",
+        "highlands_scots_pine_sapling",
+        "highlands_silver_birch_0",
+        "highlands_silver_birch_1",
+        "highlands_silver_birch_grove_2",
+        "highlands_silver_birch_grove_3",
+        "highlands_silver_birch_grove_4",
+        "highlands_silver_birch_sapling"
+      ]
+    },
+    {
+      "id": "AlpineMountains",
+      "trees": [
+        "alpine_mountain_pine_0",
+        "alpine_larch_0",
+        "alpine_dwarf_pine_0"
+      ],
+      "plants": [
+        "alpine_cushion_0",
+        "alpine_cushion_1",
+        "alpine_cushion_2"
+      ],
+      "outcrops": [
+        "alpine_outcrop_0",
+        "alpine_outcrop_1",
+        "alpine_outcrop_2",
+        "alpine_outcrop_3"
+      ],
+      "ground": [
+        "alpine_alpine_turf_0",
+        "alpine_alpine_turf_1",
+        "alpine_alpine_turf_2",
+        "alpine_alpine_turf_3",
+        "alpine_scree_0",
+        "alpine_scree_1",
+        "alpine_snow_0",
+        "alpine_snow_1"
+      ],
+      "vegetation": [
+        "alpine_cushion_0",
+        "alpine_cushion_1",
+        "alpine_cushion_2",
+        "alpine_dwarf_pine_0",
+        "alpine_dwarf_pine_1",
+        "alpine_dwarf_pine_grove_2",
+        "alpine_dwarf_pine_grove_3",
+        "alpine_dwarf_pine_grove_4",
+        "alpine_dwarf_pine_sapling",
+        "alpine_larch_0",
+        "alpine_larch_1",
+        "alpine_larch_grove_2",
+        "alpine_larch_grove_3",
+        "alpine_larch_grove_4",
+        "alpine_larch_sapling",
+        "alpine_mountain_pine_0",
+        "alpine_mountain_pine_1",
+        "alpine_mountain_pine_grove_2",
+        "alpine_mountain_pine_grove_3",
+        "alpine_mountain_pine_grove_4",
+        "alpine_mountain_pine_sapling",
+        "alpine_outcrop_0",
+        "alpine_outcrop_1",
+        "alpine_outcrop_2",
+        "alpine_outcrop_3"
+      ]
+    },
+    {
+      "id": "Wetlands",
+      "trees": [
+        "wetlands_weeping_willow_0",
+        "wetlands_alder_0",
+        "wetlands_white_willow_0"
+      ],
+      "plants": [
+        "wetlands_cattails_0",
+        "wetlands_cattails_1",
+        "wetlands_cattails_2",
+        "wetlands_reeds_0",
+        "wetlands_reeds_1",
+        "wetlands_reeds_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "wetlands_marsh_grass_0",
+        "wetlands_marsh_grass_1",
+        "wetlands_marsh_grass_2",
+        "wetlands_marsh_grass_3",
+        "wetlands_peat_mud_0",
+        "wetlands_peat_mud_1",
+        "wetlands_shallow_water_0",
+        "wetlands_shallow_water_1"
+      ],
+      "vegetation": [
+        "wetlands_alder_0",
+        "wetlands_alder_1",
+        "wetlands_alder_grove_2",
+        "wetlands_alder_grove_3",
+        "wetlands_alder_grove_4",
+        "wetlands_alder_sapling",
+        "wetlands_cattails_0",
+        "wetlands_cattails_1",
+        "wetlands_cattails_2",
+        "wetlands_reeds_0",
+        "wetlands_reeds_1",
+        "wetlands_reeds_2",
+        "wetlands_weeping_willow_0",
+        "wetlands_weeping_willow_1",
+        "wetlands_weeping_willow_grove_2",
+        "wetlands_weeping_willow_grove_3",
+        "wetlands_weeping_willow_grove_4",
+        "wetlands_weeping_willow_sapling",
+        "wetlands_white_willow_0",
+        "wetlands_white_willow_1",
+        "wetlands_white_willow_grove_2",
+        "wetlands_white_willow_grove_3",
+        "wetlands_white_willow_grove_4",
+        "wetlands_white_willow_sapling"
+      ]
+    },
+    {
+      "id": "MediterraneanScrub",
+      "trees": [
+        "mediterranean_olive_0",
+        "mediterranean_cypress_0",
+        "mediterranean_umbrella_pine_0"
+      ],
+      "plants": [
+        "mediterranean_lavender_0",
+        "mediterranean_lavender_1",
+        "mediterranean_lavender_2",
+        "mediterranean_scrub_0",
+        "mediterranean_scrub_1",
+        "mediterranean_scrub_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "mediterranean_dry_grass_0",
+        "mediterranean_dry_grass_1",
+        "mediterranean_dry_grass_2",
+        "mediterranean_dry_grass_3",
+        "mediterranean_ochre_soil_0",
+        "mediterranean_ochre_soil_1",
+        "mediterranean_limestone_0",
+        "mediterranean_limestone_1"
+      ],
+      "vegetation": [
+        "mediterranean_cypress_0",
+        "mediterranean_cypress_1",
+        "mediterranean_cypress_grove_2",
+        "mediterranean_cypress_grove_3",
+        "mediterranean_cypress_grove_4",
+        "mediterranean_cypress_sapling",
+        "mediterranean_lavender_0",
+        "mediterranean_lavender_1",
+        "mediterranean_lavender_2",
+        "mediterranean_olive_0",
+        "mediterranean_olive_1",
+        "mediterranean_olive_grove_2",
+        "mediterranean_olive_grove_3",
+        "mediterranean_olive_grove_4",
+        "mediterranean_olive_sapling",
+        "mediterranean_scrub_0",
+        "mediterranean_scrub_1",
+        "mediterranean_scrub_2",
+        "mediterranean_umbrella_pine_0",
+        "mediterranean_umbrella_pine_1",
+        "mediterranean_umbrella_pine_grove_2",
+        "mediterranean_umbrella_pine_grove_3",
+        "mediterranean_umbrella_pine_grove_4",
+        "mediterranean_umbrella_pine_sapling"
+      ]
+    },
+    {
+      "id": "Steppe",
+      "trees": [
+        "steppe_siberian_elm_0",
+        "steppe_river_poplar_0"
+      ],
+      "plants": [
+        "steppe_plant_feather_grass_0",
+        "steppe_plant_feather_grass_1",
+        "steppe_plant_feather_grass_2",
+        "steppe_plant_wormwood_0",
+        "steppe_plant_wormwood_1",
+        "steppe_plant_wormwood_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "steppe_feather_grass_0",
+        "steppe_feather_grass_1",
+        "steppe_feather_grass_2",
+        "steppe_feather_grass_3",
+        "steppe_dry_loess_0",
+        "steppe_dry_loess_1",
+        "steppe_worn_grass_0",
+        "steppe_worn_grass_1"
+      ],
+      "vegetation": [
+        "steppe_plant_feather_grass_0",
+        "steppe_plant_feather_grass_1",
+        "steppe_plant_feather_grass_2",
+        "steppe_plant_wormwood_0",
+        "steppe_plant_wormwood_1",
+        "steppe_plant_wormwood_2",
+        "steppe_river_poplar_0",
+        "steppe_river_poplar_1",
+        "steppe_river_poplar_grove_2",
+        "steppe_river_poplar_grove_3",
+        "steppe_river_poplar_grove_4",
+        "steppe_river_poplar_sapling",
+        "steppe_siberian_elm_0",
+        "steppe_siberian_elm_1",
+        "steppe_siberian_elm_grove_2",
+        "steppe_siberian_elm_grove_3",
+        "steppe_siberian_elm_grove_4",
+        "steppe_siberian_elm_sapling"
+      ]
+    },
+    {
+      "id": "SemiAridScrub",
+      "trees": [
+        "semi_arid_scrub_tamarisk_0",
+        "semi_arid_scrub_juniper_0"
+      ],
+      "plants": [
+        "semi_arid_scrub_plant_dry_tussock_0",
+        "semi_arid_scrub_plant_dry_tussock_1",
+        "semi_arid_scrub_plant_dry_tussock_2",
+        "semi_arid_scrub_plant_thorn_scrub_0",
+        "semi_arid_scrub_plant_thorn_scrub_1",
+        "semi_arid_scrub_plant_thorn_scrub_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "semi_arid_scrub_dry_scrub_0",
+        "semi_arid_scrub_dry_scrub_1",
+        "semi_arid_scrub_dry_scrub_2",
+        "semi_arid_scrub_dry_scrub_3",
+        "semi_arid_scrub_stony_earth_0",
+        "semi_arid_scrub_stony_earth_1",
+        "semi_arid_scrub_dust_0",
+        "semi_arid_scrub_dust_1"
+      ],
+      "vegetation": [
+        "semi_arid_scrub_juniper_0",
+        "semi_arid_scrub_juniper_1",
+        "semi_arid_scrub_juniper_grove_2",
+        "semi_arid_scrub_juniper_grove_3",
+        "semi_arid_scrub_juniper_grove_4",
+        "semi_arid_scrub_juniper_sapling",
+        "semi_arid_scrub_plant_dry_tussock_0",
+        "semi_arid_scrub_plant_dry_tussock_1",
+        "semi_arid_scrub_plant_dry_tussock_2",
+        "semi_arid_scrub_plant_thorn_scrub_0",
+        "semi_arid_scrub_plant_thorn_scrub_1",
+        "semi_arid_scrub_plant_thorn_scrub_2",
+        "semi_arid_scrub_tamarisk_0",
+        "semi_arid_scrub_tamarisk_1",
+        "semi_arid_scrub_tamarisk_grove_2",
+        "semi_arid_scrub_tamarisk_grove_3",
+        "semi_arid_scrub_tamarisk_grove_4",
+        "semi_arid_scrub_tamarisk_sapling"
+      ]
+    },
+    {
+      "id": "Tundra",
+      "trees": [],
+      "plants": [
+        "tundra_plant_dwarf_birch_0",
+        "tundra_plant_dwarf_birch_1",
+        "tundra_plant_dwarf_birch_2",
+        "tundra_plant_dwarf_willow_0",
+        "tundra_plant_dwarf_willow_1",
+        "tundra_plant_dwarf_willow_2",
+        "tundra_plant_lichen_cushion_0",
+        "tundra_plant_lichen_cushion_1",
+        "tundra_plant_lichen_cushion_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "tundra_lichen_0",
+        "tundra_lichen_1",
+        "tundra_lichen_2",
+        "tundra_lichen_3",
+        "tundra_peat_0",
+        "tundra_peat_1",
+        "tundra_frost_0",
+        "tundra_frost_1"
+      ],
+      "vegetation": [
+        "tundra_plant_dwarf_birch_0",
+        "tundra_plant_dwarf_birch_1",
+        "tundra_plant_dwarf_birch_2",
+        "tundra_plant_dwarf_willow_0",
+        "tundra_plant_dwarf_willow_1",
+        "tundra_plant_dwarf_willow_2",
+        "tundra_plant_lichen_cushion_0",
+        "tundra_plant_lichen_cushion_1",
+        "tundra_plant_lichen_cushion_2"
+      ]
+    },
+    {
+      "id": "Desert",
+      "trees": [
+        "desert_date_palm_0",
+        "desert_desert_acacia_0"
+      ],
+      "plants": [
+        "desert_plant_desert_grass_0",
+        "desert_plant_desert_grass_1",
+        "desert_plant_desert_grass_2",
+        "desert_plant_saltbush_0",
+        "desert_plant_saltbush_1",
+        "desert_plant_saltbush_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "desert_sand_0",
+        "desert_sand_1",
+        "desert_sand_2",
+        "desert_sand_3",
+        "desert_gravel_0",
+        "desert_gravel_1",
+        "desert_dune_sand_0",
+        "desert_dune_sand_1"
+      ],
+      "vegetation": [
+        "desert_date_palm_0",
+        "desert_date_palm_1",
+        "desert_date_palm_grove_2",
+        "desert_date_palm_grove_3",
+        "desert_date_palm_grove_4",
+        "desert_date_palm_sapling",
+        "desert_desert_acacia_0",
+        "desert_desert_acacia_1",
+        "desert_desert_acacia_grove_2",
+        "desert_desert_acacia_grove_3",
+        "desert_desert_acacia_grove_4",
+        "desert_desert_acacia_sapling",
+        "desert_plant_desert_grass_0",
+        "desert_plant_desert_grass_1",
+        "desert_plant_desert_grass_2",
+        "desert_plant_saltbush_0",
+        "desert_plant_saltbush_1",
+        "desert_plant_saltbush_2"
+      ]
+    },
+    {
+      "id": "Savanna",
+      "trees": [
+        "savanna_flat_top_acacia_0",
+        "savanna_baobab_0",
+        "savanna_fan_palm_0"
+      ],
+      "plants": [
+        "savanna_plant_tall_grass_0",
+        "savanna_plant_tall_grass_1",
+        "savanna_plant_tall_grass_2",
+        "savanna_plant_thorn_scrub_0",
+        "savanna_plant_thorn_scrub_1",
+        "savanna_plant_thorn_scrub_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "savanna_golden_grass_0",
+        "savanna_golden_grass_1",
+        "savanna_golden_grass_2",
+        "savanna_golden_grass_3",
+        "savanna_red_earth_0",
+        "savanna_red_earth_1",
+        "savanna_dry_grass_0",
+        "savanna_dry_grass_1"
+      ],
+      "vegetation": [
+        "savanna_baobab_0",
+        "savanna_baobab_1",
+        "savanna_baobab_grove_2",
+        "savanna_baobab_grove_3",
+        "savanna_baobab_grove_4",
+        "savanna_baobab_sapling",
+        "savanna_fan_palm_0",
+        "savanna_fan_palm_1",
+        "savanna_fan_palm_grove_2",
+        "savanna_fan_palm_grove_3",
+        "savanna_fan_palm_grove_4",
+        "savanna_fan_palm_sapling",
+        "savanna_flat_top_acacia_0",
+        "savanna_flat_top_acacia_1",
+        "savanna_flat_top_acacia_grove_2",
+        "savanna_flat_top_acacia_grove_3",
+        "savanna_flat_top_acacia_grove_4",
+        "savanna_flat_top_acacia_sapling",
+        "savanna_plant_tall_grass_0",
+        "savanna_plant_tall_grass_1",
+        "savanna_plant_tall_grass_2",
+        "savanna_plant_thorn_scrub_0",
+        "savanna_plant_thorn_scrub_1",
+        "savanna_plant_thorn_scrub_2"
+      ]
+    },
+    {
+      "id": "SubtropicalForest",
+      "trees": [
+        "subtropical_forest_camphor_0",
+        "subtropical_forest_magnolia_0",
+        "subtropical_forest_fan_palm_0"
+      ],
+      "plants": [
+        "subtropical_forest_plant_bamboo_0",
+        "subtropical_forest_plant_bamboo_1",
+        "subtropical_forest_plant_bamboo_2",
+        "subtropical_forest_plant_fern_0",
+        "subtropical_forest_plant_fern_1",
+        "subtropical_forest_plant_fern_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "subtropical_forest_humid_grass_0",
+        "subtropical_forest_humid_grass_1",
+        "subtropical_forest_humid_grass_2",
+        "subtropical_forest_humid_grass_3",
+        "subtropical_forest_leaf_litter_0",
+        "subtropical_forest_leaf_litter_1",
+        "subtropical_forest_damp_loam_0",
+        "subtropical_forest_damp_loam_1"
+      ],
+      "vegetation": [
+        "subtropical_forest_camphor_0",
+        "subtropical_forest_camphor_1",
+        "subtropical_forest_camphor_grove_2",
+        "subtropical_forest_camphor_grove_3",
+        "subtropical_forest_camphor_grove_4",
+        "subtropical_forest_camphor_sapling",
+        "subtropical_forest_fan_palm_0",
+        "subtropical_forest_fan_palm_1",
+        "subtropical_forest_fan_palm_grove_2",
+        "subtropical_forest_fan_palm_grove_3",
+        "subtropical_forest_fan_palm_grove_4",
+        "subtropical_forest_fan_palm_sapling",
+        "subtropical_forest_magnolia_0",
+        "subtropical_forest_magnolia_1",
+        "subtropical_forest_magnolia_grove_2",
+        "subtropical_forest_magnolia_grove_3",
+        "subtropical_forest_magnolia_grove_4",
+        "subtropical_forest_magnolia_sapling",
+        "subtropical_forest_plant_bamboo_0",
+        "subtropical_forest_plant_bamboo_1",
+        "subtropical_forest_plant_bamboo_2",
+        "subtropical_forest_plant_fern_0",
+        "subtropical_forest_plant_fern_1",
+        "subtropical_forest_plant_fern_2"
+      ]
+    },
+    {
+      "id": "TropicalRainforest",
+      "trees": [
+        "tropical_rainforest_kapok_0",
+        "tropical_rainforest_strangler_fig_0",
+        "tropical_rainforest_rainforest_palm_0"
+      ],
+      "plants": [
+        "tropical_rainforest_plant_banana_0",
+        "tropical_rainforest_plant_banana_1",
+        "tropical_rainforest_plant_banana_2",
+        "tropical_rainforest_plant_fern_0",
+        "tropical_rainforest_plant_fern_1",
+        "tropical_rainforest_plant_fern_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "tropical_rainforest_rainforest_moss_0",
+        "tropical_rainforest_rainforest_moss_1",
+        "tropical_rainforest_rainforest_moss_2",
+        "tropical_rainforest_rainforest_moss_3",
+        "tropical_rainforest_forest_litter_0",
+        "tropical_rainforest_forest_litter_1",
+        "tropical_rainforest_wet_soil_0",
+        "tropical_rainforest_wet_soil_1"
+      ],
+      "vegetation": [
+        "tropical_rainforest_kapok_0",
+        "tropical_rainforest_kapok_1",
+        "tropical_rainforest_kapok_grove_2",
+        "tropical_rainforest_kapok_grove_3",
+        "tropical_rainforest_kapok_grove_4",
+        "tropical_rainforest_kapok_sapling",
+        "tropical_rainforest_plant_banana_0",
+        "tropical_rainforest_plant_banana_1",
+        "tropical_rainforest_plant_banana_2",
+        "tropical_rainforest_plant_fern_0",
+        "tropical_rainforest_plant_fern_1",
+        "tropical_rainforest_plant_fern_2",
+        "tropical_rainforest_rainforest_palm_0",
+        "tropical_rainforest_rainforest_palm_1",
+        "tropical_rainforest_rainforest_palm_grove_2",
+        "tropical_rainforest_rainforest_palm_grove_3",
+        "tropical_rainforest_rainforest_palm_grove_4",
+        "tropical_rainforest_rainforest_palm_sapling",
+        "tropical_rainforest_strangler_fig_0",
+        "tropical_rainforest_strangler_fig_1",
+        "tropical_rainforest_strangler_fig_grove_2",
+        "tropical_rainforest_strangler_fig_grove_3",
+        "tropical_rainforest_strangler_fig_grove_4",
+        "tropical_rainforest_strangler_fig_sapling"
+      ]
+    },
+    {
+      "id": "TropicalSeasonalForest",
+      "trees": [
+        "tropical_seasonal_forest_teak_0",
+        "tropical_seasonal_forest_sal_0",
+        "tropical_seasonal_forest_palmyra_0"
+      ],
+      "plants": [
+        "tropical_seasonal_forest_plant_bamboo_0",
+        "tropical_seasonal_forest_plant_bamboo_1",
+        "tropical_seasonal_forest_plant_bamboo_2",
+        "tropical_seasonal_forest_plant_dry_tussock_0",
+        "tropical_seasonal_forest_plant_dry_tussock_1",
+        "tropical_seasonal_forest_plant_dry_tussock_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "tropical_seasonal_forest_seasonal_grass_0",
+        "tropical_seasonal_forest_seasonal_grass_1",
+        "tropical_seasonal_forest_seasonal_grass_2",
+        "tropical_seasonal_forest_seasonal_grass_3",
+        "tropical_seasonal_forest_dry_leaves_0",
+        "tropical_seasonal_forest_dry_leaves_1",
+        "tropical_seasonal_forest_red_loam_0",
+        "tropical_seasonal_forest_red_loam_1"
+      ],
+      "vegetation": [
+        "tropical_seasonal_forest_palmyra_0",
+        "tropical_seasonal_forest_palmyra_1",
+        "tropical_seasonal_forest_palmyra_grove_2",
+        "tropical_seasonal_forest_palmyra_grove_3",
+        "tropical_seasonal_forest_palmyra_grove_4",
+        "tropical_seasonal_forest_palmyra_sapling",
+        "tropical_seasonal_forest_plant_bamboo_0",
+        "tropical_seasonal_forest_plant_bamboo_1",
+        "tropical_seasonal_forest_plant_bamboo_2",
+        "tropical_seasonal_forest_plant_dry_tussock_0",
+        "tropical_seasonal_forest_plant_dry_tussock_1",
+        "tropical_seasonal_forest_plant_dry_tussock_2",
+        "tropical_seasonal_forest_sal_0",
+        "tropical_seasonal_forest_sal_1",
+        "tropical_seasonal_forest_sal_grove_2",
+        "tropical_seasonal_forest_sal_grove_3",
+        "tropical_seasonal_forest_sal_grove_4",
+        "tropical_seasonal_forest_sal_sapling",
+        "tropical_seasonal_forest_teak_0",
+        "tropical_seasonal_forest_teak_1",
+        "tropical_seasonal_forest_teak_grove_2",
+        "tropical_seasonal_forest_teak_grove_3",
+        "tropical_seasonal_forest_teak_grove_4",
+        "tropical_seasonal_forest_teak_sapling"
+      ]
+    },
+    {
+      "id": "TropicalHighlands",
+      "trees": [
+        "tropical_highlands_tree_fern_0",
+        "tropical_highlands_cloud_forest_laurel_0",
+        "tropical_highlands_mountain_podocarp_0"
+      ],
+      "plants": [
+        "tropical_highlands_plant_fern_0",
+        "tropical_highlands_plant_fern_1",
+        "tropical_highlands_plant_fern_2",
+        "tropical_highlands_plant_montane_tussock_0",
+        "tropical_highlands_plant_montane_tussock_1",
+        "tropical_highlands_plant_montane_tussock_2"
+      ],
+      "outcrops": [],
+      "ground": [
+        "tropical_highlands_montane_grass_0",
+        "tropical_highlands_montane_grass_1",
+        "tropical_highlands_montane_grass_2",
+        "tropical_highlands_montane_grass_3",
+        "tropical_highlands_volcanic_soil_0",
+        "tropical_highlands_volcanic_soil_1",
+        "tropical_highlands_cloud_moss_0",
+        "tropical_highlands_cloud_moss_1"
+      ],
+      "vegetation": [
+        "tropical_highlands_cloud_forest_laurel_0",
+        "tropical_highlands_cloud_forest_laurel_1",
+        "tropical_highlands_cloud_forest_laurel_grove_2",
+        "tropical_highlands_cloud_forest_laurel_grove_3",
+        "tropical_highlands_cloud_forest_laurel_grove_4",
+        "tropical_highlands_cloud_forest_laurel_sapling",
+        "tropical_highlands_mountain_podocarp_0",
+        "tropical_highlands_mountain_podocarp_1",
+        "tropical_highlands_mountain_podocarp_grove_2",
+        "tropical_highlands_mountain_podocarp_grove_3",
+        "tropical_highlands_mountain_podocarp_grove_4",
+        "tropical_highlands_mountain_podocarp_sapling",
+        "tropical_highlands_plant_fern_0",
+        "tropical_highlands_plant_fern_1",
+        "tropical_highlands_plant_fern_2",
+        "tropical_highlands_plant_montane_tussock_0",
+        "tropical_highlands_plant_montane_tussock_1",
+        "tropical_highlands_plant_montane_tussock_2",
+        "tropical_highlands_tree_fern_0",
+        "tropical_highlands_tree_fern_1",
+        "tropical_highlands_tree_fern_grove_2",
+        "tropical_highlands_tree_fern_grove_3",
+        "tropical_highlands_tree_fern_grove_4",
+        "tropical_highlands_tree_fern_sapling"
+      ]
+    }
+  ],
+  "vegetation": 338,
+  "atlases": 16
+}

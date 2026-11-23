@@ -173,6 +173,14 @@ namespace CrownAndHearth.Game
                     (s.Garrison < World.GarrisonNeeded(s) ? $" (<color=#FF8C70>needs {World.GarrisonNeeded(s)}: it may rise up</color>)" : $" (needs {World.GarrisonNeeded(s)})") +
                     (marching > 0 ? $"; {marching} more on the way" : ""));
             }
+            if (s.Allegiance == Allegiance.Occupied)
+            {
+                var why = _world.UnrestReasons(s);
+                double change = why.Sum(r => r.change);
+                string col = s.Unrest >= 75 ? "FF6050" : s.Unrest >= 50 ? "FFB080" : "D8D0B8";
+                sb.AppendLine($"Unrest: <color=#{col}>{s.Unrest:0} ({World.UnrestName(s.Unrest)})</color>, {(change >= 0 ? "rising" : "falling")} {Math.Abs(change):0.#} a month. " +
+                              string.Join("; ", why.Where(r => Math.Abs(r.change) >= 0.5).OrderByDescending(r => Math.Abs(r.change)).Take(2).Select(r => $"{r.why} {r.change:+0.#;-0.#}")));
+            }
             else if (s.Allegiance == Allegiance.Tributary)
                 sb.AppendLine("<color=#FFC428>Pays you tribute</color> every month (it may stop paying)");
             else
@@ -186,6 +194,8 @@ namespace CrownAndHearth.Game
             }
             if (s.Devastated) sb.AppendLine($"<color=#FF8C70>Laid waste by a sack</color>: it trades and pays at a fraction and does not grow for {Math.Max(0, s.DevastatedUntil - _world.Day)} more days");
             sb.AppendLine($"{Settlements.PersonalityName(s.Personality)}: {Settlements.PersonalityNote(s.Personality)}");
+            string army = _world.ArmyNews(s);
+            if (army.Length > 0) sb.AppendLine($"<color=#FF8C70>{army}</color>");
             sb.AppendLine($"Towards you: <b>{Settlements.AttitudeName(s.Attitude)}</b> ({s.Attitude:+0;-0;0})");
             var can = _world.CanTrade(s);
             sb.Append(s.WillTrade ? (can.Ok ? "Willing to trade. Each finished trade warms it a little." : can.Reason) : can.Reason);

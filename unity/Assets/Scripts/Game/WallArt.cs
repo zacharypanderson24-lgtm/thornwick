@@ -22,7 +22,17 @@ namespace CrownAndHearth.Game
         readonly Sprite[] _sprites = new Sprite[16];
         readonly Texture2D[] _textures = new Texture2D[16];
 
-        public Sprite Get(int mask) => _sprites[mask] ??= Make(mask);
+        public Sprite Get(int mask, int level = 1, int insideX = 0, int insideY = 0)
+        {
+            string name = (level >= 2 ? "palisade2_" : "palisade_") + mask;
+            if (level >= 2 && insideX != 0 && insideY != 0)
+            {
+                var facing = Resources.Load<Sprite>("Art/" + name + "_" + insideX + "_" + insideY);
+                if (facing != null) return facing;
+            }
+            var sprite = Resources.Load<Sprite>("Art/" + name);
+            return sprite != null ? sprite : (_sprites[mask] ??= Make(mask));
+        }
 
         public void Dispose()
         {
