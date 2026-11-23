@@ -409,10 +409,14 @@ namespace CrownAndHearth.Sim
                 else if (b.T == "barracks") { if (b.Served) bunks += Bunks; }
                 else if (Defs.Jobs.ContainsKey(b.T) && b.Served) jobs += ActiveJobs(b);
             }
+            // livestock pens with animals need a keeper each (farming trade, after the farms)
+            var keptPens = _pens.Where(PenNeedsKeeper).ToList();
+            jobs += keptPens.Count * KeepersPerPen;
 
             // Fill the jobs: villagers go to trades in priority order, and within a trade to the oldest buildings first.
             int avail = Peasants;
             foreach (var b in Blds) { b.Workers = 0; b.Eff = 0; }
+            foreach (var p in _pens) p.Keepers = 0;
             foreach (var t in Prio)
             {
                 int w = 0, j = 0, n = 0, sh = 0;
@@ -423,6 +427,13 @@ namespace CrownAndHearth.Sim
                     b.Workers = bw; b.Eff = bj > 0 ? (double)bw / bj : 0;
                     w += bw; j += bj; n++; if (bw < bj) sh++;
                 }
+                if (t == "farming")
+                    foreach (var p in keptPens)
+                    {
+                        int pw = Math.Min(KeepersPerPen, avail); avail -= pw;
+                        p.Keepers = pw;
+                        w += pw; j += KeepersPerPen; if (pw < KeepersPerPen) sh++;
+                    }
                 d.Work[t] = (w, j, n, sh);
             }
             d.Civ = civ; d.Bunks = bunks; d.Jobs = jobs; d.Idle = avail; d.Employed = Peasants - avail;

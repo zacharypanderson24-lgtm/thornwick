@@ -62,7 +62,7 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void FarmlandAnywhereIsWorkedByAllServedFarmhousesInProportionToTheirJobs()
+        public void FarmlandIsWorkedOnlyWithinReachOfAServedFarmhouse()
         {
             var w = new World(7); w.ClaimAll();   // these tests build far from the town
             var first = w.Blds.Single(b => b.T == "farm");
@@ -73,16 +73,23 @@ namespace CrownAndHearth.Tests
             foreach (var (x, y) in far) w.SetZone(Zone.Farm, x, y);
             w.Recalc();
             var fields = w.FarmFields();
-            Assert.AreEqual(starter + far.Count, fields.Count, "far Farmland counts: farms have no radius");
-            Assert.IsTrue(far.All(t => fields.ContainsKey(World.Tk(t.x, t.y))));
-            // a second farmhouse beside the street takes its share: fields stay in proportion to jobs
+            Assert.AreEqual(starter, fields.Count, "far Farmland is out of every farm's reach");
+            Assert.IsFalse(far.Any(t => fields.ContainsKey(World.Tk(t.x, t.y))));
+            Assert.GreaterOrEqual(w.FallowFields(), far.Count, "it lies fallow");
+            // a second farmhouse beside the street: every field goes to a farm within reach, none over its limit
             Road(w, World.LPath(C, C + 7, C, C + 10));
             var second = w.AddBld("farm", C + 1, C + 8, 2); w.Recalc();
             Assume.That(second.Served);
             fields = w.FarmFields();
             int a = fields.Values.Count(f => f == first), b = fields.Values.Count(f => f == second);
             Assert.AreEqual(fields.Count, a + b);
-            Assert.That(Math.Abs(a - b), Is.LessThanOrEqualTo(1), "two equal farmhouses share the fields evenly");
+            foreach (var kv in fields)
+            {
+                var f = kv.Value; int x = kv.Key % Defs.N, y = kv.Key / Defs.N;
+                int d = Math.Max(Math.Max(0, Math.Max(f.X - x, x - (f.X + f.Sz - 1))), Math.Max(0, Math.Max(f.Y - y, y - (f.Y + f.Sz - 1))));
+                Assert.LessOrEqual(d, World.FarmReach, "worked by a farm within reach");
+            }
+            Assert.LessOrEqual(a, first.Jobs * World.FieldsPerFarmer); Assert.LessOrEqual(b, second.Jobs * World.FieldsPerFarmer);
             // an unserved farmhouse works nothing
             var lone = w.AddBld("farm", C + 8, C - 9, 2); w.Recalc();
             Assert.IsFalse(lone.Served);
