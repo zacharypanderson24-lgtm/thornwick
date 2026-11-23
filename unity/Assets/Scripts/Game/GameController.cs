@@ -135,7 +135,7 @@ namespace CrownAndHearth.Game
         CameraRig _cam; Hud _hud;
         readonly Tutorial _tutorial = new Tutorial();
         int _raidSig = -1;
-        const string TutorialSeenKey = "crown-hearth-tutorial-seen";
+        const string TutorialSeenKey = "crown-hearth-first-year-tutorial-v2-seen";
 
         void Start()
         {
@@ -167,7 +167,7 @@ namespace CrownAndHearth.Game
             _hud.RotatePicked += Rotate;
             _hud.PrioMoved += MovePrio;
             _hud.WorkforceToggled += open => { if (open) _tutorial.WorkersOpened = true; };
-            _hud.TutorialOpen += () => { _tutorial.Start(World, _tutorial.Finished ? 0 : _tutorial.Index); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
+            _hud.TutorialOpen += () => { _speed = 0; _hud.SetSpeed(_speed); _tutorial.Start(World, _tutorial.Finished ? 0 : _tutorial.Index); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
             _hud.TutorialNext += () => { _tutorial.Next(World); if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
             _hud.TutorialBack += () => { _tutorial.Back(World); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
             _hud.TutorialClose += () => { _tutorial.Close(); PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
@@ -184,7 +184,7 @@ namespace CrownAndHearth.Game
             SetTool(_tool); _hud.SetSpeed(_speed);
             EnsureWorldMap();   // the raider camps live on the world map, so it is made at the start (on a worker thread)
             // the tutorial opens by itself until the player has finished or closed it once (the Tutorial button brings it back)
-            if (PlayerPrefs.GetInt(TutorialSeenKey, 0) == 0) { _tutorial.Start(World); _hud.ShowTutorial(_tutorial); }
+            if (PlayerPrefs.GetInt(TutorialSeenKey, 0) == 0) { _speed = 0; _hud.SetSpeed(_speed); _tutorial.Start(World); _hud.ShowTutorial(_tutorial); }
             else _hud.Toast("Welcome back to Crown & Hearth. Pick a category along the bottom to build; the Tutorial button walks through the game.", 6);
         }
 
@@ -440,7 +440,7 @@ namespace CrownAndHearth.Game
                 if (!raid.StartAnnounced) { raid.StartAnnounced = true; _hud.Toast($"Raiders! A band of {raid.Band} is coming in from the {raid.From}.", 6); }
                 if (raid.Over && !raid.EndAnnounced) { raid.EndAnnounced = true; _hud.Toast($"The raid is over: {raid.Killed} raiders cut down, {raid.Escaped} got away with {raid.Stolen.Values.Sum()} goods.", 8); }
                 int sig = raid.Killed * 10000 + raid.Escaped * 100 + raid.Active + (raid.Over ? 1000000 : 0);
-                if (sig != _raidSig) { _raidSig = sig; if (_tutorial.Active && !_tutorial.Finished && _tutorial.Current.Id == "raid") _hud.ShowTutorial(_tutorial); }
+                if (sig != _raidSig) { _raidSig = sig; if (_tutorial.Active && !_tutorial.Finished) _hud.ShowTutorial(_tutorial); }
             }
             if (World.Version != _progressVersion) { _progressVersion = World.Version; _hud.SetTutorialProgress(_tutorial.Progress(World)); }
         }

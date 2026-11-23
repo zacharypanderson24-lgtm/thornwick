@@ -4,6 +4,7 @@
 // began, so earlier towns don't count); steps without a check are explanations that wait for Next. Every step can be skipped.
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static CrownAndHearth.Sim.Defs;
 
 namespace CrownAndHearth.Sim
@@ -19,18 +20,12 @@ namespace CrownAndHearth.Sim
         }
 
         // what the world looked like when the current step began
-        public struct Snapshot { public int Roads, ResByRoad, Houses, Farmland, Lumber, Lodges, Sawmills, Wells, Comm, Silos, Mining, Parcels; }
+        public struct Snapshot { public int Roads, ResByRoad, Houses, Farmland, Lumber, Lodges, Sawmills, Wells, Comm, Silos, Mining, Parcels, Hunters, Mines, Quarries; }
 
         // actions the world cannot show, reported by the game
         public bool Panned, Zoomed, Rotated, SpeedChanged, WorkersOpened, UndergroundViewed;
 
-        /// <summary>The raid step sends raiders once per tutorial: how many, and what happened.</summary>
-        public const int RaidBand = 12;
-        public bool RaidDone { get; private set; }
-        public RaidReport Raid { get; private set; }
-
-        /// <summary>The step text, with the raid report added on the raid step.</summary>
-        public string BodyText => Current == null ? "" : Current.Id == "raid" && Raid != null ? Current.Body + "\n\n" + Raid.Summary() : Current.Body;
+        public string BodyText => Current?.Body ?? "";
 
         public bool Active { get; private set; }
         public int Index { get; private set; }
@@ -47,7 +42,7 @@ namespace CrownAndHearth.Sim
         {
             At = Snap(w);
             Panned = Zoomed = Rotated = SpeedChanged = WorkersOpened = UndergroundViewed = false;
-            if (Current != null && Current.Id == "raid" && !RaidDone) { RaidDone = true; Raid = w.BeginRaid(RaidBand); }
+            // A survival lesson must never spawn an artificial raid.
         }
 
         /// <summary>Advance when the current step's goal has been met. Returns the finished step (for a "well done" message), or null.</summary>
@@ -71,7 +66,10 @@ namespace CrownAndHearth.Sim
                 else if (b.T == "house") n.Houses++;
                 else if (b.T == "wood") n.Lodges++;
                 else if (b.T == "sawmill") n.Sawmills++;
-                else if (b.T == "well") n.Wells++;
+                else if (b.T == "well" && b.Served) n.Wells++;
+                else if (b.T == "hunter" && b.Served) n.Hunters++;
+                else if (b.T == "mine" && b.Served) n.Mines++;
+                else if (b.T == "quarry" && b.Served) n.Quarries++;
                 else if (b.T == "silo" && b.Served) n.Silos++;
             }
             for (int y = 0; y < N; y++)
@@ -96,98 +94,64 @@ namespace CrownAndHearth.Sim
         /// <summary>How far the current counted goal has got, such as "2 / 4" (null for other steps).</summary>
         public string Progress(World w) => Active && !Finished && Current.Count != null ? $"{Math.Max(0, Math.Min(Current.By, Gained(w)))} / {Current.By}" : null;
 
+        static bool Working(World w, string type) => w.Blds.Any(b => b.T == type && b.Served && b.Workers > 0);
+        static bool Connected(World w, string type) => w.Blds.Any(b => b.T == type && b.Served);
+        static bool IndustryReady(World w) => Connected(w, "hunter") && Connected(w, "wood") && Connected(w, "sawmill") && Connected(w, "quarry") && Connected(w, "mine");
+        static bool WinterReserve(World w) => w.EdibleFoodStored >= w.DailyFoodDemand * Math.Max(100, World.YearLength - w.Day + 1 + World.WheatGrowth);
+
         public static readonly IReadOnlyList<Step> Steps = new List<Step>
         {
-            new Step { Id = "welcome", Title = "Welcome to Crown & Hearth",
-                Body = "Six settlers, a Town Hall, two huts and a farm. Grow them into a thriving town.\n\n" +
-                       "The bar at the top shows your stores (food, wood, logs, stone, ore, gold) with their daily change, and your people: " +
-                       "peasants and housing, idle villagers and jobs.\n\nThis tutorial walks you through everything the game can do. " +
-                       "Each step finishes by itself when you do it; Skip moves on, Close hides it (the Tutorial button brings it back).",
-                Goal = "Press Next" },
-            new Step { Id = "camera", Title = "Look around",
-                Body = "Pan with W A S D, the arrow keys, or by dragging with the right or middle mouse button.\n" +
-                       "Zoom with the mouse wheel. Rotate the view with Q and E (buildings show their other sides).",
-                Goal = "Pan, then zoom or rotate", Done = (t, w) => t.Panned && (t.Zoomed || t.Rotated) },
-            new Step { Id = "time", Title = "Time",
-                Body = "One day passes every second. Space pauses; the 1x, 2x and 4x buttons speed things up while you wait for the town to grow.",
-                Goal = "Pause or change the speed", Done = (t, w) => t.SpeedChanged },
-            new Step { Id = "road", Title = "Roads", Tool = "road",
-                Body = "Everything you build is in the bar along the bottom, grouped by job: Roads, Housing, Farming, Wood, Hunting, Mining and more. " +
-                       "Hover a button to see what it does. Working buildings need a road back to the Town Hall.\n\n" +
-                       "Pick Roads (1), press on a tile next to the street and drag: an L-shaped road follows the mouse and is built when you let go. " +
-                       "Each tile costs 1 wood. Roads climb hills but not mountains, and cannot go through forest.",
-                Goal = "Lay 3 more road tiles connected to the Town Hall", Count = s => s.Roads, By = 3 },
-            new Step { Id = "housing", Title = "Homes", Tool = "zoneRes",
-                Body = "You don't build houses yourself: you zone land and villagers build there when they need room.\n\n" +
-                       "Pick Housing (2), press on a tile and drag over the land: green tiles will be zoned, red ones cannot be. Let go to zone them. " +
-                       "Homes only grow on tiles touching a connected road, so zone along the street. Right-click or Esc puts the tool away.",
-                Goal = "Zone 4 Housing tiles beside a connected road", Count = s => s.ResByRoad + s.Houses, By = 4 },
-            new Step { Id = "growth", Title = "Watch it grow",
-                Body = "The Homes meter in the bottom bar says what the town wants: green and full means homes are wanted. Homes are wanted when houses are nearly full " +
-                       "and food is stocked. Hover a zone tile: the panel on the left says why nothing grows yet.\n\nTry 4x speed and wait for a new home.",
-                Goal = "A new home grows", Count = s => s.Houses, By = 1 },
-            new Step { Id = "water", Title = "Water", Tool = "well",
-                Body = "Every villager drinks each day. The Town Hall's spring and cistern cover the first homes. Wells, the spring and cisterns feed " +
-                       "one supply for every home on a connected road, however far away. If the town drinks more than it pumps, the cisterns run " +
-                       "down, homes go short and, after 15 days, people leave.\n\n" +
-                       "Open Water (9) and pick Well: wells go on the blue groundwater patches and share one patch's water. The tip shows what a well adds and whether its patch runs down.",
-                Goal = "Build a well on groundwater", Count = s => s.Wells, By = 1 },
-            new Step { Id = "farmland", Title = "Food", Tool = "zoneFarm",
-                Body = "Villagers eat every day; with no food they starve and leave.\n\nOpen Farming (3) and pick Farmland, then drag over fertile soil (the darker, olive ground) anywhere. " +
-                       "Farmhouses have no radius: their jobs are how many farmers you can have, and your fields decide the crops and how many are needed. " +
-                       "The Farming menu above the build bar sets the wheat and flax mix. " +
-                       "Sow in spring, harvest in summer, and store enough to reach the next harvest. Workers take other jobs when fields need no work.",
-                Goal = "Zone 6 Farmland tiles", Count = s => s.Farmland, By = 6 },
-            new Step { Id = "workers", Title = "Workers",
-                Body = "Buildings only work when villagers staff them. Open Workers (bottom right): villagers fill the trades from the top down, " +
-                       "farming first. Use Up and Dn to change who gets hands first; a row in red is short of workers.",
-                Goal = "Open the Workers panel", Done = (t, w) => t.WorkersOpened },
-            new Step { Id = "lumber", Title = "Wood", Tool = "zoneWood",
-                Body = "Wood builds everything. Open Wood (4): build a Woodcutter Lodge beside a road, then drag a Lumber Zone over forest within its shaded work area. " +
-                       "Woodcutters walk out, nearest trees first, fell the marked trees and carry logs home; the lodge sets how many you can have, the zoned trees how many are needed. Felled land turns to stumps, then open ground.\n\n" +
-                       "A Forester (also in Wood) replants saplings on Lumber-zoned open ground, so a forest can last.",
-                Goal = "Zone 6 Lumber tiles", Count = s => s.Lumber, By = 6 },
-            new Step { Id = "sawmill", Title = "Logs into wood", Tool = "sawmill",
-                Body = "Logs must be sawn into wood. The Town Hall saws 1 log a day at half yield; a Sawmill (Wood, 15 wood) saws 4 a day at full yield. " +
-                       "Build one beside a road.",
-                Goal = "Build a Sawmill", Count = s => s.Sawmills, By = 1 },
-            new Step { Id = "services", Title = "Crop storage", Tool = "silo",
-                Body = $"Build a Silo (Farming, 3) beside a connected road to store {World.SiloFood} more wheat and {World.SiloFlax} more flax.",
-                Goal = "Build and connect a Silo", Count = s => s.Silos, By = 1 },
-            new Step { Id = "stone", Title = "Stone and iron", Tool = "zoneMine",
-                Body = "Open Mining (6). Mining Zones go on rock and on hills and mountains.\n\n" +
-                       "Stone: build a Quarry, then zone rock outcrops or a mountain's edge within its shaded work area; quarries dig hills down and cut into mountains.\n\n" +
-                       "Iron lies hidden inside hills and mountains (orange-veined stones on the slopes hint at it). Zone the high ground and a lot at its " +
-                       "foot, then place an Iron Mine there. Its entrance faces away from the hill and needs a road right at it (the tip beside the mouse says where).",
-                Goal = "Zone 6 Mining tiles", Count = s => s.Mining, By = 6 },
-            new Step { Id = "underground", Title = "Underground",
-                Body = "Press U for the underground view (U again for deeper bands). A mine's miners survey its zone (one keeps surveying while the rest dig and haul once ore is found): orange shows the ore " +
-                       "they found (brighter is richer), grey shows nothing, blue is not surveyed yet. Then they drive an adit into the hill and " +
-                       "bring the ore up; ore below the mine's floor needs a shaft.",
-                Goal = "Press U", Done = (t, w) => t.UndergroundViewed },
-            new Step { Id = "danger", Title = "Supports and cave-ins",
-                Body = "Mines take wood to shore up their tunnels. Unshored tunnels, deep shafts and crowded mines can cave in: the mine closes " +
-                       "for repairs and a miner may die. Keep some wood in store while you mine. Click a mine to see its tunnels and supports.",
-                Goal = "Press Next" },
-            new Step { Id = "defence", Title = "Troops",
-                Body = "A Barracks (Military, 8) trains infantry (wood, gold, iron ore) and archers (wood, gold, flax) from your peasants. Pick the share of archers in the Troops menu. Troops are a standing army: each recruit leaves your workforce for good and keeps a place in the population, so births do not replace them. They eat half as much again and do no other work, " +
-                       "so every one is a farmer or woodcutter you give up.",
-                Goal = "Press Next" },
-            new Step { Id = "raid", Title = "Raiders!",
-                Body = "Smoke on the hills! Raiders walk in over the border and head for whatever is worth taking: gold, food, wood, stone or ore. " +
-                       "Each takes one load and runs for home. Your soldiers march out of the barracks to fight them, infantry in melee and archers with bows, and a raider near your people sounds the alarm." +
-                       "Your people fight too, with their tools, but far worse (the Troops menu can stop it).\n\n" +
-                       "Build a Barracks beside what you want to protect and train troops.",
-                Goal = "Press Next" },
-            new Step { Id = "land", Title = "Land", Tool = "claim",
-                Body = "You own a 64 x 64 district round the Town Hall: the brighter land. The rest of the 256 x 256 map is yours to see and walk, but not to build or work until you own it.\n\n" +
-                       "Open Land (L) and click a 16 x 16 parcel next to your land to claim it. Land is free; claim what you need.",
-                Goal = "Claim a parcel of land", Count = s => s.Parcels, By = 1 },
-            new Step { Id = "save", Title = "Saving",
-                Body = "Save and Load (top right) keep one settlement on this computer. Hover or click any tile to learn what it is and what it needs.\n\n" +
-                       "The Map (M, or the Map button) shows the whole world: cold in the north, hot in the south. Your settlement is the gold marker.\n\n" +
-                       "That's everything. Good luck with your town!",
-                Goal = "Press Next to finish" },
+            new Step { Id = "welcome", Title = "Your first year: food before growth",
+                Body = "Start with six settlers, two homes, a farmhouse and 260 food. Our goal is to survive winter with hunting, lumber and mining running. Keep the starting homes: adding housing now grows mouths before the first harvest. We will add 18 wheat fields, a silo and one hunting lodge before building industry. This is a fresh-start plan; an older village needs food scaled to its population.", Goal = "Press Next" },
+            new Step { Id = "time", Title = "Day 1: pause before planning",
+                Body = "Space pauses; the time buttons also pause or change speed. One day normally passes each second. Pause while reading and laying out the first buildings. Keep time paused through the early setup, then use 1x to watch staffing and food. Do not leave a hungry village running at 4x.", Goal = "Pause or change the speed", Done = (t,w) => t.SpeedChanged },
+            new Step { Id = "camera", Title = "Find the farm and nearby forest",
+                Body = "Pan with W A S D, arrows, or a right/middle-button drag. Zoom with the wheel and rotate with Q/E. Find the starting farmhouse, fertile ground within 10 tiles of it, and two separate patches of forest: one for hunting, another for timber. Inspect shows tile coordinates and building status.", Goal = "Pan, then zoom or rotate", Done = (t,w) => t.Panned && (t.Zoomed || t.Rotated) },
+            new Step { Id = "workers", Title = "Protect food jobs first",
+                Body = "Open Workers at bottom right. Villagers fill trades from top to bottom. Keep Farming first, Hunting second, then Timber and Woodworking. An idle villager cannot help a farm without more workable fields. Before autumn, 18 fields need two farmers; one lodge has two hunter jobs. Extra industries wait for spare hands.", Goal = "Open Workers", Done = (t,w) => t.WorkersOpened },
+            new Step { Id = "farmland", Title = "Day 1: 18 wheat fields",
+                Tool = "zoneFarm", Body = "In Farming, select Farmland and zone fertile, clear ground within 10 tiles of the starting farmhouse. Aim for 18 usable plots TOTAL, including the starting eight. Open the Farming panel and set flax to 0%: year-one crops are all wheat. Two farmers can tend 18 plots. Fields outside the farm's reach lie fallow; look at the farmhouse's field count, not just painted tiles.",
+                Goal = "Have at least 18 farm-managed plots and no flax planned", Done = (t,w) => w.FarmFields().Count >= 18 && w.PlannedCrops().flax == 0 },
+            new Step { Id = "services", Title = "Day 1: save the harvest",
+                Tool = "silo", Body = "Build a Silo beside a road connected to the Town Hall. It costs 20 wood and 5 stone and adds 1,000 food storage. Keep it off the 18 fields. Wheat sown on day 1 ripens on day 101; build storage before harvest or food that does not fit is lost. Storage holds food; it does not produce any.", Goal = "Have a road-connected silo", Done = (t,w) => Connected(w,"silo") },
+            new Step { Id = "road", Title = "Roads to the forest",
+                Tool = "road", Body = "Extend the starting street toward a forest edge. Roads cost one wood per tile; keep them short and do not pave your wheat fields. Working buildings need a continuous connection to the Town Hall. Drag an L-shaped road, then release. Clear only the trees needed for its route; leave the hunting forest intact.", Goal = "Have at least eight connected road tiles", Done = (t,w) => Snap(w).Roads >= 8 },
+            new Step { Id = "hunting", Title = "Spring: hunting feeds the gap",
+                Tool = "hunter", Body = "Build ONE Hunting Lodge by a connected road at a forest edge. Hunters need nearby reachable trees on owned land; they do not need a Lumber Zone. Short walks give more food: each hunter brings at most three per trip. Do not place the lodge far from its forest or clear its trees. Unpause at 1x and check that at least one hunter is employed.", Goal = "A connected Hunting Lodge has a worker", Done = (t,w) => Working(w,"hunter") },
+            new Step { Id = "lumber", Title = "By day 30: a separate timber patch",
+                Tool = "zoneWood", Body = "In Wood, build a Woodcutter Lodge on a connected road near a DIFFERENT forest. Mark at least 18 trees in its work area as Lumber. Keep the first seven tiles around the hunting lodge unmarked where possible. Woodcutters fell marked trees and deliver logs; if nobody staffs the lodge, keep food priorities and let the population grow within the starting homes.", Goal = "Mark 18 Lumber tiles by a connected lodge, or start delivering logs", Done = (t,w) => Connected(w,"wood") && (Snap(w).Lumber >= 18 || (Working(w,"wood") && w.Rate[Res.Logs] > 0)) },
+            new Step { Id = "sawmill", Title = "By day 60: turn logs into building wood",
+                Tool = "sawmill", Body = "Build a road-connected Sawmill (15 wood). Logs are not construction wood: the Town Hall saws only one log a day at half yield. A staffed sawmill turns logs into wood much faster. Keep Farming and Hunting above Woodworking. Pause if food is close to empty; more housing or livestock will make that worse.", Goal = "A connected Sawmill has a worker", Done = (t,w) => Working(w,"sawmill") },
+            new Step { Id = "harvest", Title = "Days 101-109: your first wheat",
+                Body = "Wheat grows for 100 days after sowing, and each farmer sows one field a day. With two farmers starting on day 1, 18 wheat plots are sown by day 9 and normally harvested on days 101-109. Later sowing delays this. Keep both farmers through summer and the silo connected. Hunting and the starting stores must bridge spring; more fields do not give immediate food.", Goal = "Reach the first summer harvest with wheat in storage", Done = (t,w) => w.YearDay > World.WheatGrowth && w.WheatStored > 0 },
+            new Step { Id = "reserve", Title = "Check the food you can actually eat",
+                Body = "The Food reserve includes fresh food, smoked meat and eggs at four eggs per food. Hover it for the breakdown and days of supply. Seasonal crop production is zero between harvests: a production warning alone is not starvation. Leave housing expansion, livestock and recruitment until this year's food plan is secure. A full-size hen or sheep pen also consumes wheat.", Goal = "Store at least 90 days of food at current population", Done = (t,w) => w.EdibleFoodStored >= w.DailyFoodDemand * 90 },
+            new Step { Id = "stone", Title = "After harvest: quarry stone",
+                Tool = "zoneMine", Body = "In Mining, place a Quarry beside a connected road near reachable rock. Mark at least six rock/hill tiles in its shaded work area as Mining. Check that quarrymen are employed and stone starts arriving. Do not confuse a painted Mining Zone with a working quarry. Keep the farmland and hunting forest out of its building and road footprint.", Goal = "A staffed connected Quarry and six Mining tiles", Done = (t,w) => Working(w,"quarry") && Snap(w).Mining >= 6 },
+            new Step { Id = "mine", Title = "Days 110-180: an iron mine at the hill",
+                Tool = "mine", Body = "Build an Iron Mine at a hill or mountain's foot, preferably near orange-veined rock. Put its connected road exactly in front of the entrance shown by the placement tip, and zone nearby high ground for Mining. Keep food and timber jobs first. The first site may be barren: miners must survey before you know where ore lies.", Goal = "An Iron Mine is road-connected and staffed", Done = (t,w) => Working(w,"mine") },
+            new Step { Id = "underground", Title = "Survey before expanding the mine",
+                Body = "Press U to see the underground layers. Blue is unsurveyed, grey is barren, orange is known ore. The mine must reach the orange tiles in its Mining Zone. If surveys show no ore, extend the zone toward another hill or choose a better mine site; another worker in a barren mine cannot produce iron. Do not spend your opening wood on a deep shaft.", Goal = "Open the underground view", Done = (t,w) => t.UndergroundViewed },
+            new Step { Id = "danger", Title = "Keep miners supported",
+                Body = "In the Mining panel, require supports. Start with the adit and allow at most one shaft level if the ore needs it. Keep six wood for the adit supports and another six for the first shaft. Even supported mines have risks; deep or unshored shafts are worse. If the mine has no work, inspect its road entrance, zone, surveys and support supply instead of moving farmers away from a growing crop.", Goal = "Require supports and limit the shaft to zero or one", Done = (t,w) => w.RequireMineSupports && w.ShaftDepthLimit <= 1 },
+            new Step { Id = "ore", Title = "Verify real mining output",
+                Body = "Let the miners survey, drive the supported adit and carry ore home. Watch the ore stock/rate, not just the mine sprite. If there is no reachable ore in this hill, widen the survey or move the mine while there is still time in year one. A quarry supplies stone; only the iron mine supplies ore.", Goal = "A connected mine is delivering ore", Done = (t,w) => Connected(w,"mine") && w.Rate[Res.Ore] > 0 },
+            new Step { Id = "autumn", Title = "Autumn: keep the economy working",
+                Body = "Autumn is days 181-270. Farmers clear the harvested fields, then release those jobs; in winter the workforce can help hunting, timber, sawing and mining. Keep both forest patches separate. Once the marked timber is cut, mark another patch away from the hunting lodge. Do not assume a connected lodge has trees left to work.", Goal = "Reach autumn with hunting, lumber, sawing, quarrying and mining connected", Done = (t,w) => w.Day > 180 && IndustryReady(w) },
+            new Step { Id = "winter", Title = "Winter: reserve food for the next spring",
+                Body = "Winter is days 271-360, followed by another spring without a harvest. Keep enough stored food to last until roughly day 461, when next year's earliest wheat ripens. Continue hunting. Do not buy animals or recruit troops out of this reserve. If food is short, pause, check staffed hunting and buy food through trade if available; extra winter fields cannot rescue the current meal.", Goal = "Reach winter with stored food covering the next earliest wheat harvest", Done = (t,w) => w.Day > 270 && WinterReserve(w) },
+            new Step { Id = "year", Title = "Finish year one before growing again",
+                Body = "At the year boundary, check that hunting, woodcutting, sawing, quarrying and the iron mine are all connected. Keep at least 100 days of stored food for the next spring. The tested 18-field opening kept the original homes, all-wheat farming and no livestock or recruitment. Expand food and water before adding new homes next year.", Goal = "Reach year 2 with all five industries connected and 100 days of food", Done = (t,w) => w.Day > World.YearLength && IndustryReady(w) && w.EdibleFoodStored >= w.DailyFoodDemand * 100 },
+            new Step { Id = "housing", Title = "Year two: expand with a food budget",
+                Tool = "zoneRes", Body = "Only now zone a few Housing tiles beside a connected road. Houses grow when wanted; do not paint a huge suburb. Each villager eats 0.2 food/day, or 72/year. One farmer can tend nine wheat plots: up to 765 food per full annual harvest. Scale farmed wheat and storage for the new mouths, and allow for animal feed and soldiers too.", Goal = "Press Next" },
+            new Step { Id = "water", Title = "Before passing 24 people: more drinking water",
+                Tool = "well", Body = "The Town Hall's spring supplies 24 water/day and its cistern stores 150. This covers the opening village; a well is not your first food task. Before the town outgrows that spring, connect a well on a blue groundwater patch and inspect its recharge. Roads join wells and homes to one supply. After sustained shortages, people can die.", Goal = "Press Next" },
+            new Step { Id = "defence", Title = "Fund troops before recruiting",
+                Body = "A Barracks recruits from your workers, and soldiers eat 0.3 food/day each instead of 0.2. Build defense when food, water and replacement labor can afford it. Natural raids still happen; this tutorial does not spawn an extra attack to force the lesson. Keep gates and supply roads usable, and protect your food stores.", Goal = "Press Next" },
+            new Step { Id = "land", Title = "Expand only where you can supply it",
+                Tool = "claim", Body = "Your starting district is 64 by 64 tiles. Claim neighboring parcels from Land when you need another forest, ore deposit or farm site. Owning distant resources is not enough: connect the building and keep its work and hauling trips reasonable. Keep the first hunting forest alive while opening new lumber patches.", Goal = "Press Next" },
+            new Step { Id = "save", Title = "Save your surviving village",
+                Body = "Use Save at top right to keep this settlement. Save again before experimenting with rapid growth, livestock or recruitment. Your first-year foundation is wheat and storage, nearby hunting, separate timber and a sawmill, and surveyed, supported mining. Keep food for the next spring, then grow in small steps.", Goal = "Press Finish" },
         };
     }
 }
