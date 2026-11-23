@@ -24,6 +24,16 @@ namespace CrownAndHearth.Game
             _used = 0;
             if (!lod && _battle != null)
             {
+                DrawPeople(w, rot, frac);
+                if (w.Raid != null) DrawBattle(w, w.Raid, rot, frac);
+            }
+            for (int i = _used; i < _pool.Count; i++) if (_pool[i].enabled) _pool[i].enabled = false;
+        }
+
+        /// <summary>A world's work crews who are out and its townsfolk walking about: your town, or an NPC settlement's town.</summary>
+        void DrawPeople(World w, int rot, float frac)
+        {
+            {
                 foreach (var b in w.Blds)
                 {
                     if (b.Crew.Count == 0) continue;
@@ -40,7 +50,6 @@ namespace CrownAndHearth.Game
                         Put(w, rot, _battle.Pose(actor, pose, facing, w.Day, frac, i), a.Px, a.Py, a.X, a.Y, frac, Jitter(i), 0);
                     }
                 }
-                if (w.Raid != null) DrawBattle(w, w.Raid, rot, frac);
                 foreach (var v in w.Folk)
                 {
                     if (v.St == FolkState.Home) continue;
@@ -50,20 +59,21 @@ namespace CrownAndHearth.Game
                         v.Px, v.Py, v.X, v.Y, frac, Jitter(v.Id), (v.Id * 7) % 3 - 1);
                 }
             }
-            for (int i = _used; i < _pool.Count; i++) if (_pool[i].enabled) _pool[i].enabled = false;
         }
 
-        /// <summary>The soldiers and raiders of an invasion, drawn on the camp world with the same sprites and effects as a raid. Replaces the settlement agents.</summary>
-        public void DrawCamp(World cw, CampBattle battle, int rot, float frac)
+        /// <summary>The soldiers and raiders of an invasion, drawn on the camp world with the same sprites and effects as a raid. Replaces the
+        /// settlement agents. An NPC settlement's own workers and townsfolk go about their day around it (townFrac: how far through its day).</summary>
+        public void DrawCamp(World cw, CampBattle battle, int rot, float frac, float townFrac = 0f)
         {
             _used = 0;
+            if (_battle != null && battle != null && battle.Camp.IsTown) DrawPeople(cw, rot, townFrac);
             if (_battle != null && battle != null)
             {
                 int ox = cw.CampX0, oy = cw.CampY0;
                 foreach (var u in battle.Units)
                 {
                     bool dead = !u.Alive;
-                    if (u.Left) continue;   // walked off the map
+                    if (u.Left || u.InBarracks) continue;   // walked off the map, or still inside its barracks
                     if (dead && battle.Tick - u.DeadTick > CampBattle.BodyTicks) continue;
                     int x = ox + u.X, y = oy + u.Y, px = ox + u.Px, py = oy + u.Py;
                     bool moving = x != px || y != py;
