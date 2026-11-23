@@ -18,6 +18,15 @@ namespace CrownAndHearth.Game
         UnityEngine.UI.Image _giftButton, _attackButton, _reinforceButton, _withdrawButton;
         Settlement _town;
         static readonly int[] TradeAmounts = { 10, 50, 100 };
+        // which of its goods the buy and sell rows are on (cycled with the "Other good" buttons)
+        int _buyGood, _sellGood;
+        UnityEngine.UI.Image _nextBuyGood, _nextSellGood;
+
+        Res BuyGood(Settlement s) => s.Produce.Count == 0 ? s.Makes : s.Produce[_buyGood % s.Produce.Count].res;
+        Res SellGood(Settlement s) => s.Wants.Count == 0 ? s.Needs : s.Wants[_sellGood % s.Wants.Count].res;
+
+        static string OtherGoods(System.Collections.Generic.List<(Res res, double share)> goods, Res shown) =>
+            Settlements.GoodsList(goods.Where(g => g.res != shown));
 
         void BuildSettlementPanel(RectTransform mapPanel)
         {
@@ -32,15 +41,17 @@ namespace CrownAndHearth.Game
             for (int i = 0; i < TradeAmounts.Length; i++)
             {
                 int amount = TradeAmounts[i];
-                _buyButtons[i] = MakeButton(_townPanel, $"Buy {amount}", Vector2.up, new Vector2(8 + 58 + i * 124, -232), new Vector2(116, 28), () => TradeWithTown(true, amount));
+                _buyButtons[i] = MakeButton(_townPanel, $"Buy {amount}", Vector2.up, new Vector2(8 + 48 + i * 104, -232), new Vector2(96, 28), () => TradeWithTown(true, amount));
             }
+            _nextBuyGood = MakeButton(_townPanel, "Other good ›", Vector2.up, new Vector2(8 + 48 + 3 * 104, -232), new Vector2(96, 28), () => { _buyGood++; _townMessage.text = ""; RefreshSettlementPanel(); });
             _townBuys = MakeText(_townPanel, "Buys", 14, TextAnchor.UpperLeft); TopStretch(_townBuys.rectTransform, 256, 294);
             _sellButtons = new UnityEngine.UI.Image[TradeAmounts.Length];
             for (int i = 0; i < TradeAmounts.Length; i++)
             {
                 int amount = TradeAmounts[i];
-                _sellButtons[i] = MakeButton(_townPanel, $"Sell {amount}", Vector2.up, new Vector2(8 + 58 + i * 124, -312), new Vector2(116, 28), () => TradeWithTown(false, amount));
+                _sellButtons[i] = MakeButton(_townPanel, $"Sell {amount}", Vector2.up, new Vector2(8 + 48 + i * 104, -312), new Vector2(96, 28), () => TradeWithTown(false, amount));
             }
+            _nextSellGood = MakeButton(_townPanel, "Other good ›", Vector2.up, new Vector2(8 + 48 + 3 * 104, -312), new Vector2(96, 28), () => { _sellGood++; _townMessage.text = ""; RefreshSettlementPanel(); });
             _giftButton = MakeButton(_townPanel, $"Send a gift ({World.GiftGold} gold)", Vector2.up, new Vector2(8 + 110, -356), new Vector2(220, 30), GiftToTown);
             _attackButton = MakeButton(_townPanel, "Attack", Vector2.up, new Vector2(8 + 228 + 8 + 80, -356), new Vector2(160, 30), AttackTown);
             // a settlement you hold: send more soldiers, or bring the garrison home (it then pays tribute)
@@ -84,7 +95,7 @@ namespace CrownAndHearth.Game
 
         void OpenSettlement(Settlement s)
         {
-            _town = s; _townMessage.text = "";
+            _town = s; _townMessage.text = ""; _buyGood = 0; _sellGood = 0;
             if (_world != null && _world.CanAttack(s).Ok) _world.TownCamp(s).PrepareSite();   // its battle ground is made in the background, in case you attack
             _townPanel.gameObject.SetActive(true);
             _townPanel.SetAsLastSibling(); _tip.SetAsLastSibling(); _cursorTip.SetAsLastSibling();
@@ -112,10 +123,11 @@ namespace CrownAndHearth.Game
         void TradeWithTown(bool buy, int amount)
         {
             if (_town == null || _world == null) return;
-            var r = buy ? _world.BuyFrom(_town, amount) : _world.SellTo(_town, amount);
+            var good = buy ? BuyGood(_town) : SellGood(_town);
+            var r = buy ? _world.BuyFrom(_town, amount, good) : _world.SellTo(_town, amount, good);
             _townMessage.text = r.Ok
-                ? (buy ? $"A caravan sets out to fetch {r.Count} {World.GoodName(_town.Makes)}. It will be home in {_world.SettlementMarchDays(_town)} days."
-                       : $"A caravan sets out with {r.Count} {World.GoodName(_town.Needs)}. The gold comes home in {_world.SettlementMarchDays(_town)} days.")
+                ? (buy ? $"A caravan sets out to fetch {r.Count} {World.GoodName(good)}. It will be home in {_world.SettlementMarchDays(_town)} days."
+                       : $"A caravan sets out with {r.Count} {World.GoodName(good)}. The gold comes home in {_world.SettlementMarchDays(_town)} days.")
                 : r.Reason;
             RefreshSettlementPanel();
         }
@@ -174,14 +186,19 @@ namespace CrownAndHearth.Game
             _townInfo.text = sb.ToString();
 
             bool trading = s.WillTrade;
+            Res bg = BuyGood(s), sg = SellGood(s);
+            string moreSold = s.Produce.Count > 1 ? $"\nAlso sells {OtherGoods(s.Produce, bg)}" : "";
+            string moreBought = s.Wants.Count > 1 ? $"\nAlso buys {OtherGoods(s.Wants, sg)}" : "";
             _townSells.text = trading
-                ? $"<b>Sells {World.GoodName(s.Makes)}</b> at {World.PriceToBuy(s):0.##} gold each · {World.LeftToBuy(s)} left this month · you have {_world.ResAmt[Res.Gold]:0} gold"
-                : $"Makes {World.GoodName(s.Makes)}";
+                ? $"<b>Sells {World.GoodName(bg)}</b> at {World.PriceToBuy(s, bg):0.##} gold each · {World.LeftToBuy(s, bg)} left this month" + moreSold
+                : $"Produces {Settlements.GoodsList(s.Produce)}";
             _townBuys.text = trading
-                ? $"<b>Buys {World.GoodName(s.Needs)}</b> at {World.PriceToSell(s):0.##} gold each · wants {World.LeftToSell(s)} more this month · you have {_world.ResAmt[s.Needs]:0}"
-                : $"Needs {World.GoodName(s.Needs)}";
+                ? $"<b>Buys {World.GoodName(sg)}</b> at {World.PriceToSell(s, sg):0.##} gold each · wants {World.LeftToSell(s, sg)} more · you have {_world.ResAmt[sg]:0}" + moreBought
+                : $"Needs {Settlements.GoodsList(s.Wants)}";
             foreach (var b in _buyButtons) b.gameObject.SetActive(trading);
             foreach (var b in _sellButtons) b.gameObject.SetActive(trading);
+            _nextBuyGood.gameObject.SetActive(trading && s.Produce.Count > 1);
+            _nextSellGood.gameObject.SetActive(trading && s.Wants.Count > 1);
             foreach (var b in _buyButtons.Concat(_sellButtons)) b.color = can.Ok ? Btn : new Color(0.2f, 0.17f, 0.13f, 1f);
             _giftButton.color = _world.ResAmt[Res.Gold] >= World.GiftGold && s.Attitude < World.GiftCap ? Btn : new Color(0.2f, 0.17f, 0.13f, 1f);
             bool held = s.Allegiance == Allegiance.Occupied;
@@ -199,6 +216,7 @@ namespace CrownAndHearth.Game
                 if (_fateGarrison < 0) _fateGarrison = Math.Min(have, World.GarrisonNeeded(s));
                 _fateGarrison = Math.Clamp(_fateGarrison, 0, have);
                 foreach (var b in _buyButtons.Concat(_sellButtons)) b.gameObject.SetActive(false);
+                _nextBuyGood.gameObject.SetActive(false); _nextSellGood.gameObject.SetActive(false);
                 _giftButton.gameObject.SetActive(false); _attackButton.gameObject.SetActive(false);
                 var (gold, goods) = World.SackYield(s);
                 _townSells.text = $"<b>Your army holds {s.Name}</b>: {p.Infantry} infantry and {p.Archers} archers, carrying {p.Loot.Values.Sum()} goods. Decide its fate:";
@@ -207,7 +225,7 @@ namespace CrownAndHearth.Game
                 var occupy = _world.CanResolve(ConquestChoice.Occupy, _fateGarrison);
                 _fateButtons[3].color = occupy.Ok ? Btn : new Color(0.2f, 0.17f, 0.13f, 1f);
                 if (_townMessage.text.Length == 0 || !occupy.Ok)
-                    _townMessage.text = $"Sacking: about {gold} gold and {goods} {World.GoodName(s.Makes)} there; the carts can take {World.SackRoom(p)}, the rest burns." +
+                    _townMessage.text = $"Sacking: about {gold} gold and {goods} goods ({Settlements.GoodsList(s.Produce)}) there; the carts can take {World.SackRoom(p)}, the rest burns." +
                                         (occupy.Ok ? "" : $" Occupy: {occupy.Reason}.");
             }
 

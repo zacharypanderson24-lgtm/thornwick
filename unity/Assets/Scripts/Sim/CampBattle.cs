@@ -57,7 +57,10 @@ namespace CrownAndHearth.Sim
         static bool Has(List<(int x, int y)> list, int x, int y) { foreach (var t in list) if (t.x == x && t.y == y) return true; return false; }
         public bool HasTent(int x, int y) => Has(Tents, x, y) || (Chief.x == x && Chief.y == y);
         /// <summary>Anything built here that soldiers cannot walk through: tents, the warlord's tent, fires and racks, or a settlement's buildings.</summary>
-        public bool HasStructure(int x, int y) => (In(x, y) && Blocked[y, x]) || HasTent(x, y) || Has(Fires, x, y) || Has(Racks, x, y);
+        public bool HasStructure(int x, int y) => (In(x, y) && Blocked[y, x]) || (!IsTownMap && (HasTent(x, y) || Has(Fires, x, y) || Has(Racks, x, y)));
+        /// <summary>A settlement's map: every building is in Blocked (its homes, hall and barracks too), so the lists need not be searched
+        /// (a city has hundreds of homes).</summary>
+        public bool IsTownMap;
         public SupplyPile PileAt(int x, int y) { foreach (var p in Piles) if (p.X == x && p.Y == y && p.Amount > 0) return p; return null; }
         /// <summary>Soldiers walk on open ground; trees, rocks, mountains and the camp's structures are in the way.</summary>
         public bool Passable(int x, int y) => In(x, y) && Ground[y, x] == CampTile.Open && !HasStructure(x, y);

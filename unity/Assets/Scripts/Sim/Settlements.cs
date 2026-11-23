@@ -19,6 +19,9 @@ namespace CrownAndHearth.Sim
     /// <summary>Its standing with you: its own master, paying you tribute, or held by your soldiers (World.Conquest.cs).</summary>
     public enum Allegiance : byte { Own, Tributary, Occupied }
 
+    /// <summary>What kind of place it is: what it lives by, which shapes how its town is laid out (World.TownBuilder.cs).</summary>
+    public enum TownKind : byte { Farming, Timber, Quarry, Mining, Pastoral, Market, Fortress }
+
     public sealed class Settlement
     {
         public int Id, X, Y, Seed;
@@ -34,7 +37,15 @@ namespace CrownAndHearth.Sim
         /// <summary>A realm's seat: a capital at generation. Only a seat can be called a capital.</summary>
         public bool IsSeat;
         public Personality Personality;
+        /// <summary>Its main good and its main need (the first of Produce and Wants).</summary>
         public Res Makes, Needs;
+        /// <summary>Everything it produces and everything it needs, each with its share (adding up to 1). Generated, not saved.</summary>
+        public readonly List<(Res res, double share)> Produce = new List<(Res res, double share)>(), Wants = new List<(Res res, double share)>();
+        public bool Produces(Res r) => Produce.Any(p => p.res == r);
+        public bool Wanting(Res r) => Wants.Any(p => p.res == r);
+        public double ShareOf(Res r) => Produce.Concat(Wants).Where(p => p.res == r).Select(p => p.share).DefaultIfEmpty(0).Max();
+        /// <summary>What it lives by (generated from its goods, personality and seed; not saved).</summary>
+        public TownKind Kind;
         public Relief Relief = Relief.Upland;
         /// <summary>How good its land is, 0..1: sets how fast it grows and how big it can get.</summary>
         public double Potential;
@@ -42,6 +53,8 @@ namespace CrownAndHearth.Sim
         public double Capacity;
         /// <summary>Goods it has sold to you and bought from you this month (World.SettlementTrade.cs); reset each month, saved.</summary>
         public int SoldThisMonth, BoughtThisMonth;
+        /// <summary>The same, good by good (saved).</summary>
+        public readonly Dictionary<Res, int> SoldOf = new Dictionary<Res, int>(), BoughtOf = new Dictionary<Res, int>();
         /// <summary>Whether it pays you or is held by you, and which of your soldiers hold it (infantry and archers kept apart). Saved.</summary>
         public Allegiance Allegiance;
         public int GarrisonInfantry, GarrisonArchers;
@@ -153,7 +166,6 @@ namespace CrownAndHearth.Sim
                 bool river = (map.Features[WorldMap.Cell(s.X, s.Y)] & (MapFeature.River | MapFeature.MajorRiver)) != 0;
                 s.Potential = Math.Clamp(0.45 * r.Fertile + 0.15 * cellFert + (r.RiverKm > 0 || river ? 0.12 : 0) + (r.Coastal ? 0.08 : 0)
                     + 0.1 * (1 - r.Mountain) + 0.15 * Noise.Hash2(i, 1, seed + 820), 0, 1);
-                (s.Makes, s.Needs) = Goods(r, Noise.Hash2(i, 2, seed + 820));
             }
 
             // ---- sizes: the best region sites, kept apart, are the capitals, then the cities; then towns; the rest villages and hamlets ----
@@ -187,6 +199,14 @@ namespace CrownAndHearth.Sim
                 // good land can hold more people than it has now: room to grow into the next size (seats and cities up to their own ceiling)
                 s.Capacity = Math.Round(t >= (int)SettlementTier.City ? TierCeil[t] * (0.7 + 0.3 * s.Potential) : s.Population * (1.6 + 2.4 * s.Potential));
                 s.Capacity = Math.Max(s.Capacity, s.Population);
+            }
+
+            // ---- what each place produces and needs: its land, and what a place its size consumes and can craft ----
+            for (int i = 0; i < list.Count; i++)
+            {
+                var s = list[i];
+                bool river = (map.Features[WorldMap.Cell(s.X, s.Y)] & (MapFeature.River | MapFeature.MajorRiver)) != 0;
+                AssignGoods(s, map.RegionAt(s.X, s.Y), tier[i], river, seed + i * 31);
             }
 
             // ---- who answers to whom: each place looks for the nearest bigger one within that one's reach ----
@@ -232,9 +252,39 @@ namespace CrownAndHearth.Sim
                     int near = Cheb(s.X, s.Y, hx, hy) < 60 ? -5 : 0;   // close neighbours are a little warier of a new town
                     int jitter = (int)Math.Round((Noise.Hash2(i, 9, seed + 820) - 0.5) * 20);
                     s.Attitude = Math.Clamp(baseline + near + jitter, -100, 100);
+                    s.Kind = KindOf(s, r, tier[i], Noise.Hash2(i, 11, seed + 820));
                 }
             return list;
         }
+
+        /// <summary>What a place lives by. A warlike or proud town (or a cautious one in the hills) may be a fortress; a mercantile town on a
+        /// river or the coast, or any big mercantile place, a market town; otherwise what it mainly produces sets its kind.</summary>
+        public static TownKind KindOf(Settlement s, MapRegion r, SettlementTier tier, double roll)
+        {
+            if (tier >= SettlementTier.Town)
+            {
+                double fort = s.Personality switch { Personality.Warlike => 0.55, Personality.Proud => 0.4, Personality.Cautious => r.Mountain > 0.3 ? 0.3 : 0.1, _ => 0.05 };
+                if (roll < fort) return TownKind.Fortress;
+                double market = s.Personality == Personality.Mercantile ? (r.Coastal || r.RiverKm > 0 || tier >= SettlementTier.City ? 0.8 : 0.45) : tier >= SettlementTier.City ? 0.25 : 0;
+                if (roll > 1 - market) return TownKind.Market;
+            }
+            return s.Makes switch
+            {
+                Res.Food or Res.Flax => TownKind.Farming,
+                Res.Wood or Res.Charcoal => TownKind.Timber,
+                Res.Stone => TownKind.Quarry,
+                Res.Ore or Res.Metal => TownKind.Mining,
+                Res.Wool => TownKind.Pastoral,
+                _ => TownKind.Farming,
+            };
+        }
+
+        /// <summary>"Farming", "Fortress"...: put before the size ("a Farming village", "a Fortress town").</summary>
+        public static string KindName(TownKind k) => k switch
+        {
+            TownKind.Farming => "Farming", TownKind.Timber => "Timber", TownKind.Quarry => "Quarrying", TownKind.Mining => "Mining",
+            TownKind.Pastoral => "Herding", TownKind.Market => "Market", _ => "Fortress",
+        };
 
         static Personality PickPersonality(MapRegion r, double roll)
         {
@@ -248,17 +298,59 @@ namespace CrownAndHearth.Sim
             return Personality.Warlike;
         }
 
-        /// <summary>What a place has plenty of and what it lacks, from its region's land: fertile plains make grain, woods make timber,
-        /// hills and mountains make stone or iron.</summary>
-        static (Res makes, Res needs) Goods(MapRegion r, double roll)
+        /// <summary>What a place produces and needs, each a weighted list (shares add up to 1).
+        /// Produces: the two or three raw goods its land gives most of (fertile plains grain and flax, woods timber, hills stone and iron
+        /// ore, open dry country wool), and once it is big enough what it crafts from them (a village with woods burns charcoal, a town
+        /// with iron, or any city, works metal).
+        /// Needs: what a place its size uses that it does not produce: everyone needs food and timber, a village also stone and cloth
+        /// (wool or flax), a town also metal (and ore and charcoal if it works metal itself).
+        /// The first of each is its main good (Makes, Needs).</summary>
+        public static void AssignGoods(Settlement s, MapRegion r, SettlementTier tier, bool river, int seed)
         {
-            var score = new List<(Res res, double v)>
+            double J(int k) => (Noise.Hash2(s.Id, k, seed + 1301) - 0.5) * 0.12;   // a little difference between neighbours
+            var raw = new List<(Res res, double v)>
             {
-                (Res.Food, r.Fertile), (Res.Wood, r.Forest), (Res.Stone, r.Mountain * 0.9 + (roll < 0.5 ? 0.05 : 0)),
-                (Res.Ore, r.Mountain * 0.8 + (roll >= 0.5 ? 0.05 : 0)), (Res.Wool, (1 - r.Forest) * (1 - r.Fertile) * 0.6),
+                (Res.Food, r.Fertile + (river ? 0.15 : 0) + J(1)),
+                (Res.Flax, r.Fertile * 0.55 + Math.Min(0.25, r.Rain / 4000.0) + J(2)),
+                (Res.Wood, r.Forest * 1.05 + J(3)),
+                (Res.Stone, r.Mountain * 0.9 + 0.08 + J(4)),
+                (Res.Ore, r.Mountain * 0.8 + J(5)),
+                (Res.Wool, (1 - r.Forest) * (1 - r.Fertile) * 0.7 + J(6)),
             };
-            var sorted = score.OrderByDescending(p => p.v).ThenBy(p => (int)p.res).ToList();
-            return (sorted[0].res, sorted[sorted.Count - 1].res);
+            var sorted = raw.Where(p => p.v > 0.05).OrderByDescending(p => p.v).ThenBy(p => (int)p.res).ToList();
+            if (sorted.Count == 0) sorted.Add((Res.Food, 0.1));
+            int most = tier == SettlementTier.Hamlet ? 2 : 3;
+            var produce = sorted.Where((p, k) => k == 0 || (k < most && p.v >= sorted[0].v * 0.45)).Select(p => (res: p.res, v: Math.Max(0.05, p.v))).ToList();
+            // a village or bigger always works a second good, the best of the rest its land gives
+            if (tier >= SettlementTier.Village && produce.Count < 2 && sorted.Count > 1) produce.Add((sorted[1].res, Math.Max(0.05, sorted[1].v)));
+            // crafted goods for bigger places
+            bool hasOre = produce.Any(p => p.res == Res.Ore), hasWood = produce.Any(p => p.res == Res.Wood);
+            if (tier >= SettlementTier.Village && hasWood && produce.Count < 4) produce.Add((Res.Charcoal, produce.First(p => p.res == Res.Wood).v * 0.4));
+            if ((tier >= SettlementTier.Town && hasOre) || tier >= SettlementTier.City) produce.Add((Res.Metal, 0.25 + (hasOre ? 0.15 : 0)));
+            double total = produce.Sum(p => p.v);
+            s.Produce.Clear();
+            foreach (var (res, v) in produce) s.Produce.Add((res, v / total));
+
+            // what it uses that it does not make, with the main needs first
+            var basket = new List<(Res res, double v)> { (Res.Food, 1.0), (Res.Wood, 0.7), (Res.Metal, 0.3) };   // tools even in a hamlet
+            if (tier >= SettlementTier.Village) { basket.Add((Res.Stone, 0.5)); basket.Add((r.Rain > 700 ? Res.Flax : Res.Wool, 0.45)); }
+            if (tier >= SettlementTier.Town) basket[2] = (Res.Metal, 0.6);
+            if (s.Produces(Res.Metal)) { basket.Add((Res.Ore, 0.55)); basket.Add((Res.Charcoal, 0.35)); }
+            var needs = basket.Where(b => !s.Produces(b.res))
+                              .Select(b => (res: b.res, v: b.v + J(10 + (int)b.res))).OrderByDescending(b => b.v).ThenBy(b => (int)b.res).Take(4).ToList();
+            if (needs.Count == 0)   // a place that makes all it needs still wants what it cannot make at all
+                needs.Add((new[] { Res.Metal, Res.Wool, Res.Stone, Res.Flax }.First(g => !s.Produces(g)), 0.3));
+            double nt = needs.Sum(n => n.v);
+            s.Wants.Clear();
+            foreach (var (res, v) in needs) s.Wants.Add((res, v / nt));
+            s.Makes = s.Produce[0].res; s.Needs = s.Wants[0].res;
+        }
+
+        /// <summary>"grain, flax and timber".</summary>
+        public static string GoodsList(IEnumerable<(Res res, double share)> goods)
+        {
+            var names = goods.Select(g => World.GoodName(g.res)).ToList();
+            return names.Count <= 1 ? string.Join("", names) : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[names.Count - 1];
         }
 
         /// <summary>A month passes: each place grows towards what its land can hold (1 to 5% a year, faster on good land), and shrinks if it

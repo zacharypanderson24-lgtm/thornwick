@@ -380,7 +380,7 @@ namespace CrownAndHearth.Tests
             var s = w.Settlements[3];
             s.Allegiance = Allegiance.Occupied; s.GarrisonInfantry = 4; s.GarrisonArchers = 0;
             var save = Newtonsoft.Json.Linq.JObject.Parse(w.SaveJson());
-            foreach (Newtonsoft.Json.Linq.JArray row in (Newtonsoft.Json.Linq.JArray)save["settlements"]) row.RemoveAt(8);   // the older 8-number rows
+            foreach (Newtonsoft.Json.Linq.JArray row in (Newtonsoft.Json.Linq.JArray)save["settlements"]) while (row.Count > 8) row.RemoveAt(row.Count - 1);   // the older 8-number rows
             var loaded = World.LoadJson(save.ToString());
             loaded.SetSettlements(Settlements.Generate(Map));
             Assert.AreEqual((4, 0), (loaded.Settlements[3].GarrisonInfantry, loaded.Settlements[3].GarrisonArchers));

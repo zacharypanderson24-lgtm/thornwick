@@ -78,6 +78,9 @@ namespace CrownAndHearth.Tests
             {
                 Assert.That(s.Attitude, Is.InRange(-100, 100));
                 Assert.AreNotEqual(s.Makes, s.Needs, "a place does not need what it makes");
+                Assert.IsFalse(s.Wants.Any(n => s.Produces(n.res)), $"{s.Name} needs nothing it produces");
+                Assert.AreEqual(1, s.Produce.Sum(p => p.share), 1e-9); Assert.AreEqual(1, s.Wants.Sum(p => p.share), 1e-9);
+                Assert.AreEqual(s.Makes, s.Produce[0].res); Assert.AreEqual(s.Needs, s.Wants[0].res);
                 Assert.AreEqual(s.Tier >= SettlementTier.Village && s.Attitude >= Settlements.TradeThreshold(s.Personality), s.WillTrade);
             }
             Assert.IsFalse(list.Any(s => s.Tier == SettlementTier.Hamlet && s.WillTrade), "a hamlet is too small to trade");
@@ -90,6 +93,18 @@ namespace CrownAndHearth.Tests
             double same = subjects.Count(s => s.Personality == list[s.Liege].Personality) / (double)subjects.Count;
             Assert.Greater(same, 0.4);
             Assert.AreEqual("Hostile", Settlements.AttitudeName(-60)); Assert.AreEqual("Trusting", Settlements.AttitudeName(70));
+        }
+
+        [Test]
+        public void SettlementsProduceAndNeedSeveralGoodsAndDiffer()
+        {
+            var list = Settlements.Generate(Map, Camps);
+            Assert.Greater(list.Count(s => s.Produce.Count >= 2), list.Count * 0.8, "nearly every place produces more than one good");
+            Assert.Greater(list.Count(s => s.Wants.Count >= 2), list.Count * 0.8, "and needs more than one");
+            Assert.IsTrue(list.Where(s => s.Tier >= SettlementTier.City).All(s => s.Produces(Res.Metal) || s.Wanting(Res.Metal)), "cities work or buy metal");
+            Assert.Greater(list.Select(s => string.Join(",", s.Produce.Select(p => p.res))).Distinct().Count(), 8, "many different mixes of goods");
+            Assert.GreaterOrEqual(list.Select(s => s.Kind).Distinct().Count(), 5, "many kinds of place");
+            Assert.IsTrue(list.Where(s => s.Kind == TownKind.Fortress || s.Kind == TownKind.Market).All(s => s.Tier >= SettlementTier.Town), "only towns and up are fortresses or markets");
         }
 
         [Test]
