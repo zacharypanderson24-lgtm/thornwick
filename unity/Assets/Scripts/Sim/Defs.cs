@@ -123,6 +123,6 @@ namespace CrownAndHearth.Sim
         public static readonly int[,] Nb = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
         public static int PlacementSize(string type) => type == "wood" || type == "mine" || type == "quarry" || type == "hunter" || type == "forester" || type == "sawmill" ? 2 : DefaultSize(type);
-        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "market" || type == "farm" || type == "smithery" || type == "storehouse") ? 2 : 1;
+        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "market" || type == "farm" || type == "smithery" || type == "storehouse" || type == "smokehouse") ? 2 : 1;
     }
 }
