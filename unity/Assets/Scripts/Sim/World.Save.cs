@@ -86,6 +86,8 @@ namespace CrownAndHearth.Sim
                     .ToDictionary(pair => pair.Key, pair => pair.Value)),
                 // water (World.Water.cs): what each aquifer still holds, by id (the patches regenerate from the seed)
                 ["aquifers"] = new JArray(Aquifers.Select(a => Math.Round(a.Reserve, 3))),
+                ["hallHp"] = Math.Round(HallHp, 2), ["defeat"] = (int)Defeat, ["defeatDay"] = DefeatDay,   // World.Defeat.cs; older saves have none
+                ["campaign"] = SaveCampaign(), ["campaignOn"] = CampaignOn, ["incident"] = SaveIncident(), ["scenario"] = SaveScenario(), ["lastScenarioEnd"] = LastScenarioEnd,   // World.Campaign.cs, World.Incidents.cs, World.Scenarios.cs
                 ["blds"] = new JArray(Blds.Select(SaveBuilding)),
             }.ToString(Formatting.None);
         }
@@ -297,6 +299,10 @@ namespace CrownAndHearth.Sim
             world.SetShaftDepthLimit(save.Value<int?>("shaftDepthLimit") ?? MaxDepth);
             world.SetMineSupportsRequired(save.Value<bool?>("requireMineSupports") ?? false);
             world.LoadStatistics(save["statistics"] as JArray);
+            world.LoadDefeat(save);
+            world.LoadIncident(save["incident"] as JObject);
+            world.LoadScenario(save["scenario"] as JObject, save.Value<int?>("lastScenarioEnd") ?? -1000);
+            world.LoadCampaign(save["campaign"] as JArray, save.Value<bool?>("campaignOn") ?? false);
             world.ComputeDemand();
             return world;
         }

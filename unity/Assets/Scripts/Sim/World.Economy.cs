@@ -29,6 +29,7 @@ namespace CrownAndHearth.Sim
 
             // farms + foresters
             var crops = SeasonalFarming ? WorkSeasonalFields() : FarmOutput();
+            if (CropYield != 1.0) crops = (crops.food * CropYield, crops.flax * CropYield);   // a failed harvest (World.Scenarios.cs)
             food += SeasonalFarming ? Math.Min(crops.food, Math.Max(0, CropStorage(Res.Food) - ResAmt[Res.Food])) : crops.food;
             double wheat = food;
             ResAmt[Res.Flax] += SeasonalFarming ? Math.Min(crops.flax, Math.Max(0, CropStorage(Res.Flax) - ResAmt[Res.Flax])) : crops.flax;
@@ -163,6 +164,7 @@ namespace CrownAndHearth.Sim
             Recalc();
             Develop();
             _statistics.Add(CaptureStatistics(Day - 1));
+            MendHall(); StepCampaign(); StepIncidents(); CheckDefeat();   // World.Defeat.cs, World.Campaign.cs
         }
 
         public (int x, int y)? NearestZoned(int x, int y, int r, Deco kind, Zone zone)

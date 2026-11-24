@@ -42,6 +42,7 @@ namespace CrownAndHearth.Game
                     for (int i = 0; i < b.Crew.Count; i++)
                     {
                         var a = b.Crew[i]; if (a.St == CrewState.Home || a.St == CrewState.Down) continue;   // underground miners are not drawn
+                        if (a.St == CrewState.Shelter && a.X == a.Px && a.Y == a.Py) continue;   // hiding in the Town Hall (the day it runs in, it is still drawn)
                         int dx = a.X - a.Px, dy = a.Y - a.Py;
                         bool moving = dx != 0 || dy != 0;
                         bool working = a.St == CrewState.Work;
@@ -52,7 +53,7 @@ namespace CrownAndHearth.Game
                 }
                 foreach (var v in w.Folk)
                 {
-                    if (v.St == FolkState.Home) continue;
+                    if (v.St == FolkState.Home || (v.St == FolkState.Shelter && v.X == v.Px && v.Y == v.Py)) continue;   // at home, or hiding in the Town Hall
                     int dx = v.X - v.Px, dy = v.Y - v.Py;
                     string pose = dx != 0 || dy != 0 ? "walk" : "idle";
                     Put(w, rot, _battle.Pose(FolkSprites[v.V], pose, Facing(rot, dx, dy), w.Day, frac, v.Id),
