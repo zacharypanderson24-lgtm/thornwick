@@ -347,6 +347,7 @@ namespace CrownAndHearth.Sim
                     {
                         var (res, stock) = RaidLoot(a.Target);
                         double take = Math.Min(stock, RaidBite);
+                        if (a.Target == Hall) HitHall(RaiderHallHit);   // World.Defeat.cs: a raider at the Hall also strikes it
                         if (res == Res.Food)
                         {
                             _freshMeat = FreshMeatStored - FreshMeatShare(take);

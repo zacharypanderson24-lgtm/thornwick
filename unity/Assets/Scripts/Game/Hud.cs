@@ -119,6 +119,9 @@ namespace CrownAndHearth.Game
             MakeButton(top, "Load", new Vector2(1, 0.5f), new Vector2(-23, 0), new Vector2(44, 30), () => LoadPicked?.Invoke());
 
             BuildNeeds(root);
+            BuildCampaign(root);
+            BuildScenario(root);
+            BuildIncident(root);
             BuildBar(root);
             var townMenuBar = MakePanel(root, "TownMenuBar", Vector2.right, Vector2.right,
                 new Vector2(-651, BottomH + 8), new Vector2(-8, BottomH + 50));
@@ -504,6 +507,9 @@ namespace CrownAndHearth.Game
             _population.text = world.Starving ? "Starving" : world.Soldiers > 0 ? $"{world.Peasants} + {world.Soldiers} troops/{world.D.Civ} · {world.D.Idle} idle" : $"{world.Peasants}/{world.D.Civ} · {world.D.Idle} idle";
             UpdateStockpiles(world);
             UpdateNeeds(world);
+            UpdateCampaign(world);
+            UpdateScenario(world);
+            UpdateIncident(world);
             UpdateWarband(world);
             RefreshSettlementPanel();
             // prices turn red on the cards the town cannot afford yet

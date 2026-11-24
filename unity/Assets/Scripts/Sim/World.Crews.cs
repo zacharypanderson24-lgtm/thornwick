@@ -9,8 +9,8 @@ using static CrownAndHearth.Sim.Defs;
 namespace CrownAndHearth.Sim
 {
     /// <summary>Down: a miner underground in the mine's shaft (Unity-only, World.Mining.cs); not drawn.</summary>
-    public enum CrewState : byte { Home, Out, Work, Back, Down }
-    public enum FolkState : byte { Home, Walk, Stay, Back }
+    public enum CrewState : byte { Home, Out, Work, Back, Down, Hide, Shelter }
+    public enum FolkState : byte { Home, Walk, Stay, Back, Hide, Shelter }
 
     /// <summary>One worker of a crew (JS: the objects in crewOf(b)).</summary>
     public class Worker
@@ -170,7 +170,7 @@ namespace CrownAndHearth.Sim
                 for (int ai = 0; ai < crew.Count; ai++)
                 {
                     var a = crew[ai];
-                    a.Px = a.X; a.Py = a.Y;
+                    a.Px = a.X; a.Py = a.Y; if (ShelterWorker(b, a)) continue;
                     if (a.St == CrewState.Home)
                     {
                         if (!b.Served) continue;
@@ -290,7 +290,7 @@ namespace CrownAndHearth.Sim
             var pois = _folkPois;
             foreach (var w in folk)
             {
-                w.Px = w.X; w.Py = w.Y;
+                w.Px = w.X; w.Py = w.Y; if (ShelterFolk(w)) continue;
                 if (w.St == FolkState.Home)
                 {
                     if (--w.T > 0) continue;

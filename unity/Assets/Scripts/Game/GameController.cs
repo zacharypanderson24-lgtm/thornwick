@@ -135,11 +135,14 @@ namespace CrownAndHearth.Game
         CameraRig _cam; Hud _hud;
         readonly Tutorial _tutorial = new Tutorial();
         int _raidSig = -1;
+        Incident _incidentSeen;   // the card the game paused for, and the speed to go back to once it is answered
+        int _speedBeforeIncident;
         const string TutorialSeenKey = "crown-hearth-tutorial-seen";
 
         void Start()
         {
             World = new World(Seed, TerrainStyle.Ranges, Relief);
+            World.StartCampaign();   // goals, and the game is lost with the Town Hall or the last villager (World.Campaign.cs, World.Defeat.cs)
             _art = new ArtLibrary();
             if (SpriteMaterial == null) Debug.LogError("GameController needs the Sprite-Unlit material. Run Crown & Hearth > Rebuild Settlement Scene.");
             _ground = new GameObject("Ground", typeof(MeshFilter), typeof(MeshRenderer), typeof(GroundRenderer)).GetComponent<GroundRenderer>();
@@ -181,6 +184,14 @@ namespace CrownAndHearth.Game
                 _hud.Toast(battle.Victory ? $"The {battle.Camp.Name} is destroyed." : $"The attack on the {battle.Camp.Name} is over.", 6);
             };
             _hud.LoadPicked += LoadSettlement;
+            _hud.IncidentChosen += choice =>
+            {
+                var answer = World.ResolveIncident(choice);
+                if (!answer.Ok) { _hud.Toast(answer.Reason); return; }
+                if (_speedBeforeIncident > 0 && _speed == 0) { _speed = _speedBeforeIncident; _hud.SetSpeed(_speed); }
+                _speedBeforeIncident = 0;
+            };
+            _hud.RestartPicked += () => UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
             SetTool(_tool); _hud.SetSpeed(_speed);
             EnsureWorldMap();   // the raider camps live on the world map, so it is made at the start (on a worker thread)
             // the tutorial opens by itself until the player has finished or closed it once (the Tutorial button brings it back)
@@ -227,6 +238,7 @@ namespace CrownAndHearth.Game
             }
 
             World = loaded;
+            if (!loaded.CampaignOn) loaded.StartCampaign();   // a save from before the campaign: what it already beats counts as done, with no reward
             SetBanner(ColorUtility.TryParseHtmlString(loaded.BannerColor ?? "", out _) ? loaded.BannerColor : null);
             _dayAcc = 0;
             _speed = 0;
@@ -381,6 +393,12 @@ namespace CrownAndHearth.Game
             if (_cam.ZoomIndex != zoomBefore) _tutorial.Zoomed = true;
             if (_campWorld != null) HandleCampMouse(overUi); else HandleMouse(overUi || _hud.MapOpen);
 
+            if (World.Defeated && _speed != 0) { _speed = 0; _hud.SetSpeed(0); }   // the clock stops when the settlement has fallen
+            if (World.CurrentIncident != null && World.CurrentIncident != _incidentSeen)   // a new card: pause so it can be read
+            {
+                _incidentSeen = World.CurrentIncident;
+                if (_speed > 0) { _speedBeforeIncident = _speed; _speed = 0; _hud.SetSpeed(0); }
+            }
             if (_speed > 0)
             {
                 _dayAcc += Time.unscaledDeltaTime * _speed;
@@ -705,6 +723,8 @@ namespace CrownAndHearth.Game
         void DrawOverlay()
         {
             _overlay.Clear();
+            foreach (var burning in World.Burning)   // a scenario fire: every tile of a burning building glows red
+                for (int j = 0; j < burning.Sz; j++) for (int i = 0; i < burning.Sz; i++) _overlay.AddTile(World, burning.X + i, burning.Y + j, _rot, Bad);
             if (_ugLevel > 0) DrawUnderground();
             // zone tools: shade where the buildings that work this zone can reach, so the player knows where to paint
             if (_tool.Zone == Zone.Wood || _tool.Zone == Zone.Mine || (_tool.Zone == Zone.Farm && World.SeasonalFarming))
