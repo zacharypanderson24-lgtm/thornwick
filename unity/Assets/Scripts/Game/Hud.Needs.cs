@@ -26,7 +26,7 @@ namespace CrownAndHearth.Game
 
         void BuildStockpileDropdown(RectTransform row, string title, params (string label, Res resource)[] entries)
         {
-            var total = MakeStat(row, title, title + "  ▾");
+            var total = MakeStat(row, title, title + "  ?");
             var card = (RectTransform)total.transform.parent;
             var surface = card.GetComponent<Image>();
 
@@ -86,7 +86,11 @@ namespace CrownAndHearth.Game
         {
             var strip = MakePanel(root, "Needs", Vector2.zero, Vector2.right, Vector2.zero, new Vector2(0, NeedsH));
             _foodMeter = BuildNeedMeter(strip, "Food", 0, 0.25f, WheatBar, w =>
-                $"Stored {w.ResAmt[Res.Food]:0.#} of {w.CropStorage(Res.Food)}. The town eats {w.DailyFoodDemand:0.#} per day. " +
+                $"Stored {w.EdibleFoodStored:0.#} of {w.EdibleFoodCapacity:0.#} food units. " +
+                $"Fresh food: {w.ResAmt[Res.Food]:0.#}; smoked meat: {w.ResAmt[Res.SmokedMeat]:0.#}; " +
+                $"eggs: {w.ResAmt[Res.Eggs]:0.#} ({w.ResAmt[Res.Eggs] / World.EggsPerFood:0.#} food; {World.EggsPerFood} eggs = 1 food). " +
+                $"The town eats {w.DailyFoodDemand:0.#} per day. " +
+                (w.DailyFoodDemand > 0 ? $"Stored supplies cover about {w.EdibleFoodStored / w.DailyFoodDemand:0.#} days before new production or livestock feed. " : "") +
                 (w.RecentFoodProduction is double food ? $"Recent production averages {food:0.#} per day." : ""));
             _workMeter = BuildNeedMeter(strip, "Work", 0.5f, 0.75f, WorkBar, w => w.WorkHealth().Detail);
             _safetyMeter = BuildNeedMeter(strip, "Safety", 0.75f, 1, SafetyBar, w => w.SafetyHealth().Detail, false);
@@ -130,9 +134,9 @@ namespace CrownAndHearth.Game
 
         void UpdateNeeds(World world)
         {
-            double food = world.ResAmt[Res.Food], capacity = world.CropStorage(Res.Food);
+            double food = world.EdibleFoodStored, capacity = world.EdibleFoodCapacity;
             bool foodDeficit = world.RecentFoodProduction < world.DailyFoodDemand * LowSupply;
-            var foodWarning = world.Starving ? "Starvation" : food < capacity * LowReserve ? "Low reserve" :
+            var foodWarning = world.Starving && food < world.DailyFoodDemand ? "Starvation" : food < capacity * LowReserve ? "Low reserve" :
                 foodDeficit ? "Production below demand" : "";
             SetNeedMeter(_foodMeter, food, capacity, WheatBar, foodWarning);
 
