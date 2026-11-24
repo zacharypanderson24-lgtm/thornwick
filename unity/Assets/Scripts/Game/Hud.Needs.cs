@@ -12,7 +12,9 @@ namespace CrownAndHearth.Game
         static readonly Color WheatBar = new Color(0.78f, 0.62f, 0.28f);
         static readonly Color WaterBar = new Color(0.35f, 0.65f, 0.74f);
         static readonly Color AlertBar = new Color(0.74f, 0.30f, 0.20f);
-        NeedMeter _foodMeter, _waterMeter;
+        static readonly Color WorkBar = new Color(0.55f, 0.66f, 0.38f);
+        static readonly Color SafetyBar = new Color(0.62f, 0.55f, 0.74f);
+        NeedMeter _foodMeter, _waterMeter, _workMeter, _safetyMeter;
         WaterPlan _initialWater;
         readonly List<(Text total, RectTransform menu, (Text value, Res resource)[] rows)> _stockGroups = new();
 
@@ -83,10 +85,12 @@ namespace CrownAndHearth.Game
         void BuildNeeds(RectTransform root)
         {
             var strip = MakePanel(root, "Needs", Vector2.zero, Vector2.right, Vector2.zero, new Vector2(0, NeedsH));
-            _foodMeter = BuildNeedMeter(strip, "Food", 0, 0.5f, WheatBar, w =>
+            _foodMeter = BuildNeedMeter(strip, "Food", 0, 0.25f, WheatBar, w =>
                 $"Stored {w.ResAmt[Res.Food]:0.#} of {w.CropStorage(Res.Food)}. The town eats {w.DailyFoodDemand:0.#} per day. " +
                 (w.RecentFoodProduction is double food ? $"Recent production averages {food:0.#} per day." : ""));
-            _waterMeter = BuildNeedMeter(strip, "Water", 0.5f, 1, WaterBar, w =>
+            _workMeter = BuildNeedMeter(strip, "Work", 0.5f, 0.75f, WorkBar, w => w.WorkHealth().Detail);
+            _safetyMeter = BuildNeedMeter(strip, "Safety", 0.75f, 1, SafetyBar, w => w.SafetyHealth().Detail, false);
+            _waterMeter = BuildNeedMeter(strip, "Water", 0.25f, 0.5f, WaterBar, w =>
             {
                 var plan = w.LastWater ?? _initialWater;
                 var storage = plan.StoreDays is double days ? $" Reserve lasts about {Math.Floor(days)} days at this rate." : "";
@@ -95,7 +99,7 @@ namespace CrownAndHearth.Game
             });
         }
 
-        NeedMeter BuildNeedMeter(RectTransform strip, string title, float left, float right, Color accent, Func<World, string> details)
+        NeedMeter BuildNeedMeter(RectTransform strip, string title, float left, float right, Color accent, Func<World, string> details, bool showBar = true)
         {
             var card = MakePanel(strip, title + "Reserve", new Vector2(left, 0), new Vector2(right, 1),
                 new Vector2(6, 5), new Vector2(-6, -4));
@@ -116,6 +120,7 @@ namespace CrownAndHearth.Game
             var fill = MakePanel(track, "Fill", Vector2.zero, Vector2.up, Vector2.zero, Vector2.zero);
             fill.GetComponent<Image>().raycastTarget = false;
             track.GetComponent<Image>().raycastTarget = false;
+            track.gameObject.SetActive(showBar);
             AddHover(card.gameObject, on =>
             {
                 if (_world != null) ShowTip(on, card, title, on ? details(_world) : "", "");
@@ -137,12 +142,17 @@ namespace CrownAndHearth.Game
                 plan.Unmet > 0.05 ? "Water shortage" : water < room * LowReserve ? "Low reserve" :
                 plan.Delivered < plan.Demand * LowSupply ? "Pumping below demand" : "";
             SetNeedMeter(_waterMeter, water, room, WaterBar, waterWarning);
+
+            var work = world.WorkHealth();
+            SetNeedMeter(_workMeter, world.D.Employed, Math.Max(1, world.D.Jobs), WorkBar, work.Level == HealthLevel.Good ? "" : work.Warning, work.Value);
+            var safety = world.SafetyHealth();
+            SetNeedMeter(_safetyMeter, 0, 1, SafetyBar, safety.Level == HealthLevel.Good ? "" : safety.Warning, safety.Value);
         }
 
-        static void SetNeedMeter(NeedMeter meter, double stored, double capacity, Color accent, string warning)
+        static void SetNeedMeter(NeedMeter meter, double stored, double capacity, Color accent, string warning, string amount = null)
         {
             var low = warning.Length > 0;
-            meter.Amount.text = $"{stored:0.#} / {capacity:0}";
+            meter.Amount.text = amount ?? $"{stored:0.#} / {capacity:0}";
             meter.Alert.text = warning;
             meter.Fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01((float)(stored / Math.Max(1, capacity))), 1);
             meter.Fill.color = low ? AlertBar : accent;
