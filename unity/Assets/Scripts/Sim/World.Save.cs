@@ -42,7 +42,7 @@ namespace CrownAndHearth.Sim
                 ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
                 ["res"] = JObject.FromObject(ResAmt.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["wheatStored"] = WheatStored, ["foodProduction"] = RecentFoodProduction, ["waterShortDays"] = WaterShortDays,
-                ["freshMeat"] = FreshMeatStored,
+                ["freshMeat"] = FreshMeatStored, ["foodUnits"] = SeasonalFarming ? 5 : 1,   // 5: one villager eats 1 food a day (see MigrateFoodUnits)
                 ["livestockPens"] = new JArray(_pens.Select(p => new JObject
                 {
                     ["species"] = SaveKey(p.Species), ["left"] = p.Left, ["top"] = p.Top,
@@ -299,6 +299,7 @@ namespace CrownAndHearth.Sim
             world.SetShaftDepthLimit(save.Value<int?>("shaftDepthLimit") ?? MaxDepth);
             world.SetMineSupportsRequired(save.Value<bool?>("requireMineSupports") ?? false);
             world.LoadStatistics(save["statistics"] as JArray);
+            world.MigrateFoodUnits(save);
             world.LoadDefeat(save);
             world.LoadIncident(save["incident"] as JObject);
             world.LoadScenario(save["scenario"] as JObject, save.Value<int?>("lastScenarioEnd") ?? -1000);
