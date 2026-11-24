@@ -38,19 +38,19 @@ namespace CrownAndHearth.Tests
                 collected += delivered;
             }
 
-            Assert.That(collected, Is.EqualTo(World.ForestFoodReserve).Within(1e-6));
+            // the hunters take the whole reserve, plus the little that grows back (one food every HuntingRecoveryDays) while they are at it
+            Assert.That(collected, Is.InRange(World.ForestFoodReserve, World.ForestFoodReserve + 24 / World.HuntingRecoveryDays + 1));
             Assert.That(world.DecoMap[y, forestX], Is.EqualTo(Deco.Tree));
-            Assert.That(world.HuntFoodRemaining(forestX, y), Is.Zero);
+            int left = world.HuntFoodRemaining(forestX, y);
+            Assert.That(left, Is.LessThan(World.HuntingLoad), "less than one load is left");
             var loaded = World.LoadJson(world.SaveJson());
             Assert.That(loaded.Grid[y, x].T, Is.EqualTo("hunter"));
-            Assert.That(loaded.HuntFoodRemaining(forestX, y), Is.Zero);
+            Assert.That(loaded.HuntFoodRemaining(forestX, y), Is.EqualTo(left), "the depletion is saved");
 
-            loaded.Day = firstDelivery + World.HuntingRecoveryDays - 1;
-            Assert.That(loaded.HuntFoodRemaining(forestX, y), Is.Zero);
-            loaded.Day++;
-            Assert.That(loaded.HuntFoodRemaining(forestX, y), Is.EqualTo(1));
+            loaded.Day += World.HuntingRecoveryDays * 3;
+            Assert.That(loaded.HuntFoodRemaining(forestX, y), Is.EqualTo(left + 3), "it grows back one food every HuntingRecoveryDays");
 
-            loaded.Day = firstDelivery + World.HuntingRecoveryDays * World.ForestFoodReserve;
+            loaded.Day = firstDelivery + World.HuntingRecoveryDays * (World.ForestFoodReserve + 24 / World.HuntingRecoveryDays + 1);   // long enough for all of it to grow back
             loaded = World.LoadJson(loaded.SaveJson());
             Assert.That(loaded.HuntFoodRemaining(forestX, y), Is.EqualTo(World.ForestFoodReserve));
         }

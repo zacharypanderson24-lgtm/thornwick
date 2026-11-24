@@ -135,9 +135,13 @@ namespace CrownAndHearth.Sim
             }
         }
 
-        static double LootWeight(Res r) => r switch { Res.Gold => 3.0, Res.Ore => 2.0, Res.Stone => 1.5, Res.Food => 1.5, Res.Wood => 1.0, Res.Flax => 1.0, _ => 0.7 };
+        static double LootWeight(Res r) => r switch { Res.Gold => 3.0, Res.Ore => 2.0, Res.Stone => 1.5, Res.Food => 0.3, Res.Wood => 1.0, Res.Flax => 1.0, _ => 0.7 };   // food is worth a fifth per unit (a unit is a fifth as big)
 
-        public double RaidValue(Building b) { var (res, stock) = RaidLoot(b); return LootWeight(res) * Math.Min(stock, RaidBite); }
+        /// <summary>What one raider can carry off of this good: a bite of food is 5 times as many units (food units are a fifth the size they were).</summary>
+        public const double FoodBiteFactor = 5;
+        public static double BiteOf(Res r) => r == Res.Food ? RaidBite * FoodBiteFactor : RaidBite;
+
+        public double RaidValue(Building b) { var (res, stock) = RaidLoot(b); return LootWeight(res) * Math.Min(stock, BiteOf(res)); }
 
         /// <summary>Soldiers stationed at each barracks (or the Town Hall when there are none): (building, infantry, archers).</summary>
         public List<(Building b, int inf, int arc)> Garrisons()
@@ -346,7 +350,7 @@ namespace CrownAndHearth.Sim
                     if (a.Target != null && Blds.Contains(a.Target))
                     {
                         var (res, stock) = RaidLoot(a.Target);
-                        double take = Math.Min(stock, RaidBite);
+                        double take = Math.Min(stock, BiteOf(res));
                         if (a.Target == Hall) HitHall(RaiderHallHit);   // World.Defeat.cs: a raider at the Hall also strikes it
                         if (res == Res.Food)
                         {

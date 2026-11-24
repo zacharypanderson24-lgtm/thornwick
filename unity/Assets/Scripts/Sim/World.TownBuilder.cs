@@ -698,12 +698,12 @@ namespace CrownAndHearth.Sim
             }
             Store(hall, Res.Gold, (int)Math.Round(pop / 12) + 10);
             foreach (var market in Blds.Where(b => b.T == "market").Take(3)) Store(market, Res.Gold, (int)Math.Round(pop / 20));
-            foreach (var silo in Blds.Where(b => b.T == "silo").Take(4)) Store(silo, Res.Food, (int)Math.Round(pop / 4) + 10);
+            foreach (var silo in Blds.Where(b => b.T == "silo").Take(4)) Store(silo, Res.Food, ((int)Math.Round(pop / 4) + 10) * TradeUnit(Res.Food));
             // what it produces, at its storehouses (or its market): a pile of each good
             var stores = Blds.Where(b => b.T == "storehouse").Concat(Blds.Where(b => b.T == "market")).ToList();
             var goods = SplitGoods(s, (int)Math.Round(pop / 6) + 10 * Math.Max(1, s.Produce.Count));
             for (int i = 0; i < goods.Count; i++) Store(stores.Count > 0 ? stores[i % stores.Count] : hall, goods[i].res, goods[i].n);
-            if (m.Piles.Count == 0) Store(hall, Res.Food, (int)Math.Round(pop / 4) + 10);
+            if (m.Piles.Count == 0) Store(hall, Res.Food, ((int)Math.Round(pop / 4) + 10) * TradeUnit(Res.Food));
             return m;
         }
 

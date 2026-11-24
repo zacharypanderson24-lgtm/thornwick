@@ -117,7 +117,7 @@ namespace CrownAndHearth.Sim
             else
             {
                 double free = Math.Max(0, 1 - (Peasants + Soldiers) / (double)Math.Max(1, d.Civ));
-                double births = Peasants * 0.04 * free * (ResAmt[Res.Food] > 40 ? 1 : 0.5) * watered;   // thirsty towns grow slower
+                double births = Peasants * 0.04 * free * (ResAmt[Res.Food] > 40 * FoodScale ? 1 : 0.5) * watered;   // thirsty towns grow slower
                 PopAcc += births - Peasants * 0.004 + (Peasants < 2 ? 0.05 : 0);
                 while (PopAcc >= 1 && Peasants + Soldiers + returning < d.Civ) { Peasants++; PopAcc -= 1; }
                 if (PopAcc > 0.99) PopAcc = 0.99;

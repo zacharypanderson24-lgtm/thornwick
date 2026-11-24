@@ -202,7 +202,7 @@ namespace CrownAndHearth.Sim
             {
                 int n = i == produce.Count - 1 ? left : Math.Min(left, (int)Math.Round(total * produce[i].share / sum));
                 left -= n;
-                if (n > 0) list.Add((produce[i].res, n));
+                if (n > 0) list.Add((produce[i].res, n * TradeUnit(produce[i].res)));   // grain is counted in food units: 5 for every unit of other goods
             }
             return list;
         }

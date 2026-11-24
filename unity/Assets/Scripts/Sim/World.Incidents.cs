@@ -26,7 +26,7 @@ namespace CrownAndHearth.Sim
     public partial class World
     {
         public const int IncidentWaitDays = 10, FirstIncidentYear = 2;
-        public const int CaravanFoodGold = 30, CaravanFood = 30, CaravanSellMax = 50;
+        public const int CaravanFoodGold = 30, CaravanFood = 150, CaravanSellMax = 50;
 
         /// <summary>The card waiting for an answer, or null.</summary>
         public Incident CurrentIncident { get; private set; }

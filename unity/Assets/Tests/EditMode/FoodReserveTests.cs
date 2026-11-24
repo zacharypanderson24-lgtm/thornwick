@@ -14,26 +14,26 @@ namespace CrownAndHearth.Tests
             w.Peasants = 10;
             w.Soldiers = 0;
             w.ResAmt[Res.Food] = 0;
-            w.ResAmt[Res.SmokedMeat] = 10;
-            w.ResAmt[Res.Eggs] = 8;
-            Assert.That(w.EdibleFoodStored, Is.EqualTo(12));
+            w.ResAmt[Res.SmokedMeat] = 50;
+            w.ResAmt[Res.Eggs] = 40;
+            Assert.That(w.EdibleFoodStored, Is.EqualTo(90));   // 50 smoked meat + 40 eggs (an egg is a food)
             w.Tick();
             Assert.That(w.Starving, Is.False);
-            Assert.That(w.EdibleFoodStored, Is.EqualTo(10).Within(0.0001));
+            Assert.That(w.EdibleFoodStored, Is.EqualTo(80).Within(0.0001));   // ten villagers eat 10 a day
             w.Tick();
             Assert.That(w.Starving, Is.False);
-            Assert.That(w.EdibleFoodStored, Is.EqualTo(8).Within(0.0001));
+            Assert.That(w.EdibleFoodStored, Is.EqualTo(70).Within(0.0001));
         }
 
         [Test]
         public void MixedFoodReserveSurvivesSavingWithoutDoubleCountingFreshFood()
         {
             var w = new World(7);
-            w.ResAmt[Res.Food] = 17;
-            w.ResAmt[Res.SmokedMeat] = 9;
+            w.ResAmt[Res.Food] = 85;
+            w.ResAmt[Res.SmokedMeat] = 45;
             w.ResAmt[Res.Eggs] = 6;
             var loaded = World.LoadJson(w.SaveJson());
-            Assert.That(loaded.EdibleFoodStored, Is.EqualTo(27.5));
+            Assert.That(loaded.EdibleFoodStored, Is.EqualTo(136));   // 85 + 45 + 6 eggs
             Assert.That(loaded.EdibleFoodCapacity, Is.EqualTo(w.EdibleFoodCapacity));
         }
     }

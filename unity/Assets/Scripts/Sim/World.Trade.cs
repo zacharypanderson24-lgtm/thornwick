@@ -4,8 +4,8 @@ namespace CrownAndHearth.Sim
 {
     public partial class World
     {
-        public const int SiloFood = 1000, SiloFlax = 60;   // a silo holds about a year of food for 14 villagers (72 each)
-        const int TownFood = 100, TownFlax = 30, SeasonalTownFood = 260;
+        public const int SiloFood = 5000, SiloFlax = 60;   // a silo holds a year of food for 14 villagers (360 each)
+        const int TownFood = 100, TownFlax = 30, SeasonalTownFood = 1300;   // the Town Hall's store: 6 settlers for 216 days
 
         public int CropStorage(Res resource)
         {

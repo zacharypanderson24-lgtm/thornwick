@@ -113,19 +113,20 @@ namespace CrownAndHearth.Tests
             initial.AddBld("storehouse", c + 1, c + 4);
             initial.AddBld("road", c, c + 7);
             initial.AddBld("road", c, c + 8);
-            initial.AddBld("smokehouse", c + 1, c + 7);
-            initial.AddBld("charcoal", c + 1, c + 8);
-            initial.ResAmt[Res.Food] = 100;
+            initial.AddBld("road", c, c + 9);
+            initial.AddBld("smokehouse", c + 1, c + 7);   // 2 x 2: it covers c+1..c+2, c+7..c+8
+            initial.AddBld("charcoal", c + 1, c + 9);     // beside it, not on it
+            initial.ResAmt[Res.Food] = 600;               // 18 villagers eat 18 a day
             initial.ResAmt[Res.Logs] = 40;
             var saved = JObject.Parse(initial.SaveJson());
-            saved["freshMeat"] = 12;
+            saved["freshMeat"] = 60;
             var world = World.LoadJson(saved.ToString());
             Assert.That(world.CropStorage(Res.Wood), Is.EqualTo(Defs.Storage + World.StorehouseSpace));
             world.Tick();
             Assert.That(world.Blds.First(b => b.T == "storehouse").Workers, Is.EqualTo(2));
             Assert.That(world.ResAmt[Res.Charcoal], Is.EqualTo(2));
             Assert.That(world.ResAmt[Res.SmokedMeat], Is.EqualTo(World.SmokehouseRate));
-            Assert.That(world.FreshMeatStored, Is.LessThan(12));
+            Assert.That(world.FreshMeatStored, Is.LessThan(60));
             var legacy = JObject.Parse(world.SaveJson());
             foreach (var row in ((JArray)legacy["statistics"]).Cast<JArray>())
                 while (row.Count > 2 + (int)Res.Charcoal) row.RemoveAt(row.Count - 1);
