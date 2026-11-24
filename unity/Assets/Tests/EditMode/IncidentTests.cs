@@ -84,7 +84,7 @@ namespace CrownAndHearth.Tests
             buy.RaiseIncident("caravan");
             Assert.IsTrue(buy.ResolveIncident(1).Ok);
             Assert.AreEqual(70, buy.ResAmt[Res.Gold], 1e-9);
-            Assert.AreEqual(230, buy.ResAmt[Res.Food], 1e-9);
+            Assert.AreEqual(200 + World.CaravanFood, buy.ResAmt[Res.Food], 1e-9);
 
             var nothing = Town(); nothing.ResAmt[Res.Stone] = 0; nothing.ResAmt[Res.Wood] = 0; nothing.ResAmt[Res.Ore] = 0;
             nothing.RaiseIncident("caravan");

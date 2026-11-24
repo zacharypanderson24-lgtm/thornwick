@@ -26,11 +26,11 @@ namespace CrownAndHearth.Tests {
    var w=new World(7);w.AddBld("silo",200,200);w.Recalc();Assert.IsNull(At(w,"services").Check(w));FirstYearPlan.Build(w,"silo");Assert.AreEqual("services",At(w,"services").Check(w)?.Id);
    var lodge=FirstYearPlan.Build(w,"hunter");lodge.Workers=0;Assert.IsNull(At(w,"hunting").Check(w));w.Recalc();Assert.AreEqual("hunting",At(w,"hunting").Check(w)?.Id);
   }
-  [Test] public void StarterFoodDoesNotCountAsHarvest(){var w=new World(7);Assert.AreEqual(260,w.ResAmt[Res.Food]);Assert.IsNull(At(w,"harvest").Check(w));}
+  [Test] public void StarterFoodDoesNotCountAsHarvest(){var w=new World(7);Assert.AreEqual(1300,w.ResAmt[Res.Food]);Assert.IsNull(At(w,"harvest").Check(w));}
   [Test] public void SafetyRequiresSupportsAndAShallowLimit(){
    var w=new World(7);var t=At(w,"danger");Assert.IsNull(t.Check(w));w.SetMineSupportsRequired(true);Assert.IsNull(t.Check(w));w.SetShaftDepthLimit(1);Assert.AreEqual("danger",t.Check(w)?.Id);
   }
-  [Test] public void SmokedMeatAndEggsCountForTheReserveGoal(){var w=new World(7);w.ResAmt[Res.Food]=0;w.ResAmt[Res.SmokedMeat]=110;w.ResAmt[Res.Eggs]=8;Assert.AreEqual("reserve",At(w,"reserve").Check(w)?.Id);}
+  [Test] public void SmokedMeatAndEggsCountForTheReserveGoal(){var w=new World(7);w.ResAmt[Res.Food]=0;w.ResAmt[Res.SmokedMeat]=500;w.ResAmt[Res.Eggs]=60;Assert.AreEqual("reserve",At(w,"reserve").Check(w)?.Id);}
   [Test] public void PassingTimeAndStockpilingDoNotReplaceIndustryGoals(){var w=new World(7);w.Day=361;w.ResAmt[Res.Food]=4000;Assert.IsNull(At(w,"year").Check(w));}
  }
 }

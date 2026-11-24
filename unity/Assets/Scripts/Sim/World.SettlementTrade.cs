@@ -35,7 +35,7 @@ namespace CrownAndHearth.Sim
         /// <summary>What a unit of each good is worth in gold, before a settlement's mark-up or discount.</summary>
         public static double BasePrice(Res r) => r switch
         {
-            Res.Food => 1, Res.Logs => 1, Res.Wood => 2, Res.Stone => 2, Res.Flax => 2, Res.Ore => 3, Res.Wool => 3, Res.Metal => 8, _ => 2,
+            Res.Food => 0.2, Res.Logs => 1, Res.Wood => 2, Res.Stone => 2, Res.Flax => 2, Res.Ore => 3, Res.Wool => 3, Res.Metal => 8, _ => 2,
         };
 
         public int Markets => Blds.Count(b => b.T == "market" && b.Served);
@@ -46,7 +46,11 @@ namespace CrownAndHearth.Sim
         public static int MonthlyTrade(Settlement s) => (int)Math.Round(Math.Clamp((int)Math.Round(s.Population / 8), 10, 400) * (s.Devastated ? WasteFactor : 1));
 
         /// <summary>How much of one good it trades in a month: its share of the whole, a main good more than a side one (at least 5).</summary>
-        public static int MonthlyTrade(Settlement s, Res r) => Math.Max(5, (int)Math.Round(MonthlyTrade(s) * s.ShareOf(r) * 1.6));
+        public static int MonthlyTrade(Settlement s, Res r) => Math.Max(5, (int)Math.Round(MonthlyTrade(s) * s.ShareOf(r) * 1.6)) * TradeUnit(r);
+
+        /// <summary>Grain is counted in food units, 5 for every unit of anything else (one villager eats a food a day), so a "unit" of grain is a fifth
+        /// as big and a fifth the price (BasePrice), and caravans and monthly volumes carry five times as many.</summary>
+        public static int TradeUnit(Res r) => r == Res.Food ? 5 : 1;
 
         /// <summary>Gold you pay for one unit of a good it produces: cheap where it is plentiful (80% of its worth, its main goods cheapest),
         /// cheaper the more it likes you.</summary>
@@ -79,7 +83,7 @@ namespace CrownAndHearth.Sim
             var ok = CanTrade(s); if (!ok.Ok) return ok;
             var r = good ?? s.Makes;
             if (!s.Produces(r)) return Result.No($"{s.Name} does not produce {GoodName(r)}");
-            amount = Math.Min(Math.Min(amount, CaravanLoad), LeftToBuy(s, r));
+            amount = Math.Min(Math.Min(amount, CaravanLoad * TradeUnit(r)), LeftToBuy(s, r));
             if (amount <= 0) return Result.No($"{s.Name} has no more {GoodName(r)} to sell this month");
             int cost = (int)Math.Ceiling(amount * PriceToBuy(s, r));
             if (ResAmt[Res.Gold] < cost) return Result.No($"That costs {cost} gold; you have {ResAmt[Res.Gold]:0}");
@@ -95,7 +99,7 @@ namespace CrownAndHearth.Sim
             var ok = CanTrade(s); if (!ok.Ok) return ok;
             var r = good ?? s.Needs;
             if (!s.Wanting(r)) return Result.No($"{s.Name} does not need {GoodName(r)}");
-            amount = Math.Min(Math.Min(amount, CaravanLoad), LeftToSell(s, r));
+            amount = Math.Min(Math.Min(amount, CaravanLoad * TradeUnit(r)), LeftToSell(s, r));
             if (amount <= 0) return Result.No($"{s.Name} wants no more {GoodName(r)} this month");
             if (ResAmt[r] < amount) return Result.No($"You have only {ResAmt[r]:0} {GoodName(r)}");
             int gold = (int)Math.Floor(amount * PriceToSell(s, r));

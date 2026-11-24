@@ -919,6 +919,15 @@ namespace CrownAndHearth.Game
 
         bool _tipWarn;   // the cursor tip is a warning (amber): set by CursorTip
 
+        // the placement forecast for the tile under the mouse, kept until the mouse, the tool or the world changes (it walks the crews' paths)
+        (string type, int x, int y, int version) _forecastKey; Forecast _forecastValue;
+        Forecast ForecastAt(string type, int x, int y)
+        {
+            var key = (type, x, y, World.Version);
+            if (_forecastValue == null || _forecastKey != key) { _forecastValue = World.ForecastPlacement(type, x, y); _forecastKey = key; }
+            return _forecastValue;
+        }
+
         /// <summary>The line beside the mouse: what a click will do here, or why it cannot (bad = red).</summary>
         (string text, bool bad) CursorTip()
         {
@@ -955,8 +964,12 @@ namespace CrownAndHearth.Game
                     if (f.Trend == "Drawing down" || f.Trend == "Dry" || f.ToHomes + f.ToStorage < 0.05) _tipWarn = true;
                 }
                 else if (_tool.Build == "cistern") water = "\n" + CisternTip(h);
+                // what it would make right here, in food or goods a day (World.Forecast.cs): moving the mouse shows which spots are good
+                var forecast = ForecastAt(_tool.Build, h.x, h.y);
+                if (forecast.Warn) _tipWarn = true;
+                string made = forecast.Lines.Count > 0 ? "\n" + forecast.Text : "";
                 // water tips run long: one fact per line, so the tip stays narrow
-                return ($"Click to build: {Hud.CostText(_tool.Build)}" + (warn != null ? (water.Length > 0 ? "\n" : ". ") + warn : "") + water, false);
+                return ($"Click to build: {Hud.CostText(_tool.Build)}" + (warn != null ? (water.Length > 0 || made.Length > 0 ? "\n" : ". ") + warn : "") + water + made, false);
             }
             if (_tool.Zone != Zone.None)
             {

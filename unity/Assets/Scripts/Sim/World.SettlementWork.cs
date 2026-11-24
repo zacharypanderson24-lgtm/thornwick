@@ -40,15 +40,19 @@ namespace CrownAndHearth.Sim
     public partial class World
     {
         public const int StorehouseSpace = 80, HaulPerWorker = 4, StarterLivestockGold = 5;
-        public const int LogsPerCharcoal = 2, SmokehouseRate = 3;
-        public const int EggsPerChicken = 1, WoolPerSheep = 1, EggsPerFood = 4, EggStorage = 80;
-        /// <summary>A hen lays an egg every this many days (with EggsPerFood 4: a twelfth of a food a day).</summary>
+        /// <summary>A smokehouse worker preserves this much fresh meat a day (15 food: meat for 15 villagers).</summary>
+        public const int LogsPerCharcoal = 2, SmokehouseRate = 15;
+        /// <summary>Food one log of fuel smokes.</summary>
+        public const int FoodPerSmokeLog = 20;
+        public const int EggsPerChicken = 1, WoolPerSheep = 1, EggsPerFood = 1, EggStorage = 80;
+        /// <summary>A hen lays an egg every this many days (an egg is a food: a third of a food a day).</summary>
         public const int DaysPerEgg = 3;
         /// <summary>Every pen with animals needs one keeper from the farming trade.</summary>
         public const int KeepersPerPen = 1;
         /// <summary>A pen that needs a keeper: it has animals and a road to the Town Hall.</summary>
         bool PenNeedsKeeper(LivestockPen pen) => pen.Count > 0 && PenHasRoad(pen);
-        public const double WheatPerAnimalPerDay = 0.06;
+        /// <summary>Wheat an animal eats a day (a hen lays a third of a food a day on 0.2, so it earns its keep).</summary>
+        public const double WheatPerAnimalPerDay = 0.2;
         readonly Dictionary<int, LivestockPen> _penTiles = new();
         readonly List<LivestockPen> _pens = new();
         double _freshMeat;
@@ -58,7 +62,7 @@ namespace CrownAndHearth.Sim
         public LivestockPen PenAt(int x, int y) => Inb(x, y) && _penTiles.TryGetValue(Tk(x, y), out var pen) ? pen : null;
         public static bool IsLivestockZone(Zone kind) => kind == Zone.Pigs || kind == Zone.Sheep || kind == Zone.Chickens;
         public static int TilesPerAnimal(Zone kind) => kind switch { Zone.Pigs => 3, Zone.Sheep => 2, _ => 1 };
-        public static int MeatPerAnimal(Zone kind) => kind switch { Zone.Pigs => 4, Zone.Sheep => 3, _ => 1 };
+        public static int MeatPerAnimal(Zone kind) => kind switch { Zone.Pigs => 20, Zone.Sheep => 15, _ => 5 };
         public bool PenHasRoad(LivestockPen pen) => pen.Tiles().Any(t => BesideConnectedRoad(t.x, t.y));
 
         public Result CanBuyLivestock(LivestockPen pen)
@@ -185,11 +189,11 @@ namespace CrownAndHearth.Sim
             foreach (var b in Blds.Where(b => b.T == "smokehouse" && b.Served && b.Workers > 0))
             {
                 double kept = Math.Min(Math.Min(FreshMeatStored, SmokehouseRate * b.Eff),
-                    Math.Min(ResAmt[Res.Logs] * 4, CropStorage(Res.SmokedMeat) - ResAmt[Res.SmokedMeat]));
+                    Math.Min(ResAmt[Res.Logs] * FoodPerSmokeLog, CropStorage(Res.SmokedMeat) - ResAmt[Res.SmokedMeat]));
                 if (kept <= 0) continue;
                 _freshMeat = FreshMeatStored - kept;
                 ResAmt[Res.Food] -= kept;
-                ResAmt[Res.Logs] -= kept / 4;
+                ResAmt[Res.Logs] -= kept / FoodPerSmokeLog;
                 ResAmt[Res.SmokedMeat] += kept;
             }
         }

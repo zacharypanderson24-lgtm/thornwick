@@ -9,8 +9,8 @@ namespace CrownAndHearth.Sim
     {
         const int StarterFieldRange = 3;   // only where the starting farm gets its first fields
         const int FieldsPerWorker = 2;
-        /// <summary>Seasonal farming: one farmer sows, tends and reaps this many fields a year (9 x 85 = 765 food: about 10 people, who eat
-        /// 72 a year each).</summary>
+        /// <summary>Seasonal farming: one farmer sows, tends and reaps this many fields a year (9 x 400 = 3,600 food: exactly 10 people, who
+        /// eat 1 food a day, 360 a year, each).</summary>
         public const int FieldsPerFarmer = 9;
         /// <summary>A farm only works Farmland within this many tiles of its farmhouse (shown as a shaded ring); farther fields lie fallow.
         /// A full 2x2 farmhouse (10 farmers, 90 fields) fits comfortably inside it.</summary>
@@ -127,11 +127,17 @@ namespace CrownAndHearth.Sim
 
         public bool SeasonalFarming => Style != TerrainStyle.Classic;
         public const int SeasonLength = 90, YearLength = 360, WheatGrowth = 100, FlaxGrowth = 125;
-        public const int WheatYield = 85, FlaxYield = 30;
+        public const int WheatYield = 400, FlaxYield = 30;
         public int YearDay => (Math.Max(1, Day) - 1) % YearLength + 1;
         public int Year => (Math.Max(1, Day) - 1) / YearLength + 1;
         public string Season => YearDay <= 90 ? "Spring" : YearDay <= 180 ? "Summer" : YearDay <= 270 ? "Autumn" : "Winter";
-        public double DailyFoodDemand => (Peasants + Soldiers * 1.5) * 0.2;
+        /// <summary>FOOD UNITS (Zach's rule): one villager eats FoodPerPerson = 1 food a day, so every food number reads as "villagers fed":
+        /// 100 food is 100 villager-days. Every food quantity in the Unity game (crop yields, hunting loads, storage, meat, loot) is in these
+        /// units. The browser-parity Classic style keeps the old 0.2 a head and its own numbers.</summary>
+        public const double FoodPerPerson = 1.0, ClassicFoodPerPerson = 0.2, SoldierFoodFactor = 1.5;
+        /// <summary>How many of today's food units one old (0.2 a head) unit became: for thresholds that were written in old units.</summary>
+        public double FoodScale => SeasonalFarming ? FoodPerPerson / ClassicFoodPerPerson : 1.0;
+        public double DailyFoodDemand => (Peasants + Soldiers * SoldierFoodFactor) * (SeasonalFarming ? FoodPerPerson : ClassicFoodPerPerson);
         int YearStart => Day - YearDay + 1;
 
         // Signed planting day (negative for flax). Zero marks harvested soil awaiting preparation.
