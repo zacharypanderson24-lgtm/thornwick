@@ -180,6 +180,31 @@ namespace CrownAndHearth.Sim
             return Result.Yes();
         }
 
+        /// <summary>Create a company in one step (the Create Company wizard): a troop type, a name and a starting strength. Militia register their men at once;
+        /// professionals set their target and join over the next days. Returns the new company id in Result.Count.</summary>
+        public Result CreateCompany(MilitaryUnitType unit, string name, int strength)
+        {
+            var def = TroopDefinitions.Get(unit);
+            strength = Math.Clamp(strength, 1, def.MaxCompany);
+            if (def.Levy)
+            {
+                if (MusterCapacity <= 0) return Result.No("Muster Ground required");
+                if (AvailableToServe <= 0) return Result.No("No eligible residents available");
+                if (Registered >= MusterCapacity) return Result.No("Muster ground capacity reached");
+            }
+            else
+            {
+                if (def.Era > _w.Era) return Result.No($"{def.Name} needs a later era");
+                if (Barracks == 0) return Result.No("Barracks required");
+                if (AvailableToServe <= 0) return Result.No("No eligible residents available");
+            }
+            var c = NewCompany(def.Levy ? MilitaryCategory.Militia : MilitaryCategory.Professional, unit);
+            Rename(c.Id, string.IsNullOrWhiteSpace(name) ? MilitaryUi.DefaultName(_w, unit) : name);
+            if (def.Levy) { var r = RegisterMilitia(strength, c.Id); if (!r.Ok) { Companies.Remove(c); _w.Touch(); return r; } }
+            else { c.Target = strength; _w.Touch(); }
+            return Result.Yes(c.Id);
+        }
+
         public Result Rename(int id, string name)
         {
             var c = Find(id); if (c == null) return Result.No("No such company");
