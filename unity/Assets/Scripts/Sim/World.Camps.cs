@@ -38,6 +38,9 @@ namespace CrownAndHearth.Sim
         public const int RaidPaceCamps = 7;
         /// <summary>Camps leave a town alone until it has this many people (peasants and soldiers); tests lower it.</summary>
         public int RaidMinPopulation = 20;
+        /// <summary>How many times longer camps wait between raids than the original pacing. 1 = the old pace (about 13 raids a game year with
+        /// 7+ camps in reach); 5 = about 2 to 3 a year. Tests that wait for a warband set it to 1.</summary>
+        public double RaidSlowdown = 5;
 
         List<RaiderCamp> _camps = new List<RaiderCamp>();
         readonly Dictionary<int, int> _nextCampRaid = new Dictionary<int, int>();   // runtime: the day each camp raids next
@@ -171,9 +174,9 @@ namespace CrownAndHearth.Sim
             {
                 int km = CampKm(c);
                 if (km > RaidFarKm) continue;
-                if (!_nextCampRaid.TryGetValue(c.Id, out int due)) { _nextCampRaid[c.Id] = Day + (int)((60 + Noise.Hash2(c.Id, Day, 94) * 120) * spread) + km / 2; continue; }
+                if (!_nextCampRaid.TryGetValue(c.Id, out int due)) { _nextCampRaid[c.Id] = Day + (int)((60 + Noise.Hash2(c.Id, Day, 94) * 120) * spread * RaidSlowdown) + km / 2; continue; }
                 if (Day < due) continue;
-                _nextCampRaid[c.Id] = Day + (int)((160 - 14 * c.Strength + Noise.Hash2(c.Id, Day, 95) * 60) * spread) + km / 2;
+                _nextCampRaid[c.Id] = Day + (int)((160 - 14 * c.Strength + Noise.Hash2(c.Id, Day, 95) * 60) * spread * RaidSlowdown) + km / 2;
                 // a camp that lost raiders (to your soldiers, or out on another raid) sends a smaller band, or none until it has recovered
                 int band = 3 + 2 * c.Strength - CampRaidersLost(c) - CampRaidersAway(c);
                 if (band < 2) continue;
