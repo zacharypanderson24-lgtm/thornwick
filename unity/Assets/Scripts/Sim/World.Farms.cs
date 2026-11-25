@@ -229,12 +229,12 @@ namespace CrownAndHearth.Sim
             {
                 var kind = CrewKind(b.T); if (kind == Deco.None || b.T == "hunter") continue;
                 int n = 0;
+                if (b.T == "mine") { _workTiles[b] = MineWorkTiles(b); continue; }   // the zoned ground its tunnel could reach, plus ore at its face
                 for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
                     for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
                     {
                         if (!Inb(i, j)) continue;
-                        // a mine's work: Mining-zone tiles still to survey or holding known ore; the others: what a crew can fell or cut
-                        if (b.T == "mine" ? InMineReach(i, j) && (!Surveyed[Tk(i, j)] || HasKnownOre(i, j)) : CrewMatch(kind, i, j)) n++;
+                        if (CrewMatch(kind, i, j)) n++;   // what a crew can fell or cut
                     }
                 _workTiles[b] = n;
             }

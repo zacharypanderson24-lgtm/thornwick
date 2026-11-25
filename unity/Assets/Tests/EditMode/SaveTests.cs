@@ -34,7 +34,8 @@ namespace CrownAndHearth.Tests
             var site = System.Linq.Enumerable.Range(0, Defs.N * Defs.N).Select(k => (x: k % Defs.N, y: k / Defs.N))
                 .First(t => original.CanPlace("mine", t.x, t.y).Ok && Math.Abs(t.x - Defs.Start) > 8);
             var mine = original.AddBld("mine", site.x, site.y); original.Recalc();
-            mine.Adit = true; mine.AditShored = true; mine.Depth = 2; mine.Shored = 1; mine.DigProg = 7; mine.Closed = 4; mine.CaveIns = 1;
+            int t0 = World.Tk(site.x + 2, site.y), t1 = World.Tk(site.x + 3, site.y);
+            mine.Tunnel.Add(t0); mine.Tunnel.Add(t1); mine.Shored.Add(t0); mine.DigProg = 7; mine.Closed = 4; mine.CaveIns = 1;
             var rich = System.Linq.Enumerable.Range(0, Defs.N * Defs.N).First(k => original.OreAt(k % Defs.N, k / Defs.N, 3) > 10);
             original.Surveyed[rich] = true; original.Surveyed[rich + 1] = true;
             original.OreTaken[3 * Defs.N * Defs.N + rich] = 6.5;
@@ -45,12 +46,15 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(Relief.Highland, loaded.Relief);
             Assert.That(loaded.SaveJson(), Is.EqualTo(original.SaveJson()), "save, load, save gives the same file");
             var m = loaded.Grid[site.y, site.x];
-            Assert.That((m.Adit, m.AditShored, m.Depth, m.Shored, m.DigProg, m.Closed, m.CaveIns), Is.EqualTo((true, true, 2, 1, 7, 4, 1)));
+            Assert.That((m.DigProg, m.Closed, m.CaveIns), Is.EqualTo((7, 4, 1)));
+            CollectionAssert.AreEqual(new[] { t0, t1 }, m.Tunnel, "the tunnel, in the order it was dug");
+            CollectionAssert.AreEqual(new[] { t0 }, m.Shored, "which tiles are shored");
+            Assert.IsTrue(loaded.IsTunnel(site.x + 2, site.y), "tunnel tiles are solid ground after loading");
             Assert.IsTrue(loaded.IsSurveyed(rich % Defs.N, rich / Defs.N));
             for (int k = 0; k < Defs.N * Defs.N; k++)
                 for (int band = 1; band <= World.Bands; band++)
                     Assert.AreEqual(original.OreAt(k % Defs.N, k / Defs.N, band), loaded.OreAt(k % Defs.N, k / Defs.N, band), $"deposit at tile {k} band {band}");
-            Assert.AreEqual(original.NeedShaft(mine, rich % Defs.N, rich / Defs.N, 3), loaded.NeedShaft(m, rich % Defs.N, rich / Defs.N, 3), "mining heights are the generated ones, not the levelled ground");
+            Assert.AreEqual(original.GenLevel(rich % Defs.N, rich / Defs.N), loaded.GenLevel(rich % Defs.N, rich / Defs.N), "mining heights are the generated ones, not the levelled ground");
         }
 
         [TestCase(40, false)]

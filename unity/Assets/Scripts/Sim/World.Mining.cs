@@ -1,24 +1,18 @@
-// Underground mining (Unity-only; the browser prototype still mines surface ore tiles). Design: DESIGN_TERRAIN.md section 3 and
-// Zach's mining decisions: ore lives in a hidden underground layer, mines dig to reach it (deeper = richer), cave-ins are a real
-// risk unless timber supports are supplied, and crowding raises the risk. Choices made 2026-11-16:
-//   - miners survey Mining zones (no prospector building); a cave-in closes the mine and can kill a miner;
-//   - (rework) ore lies in hills and mountains, not lowland; mines at the foot of high ground drive an ADIT (a level tunnel) into it,
-//     which is cheaper and safer than a shaft; quarries and mines share a mountain (stone from its face, ore from inside);
-//     surface showings sit on hill flanks over real ore.
+// Tunnel mining (Unity-only; the browser prototype still mines surface ore tiles). Design: DESIGN_TERRAIN.md section 3 and Zach's
+// rework: a mine digs a TUNNEL, tile by tile, into the Mining zone you paint, and you can see it growing.
 //
-//   Deposits  every tile holds iron in BANDS 1..Bands, counted down from that tile's own surface (band 1 just under it, band 3
-//             deepest, and richest). Only hills and mountains hold any; mountains most. Generated once from the seed and the
-//             starting terrain; only what has been surveyed (Surveyed) and taken (OreTaken) is state. The heights used for mining
-//             are frozen at generation (_genLevel), so quarrying a hill or mountain face does not move or destroy its ore.
-//   Reaching  a mine works Mining-zone tiles within WorkR. A band lies `rise` levels above the mine's floor when its tile stands
-//             higher: NeedShaft = band - rise (floored at 0). 0 means the band is level with or above the floor and is reached
-//             through the mine's adit; otherwise the shaft must reach that depth (at most MaxDepth). So a mine at a mountain's foot
-//             reaches every band through its adit, and lowland would need shafts (but holds no ore).
-//   Work      miners survey zone tiles first (walking, WorkT days each, reveals all bands of a 3x3 patch), then dig what is needed (the adit first,
-//             else the shaft one level deeper), then go underground and bring up loads by band (MineLoad: richer bands, bigger loads).
-//   Supports  the adit and each shaft level are shored with wood (AditWood, SupportWood) as soon as the store has it.
-//   Cave-ins  each worker-day underground rolls CaveInChance: base x (shaft depth, or AditRisk in the adit) x crowding, x ShoredFactor
-//             where shored. A cave-in closes the mine for RepairDays, smashes the supports where it happened and can kill the miner.
+//   Zone      paint Mining ground that touches the mine (its walls are where the tunnel starts). The tunnel only runs through
+//             zoned tiles joined to the mine. Hills and mountains are the point: ore lies in them, not in the lowland.
+//   Digging   miners dig the next tunnel tile for TileDigDays worker-days. The tunnel is drawn as dark tiles (brown timber
+//             where shored). Each tile dug reveals the ore around it (RevealR tiles); the miners head for known ore, else uphill.
+//   Ore       hidden deposits (generated from the seed, in bands 1..Bands under each hill tile; hills and mountains only, mountains
+//             richest). Miners take ore from the walls: the dug tile and its neighbours (WallR). When the face has no ore left
+//             to pick, the tunnel moves on. Longer tunnels mean longer trips underground.
+//   Supports  each tunnel tile is shored with TileWood timber as soon as the store has it. With "require supports" on, miners
+//             wait for timber instead of working an unshored tunnel.
+//   Cave-ins  each worker-day underground rolls CaveInChance: base x tunnel length x how much of it is unshored x crowding. A
+//             cave-in closes the mine for RepairDays, smashes the supports at the far end and can kill a miner.
+//   A mine's entrance still faces away from the hill and needs its road in front (MineFaceAt, EntranceServed).
 using System;
 using System.Collections.Generic;
 using static CrownAndHearth.Sim.Defs;
@@ -27,49 +21,36 @@ namespace CrownAndHearth.Sim
 {
     public partial class World
     {
-        public const int Bands = 3, MaxDepth = 3;
-        /// <summary>Ore a miner brings up per trip from band 1..3 (index 0 unused). Band 1 matches the old surface mine load.</summary>
+        public const int Bands = 3;
+        /// <summary>Ore a miner brings up per trip from band 1..3 (index 0 unused).</summary>
         public static readonly int[] MineLoad = { 0, 4, 6, 8 };
-        /// <summary>Days underground per trip, by band: about 0.5 / 0.6 / 0.67 ore per worker-day.</summary>
-        public static readonly int[] MineTripDays = { 0, 8, 10, 12 };
-        /// <summary>Worker-days to dig the shaft down to level 1..3; the adit is a one-off AditWork.</summary>
-        public static readonly int[] DigWork = { 0, 12, 24, 40 };
-        public const int AditWork = 10;
-        /// <summary>Wood to shore shaft level 1..3; the adit takes AditWood.</summary>
-        public static readonly int[] SupportWood = { 0, 6, 10, 16 };
-        public const int AditWood = 6;
+        /// <summary>Days underground per ore trip: TripBase + the band + 2 per tile the face is from the mine.</summary>
+        public const int TripBase = 5;
+        /// <summary>Worker-days to dig one tunnel tile, and the timber to shore it.</summary>
+        public const int TileDigDays = 6, TileWood = 2;
         /// <summary>Most ore a tile can hold in band 1..3.</summary>
         public static readonly int[] LevelCapMax = { 0, 30, 50, 80 };
-        public const int DigStint = 4, RepairDays = 20;
-        /// <summary>A survey trip reveals the target tile and its neighbours within this Chebyshev radius (1 = a 3x3 patch).</summary>
-        public const int SurveyR = 1;
-        public const double CaveBase = 0.0008, CrowdStep = 0.5, ShoredFactor = 0.15, AditRisk = 0.5;
+        public const int DigStint = 3, RepairDays = 20;
+        /// <summary>Digging a tile reveals the deposits within this many tiles (2 = a 5x5 patch).</summary>
+        public const int RevealR = 2;
+        /// <summary>Miners pick ore from the dug tile and from tiles this close to it (1 = the walls around it).</summary>
+        public const int WallR = 1;
+        public const double CaveBase = 0.0008, CrowdStep = 0.5, ShoredFactor = 0.15, LengthStep = 0.1;
         public const double KillChanceShored = 0.25, KillChanceUnshored = 0.6;
         /// <summary>Multiplies every cave-in chance (1 in play; tests raise it to force a cave-in).</summary>
         public double CaveInRiskScale = 1;
 
-        public int ShaftDepthLimit { get; private set; } = MaxDepth;
         public bool RequireMineSupports { get; private set; }
 
-        public void SetShaftDepthLimit(int depth) => ShaftDepthLimit = Math.Clamp(depth, 0, MaxDepth);
-
         public void SetMineSupportsRequired(bool required) => RequireMineSupports = required;
-
-        bool MineCanStart(Building mine, int depth, bool digging)
-        {
-            if (depth > ShaftDepthLimit) return false;
-            // Creating a passage cannot require supports in that passage before it exists.
-            return !RequireMineSupports || (digging
-                ? depth <= 1 || ShoredFor(mine, depth - 1)
-                : ShoredFor(mine, depth));
-        }
 
         readonly short[][] _oreCap = new short[Bands + 1][];
         float[] _genLevel;                    // tile heights when the deposits were laid down (mining geometry never changes)
         public readonly Dictionary<int, double> OreTaken = new Dictionary<int, double>();   // key: band * N * N + y * N + x
+        /// <summary>Tiles whose ore is known (revealed by digging beside them). Saves from before tunnels keep what was surveyed.</summary>
         public readonly bool[] Surveyed = new bool[N * N];
         public int MinerDeaths, CaveIns;
-        /// <summary>Messages for the player (cave-ins, new levels, empty surveys). The game shows and clears them.</summary>
+        /// <summary>Messages for the player (cave-ins, tunnel milestones, empty surveys). The game shows and clears them.</summary>
         public readonly List<string> Events = new List<string>();
 
         // ---------- Geology ----------
@@ -118,32 +99,156 @@ namespace CrownAndHearth.Sim
         /// <summary>The tile's height when the map was made (what mining uses; quarrying does not change it).</summary>
         public double GenLevel(int x, int y) => _genLevel[Tk(x, y)];
         public bool IsSurveyed(int x, int y) => Surveyed[Tk(x, y)];
-        /// <summary>Ore the player knows about at a tile and band: 0 until the tile is surveyed.</summary>
+        /// <summary>Ore the player knows about at a tile and band: 0 until a tunnel has been dug beside it.</summary>
         public double KnownOre(int x, int y, int band) => Surveyed[Tk(x, y)] ? OreAt(x, y, band) : 0;
         public bool HasKnownOre(int x, int y) { for (int l = 1; l <= Bands; l++) if (KnownOre(x, y, l) > 1e-9) return true; return false; }
 
-        /// <summary>How far down the mine's shaft must go to reach this band of this tile: 0 = through the adit (the band lies level
-        /// with or above the mine's floor because the tile stands higher), else the shaft level needed (may exceed MaxDepth).</summary>
-        public int NeedShaft(Building b, int x, int y, int band)
+        // ---------- Tunnels ----------
+        readonly HashSet<int> _tunnelTiles = new HashSet<int>(); int _tunnelVersion = -1;
+        void RefreshTunnelTiles()
         {
-            int rise = (int)Math.Floor(_genLevel[Tk(x, y)] - _genLevel[Tk(b.X, b.Y)] + 1e-9);
-            return Math.Max(0, band - Math.Max(0, rise));
+            if (_tunnelVersion == Version) return;
+            _tunnelVersion = Version; _tunnelTiles.Clear();
+            foreach (var b in Blds) if (b.T == "mine") foreach (int k in b.Tunnel) _tunnelTiles.Add(k);
         }
-        bool Reachable(Building b, int need) => need == 0 ? b.Adit : need <= b.Depth;
-        /// <summary>Are the supports in place where miners work at this need (0 = the adit, else that shaft level)?</summary>
-        public bool ShoredFor(Building b, int need) => need == 0 ? b.AditShored : need <= b.Shored;
+        /// <summary>Has a mine dug this tile? (A tunnel is solid ground to everything else: nothing is built or quarried on it.)</summary>
+        public bool IsTunnel(int x, int y) { if (!Inb(x, y)) return false; RefreshTunnelTiles(); return _tunnelTiles.Count > 0 && _tunnelTiles.Contains(Tk(x, y)); }
+        public bool IsShored(Building b, int x, int y) => b.Shored.Contains(Tk(x, y));
+        static int MCheb(int x, int y, int ax, int ay) => Math.Max(Math.Abs(x - ax), Math.Abs(y - ay));
 
-        /// <summary>Chance that one worker-day underground ends in a cave-in, where `need` is 0 (adit) or the shaft level worked.</summary>
-        public double CaveInChance(Building b, int need, int underground)
+        bool Diggable(Building b, int x, int y)
         {
+            if (!Inb(x, y) || ZoneMap[y, x] != Zone.Mine || Grid[y, x] != null || !Claimed(x, y) || IsTunnel(x, y)) return false;
+            if (x < b.X - WorkR || x > b.X + b.Sz - 1 + WorkR || y < b.Y - WorkR || y > b.Y + b.Sz - 1 + WorkR) return false;
+            var d = DecoMap[y, x];
+            return d != Deco.Tree && d != Deco.Sapling;
+        }
+
+        static readonly int[,] Nb4 = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
+
+        /// <summary>Every tile the tunnel could be driven to next: zoned and diggable, touching the mine or its tunnel.</summary>
+        void Frontier(Building b, List<int> into)
+        {
+            into.Clear();
+            var seen = new HashSet<int>();
+            void Around(int cx, int cy)
+            {
+                for (int k = 0; k < 4; k++)
+                {
+                    int x = cx + Nb4[k, 0], y = cy + Nb4[k, 1];
+                    if (Diggable(b, x, y) && seen.Add(Tk(x, y))) into.Add(Tk(x, y));
+                }
+            }
+            foreach (var (x, y) in b.Tiles()) Around(x, y);
+            foreach (int t in b.Tunnel) Around(t % N, t / N);
+        }
+
+        readonly List<int> _front = new List<int>();
+
+        /// <summary>The tile to dig next: next to known ore if there is any, else heading uphill, then nearest the mine. -1 = none.</summary>
+        int NextDigTile(Building b)
+        {
+            Frontier(b, _front);
+            int best = -1; double bs = double.MinValue;
+            foreach (int k in _front)
+            {
+                int x = k % N, y = k / N;
+                double s = _genLevel[k] * 3 - MCheb(x, y, b.X, b.Y) * 0.5;
+                int nearest = 99;
+                for (int j = y - 3; j <= y + 3; j++)
+                    for (int i = x - 3; i <= x + 3; i++)
+                        if (Inb(i, j) && HasKnownOre(i, j)) nearest = Math.Min(nearest, MCheb(i, j, x, y));
+                if (nearest <= 3) s += (4 - nearest) * 30;
+                if (s > bs + 1e-9) { bs = s; best = k; }
+            }
+            return best;
+        }
+
+        /// <summary>How many tiles a mine could work: zoned ground its tunnel could still reach, plus tunnel faces with ore to pick.
+        /// (Sets how many jobs it needs.)</summary>
+        int MineWorkTiles(Building b)
+        {
+            int n = 0;
+            Frontier(b, _front);
+            var seen = new HashSet<int>(_front); var queue = new Queue<int>(_front);
+            while (queue.Count > 0)
+            {
+                int k = queue.Dequeue(); n++;
+                for (int d = 0; d < 4; d++)
+                {
+                    int x = k % N + Nb4[d, 0], y = k / N + Nb4[d, 1];
+                    if (Diggable(b, x, y) && seen.Add(Tk(x, y))) queue.Enqueue(Tk(x, y));
+                }
+            }
+            return n + OreTilesNearTunnel(b);
+        }
+
+        int OreTilesNearTunnel(Building b)
+        {
+            if (b.Tunnel.Count == 0) return 0;
+            var seen = new HashSet<int>(); int n = 0;
+            foreach (int t in b.Tunnel)
+                for (int j = t / N - WallR; j <= t / N + WallR; j++)
+                    for (int i = t % N - WallR; i <= t % N + WallR; i++)
+                        if (Inb(i, j) && Claimed(i, j) && HasKnownOre(i, j) && seen.Add(Tk(i, j))) n++;
+            return n;
+        }
+
+        /// <summary>The best ore the tunnel's walls offer right now: the richest band, then the most ore, nearer trips first.</summary>
+        bool PickOre(Building b, out int tx, out int ty, out int band)
+        {
+            tx = ty = band = -1; double best = double.MinValue;
+            foreach (int t in b.Tunnel)
+                for (int j = t / N - WallR; j <= t / N + WallR; j++)
+                    for (int i = t % N - WallR; i <= t % N + WallR; i++)
+                    {
+                        if (!Inb(i, j) || !Claimed(i, j)) continue;
+                        for (int l = Bands; l >= 1; l--)
+                        {
+                            double o = KnownOre(i, j, l); if (o <= 1e-9) continue;
+                            double score = l * 1000 + o - 30 * MCheb(i, j, b.X, b.Y);
+                            if (score > best) { best = score; tx = i; ty = j; band = l; }
+                        }
+                    }
+            return band > 0;
+        }
+
+        bool TookOreInReach(Building b)
+        {
+            foreach (int t in b.Tunnel)
+                for (int j = t / N - WallR; j <= t / N + WallR; j++)
+                    for (int i = t % N - WallR; i <= t % N + WallR; i++)
+                        if (Inb(i, j)) for (int l = 1; l <= Bands; l++) if (OreTaken.ContainsKey(OreKey(l, Tk(i, j)))) return true;
+            return false;
+        }
+
+        /// <summary>With "require supports" on, miners work only a fully shored tunnel.</summary>
+        bool MineSafe(Building b) => !RequireMineSupports || b.Shored.Count >= b.Tunnel.Count;
+
+        /// <summary>Chance that one worker-day underground ends in a cave-in: longer tunnels and unshored stretches are worse, and so is
+        /// a crowd.</summary>
+        public double CaveInChance(Building b, int underground)
+        {
+            int len = Math.Max(1, b.Tunnel.Count), shored = Math.Min(len, b.Shored.Count);
+            double exposure = ((len - shored) + ShoredFactor * shored) / len;
             double crowd = 1 + CrowdStep * Math.Max(0, underground - 1);
-            return CaveBase * (need == 0 ? AditRisk : need) * crowd * (ShoredFor(b, need) ? ShoredFactor : 1) * CaveInRiskScale;
+            return CaveBase * (1 + LengthStep * len) * exposure * crowd * CaveInRiskScale;
+        }
+
+        /// <summary>Take up to `amount` ore from one band of one tile.</summary>
+        double TakeOre(int x, int y, int band, double amount)
+        {
+            double e = Math.Min(amount, OreAt(x, y, band)); if (e <= 1e-9) return 0;
+            int key = OreKey(band, Tk(x, y));
+            OreTaken[key] = (OreTaken.TryGetValue(key, out var t) ? t : 0) + e;
+            Touch();
+            return e;
         }
 
         // ---------- The mine's entrance ----------
         /// <summary>
         /// Which way a mine at (x, y) opens (world face 0 = +y, 1 = -x, 2 = -y, 3 = +x): straight away from the high ground in its reach,
-        /// so the adit runs into the hill and the mouth opens downhill. -1 when there is no high ground nearby (the door then faces
+        /// so the tunnel runs into the hill and the mouth opens downhill. -1 when there is no high ground nearby (the door then faces
         /// the road like any building's).
         /// </summary>
         public int MineFaceAt(int x, int y, int size = 1)
@@ -182,89 +287,17 @@ namespace CrownAndHearth.Sim
         // ---------- The mine's reach ----------
         bool InMineReach(int x, int y) => Inb(x, y) && ZoneMap[y, x] == Zone.Mine && Claimed(x, y);
 
-        /// <summary>The best ore the mine can work right now: the richest band, then the most ore. False when nothing is reachable.</summary>
-        bool PickOre(Building b, out int tx, out int ty, out int band, out int need)
-        {
-            tx = ty = band = need = -1; double best = 0;
-            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
-                {
-                    if (!InMineReach(i, j)) continue;
-                    for (int l = Bands; l >= 1; l--)
-                    {
-                        double o = KnownOre(i, j, l); if (o <= 1e-9) continue;
-                        int nd = NeedShaft(b, i, j, l); if (!Reachable(b, nd) || !MineCanStart(b, nd, false)) continue;
-                        double score = l * 1000 + o;
-                        if (score > best) { best = score; tx = i; ty = j; band = l; need = nd; }
-                    }
-                }
-            return band > 0;
-        }
-
-        /// <summary>What to dig next towards known ore: 0 = the adit, 1..MaxDepth = that shaft level, -1 = nothing worth digging.</summary>
-        int NextDig(Building b)
-        {
-            bool adit = false; int shaft = int.MaxValue;
-            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
-                {
-                    if (!InMineReach(i, j)) continue;
-                    for (int l = 1; l <= Bands; l++)
-                    {
-                        if (KnownOre(i, j, l) <= 1e-9) continue;
-                        int nd = NeedShaft(b, i, j, l);
-                        if (nd == 0) { if (!b.Adit) adit = true; }
-                        else if (nd > b.Depth && nd <= ShaftDepthLimit) shaft = Math.Min(shaft, nd);
-                    }
-                }
-            return adit ? 0 : shaft != int.MaxValue && MineCanStart(b, b.Depth + 1, true) ? b.Depth + 1 : -1;
-        }
-
-        /// <summary>Whether a miner could haul ore or dig the adit or shaft right now (so not everyone needs to survey).</summary>
-        bool KnownMineWork(Building b) => PickOre(b, out _, out _, out _, out _) || NextDig(b) >= 0;
-
-        int UnsurveyedInReach(Building b)
-        {
-            int n = 0;
-            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
-                    if (InMineReach(i, j) && !Surveyed[Tk(i, j)]) n++;
-            return n;
-        }
-        bool HasOreInReach(Building b)
-        {
-            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
-                    if (InMineReach(i, j) && HasKnownOre(i, j)) return true;
-            return false;
-        }
-        bool TookOreInReach(Building b)
-        {
-            for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
-                for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
-                    if (InMineReach(i, j)) for (int l = 1; l <= Bands; l++) if (OreTaken.ContainsKey(OreKey(l, Tk(i, j)))) return true;
-            return false;
-        }
-
-        /// <summary>Take up to `amount` ore from one band of one tile.</summary>
-        double TakeOre(int x, int y, int band, double amount)
-        {
-            double e = Math.Min(amount, OreAt(x, y, band)); if (e <= 1e-9) return 0;
-            int key = OreKey(band, Tk(x, y));
-            OreTaken[key] = (OreTaken.TryGetValue(key, out var t) ? t : 0) + e;
-            Touch();
-            return e;
-        }
-
         // ---------- The mine's crew ----------
         void StepMine(Building b, List<Worker> crew, Dictionary<Res, double> got)
         {
             if (b.Closed > 0) b.Closed--;
-            // shore up what has been dug as soon as there is wood: the adit first, then the shaft level by level
-            if (b.Served)
+            // shore up what has been dug as soon as there is wood: the stretch nearest the mine first
+            if (b.Served && b.Shored.Count < b.Tunnel.Count && ResAmt[Res.Wood] >= TileWood)
             {
-                if (b.Adit && !b.AditShored && ResAmt[Res.Wood] >= AditWood) { ResAmt[Res.Wood] -= AditWood; b.AditShored = true; }
-                else if (b.Shored < b.Depth && ResAmt[Res.Wood] >= SupportWood[b.Shored + 1]) { ResAmt[Res.Wood] -= SupportWood[b.Shored + 1]; b.Shored++; }
+                int pick = -1;
+                foreach (int t in b.Tunnel)
+                    if (!b.Shored.Contains(t) && (pick < 0 || MCheb(t % N, t / N, b.X, b.Y) < MCheb(pick % N, pick / N, b.X, b.Y))) pick = t;
+                if (pick >= 0) { ResAmt[Res.Wood] -= TileWood; b.Shored.Add(pick); Touch(); }
             }
             int down = 0; foreach (var o in crew) if (o.St == CrewState.Down) down++;   // crowding counts who started the day underground
 
@@ -276,100 +309,76 @@ namespace CrownAndHearth.Sim
                 {
                     case CrewState.Home:
                     {
-                        if (!b.Served || b.Closed > 0) break;
-                        // 1. survey the zone, so the crew knows what lies inside. Once something is known to dig or haul, only the first miner
-                        //    keeps surveying and the rest get to work, so ore arrives long before the whole zone is surveyed
-                        _used.Clear();
-                        foreach (var o in crew) if (o != a && o.St != CrewState.Home && o.Stand >= 0) _used.Add(o.Stand);
-                        if ((ai == 0 || !KnownMineWork(b)) && CrewTarget(b, Deco.None, ai * 7 + Day, _used, a.Path, out a.Tx, out a.Ty, survey: true))
-                        {
-                            a.Survey = true; a.Stand = a.Path[a.Path.Count - 1]; a.I = 0; a.Carry = 0;
-                            if (a.Path.Count > 1) { a.I = 1; SetPos(a, a.Path[1]); }
-                            a.St = a.I == a.Path.Count - 1 ? CrewState.Work : CrewState.Out; if (a.St == CrewState.Work) a.T = WorkT;
-                            break;
-                        }
+                        if (!b.Served || b.Closed > 0 || !MineSafe(b)) break;
                         if (ResAmt[Res.Ore] + got[Res.Ore] >= Storage) break;   // full stockpile: the ore stays in the ground
-                        // 2. bring up the richest ore the adit or shaft reaches
-                        if (PickOre(b, out a.Tx, out a.Ty, out int band, out int need))
+                        // 1. pick ore from the walls of the tunnel
+                        if (PickOre(b, out a.Tx, out a.Ty, out int band))
                         {
-                            a.St = CrewState.Down; a.Dig = false; a.Level = band; a.Need = need; a.T = MineTripDays[band];
+                            int steps = Math.Max(1, MCheb(a.Tx, a.Ty, b.X, b.Y));
+                            a.St = CrewState.Down; a.Dig = false; a.Level = band; a.T = TripBase + band + 2 * steps;
                             break;
                         }
-                        // 3. otherwise dig towards known ore: the adit into the high ground first, else the shaft one level deeper
-                        int dig = NextDig(b);
-                        if (dig >= 0) { a.St = CrewState.Down; a.Dig = true; a.Need = dig; a.Level = 0; a.T = DigStint; }
+                        // 2. the face is clean: drive the tunnel on
+                        if (NextDigTile(b) >= 0) { a.St = CrewState.Down; a.Dig = true; a.Level = 0; a.T = DigStint; }
                         break;
                     }
                     case CrewState.Down:
                     {
-                        if (!MineCanStart(b, a.Need, a.Dig)) { a.St = CrewState.Home; break; }
-                        // diggers driving the adit work its face (adit risk); shaft diggers work the level being sunk
-                        if (Noise.Hash2(Tk(b.X, b.Y), Day * 16 + ai, Seed + 4001) < CaveInChance(b, a.Need, down))
+                        if (!MineSafe(b) && !a.Dig) { a.St = CrewState.Home; break; }
+                        if (Noise.Hash2(Tk(b.X, b.Y), Day * 16 + ai, Seed + 4001) < CaveInChance(b, down))
                         {
                             if (CaveIn(b, crew, ai)) ai--;   // the miner died and left the crew
                             break;
                         }
-                        if (a.Dig)
+                        if (a.Dig && ++b.DigProg >= TileDigDays)
                         {
-                            if (a.Need == 0 && !b.Adit && ++b.AditProg >= AditWork)
-                            {
-                                b.Adit = true; b.AditProg = 0; Touch();
-                                Events.Add($"The {b.Name} at {b.X},{b.Y} has driven its adit into the high ground.");
-                            }
-                            else if (a.Need > 0 && b.Depth < a.Need && ++b.DigProg >= DigWork[a.Need])
-                            {
-                                b.Depth = a.Need; b.DigProg = 0; Touch();
-                                Events.Add($"The {b.Name} at {b.X},{b.Y} has sunk its shaft to level {b.Depth}.");
-                            }
+                            b.DigProg = 0;
+                            int next = NextDigTile(b);
+                            if (next >= 0) DigTile(b, next);
                         }
                         if (--a.T > 0) break;
                         if (!a.Dig) got[Res.Ore] += TakeOre(a.Tx, a.Ty, a.Level, MineLoad[a.Level]);
                         a.St = CrewState.Home;
                         break;
                     }
-                    case CrewState.Out:
-                        a.I++; SetPos(a, a.Path[a.I]);
-                        if (a.I == a.Path.Count - 1) { a.St = CrewState.Work; a.T = WorkT; }
+                    default:   // runtime-only crews never hold the old surveying states any more
+                        a.St = CrewState.Home; a.Path.Clear(); a.Stand = -1; a.X = b.X; a.Y = b.Y;
                         break;
-                    case CrewState.Work:
-                        if (--a.T <= 0)
-                        {
-                            // a survey examines the ground around the target too: the 3x3 patch centred on it
-                            bool fresh = false;
-                            for (int dj = -SurveyR; dj <= SurveyR; dj++)
-                                for (int di = -SurveyR; di <= SurveyR; di++)
-                                {
-                                    int sx = a.Tx + di, sy = a.Ty + dj;
-                                    if (Inb(sx, sy) && !Surveyed[Tk(sx, sy)]) { Surveyed[Tk(sx, sy)] = true; fresh = true; }
-                                }
-                            if (fresh)
-                            {
-                                Touch();
-                                if (UnsurveyedInReach(b) == 0 && !HasOreInReach(b))
-                                    Events.Add($"The {b.Name} at {b.X},{b.Y} has surveyed its whole zone and found no ore.");
-                            }
-                            a.Path.Reverse(); a.I = 0; a.St = CrewState.Back;
-                        }
-                        break;
-                    default:   // back from a survey
-                        if (a.I < a.Path.Count - 1) { a.I++; SetPos(a, a.Path[a.I]); }
-                        break;
-                }
-                if (a.St == CrewState.Back && a.I >= a.Path.Count - 1)
-                {
-                    a.St = CrewState.Home; a.Survey = false; a.Path.Clear(); a.Stand = -1; a.X = b.X; a.Y = b.Y;
                 }
             }
         }
 
-        /// <summary>A cave-in where worker ai works: the mine closes, everyone underground comes up, the supports there are smashed,
-        /// and the miner may die. Returns true when the worker died (and was removed from the crew).</summary>
+        void DigTile(Building b, int k)
+        {
+            b.Tunnel.Add(k);
+            int x = k % N, y = k / N;
+            for (int j = y - RevealR; j <= y + RevealR; j++)
+                for (int i = x - RevealR; i <= x + RevealR; i++)
+                    if (Inb(i, j)) Surveyed[Tk(i, j)] = true;
+            Touch();
+            int n = b.Tunnel.Count;
+            if (n == 1 || n % 5 == 0) Events.Add($"The {b.Name} at {b.X},{b.Y} has dug its tunnel {n} tile{(n == 1 ? "" : "s")} in.");
+            if (!HasOreInReach(b) && NextDigTile(b) < 0 && n >= 3 && !TookOreInReach(b))
+                Events.Add($"The {b.Name} at {b.X},{b.Y} has dug all it can reach and found no ore.");
+        }
+
+        /// <summary>Is there ore the tunnel's walls could still give?</summary>
+        bool HasOreInReach(Building b) => OreTilesNearTunnel(b) > 0;
+
+        /// <summary>A cave-in where worker ai works: the mine closes, everyone underground comes up, the supports at the far end are
+        /// smashed, and the miner may die. Returns true when the worker died (and was removed from the crew).</summary>
         bool CaveIn(Building b, List<Worker> crew, int ai)
         {
-            var a = crew[ai]; int need = a.Need; bool shored = ShoredFor(b, need);
+            bool shored = b.Tunnel.Count > 0 && b.Shored.Count >= b.Tunnel.Count;
             CaveIns++;
             b.Closed = RepairDays; b.CaveIns++;
-            if (need == 0) b.AditShored = false; else if (shored) b.Shored = need - 1;
+            // the three shored tiles farthest from the mine lose their timber
+            for (int n = 0; n < 3 && b.Shored.Count > 0; n++)
+            {
+                int far = -1;
+                foreach (int t in b.Shored) if (far < 0 || MCheb(t % N, t / N, b.X, b.Y) > MCheb(far % N, far / N, b.X, b.Y)) far = t;
+                b.Shored.Remove(far);
+            }
             foreach (var o in crew) if (o.St == CrewState.Down) { o.St = CrewState.Home; o.X = b.X; o.Y = b.Y; }
             bool dead = Noise.Hash2(Tk(b.X, b.Y), Day * 16 + ai, Seed + 4002) < (shored ? KillChanceShored : KillChanceUnshored);
             if (dead)
@@ -378,8 +387,7 @@ namespace CrownAndHearth.Sim
                 if (Peasants > 0) Peasants--;
                 MinerDeaths++;
             }
-            string where = need == 0 ? "in the adit" : $"at shaft level {need}";
-            Events.Add($"Cave-in at the {b.Name} ({b.X},{b.Y}) {where}{(shored ? "" : ", unshored")}! " +
+            Events.Add($"Cave-in in the tunnel of the {b.Name} ({b.X},{b.Y}){(shored ? "" : ", unshored")}! " +
                        (dead ? "A miner was killed. " : "The miners escaped. ") + $"The mine is closed for {RepairDays} days of repairs.");
             Touch();
             return dead;
@@ -395,21 +403,22 @@ namespace CrownAndHearth.Sim
                 var (ex, ey) = EntranceTile(b.X + (mf == 3 ? b.Sz - 1 : 0), b.Y + (mf == 0 ? b.Sz - 1 : 0), mf);
                 pre = $"Needs a road to the Town Hall along its entrance edge (at {ex},{ey}, facing away from the hill)\n";
             }
-            int unsurveyed = UnsurveyedInReach(b);
-            bool hasOre = HasOreInReach(b);
-            string head = b.Closed > 0 ? $"CLOSED: cave-in, repairs take {b.Closed} more days"
-                : !b.Served ? "Waiting for a road"
-                : !hasOre && unsurveyed > 0 ? $"Surveying: {unsurveyed} zone tiles left to check for ore"
-                : !hasOre ? (TookOreInReach(b) ? "Worked out: no ore left in this mine's zone. Zone fresh high ground nearby or remove the mine"
-                                               : "No ore found in this mine's zone. Ore lies in hills and mountains" + (mf < 0 ? ". This mine has no hill beside it: build iron mines at the foot of a hill or mountain" : ""))
-                : !b.Adit ? (b.AditProg > 0 ? $"Digging the adit into the hill: {100 * b.AditProg / AditWork}%" : "Starting to dig the adit into the hill")
-                : unsurveyed > 0 ? $"Mining ore (and still surveying {unsurveyed} tiles)" : "Mining ore";
-            string s = pre + head + "\n";
-            s += b.Adit ? "Adit (the tunnel into the hill): dug" + (b.AditShored ? " and shored" : $", NOT shored (needs {AditWood} wood)") : "Adit (the tunnel into the hill): not dug yet";
-            s += b.Depth > 0 ? $"\nShaft: level {b.Depth}, {b.Shored} shored" + (b.Shored < b.Depth ? $" (level {b.Shored + 1} needs {SupportWood[b.Shored + 1]} wood)" : "")
-                             : "\nShaft: none (only needed for ore below the entrance)";
-            s += $"\nTown shaft limit: {ShaftDepthLimit} (Mining menu)";
-            if (b.Depth < ShaftDepthLimit && b.DigProg > 0) s += $". Sinking to level {b.Depth + 1}: {100 * b.DigProg / DigWork[b.Depth + 1]}%";
+            int len = b.Tunnel.Count;
+            string s = pre + (len == 0 ? "Tunnel: not started" : $"Tunnel: {len} tile{(len == 1 ? "" : "s")} dug, {Math.Min(len, b.Shored.Count)} shored");
+            if (len > b.Shored.Count) s += $" (each needs {TileWood} wood)";
+            Frontier(b, _front);
+            bool canDig = _front.Count > 0;
+            int oreTiles = OreTilesNearTunnel(b);
+            if (b.Closed > 0) s += $"\nClosed for repairs after a cave-in: {b.Closed} days left";
+            else if (!MineSafe(b)) s += "\nWaiting for timber: supports are required before miners work the tunnel";
+            else if (oreTiles > 0) s += $"\nMining ore from the tunnel walls ({oreTiles} tile{(oreTiles == 1 ? "" : "s")} with ore beside it)";
+            else if (canDig) s += len == 0 ? "\nDigging the first tunnel tile" : $"\nTunnel face is clean: driving on ({100 * b.DigProg / TileDigDays}% of the next tile)";
+            if (!canDig && oreTiles == 0)
+            {
+                if (len == 0) s += "\nNothing to dig: zone Mining ground that touches the mine. The tunnel starts at its walls and runs through zoned tiles.";
+                else s += TookOreInReach(b) ? "\nWorked out: no ore left within reach of this tunnel. Zone more high ground beside it, or build another mine"
+                                            : "\nNo ore found in this mine's zone. Ore lies in hills and mountains: put the mine at the foot of a hill";
+            }
             if (b.CaveIns > 0) s += $"\nCave-ins so far: {b.CaveIns}";
             return s;
         }

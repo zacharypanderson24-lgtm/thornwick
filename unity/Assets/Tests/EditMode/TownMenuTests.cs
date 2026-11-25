@@ -46,13 +46,9 @@ namespace CrownAndHearth.Tests
         public void MineSettingsClampAndPersist()
         {
             var world = new World(7);
-            Assert.AreEqual(World.MaxDepth, world.ShaftDepthLimit);
-            world.SetShaftDepthLimit(99);
-            Assert.AreEqual(World.MaxDepth, world.ShaftDepthLimit);
-            world.SetShaftDepthLimit(-1);
+            Assert.IsFalse(world.RequireMineSupports);
             world.SetMineSupportsRequired(true);
             var loaded = World.LoadJson(world.SaveJson());
-            Assert.AreEqual(0, loaded.ShaftDepthLimit);
             Assert.IsTrue(loaded.RequireMineSupports);
         }
     }

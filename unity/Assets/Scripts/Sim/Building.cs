@@ -21,11 +21,9 @@ namespace CrownAndHearth.Sim
         public readonly List<Worker> Crew = new List<Worker>();   // work crew (wood, quarry, mine); runtime only, never saved
         internal CrewReach Reach;  // cached walkable area around the building (World.Crews.cs)
         // mines (World.Mining.cs); saved state once saves land
-        public bool Adit, AditShored;   // the level tunnel into the high ground, and its timber
-        public int AditProg;       // worker-days driven towards the adit
-        public int Depth;          // shaft levels dug, 0..World.MaxDepth
-        public int Shored;         // levels shored with timber, 0..Depth
-        public int DigProg;        // worker-days dug towards the next level
+        public readonly List<int> Tunnel = new List<int>();      // tiles (y * N + x) the mine has dug, in order
+        public readonly HashSet<int> Shored = new HashSet<int>(); // the dug tiles that are shored with timber
+        public int DigProg;        // worker-days dug towards the next tunnel tile
         public int Closed;         // days of repairs left after a cave-in
         public int CaveIns;
 

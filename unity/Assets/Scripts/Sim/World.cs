@@ -316,7 +316,7 @@ namespace CrownAndHearth.Sim
         public bool IsMountain(int x, int y) => DecoMap[y, x] == Deco.Rock && RockAmt(x, y) >= 3;
         public int PitDepth(int x, int y) => Inb(x, y) && DecoMap[y, x] == Deco.Rock && RockAmt(x, y) < 3 ? Math.Max(0, -RockLevel(x, y)) : 0;
         public bool HasTree(int x, int y) => DecoMap[y, x] == Deco.Tree || DecoMap[y, x] == Deco.Sapling;
-        public bool IsSolid(int x, int y) => DecoMap[y, x] == Deco.Ore || IsMountain(x, y) || PitDepth(x, y) > 0 || TileSpread(x, y) >= 3;
+        public bool IsSolid(int x, int y) => DecoMap[y, x] == Deco.Ore || IsMountain(x, y) || PitDepth(x, y) > 0 || TileSpread(x, y) >= 3 || IsTunnel(x, y);
         public bool RockOpen(int x, int y)
         {
             if (!IsMountain(x, y)) return true;
@@ -327,6 +327,6 @@ namespace CrownAndHearth.Sim
             }
             return false;
         }
-        public bool RockWorkable(int x, int y) => DecoMap[y, x] == Deco.Rock && RockLeft(x, y) > 0 && RockOpen(x, y);
+        public bool RockWorkable(int x, int y) => DecoMap[y, x] == Deco.Rock && RockLeft(x, y) > 0 && RockOpen(x, y) && !IsTunnel(x, y);
     }
 }
