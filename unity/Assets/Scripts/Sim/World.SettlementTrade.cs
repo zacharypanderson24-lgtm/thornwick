@@ -18,6 +18,8 @@ namespace CrownAndHearth.Sim
     {
         public int SettlementId, Amount, Gold, ArriveDay;
         public CaravanKind Kind;
+        /// <summary>How it travels (a ship uses a port's place, an overland caravan a market's), when it left and how far it goes (km). Saved.</summary>
+        public TradeMode Mode; public int DepartDay, RouteKm;
         public Res Res;
     }
 
@@ -38,7 +40,7 @@ namespace CrownAndHearth.Sim
             Res.Food => 0.2, Res.Logs => 1, Res.Wood => 2, Res.Stone => 2, Res.Flax => 2, Res.Ore => 3, Res.Wool => 3, Res.Metal => 8, _ => 2,
         };
 
-        public int Markets => Blds.Count(b => (b.T == "market" || b.T == "port") && b.Served);   // a port is a market for ships (World.Ferries.cs)
+        public int Markets => Blds.Count(b => b.T == "market" && b.Served);   // land caravans: one for each market (ships: one for each port, World.MaritimeTrade.cs)
         /// <summary>Trading caravans on the road (gifts go by messenger and do not count).</summary>
         public int TradeCaravansOut => Caravans.Count(c => c.Kind != CaravanKind.Gift);
 
@@ -72,15 +74,15 @@ namespace CrownAndHearth.Sim
             if (s == null) return Result.No("Choose a settlement");
             if (s.Tier == SettlementTier.Hamlet) return Result.No($"{s.Name} is a hamlet: too small to have a market");
             if (!s.WillTrade) return Result.No($"{s.Name} will not trade with you yet: it needs to feel at least {SettlementRules.AttitudeName(SettlementRules.TradeThreshold(s.Personality))} towards you ({SettlementRules.TradeThreshold(s.Personality):+0;-0;0}). Gifts help.");
-            if (Markets == 0) return Result.No("Build a Market (Trade, 7) beside a road, or a Port on the water: caravans set out from it");
-            if (TradeCaravansOut >= Markets) return Result.No(Markets == 1 ? "Your market's caravan is already on the road. Build another market for a second caravan." : $"All {Markets} of your markets' caravans are on the road");
-            return Result.Yes();
+            var plan = PlanTrade(s);
+            return plan.Ok ? Result.Yes() : Result.No(plan.Reason);
         }
 
         /// <summary>Buy a good it produces (its main good if none is named): pay now, the caravan brings it home after the march.</summary>
         public Result BuyFrom(Settlement s, int amount, Res? good = null)
         {
             var ok = CanTrade(s); if (!ok.Ok) return ok;
+            var plan = PlanTrade(s);
             var r = good ?? s.Makes;
             if (!s.Produces(r)) return Result.No($"{s.Name} does not produce {GoodName(r)}");
             amount = Math.Min(Math.Min(amount, CaravanLoad * TradeUnit(r)), LeftToBuy(s, r));
@@ -89,7 +91,7 @@ namespace CrownAndHearth.Sim
             if (ResAmt[Res.Gold] < cost) return Result.No($"That costs {cost} gold; you have {ResAmt[Res.Gold]:0}");
             ResAmt[Res.Gold] -= cost;
             s.SoldThisMonth += amount; s.SoldOf[r] = s.SoldOf.GetValueOrDefault(r) + amount;
-            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Buy, Res = r, Amount = amount, Gold = cost, ArriveDay = Day + TradeMarchDays(s) });
+            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Buy, Res = r, Amount = amount, Gold = cost, ArriveDay = Day + plan.Days, DepartDay = Day, Mode = plan.Mode, RouteKm = plan.RouteKm });
             return Result.Yes(amount);
         }
 
@@ -97,6 +99,7 @@ namespace CrownAndHearth.Sim
         public Result SellTo(Settlement s, int amount, Res? good = null)
         {
             var ok = CanTrade(s); if (!ok.Ok) return ok;
+            var plan = PlanTrade(s);
             var r = good ?? s.Needs;
             if (!s.Wanting(r)) return Result.No($"{s.Name} does not need {GoodName(r)}");
             amount = Math.Min(Math.Min(amount, CaravanLoad * TradeUnit(r)), LeftToSell(s, r));
@@ -105,7 +108,7 @@ namespace CrownAndHearth.Sim
             int gold = (int)Math.Floor(amount * PriceToSell(s, r));
             ResAmt[r] -= amount;
             s.BoughtThisMonth += amount; s.BoughtOf[r] = s.BoughtOf.GetValueOrDefault(r) + amount;
-            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Sell, Res = r, Amount = amount, Gold = gold, ArriveDay = Day + TradeMarchDays(s) });
+            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Sell, Res = r, Amount = amount, Gold = gold, ArriveDay = Day + plan.Days, DepartDay = Day, Mode = plan.Mode, RouteKm = plan.RouteKm });
             return Result.Yes(amount);
         }
 
@@ -126,6 +129,9 @@ namespace CrownAndHearth.Sim
 
         /// <summary>Caravans that reach their end of the road today: goods into your stores (what does not fit is lost), gold into your
         /// treasury, gifts warm the settlement; every finished trade warms it a little.</summary>
+        /// <summary>Move the day on for caravans and ships (the daily tick does this; exposed so tests can arrive a shipment on its day).</summary>
+        public void StepCaravansNow() => StepCaravans();
+
         void StepCaravans()
         {
             for (int i = Caravans.Count - 1; i >= 0; i--)
@@ -142,12 +148,12 @@ namespace CrownAndHearth.Sim
                         double room = Math.Max(0, CropStorage(c.Res) - ResAmt[c.Res]);
                         double stored = Math.Min(room, c.Amount);
                         ResAmt[c.Res] += stored;
-                        Events.Add($"The caravan from {name} is home with {stored:0} {GoodName(c.Res)}" + (stored < c.Amount ? $" ({c.Amount - stored:0} did not fit in your stores and were lost)." : "."));
+                        Events.Add($"The {(c.Mode == TradeMode.Overland ? "caravan" : "ship")} from {name} is home with {stored:0} {GoodName(c.Res)}" + (stored < c.Amount ? $" ({c.Amount - stored:0} did not fit in your stores and were lost)." : "."));
                         break;
                     }
                     case CaravanKind.Sell:
                         ResAmt[Res.Gold] += c.Gold;
-                        Events.Add($"The caravan is back from {name} with {c.Gold} gold for {c.Amount} {GoodName(c.Res)}.");
+                        Events.Add($"The {(c.Mode == TradeMode.Overland ? "caravan" : "ship")} is back from {name} with {c.Gold} gold for {c.Amount} {GoodName(c.Res)}.");
                         break;
                     default:
                         if (s != null) s.Attitude = Math.Min(100, Math.Max(s.Attitude, Math.Min(GiftCap, s.Attitude + GiftWarmth)));

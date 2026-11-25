@@ -53,11 +53,12 @@ namespace CrownAndHearth.Sim
         /// the water, fish for a few days and sail home, one tile a day. Call once a day (the daily tick does).</summary>
         public void StepBoats()
         {
-            if (Waters == null || IceOn) { Boats.Clear(); return; }   // in winter the boats are hauled out
+            if (Waters == null) { Boats.Clear(); return; }
+            if (IceOn) Boats.RemoveAll(b => !b.Ferry);   // in winter the fishing boats are hauled out; a ferry keeps sailing if its route stays open water
             Boats.RemoveAll(b => !b.Ferry && (!Blds.Contains(b.Home) || !b.Home.Served || b.Home.Workers <= 0));
             foreach (var dock in Blds)
             {
-                if (dock.T != "dock" || !dock.Served || dock.Workers <= 0) continue;
+                if (IceOn || dock.T != "dock" || !dock.Served || dock.Workers <= 0) continue;
                 int want = Math.Min(BoatsPerDock, (dock.Workers + 1) / 2), have = BoatsOf(dock);
                 if (have >= want) continue;
                 var launch = LaunchTile(dock); if (!launch.HasValue) continue;

@@ -8,6 +8,7 @@
 //   Drought  About one summer in six (more in dry country): streams run dry (you can walk their beds), the soil is drier (harvests a fifth
 //            smaller), and freshwater fishing is poorer.
 using System;
+using System.Linq;
 using static CrownAndHearth.Sim.Defs;
 
 namespace CrownAndHearth.Sim
@@ -71,6 +72,12 @@ namespace CrownAndHearth.Sim
                 else if (!ice && _iceSeen) Events.Add("The ice has gone. Water is a barrier again.");
                 if (drought && !_droughtSeen) Events.Add("Drought: the streams are running dry, the soil is parched and the harvest will be poor. You can walk the dry stream beds.");
                 else if (!drought && _droughtSeen && YearDay > DroughtTo) Events.Add("The drought is over: the streams are running again.");
+                if (ice != _iceSeen)
+                {
+                    int off = FerryPairs().Count(p => !FerryOperating(p));
+                    if (ice && off > 0) Events.Add($"{off} ferr{(off == 1 ? "y is" : "ies are")} suspended: the water on {(off == 1 ? "its" : "their")} route has frozen. The roads they joined are cut off until the thaw (people can walk over small frozen waters).");
+                    else if (!ice && _iceSeen) Events.Add("The thaw: ferries that were frozen in are running again.");
+                }
                 _iceSeen = ice; _droughtSeen = drought;
                 Touch();
             }

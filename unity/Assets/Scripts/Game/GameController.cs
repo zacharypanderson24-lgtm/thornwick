@@ -113,7 +113,7 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "ferry", Cat = Cat.Water, Label = "Ferry Landing", Build = "ferry",
                 Desc = $"Build two landings on the shores of the same deep water, up to {World.FerryRange} tiles apart, to make a ferry. It joins the roads on the two shores, so homes, farms and workplaces across a wide river, a lake or a bay are served from the Town Hall where a bridge cannot reach. A ferry boat shuttles between them. People and crews do not walk through it: only roads are joined. Each landing costs {Cost["ferry"][Res.Wood]} wood and {Cost["ferry"][Res.Stone]} stone; it must stand on the shore with medium or deep water within three tiles, beside a road." },
             new ToolDef { Id = "port", Cat = Cat.Water, Label = "Port", Build = "port",
-                Desc = $"A harbour on a big lake, a major river or the sea (at least {World.PortWaterNeeded} tiles of connected boat-deep water). It counts as a market, so a caravan can set out from it, and goods go by ship: a caravan sent while a port is free arrives in {World.PortSpeed * 100:0}% of the usual time. Costs {Cost["port"][Res.Wood]} wood, {Cost["port"][Res.Stone]} stone and {Cost["port"][Res.Gold]} gold. Needs a road to the Town Hall." },
+                Desc = $"A harbour on a big lake, a major river or the sea (at least {World.PortWaterNeeded} tiles of connected boat-deep water). It is not a market (overland caravans need a Market); it gives your trade one ship, and goods go by water: a port gives you a ship: it trades by water only with settlements the world map shows on the same sea or lake, and the travel time follows the water route. Costs {Cost["port"][Res.Wood]} wood, {Cost["port"][Res.Stone]} stone and {Cost["port"][Res.Gold]} gold. Needs a road to the Town Hall." },
             new ToolDef { Id = "watermill", Cat = Cat.Water, Label = "Watermill", Build = "watermill",
                 Desc = $"Stands on a riverbank with flowing water beside it and grinds the wheat harvest: staffed mills add {World.MillBonusShare * 100:0}% to the food from the fields (each mill grinds for {World.MillFields} fields), more mills for more fields. Ponds, lakes and the sea have no current; a frozen river stops the wheel. Needs a road to the Town Hall. Costs {Cost["watermill"][Res.Wood]} wood and {Cost["watermill"][Res.Stone]} stone." },
             new ToolDef { Id = "moat", Cat = Cat.Military, Label = "Moat", Moat = true,
@@ -323,6 +323,7 @@ namespace CrownAndHearth.Game
             var home = _worldMap.HomeSite;
             if (World.Camps.Count == 0) World.SetCamps(RaiderCamps.Generate(_worldMap), home?.X ?? WorldMap.Size / 2, home?.Y ?? WorldMap.Size / 2);
             if (World.Settlements.Count == 0) World.SetSettlements(Settlements.Generate(_worldMap, World.Camps));
+            if (World.Atlas == null) World.SetAtlas(WaterAtlas.FromWorldMap(_worldMap));   // the sea and lakes, so ports only trade where water really joins
             _hud.SetCamps(World);
         }
 
@@ -1176,8 +1177,9 @@ namespace CrownAndHearth.Game
                         lines.Add($"Fish stock: {World.StockWord(stock)} ({stock * 100:0}%). Season: {w.Season} (x{w.FishSeason(fg.kind):0.#}). Today's catch: {w.FishCatch(b):0.##} food.");
                     }
                 }
-                if (b.T == "ferry") { var fp = w.FerryPartner(b); lines.Add(fp == null ? "Not linked: build a second landing within " + World.FerryRange + " tiles on the shore of the same deep water." : $"Linked to the landing at {fp.X},{fp.Y}, {System.Math.Max(System.Math.Abs(b.X - fp.X), System.Math.Abs(b.Y - fp.Y))} tiles away: the roads at the two landings are joined."); }
-                if (b.T == "port") lines.Add($"Counts as a market. Goods go by ship: a caravan sent while a port is free takes {World.PortSpeed * 100:0}% of the usual time. Water here: {w.NavigableTilesInRegion(w.RegionOf(b))} boat-deep tiles.");
+                if (b.T == "ferry") { var fp = w.FerryPartner(b); lines.Add("Status: " + w.FerryStatus(b));
+                    lines.Add(fp == null ? "Not linked: build a second landing within " + World.FerryRange + " tiles on the shore of the same deep water." : $"Linked to the landing at {fp.X},{fp.Y}, {System.Math.Max(System.Math.Abs(b.X - fp.X), System.Math.Abs(b.Y - fp.Y))} tiles away: the roads at the two landings are joined."); }
+                if (b.T == "port") lines.Add($"Gives your trade one ship ({w.ShipsOut} of {w.ShipCapacity} ships at sea). It stands on {World.ModeName(w.PortMode(b)).Replace("by ", "")} water ({w.NavigableTilesInRegion(w.RegionOf(b))} boat-deep tiles). Ships sail only to settlements the world map shows on the same sea or lake; travel time follows the water route. Not a market: overland caravans need a Market.");
                 if (b.T == "watermill") lines.Add(w.RiverCurrentNear(b, 1) ? $"Mills for {World.MillFields} fields: adds {World.MillBonusShare * 100:0}% to the wheat harvest when staffed." : "No flowing river beside it (frozen or dry): the wheel is still.");
                 if (b.T == "hunter") lines.Add($"Hunts mature forest within {World.HuntingRange} tiles in all seasons.");
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
@@ -1185,7 +1187,7 @@ namespace CrownAndHearth.Game
                     lines.Add(b.Served ? $"+{World.SiloFood} wheat and +{World.SiloFlax} flax storage" : "Connect to the Town Hall to use its crop storage.");
                 if (b.T == "silo" && w.SeasonalFarming && w.DailyFoodDemand > 0)
                     lines.Add($"Town reserve: {w.ResAmt[Res.Food]:0}/{w.CropStorage(Res.Food)} food, about {System.Math.Floor(w.ResAmt[Res.Food] / w.DailyFoodDemand):0} days without a harvest.");
-                if (b.T == "market") lines.Add($"Trade caravans on the road: {w.TradeCaravansOut} of {w.Markets} (one per market). Trade from the world map (M): click a settlement.");
+                if (b.T == "market") lines.Add($"Trade caravans on the road: {w.LandCaravansOut} of {w.Markets} (one per market). Trade from the world map (M): click a settlement.");
                 lines.AddRange(WaterLines(b));
             }
             else if (b != null) lines.Add(b.Served ? "ROAD (connected)" : "ROAD (cut off from the Town Hall)");

@@ -168,7 +168,7 @@ namespace CrownAndHearth.Sim
 
         JArray SaveCaravans() => new JArray(Caravans.Select(c => new JObject
         {
-            ["to"] = c.SettlementId, ["kind"] = c.Kind.ToString(), ["res"] = c.Res.ToString(), ["amount"] = c.Amount, ["gold"] = c.Gold, ["arrive"] = c.ArriveDay,
+            ["to"] = c.SettlementId, ["kind"] = c.Kind.ToString(), ["res"] = c.Res.ToString(), ["amount"] = c.Amount, ["gold"] = c.Gold, ["arrive"] = c.ArriveDay, ["mode"] = c.Mode.ToString(), ["depart"] = c.DepartDay, ["km"] = c.RouteKm,
         }));
 
         void LoadSettlements(JArray rows, JArray caravans)
@@ -184,6 +184,8 @@ namespace CrownAndHearth.Sim
                     {
                         SettlementId = (int)c["to"], Kind = kind, Res = Enum.TryParse<Res>((string)c["res"], out var r) ? r : Res.Food,
                         Amount = (int)c["amount"], Gold = (int)c["gold"], ArriveDay = (int)c["arrive"],
+                        Mode = Enum.TryParse<TradeMode>((string)c["mode"], out var mode) ? mode : TradeMode.Overland,   // older saves: every caravan walked
+                        DepartDay = c["depart"] != null ? (int)c["depart"] : (int)c["arrive"], RouteKm = c["km"] != null ? (int)c["km"] : 0,
                     });
         }
     }
