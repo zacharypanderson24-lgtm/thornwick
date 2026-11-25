@@ -26,7 +26,7 @@ namespace CrownAndHearth.Game
         public class ToolDef
         {
             public string Id, Label, Desc; public Cat Cat;
-            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Claim, Wall;
+            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Claim, Wall, Bridge;
         }
 
         public static readonly CatDef[] Cats =
@@ -40,7 +40,7 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "6", Hotkey = Key.Digit6, Icon = "mine", Desc = "Quarries for stone, mines for iron ore, and smitheries for metal." },
             new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "7", Hotkey = Key.Digit7, Icon = "market", Desc = "Markets send trade caravans to settlements on the world map; storehouses hold more." },
             new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Muster grounds for militia, barracks for professional soldiers, palisades, and watchtowers to spot incoming raiders." },
-            new CatDef { Cat = Cat.Water, Label = "Water", Key = "9", Hotkey = Key.Digit9, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
+            new CatDef { Cat = Cat.Water, Label = "Water", Key = "9", Hotkey = Key.Digit9, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it (homes need water every day, carried along the roads), fishing huts on the shore, and bridges over rivers and lakes." },
             new CatDef { Cat = Cat.Land, Label = "Land", Key = "L", Hotkey = Key.L, Desc = "Your district is 64 x 64 tiles. claim the land beyond it, one 16 x 16 parcel at a time, for free." },
             new CatDef { Cat = Cat.Bulldoze, Label = "Bulldoze", Key = "0", Hotkey = Key.Digit0, Alt = Key.Delete, Desc = "Demolish buildings and roads, clear trees and rocks, or remove zones." },
         };
@@ -106,6 +106,10 @@ namespace CrownAndHearth.Game
                 Desc = $"Pumps up to {WaterTuning.WellPump:0} water a day from the groundwater patch it stands on (the blue patches) into the town-wide supply: any home on a connected road can use it, however far away. Wells on one patch share its reserve and recharge: draw more than the recharge and the patch runs down." },
             new ToolDef { Id = "cistern", Cat = Cat.Water, Label = "Cistern", Build = "cistern",
                 Desc = $"Stores {WaterTuning.CisternCap:0} water. Wells and the Town Hall's spring fill it with what the town does not drink, and it covers shortfalls for every home on a connected road. Anywhere on a road will do." },
+            new ToolDef { Id = "fisher", Cat = Cat.Water, Label = "Fishing Hut", Build = "fisher",
+                Desc = $"Fishermen bring fish from rivers, lakes and the sea. The hut must stand within two tiles of the water and on a road to the Town Hall; the fishermen walk to the shore, so water across a river they cannot cross does not count. A pond gives least, a lake or river more, the sea most. Fish counts as fresh meat: a smokehouse preserves it. Costs {Cost["fisher"][Res.Wood]} wood." },
+            new ToolDef { Id = "bridge", Cat = Cat.Water, Label = "Wooden Bridge", Bridge = true,
+                Desc = $"Press on one bank and drag in a straight line across the water to the far bank. Costs {World.BridgeWood} wood a tile over water (1 for road on land). A wooden bridge spans up to {World.BridgeMaxSpan} tiles of shallow or medium water: not the sea, not deep channels. Walkers, workers and carts can use it once it joins your roads." },
             new ToolDef { Id = "claim", Cat = Cat.Land, Label = "Claim Land", Claim = true,
                 Desc = $"Click a 16 x 16 parcel next to land you own to claim it, free of charge. The tip tells you what lies on a parcel before you click. You can build, zone, clear and work only land you own. The whole map is 256 x 256 tiles." },
             new ToolDef { Id = "clear", Cat = Cat.Bulldoze, Label = "Demolish", Clear = true,
@@ -202,6 +206,9 @@ namespace CrownAndHearth.Game
             EnsureWorldMap();   // the raider camps live on the world map, so it is made at the start (on a worker thread)
             _hud.Toast("Welcome to Crown & Hearth. Pick a category along the bottom to build.", 6);
         }
+
+        // the tiles a drag covers: an L for roads and palisades, a straight line for a bridge
+        System.Collections.Generic.List<(int x, int y)> ToolPath(Vector2Int a, Vector2Int b) => _tool.Bridge ? World.BridgeLine(a.x, a.y, b.x, b.y) : World.LPath(a.x, a.y, b.x, b.y);
 
         const string NewWorldWater = "thornwick.newWorld.water", NewWorldSeed = "thornwick.newWorld.seed";
 
@@ -496,6 +503,7 @@ namespace CrownAndHearth.Game
                 : t.Build != null ? $"{t.Label} ({Hud.CostText(t.Build)}): click a spot to build it." + (ReachOf(t.Build) > 0 ? " The shaded ring is the land it works." : "") + stop
                 : t.Claim ? $"Claim Land: click a 16 x 16 parcel next to your land for free (green = you can, red = not next to your land).{stop}"
                 : t.Road ? $"Road (1 wood a tile): press and drag from a road to lay one.{stop}"
+                : t.Bridge ? $"Wooden bridge ({World.BridgeWood} wood a tile over water): press on one bank and drag in a straight line to the far bank.{stop}"
                 : t.Wall ? $"Palisade (2 wood a tile): press and drag a line. Raiders and people walk around it; a road through the line is a gate.{stop}"
                 : t.Zone != Zone.None ? $"{t.Label}: drag over the land, or click two corners. Green tiles will be zoned, red ones cannot be.{stop}"
                 : t.Unzone ? $"Remove Zones: drag over zoned land. Buildings stay.{stop}"
@@ -568,14 +576,14 @@ namespace CrownAndHearth.Game
                 return;
             }
 
-            if (_tool.Road || _tool.Wall)
+            if (_tool.Road || _tool.Wall || _tool.Bridge)
             {
                 if (mouse.leftButton.wasPressedThisFrame && _hover.HasValue) _roadAnchor = _hover;
                 if (mouse.leftButton.wasReleasedThisFrame && _roadAnchor.HasValue)
                 {
                     var end = _hover ?? _roadAnchor.Value;
-                    var line = World.LPath(_roadAnchor.Value.x, _roadAnchor.Value.y, end.x, end.y);
-                    var r = _tool.Wall ? World.PlaceWallPath(line) : World.PlaceRoadPath(line);
+                    var line = ToolPath(_roadAnchor.Value, end);
+                    var r = _tool.Bridge ? World.PlaceBridgePath(line) : _tool.Wall ? World.PlaceWallPath(line) : World.PlaceRoadPath(line);
                     if (!r.Ok) _hud.Toast(r.Reason);
                     else if (_tool.Id == "wall2")
                     {
@@ -771,11 +779,11 @@ namespace CrownAndHearth.Game
             if (_hover.HasValue)
             {
                 var h = _hover.Value;
-                if (_tool.Road || _tool.Wall)
+                if (_tool.Road || _tool.Wall || _tool.Bridge)
                 {
                     var from = _roadAnchor ?? h;
-                    var path = World.LPath(from.x, from.y, h.x, h.y);
-                    bool ok = (_tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path)).Ok;
+                    var path = ToolPath(from, h);
+                    bool ok = (_tool.Bridge ? World.BridgePathCheck(path) : _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path)).Ok;
                     foreach (var (x, y) in path) _overlay.AddTile(World, x, y, _rot, ok ? Ok : Bad);
                 }
                 else if (_tool.Claim)
@@ -974,13 +982,13 @@ namespace CrownAndHearth.Game
                 if (!cc.Ok) { _tipWarn = World.ParcelTouchesYours(cpx, cpy); return (cc.Reason, !_tipWarn); }
                 return ($"Click to claim this parcel (free): {World.DescribeParcel(cpx, cpy)} ({World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} owned)", false);
             }
-            if (_tool.Road || _tool.Wall)
+            if (_tool.Road || _tool.Wall || _tool.Bridge)
             {
-                var path = World.LPath((_roadAnchor ?? h).x, (_roadAnchor ?? h).y, h.x, h.y);
-                var r = _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path);
+                var path = ToolPath(_roadAnchor ?? h, h);
+                var r = _tool.Bridge ? World.BridgePathCheck(path) : _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path);
                 if (!r.Ok) return (r.Reason, true);
-                int n = r.Count, cost = _tool.Wall ? n * Defs.Cost["wall"][Res.Wood] : n;
-                string what = _tool.Wall ? "palisade" : "road";
+                int n = r.Count, cost = _tool.Bridge ? World.BridgeCost(path) : _tool.Wall ? n * Defs.Cost["wall"][Res.Wood] : n;
+                string what = _tool.Bridge ? "bridge" : _tool.Wall ? "palisade" : "road";
                 return _roadAnchor.HasValue ? ($"{n} new {what} tile{(n == 1 ? "" : "s")}, {cost} wood. Let go to build", false) : ($"Press and drag to lay a {what}", false);
             }
             if (_tool.Build != null)
@@ -1097,6 +1105,13 @@ namespace CrownAndHearth.Game
         {
             var w = World; var lines = new List<string>();
             var b = w.Grid[y, x];
+            if (w.Waters != null && w.Waters.IsWater(x, y))
+            {
+                var wl = w.DescribeWater(x, y);
+                if (b != null) wl.Insert(0, b.Served ? "WOODEN BRIDGE (connected)" : "WOODEN BRIDGE (cut off from the Town Hall)");
+                wl.Add($"Tile {x},{y}");
+                return string.Join("\n", wl);
+            }
             if (b != null && b.T != "road")
             {
                 lines.Add(b.Name.ToUpper());
@@ -1135,6 +1150,7 @@ namespace CrownAndHearth.Game
                 if (b.T == "storehouse") lines.Add($"+{World.StorehouseSpace} storage per material. Hauls up to {b.Workers * World.HaulPerWorker} extra goods/day.");
                 if (b.T == "smokehouse") lines.Add($"Fresh meat {w.FreshMeatStored:0.#} · Winter reserve {w.ResAmt[Res.SmokedMeat]:0.#}");
                 if (b.T == "charcoal") lines.Add($"Fuel stockpile {w.ResAmt[Res.Charcoal]:0.#}. {World.LogsPerCharcoal} logs per charcoal.");
+                if (b.T == "fisher") { var fg = w.FishingGrounds(b); lines.Add(fg.grounds == 0 ? "No water it can fish: nothing reachable on foot within " + World.FishReach + " tiles." : $"Fishes {World.WaterClassName(fg.kind).ToLower()} water: {fg.grounds} tiles in reach, {World.FishLevel(fg.perWorker)} catch (about {fg.perWorker:0.##} food per fisherman a day)."); }
                 if (b.T == "hunter") lines.Add($"Hunts mature forest within {World.HuntingRange} tiles in all seasons.");
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
                 if (b.T == "silo")

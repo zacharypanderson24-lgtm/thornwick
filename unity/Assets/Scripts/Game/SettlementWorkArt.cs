@@ -15,6 +15,7 @@ namespace CrownAndHearth.Game
 
         public Sprite Building(string kind, int view)
         {
+            if (kind == "fisher") return Get("fisher", view, 33, 56, c => { DrawShop(c, false, view); DrawFishRack(c); });
             if (kind != "storehouse" && kind != "smokehouse" && kind != "charcoal") return null;
             return Get(kind, view, kind == "storehouse" ? 65 : 33, 56, canvas =>
             {
@@ -104,6 +105,15 @@ namespace CrownAndHearth.Game
                     c.Set(9, 4, Color(166, 72, 46)); c.Set(10, 3, StrawLight);
                     break;
             }
+        }
+
+        // a fishing hut is the small shop with a drying rack of fish in front (placeholder art until ChatGPT draws one)
+        static void DrawFishRack(Pixels c)
+        {
+            var fish = Color(176, 196, 210); var fishDark = Color(112, 132, 150);
+            c.Line((2, 1), (2, 12), DarkWood); c.Line((11, 1), (11, 12), DarkWood); c.Line((1, 12), (12, 12), Oak);
+            for (int x = 3; x <= 9; x += 3) { c.Line((x, 11), (x, 7), fish); c.Set(x, 6, fishDark); c.Set(x + 1, 9, fish); }
+            c.Line((3, 3), (10, 5), Timber);
         }
 
         static void DrawClamp(Pixels c)

@@ -87,6 +87,7 @@ namespace CrownAndHearth.Sim
                         : DecoMap[ty, tx] == Deco.Ore ? "Ore blocks this tile. Zone it for mining to clear it"
                         : "Too steep to build on");
             }
+            if (type == "fisher" && !NearOpenWater(fp, FishShoreNeeded)) return Result.No("A fishing hut must stand on the shore: put it within two tiles of a river, lake or the sea");
             if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
             if (type == "smithery" && !NextToRoad(fp)) return Result.No("Smithery must touch a road");
             if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");
