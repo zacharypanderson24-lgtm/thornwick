@@ -25,34 +25,6 @@ namespace CrownAndHearth.Sim
             var launch = LaunchTile(b); return launch.HasValue ? Waters.NavRegion[launch.Value.y * N + launch.Value.x] : 0;
         }
 
-        /// <summary>The ferries: landings paired two by two, nearest first, within FerryRange tiles and on the same boat-deep water. Each landing is in at most one.</summary>
-        public List<(Building a, Building b)> FerryPairs()
-        {
-            var pairs = new List<(Building, Building)>();
-            if (Waters == null) return pairs;
-            var landings = Blds.Where(b => b.T == "ferry").ToList(); if (landings.Count < 2) return pairs;
-            var region = landings.ToDictionary(b => b, RegionOf); var used = new HashSet<Building>();
-            foreach (var a in landings)
-            {
-                if (used.Contains(a) || region[a] == 0) continue;
-                Building best = null; int bestD = int.MaxValue;
-                foreach (var b in landings)
-                {
-                    if (b == a || used.Contains(b) || region[b] != region[a]) continue;
-                    int d = Math.Max(Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
-                    if (d <= FerryRange && d < bestD) { best = b; bestD = d; }
-                }
-                if (best != null) { used.Add(a); used.Add(best); pairs.Add((a, best)); }
-            }
-            return pairs;
-        }
-
-        public Building FerryPartner(Building landing)
-        {
-            foreach (var (a, b) in FerryPairs()) { if (a == landing) return b; if (b == landing) return a; }
-            return null;
-        }
-
         /// <summary>Roads standing beside a landing (the ones a ferry joins to the other shore).</summary>
         IEnumerable<(int x, int y)> RoadsBeside(Building landing)
         {
@@ -69,7 +41,7 @@ namespace CrownAndHearth.Sim
         void FerryJoin(bool[] conn, Stack<(int, int)> stack)
         {
             if (Waters == null) return;
-            var pairs = FerryPairs().Where(FerryOperating).ToList(); if (pairs.Count == 0) return;   // a ferry that is not running joins nothing
+            var pairs = FerryRoutes.Where(r => StateOf(r) == FerryState.Operational).Select(Ends).ToList(); if (pairs.Count == 0) return;   // a ferry that is not running joins nothing
             bool grew = true;
             while (grew)
             {
@@ -93,40 +65,25 @@ namespace CrownAndHearth.Sim
             }
         }
 
-        // ---------- winter: does the ferry run? ----------
-        Dictionary<(Building, Building), bool> _runCache = new Dictionary<(Building, Building), bool>(); int _runVersion = -1; bool _runIce;
-
-        /// <summary>A ferry runs unless its route freezes: in winter, if any water on the sailing route is a kind that freezes (small fresh waters), the
-        /// ferry is suspended; routes over big rivers, estuaries and the sea keep running. (Walking over the ice is a separate matter: IceBears.)</summary>
-        public bool FerryOperating((Building a, Building b) pair)
-        {
-            if (!IceOn) return true;
-            if (_runVersion != Version || _runIce != IceOn) { _runCache.Clear(); _runVersion = Version; _runIce = IceOn; }
-            if (_runCache.TryGetValue(pair, out bool run)) return run;
-            var la = LaunchTile(pair.a); var lb = LaunchTile(pair.b); var route = la.HasValue && lb.HasValue ? BoatRoute(la.Value, lb.Value) : null;
-            run = route != null && !route.Any(t => Freezes(Waters.Class[t]) && Waters.Salinity[t] < 40);
-            return _runCache[pair] = run;
-        }
-
-        /// <summary>What a landing is doing, for its panel.</summary>
+        /// <summary>What a landing is doing, for its panel (the route's state; see World.FerryRoutes.cs).</summary>
         public string FerryStatus(Building landing)
         {
-            foreach (var p in FerryPairs()) if (p.a == landing || p.b == landing) return FerryOperating(p) ? "Operational" : "Temporarily suspended: the water on its route is frozen";
-            return "Not linked to another landing";
+            var r = RouteOf(landing); return r == null ? "No ferry route: choose a destination with the Ferry Route tool" : StateText(StateOf(r));
         }
 
         // ---------- ferry boats ----------
         void StepFerryBoats()
         {
             if (Waters == null) return;
-            var pairs = FerryPairs().Where(FerryOperating).ToList();
-            Boats.RemoveAll(b => b.Ferry && !pairs.Any(p => p.a == b.Home));
-            foreach (var (a, partner) in pairs)
+            var running = FerryRoutes.Where(r => StateOf(r) == FerryState.Operational).ToList();
+            Boats.RemoveAll(b => b.Ferry && !running.Any(r => r.Id == b.RouteId));
+            foreach (var r in running)
             {
-                if (Boats.Any(b => b.Ferry && b.Home == a)) continue;
+                if (Boats.Any(b => b.Ferry && b.RouteId == r.Id)) continue;
+                var (a, partner) = Ends(r);
                 var la = LaunchTile(a); var lb = LaunchTile(partner); if (!la.HasValue || !lb.HasValue) continue;
                 var path = BoatRoute(la.Value, lb.Value); if (path == null) continue;
-                Boats.Add(new Boat { Id = ++_boatId, Home = a, Ferry = true, X = la.Value.x, Y = la.Value.y, Px = la.Value.x, Py = la.Value.y, LaunchX = la.Value.x, LaunchY = la.Value.y,
+                Boats.Add(new Boat { Id = ++_boatId, Home = a, Ferry = true, RouteId = r.Id, X = la.Value.x, Y = la.Value.y, Px = la.Value.x, Py = la.Value.y, LaunchX = la.Value.x, LaunchY = la.Value.y,
                     Region = Waters.NavRegion[la.Value.y * N + la.Value.x], Path = path, I = 0, St = BoatState.Moored, Timer = 0 });
             }
         }

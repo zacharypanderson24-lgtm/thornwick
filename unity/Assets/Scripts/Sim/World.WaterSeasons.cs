@@ -74,7 +74,7 @@ namespace CrownAndHearth.Sim
                 else if (!drought && _droughtSeen && YearDay > DroughtTo) Events.Add("The drought is over: the streams are running again.");
                 if (ice != _iceSeen)
                 {
-                    int off = FerryPairs().Count(p => !FerryOperating(p));
+                    int off = FerryRoutes.Count(r => StateOf(r) == FerryState.FrozenRoute);
                     if (ice && off > 0) Events.Add($"{off} ferr{(off == 1 ? "y is" : "ies are")} suspended: the water on {(off == 1 ? "its" : "their")} route has frozen. The roads they joined are cut off until the thaw (people can walk over small frozen waters).");
                     else if (!ice && _iceSeen) Events.Add("The thaw: ferries that were frozen in are running again.");
                 }

@@ -98,19 +98,19 @@ namespace CrownAndHearth.Sim
         public static readonly Dictionary<string, int> Jobs = new Dictionary<string, int>
         {
             { "storehouse", 2 }, { "smokehouse", 2 }, { "charcoal", 2 },
-            { "farm", 4 }, { "wood", 3 }, { "hunter", 2 }, { "fisher", 2 }, { "dock", 3 }, { "watermill", 2 }, { "quarry", 3 }, { "mine", 3 }, { "sawmill", 3 }, { "smithery", 3 }, { "forester", 2 },
+            { "farm", 4 }, { "wood", 3 }, { "hunter", 2 }, { "fisher", 2 }, { "dock", 3 }, { "watermill", 2 }, { "ferry", 2 }, { "quarry", 3 }, { "mine", 3 }, { "sawmill", 3 }, { "smithery", 3 }, { "forester", 2 },
         };
 
         public static readonly Dictionary<string, string> TradeOf = new Dictionary<string, string>
         {
             { "storehouse", "hauling" }, { "smokehouse", "preserving" }, { "charcoal", "charcoal" },
-            { "farm", "farming" }, { "hunter", "hunting" }, { "fisher", "fishing" }, { "dock", "fishing" }, { "watermill", "milling" }, { "wood", "timber" }, { "forester", "timber" }, { "sawmill", "woodwork" }, { "quarry", "quarrying" }, { "mine", "mining" }, { "smithery", "smithing" },
+            { "farm", "farming" }, { "hunter", "hunting" }, { "fisher", "fishing" }, { "dock", "fishing" }, { "watermill", "milling" }, { "ferry", "ferrying" }, { "wood", "timber" }, { "forester", "timber" }, { "sawmill", "woodwork" }, { "quarry", "quarrying" }, { "mine", "mining" }, { "smithery", "smithing" },
         };
-        public static readonly string[] Trades = { "farming", "hunting", "timber", "woodwork", "quarrying", "mining", "smithing", "preserving", "charcoal", "hauling", "fishing", "milling" };
+        public static readonly string[] Trades = { "farming", "hunting", "timber", "woodwork", "quarrying", "mining", "smithing", "preserving", "charcoal", "hauling", "fishing", "milling", "ferrying" };
         public static readonly Dictionary<string, string> TradeNames = new Dictionary<string, string>
         {
             { "hauling", "Hauling" }, { "preserving", "Food preserving" }, { "charcoal", "Charcoal burning" },
-            { "farming", "Farming" }, { "hunting", "Hunting" }, { "fishing", "Fishing" }, { "milling", "Milling" }, { "timber", "Timber" }, { "woodwork", "Woodworking" }, { "quarrying", "Quarrying" }, { "mining", "Mining" }, { "smithing", "Smithing" },
+            { "farming", "Farming" }, { "hunting", "Hunting" }, { "fishing", "Fishing" }, { "milling", "Milling" }, { "ferrying", "Ferrying" }, { "timber", "Timber" }, { "woodwork", "Woodworking" }, { "quarrying", "Quarrying" }, { "mining", "Mining" }, { "smithing", "Smithing" },
         };
 
         /// <summary>Tree species: which tree_N variants each species uses, and its share of forests. tree_1 is retired (6 old oak takes its share).</summary>

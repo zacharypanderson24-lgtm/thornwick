@@ -25,20 +25,16 @@ namespace CrownAndHearth.Tests
         static int Region(World w, (int x, int y) t) { var b = new Building { T = "ferry", X = t.x, Y = t.y, Sz = 1 }; return w.RegionOf(b); }
 
         [Test]
-        public void FerryLandingsNeedDeepWaterAndPairUpAcrossTheSameWater()
+        public void FerryLandingsNeedDeepWaterAndNothingPairsByItself()
         {
             var w = Make(WaterPreset.Lakeside, 1);
             Assert.IsFalse(w.CanPlace("ferry", C + 12, C + 12).Ok);
             var spots = Landings(w); Assert.Greater(spots.Count, 4);
             var a = spots[0]; var b = spots.First(s => Region(w, s) == Region(w, a) && System.Math.Max(System.Math.Abs(s.x - a.x), System.Math.Abs(s.y - a.y)) is >= 5 and <= World.FerryRange);
-            var la = w.AddBld("ferry", a.x, a.y); Assert.IsNull(w.FerryPartner(la), "a lone landing is not a ferry");
-            var lb = w.AddBld("ferry", b.x, b.y);
-            Assert.AreSame(lb, w.FerryPartner(la)); Assert.AreSame(la, w.FerryPartner(lb));
-            Assert.AreEqual(1, w.FerryPairs().Count);
-            // too far apart: not paired
-            w.Blds.Remove(lb); w.Grid[b.y, b.x] = null;
-            var far = spots.FirstOrDefault(s => System.Math.Max(System.Math.Abs(s.x - a.x), System.Math.Abs(s.y - a.y)) > World.FerryRange + 2);
-            if (far != default) { var lf = w.AddBld("ferry", far.x, far.y); Assert.IsNull(w.FerryPartner(la), "beyond the ferry range"); Assert.IsNull(w.FerryPartner(lf)); }
+            var la = w.AddBld("ferry", a.x, a.y); var lb = w.AddBld("ferry", b.x, b.y);
+            Assert.IsNull(w.FerryPartner(la), "two landings are not a ferry until the player links them"); Assert.AreEqual(0, w.FerryPairs().Count);
+            Assert.IsTrue(w.EstablishRoute(la, lb).Ok);
+            Assert.AreSame(lb, w.FerryPartner(la)); Assert.AreSame(la, w.FerryPartner(lb)); Assert.AreEqual(1, w.FerryPairs().Count);
         }
 
         [Test]
@@ -60,9 +56,11 @@ namespace CrownAndHearth.Tests
             w.Recalc();
             Assert.IsTrue(w.Grid[na.y, na.x].Served, "the road to landing A is connected");
             Assert.IsFalse(w.Grid[nb.y, nb.x].Served, "across the water the road is cut off");
-            w.AddBld("ferry", a.x, a.y); w.Recalc();
+            var fa = w.AddBld("ferry", a.x, a.y); w.Recalc();
             Assert.IsFalse(w.Grid[nb.y, nb.x].Served, "one landing alone joins nothing");
-            w.AddBld("ferry", b.x, b.y); w.Recalc();
+            var fb = w.AddBld("ferry", b.x, b.y); w.Recalc();
+            Assert.IsFalse(w.Grid[nb.y, nb.x].Served, "two landings nobody has linked join nothing");
+            Assert.IsTrue(w.EstablishRoute(fa, fb).Ok); w.FerryRoutes[0].GraceUntil = int.MaxValue; w.Recalc();
             Assert.IsTrue(w.Grid[nb.y, nb.x].Served, "with the second landing the far shore's road is served from the Town Hall");
             // and it works the other way round, and a road further along the far shore joins too
             var far2 = Beside(nb); w.AddBld("road", far2.x, far2.y); w.Recalc(); Assert.IsTrue(w.Grid[far2.y, far2.x].Served);
@@ -74,6 +72,7 @@ namespace CrownAndHearth.Tests
             var w = Make(WaterPreset.Lakeside, 1); var spots = Landings(w); var a = spots[0];
             var b = spots.First(s => Region(w, s) == Region(w, a) && System.Math.Max(System.Math.Abs(s.x - a.x), System.Math.Abs(s.y - a.y)) is >= 6 and <= World.FerryRange);
             var la = w.AddBld("ferry", a.x, a.y); var lb = w.AddBld("ferry", b.x, b.y);
+            Assert.IsTrue(w.EstablishRoute(la, lb).Ok); w.FerryRoutes[0].GraceUntil = int.MaxValue;
             var launchA = w.LaunchTile(la).Value; var launchB = w.LaunchTile(lb).Value; bool atA = false, atB = false;
             for (int d = 0; d < 120; d++)
             {
@@ -85,7 +84,7 @@ namespace CrownAndHearth.Tests
                 }
             }
             Assert.AreEqual(1, w.Boats.Count(x => x.Ferry), "one ferry boat for the pair"); Assert.IsTrue(atA && atB, "it visits both landings");
-            w.Blds.Remove(lb); w.Grid[b.y, b.x] = null; w.StepBoats(); Assert.AreEqual(0, w.Boats.Count(x => x.Ferry), "no partner, no ferry");
+            w.Blds.Remove(lb); w.Grid[b.y, b.x] = null; w.StepBoats(); Assert.AreEqual(0, w.Boats.Count(x => x.Ferry), "a landing gone, no ferry");
         }
 
         [Test]
@@ -111,7 +110,7 @@ namespace CrownAndHearth.Tests
         {
             var w = Make(WaterPreset.Lakeside, 1); var spots = Landings(w); var a = spots[0];
             var b = spots.First(s => Region(w, s) == Region(w, a) && System.Math.Max(System.Math.Abs(s.x - a.x), System.Math.Abs(s.y - a.y)) is >= 6 and <= World.FerryRange);
-            w.AddBld("ferry", a.x, a.y); w.AddBld("ferry", b.x, b.y);
+            var sa = w.AddBld("ferry", a.x, a.y); var sb = w.AddBld("ferry", b.x, b.y); Assert.IsTrue(w.EstablishRoute(sa, sb).Ok);
             var coast = new World(1, TerrainStyle.Ranges, Relief.Lowland, WaterPreset.Coastal); coast.ClaimAll();
             int px = -1, py = -1;
             for (int y = 8; y < N - 8 && px < 0; y++) for (int x = 8; x < N - 8; x++) if (Enumerable.Range(0, 4).All(k => coast.Waters.Class[(y + k / 2) * N + x + k % 2] == WaterClass.None && coast.Grid[y + k / 2, x + k % 2] == null) && coast.CanPlace("port", x, y).Ok) { px = x; py = y; break; }

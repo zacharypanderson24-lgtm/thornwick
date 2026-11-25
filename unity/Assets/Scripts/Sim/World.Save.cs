@@ -34,7 +34,8 @@ namespace CrownAndHearth.Sim
                 ["style"] = SaveKey(Style), ["relief"] = SaveKey(Relief),
                 ["water"] = Waters == null ? JValue.CreateNull() : new JValue(Waters.Encode()),
                 ["canals"] = new JArray(Canals.OrderBy(k => k)),
-                ["moats"] = new JArray(Moats.OrderBy(k => k)),   // dug moat tiles   // dug irrigation canal tiles
+                ["moats"] = new JArray(Moats.OrderBy(k => k)),   // dug moat tiles
+                ["ferryRoutes"] = new JArray(FerryRoutes.Select(r => new JObject { ["id"] = r.Id, ["ax"] = r.AX, ["ay"] = r.AY, ["bx"] = r.BX, ["by"] = r.BY, ["off"] = r.Suspended, ["grace"] = r.GraceUntil, ["mil"] = r.MilitaryAllowed })),   // player-defined ferry routes   // dug irrigation canal tiles
                 ["fishStock"] = JObject.FromObject(FishStock.ToDictionary(kv => kv.Key.ToString(), kv => Math.Round(kv.Value, 4))),   // fish left in each water body (absent: untouched)   // surface water (rivers, lakes, seas); absent in every older save
                 // underground mining: what has been surveyed and taken (deposit sizes regenerate from the seed)
                 ["surveyed"] = new JArray(Enumerable.Range(0, N * N).Where(k => Surveyed[k])),
@@ -249,6 +250,13 @@ namespace CrownAndHearth.Sim
                 world.Waters = SurfaceWater.Decode(waterSave.Value<string>());
                 if (world.Waters.Size != N) { world.Waters = null; }
             }
+            if (world.Waters != null)
+            {
+                if (save["ferryRoutes"] is JArray routes)
+                    foreach (var rt in routes.OfType<JObject>())
+                        world.RestoreRoute(new FerryRoute { Id = (int)rt["id"], AX = (int)rt["ax"], AY = (int)rt["ay"], BX = (int)rt["bx"], BY = (int)rt["by"], Suspended = (bool?)rt["off"] ?? false, GraceUntil = (int?)rt["grace"] ?? 0, MilitaryAllowed = (bool?)rt["mil"] ?? true });
+                else world.PendingFerryMigration = true;   // a save from before ferry routes: its automatically paired ferries become routes once the buildings are in
+            }
             if (world.Waters != null && save["moats"] is JArray moatTiles)
                 foreach (var t in moatTiles) { int mk = t.Value<int>(); if (mk >= 0 && mk < N * N) world.Moats.Add(mk); }
             if (world.Waters != null && save["canals"] is JArray canalTiles)
@@ -304,6 +312,7 @@ namespace CrownAndHearth.Sim
                 pen.LastShearedYear = Math.Clamp(entry.Value<int?>("lastShearedYear") ?? 0, 0, world.Year);
                 world.AddPen(pen);
             }
+            if (world.PendingFerryMigration) world.MigrateAutomaticFerries();   // World.FerryRoutes.cs
             world.Recalc();
             if (save.Value<bool?>("farmFields") != true) world.AddStarterFarmFields();
             if (save.Value<int?>("flaxPercent") is int mix) world.SetFlaxPercent(mix);
