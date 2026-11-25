@@ -123,7 +123,6 @@ namespace CrownAndHearth.Game
         public World World { get; private set; }
         int _rot, _drawnVersion = -1, _drawnRot = -1, _speed = 1;
         Rect _builtRect;   // the part of the world the renderers last built (in world units)
-        int _progressVersion = -1;   // world version the tutorial's progress line was last counted at
         WorldMap _worldMap; System.Threading.Tasks.Task<WorldMap> _worldMapTask;   // the conquest map, made on a background thread the first time the Map opens
         World _campWorld;   // while a raider camp is open the game view shows this little world instead of the settlement
         float _townAcc;     // how far through its day an NPC settlement being looked at is
@@ -137,11 +136,8 @@ namespace CrownAndHearth.Game
         ArtLibrary _art;
         GroundRenderer _ground; ObjectRenderer _objects; OverlayRenderer _overlay; AgentRenderer _agents;
         CameraRig _cam; Hud _hud;
-        readonly Tutorial _tutorial = new Tutorial();
-        int _raidSig = -1;
         Incident _incidentSeen;   // the card the game paused for, and the speed to go back to once it is answered
         int _speedBeforeIncident;
-        const string TutorialSeenKey = "crown-hearth-first-year-tutorial-v2-seen";
 
         void Start()
         {
@@ -161,8 +157,6 @@ namespace CrownAndHearth.Game
             _cam = Camera.main.GetComponent<CameraRig>();
             if (_cam == null) _cam = Camera.main.gameObject.AddComponent<CameraRig>();
             var home = IsoView.TileCenter(World, Defs.Start, Defs.Start + 2, _rot);
-            // on a first run the tutorial panel covers the top middle of the screen: start with the town lower down, in clear view
-            if (PlayerPrefs.GetInt(TutorialSeenKey, 0) == 0) home.y += 170f * Screen.height / 900f / (IsoView.PPU * _cam.Zoom);
             _cam.CenterOn(home);
 
             _hud = new GameObject("HudRoot", typeof(Hud)).GetComponent<Hud>();
@@ -170,15 +164,10 @@ namespace CrownAndHearth.Game
             _hud.BannerPicked += SetBanner;
             _hud.ToolPicked += id => SetTool(Tools.First(t => t.Id == id));
             _hud.LivestockFocusRequested += (x, y) => _cam.CenterOn(IsoView.TileCenter(World, x, y, _rot));
-            _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); _tutorial.SpeedChanged = true; };
+            _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); };
             _hud.RotatePicked += Rotate;
             _hud.PrioMoved += MovePrio;
             _hud.WorkersAdjusted += (trade, dir) => World.AdjustTradeTarget(trade, dir);
-            _hud.WorkforceToggled += open => { if (open) _tutorial.WorkersOpened = true; };
-            _hud.TutorialOpen += () => { _speed = 0; _hud.SetSpeed(_speed); _tutorial.Start(World, _tutorial.Finished ? 0 : _tutorial.Index); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
-            _hud.TutorialNext += () => { _tutorial.Next(World); if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
-            _hud.TutorialBack += () => { _tutorial.Back(World); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
-            _hud.TutorialClose += () => { _tutorial.Close(); PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
             _hud.SavePicked += SaveSettlement;
             _hud.MapToggled += open => { if (open) EnsureWorldMap(); };
             _hud.InvasionConfirmed += (camp, groups) => World.BeginInvasion(camp, groups);
@@ -204,9 +193,7 @@ namespace CrownAndHearth.Game
             _hud.RestartPicked += () => UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
             SetTool(_tool); _hud.SetSpeed(_speed);
             EnsureWorldMap();   // the raider camps live on the world map, so it is made at the start (on a worker thread)
-            // the tutorial opens by itself until the player has finished or closed it once (the Tutorial button brings it back)
-            if (PlayerPrefs.GetInt(TutorialSeenKey, 0) == 0) { _speed = 0; _hud.SetSpeed(_speed); _tutorial.Start(World); _hud.ShowTutorial(_tutorial); }
-            else _hud.Toast("Welcome back to Crown & Hearth. Pick a category along the bottom to build; the Tutorial button walks through the game.", 6);
+            _hud.Toast("Welcome to Crown & Hearth. Pick a category along the bottom to build.", 6);
         }
 
         static string SavePath => Path.Combine(Application.persistentDataPath, "thornwick-save-1.json");
@@ -399,8 +386,6 @@ namespace CrownAndHearth.Game
             var camBefore = _cam.Center; int zoomBefore = _cam.ZoomIndex;
             bool modal = _hud.MapOpen && _campWorld == null;   // the world map is modal, the camp view is not (you pan and zoom it)
             _cam.Tick(!overUi && !modal, !_hud.EditingBanner && !modal);
-            if ((_cam.Center - camBefore).sqrMagnitude > 1e-6f) _tutorial.Panned = true;
-            if (_cam.ZoomIndex != zoomBefore) _tutorial.Zoomed = true;
             if (_campWorld != null) HandleCampMouse(overUi); else HandleMouse(overUi || _hud.MapOpen);
 
             if (World.Defeated && _speed != 0) { _speed = 0; _hud.SetSpeed(0); }   // the clock stops when the settlement has fallen
@@ -454,23 +439,12 @@ namespace CrownAndHearth.Game
             _hud.RefreshTownMenus(World);
             PollWorldMap();
             if (World.Events.Count > 0) { _hud.Toast(World.Events[World.Events.Count - 1], 8); World.Events.Clear(); }   // cave-ins, new levels, empty surveys
-            var done = _tutorial.Check(World);
-            if (done != null)
-            {
-                _hud.Toast($"Well done: {done.Title}." + (_tutorial.Finished ? " That's the whole tutorial." : ""), 4);
-                if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1);
-                _hud.ShowTutorial(_tutorial);
-                _progressVersion = -1;
-            }
             var raid = World.Raid;
             if (raid != null)
             {
                 if (!raid.StartAnnounced) { raid.StartAnnounced = true; _hud.Toast($"Raiders! A band of {raid.Band} is coming in from the {raid.From}.", 6); }
                 if (raid.Over && !raid.EndAnnounced) { raid.EndAnnounced = true; _hud.Toast($"The raid is over: {raid.Killed} raiders cut down, {raid.Escaped} got away with {raid.Stolen.Values.Sum()} goods.", 8); }
-                int sig = raid.Killed * 10000 + raid.Escaped * 100 + raid.Active + (raid.Over ? 1000000 : 0);
-                if (sig != _raidSig) { _raidSig = sig; if (_tutorial.Active && !_tutorial.Finished) _hud.ShowTutorial(_tutorial); }
             }
-            if (World.Version != _progressVersion) { _progressVersion = World.Version; _hud.SetTutorialProgress(_tutorial.Progress(World)); }
         }
 
         void HandleKeys()
@@ -490,10 +464,9 @@ namespace CrownAndHearth.Game
                 if (c.Cat != Cat.Inspect && (kb[c.Hotkey].wasPressedThisFrame || (c.Alt != Key.None && kb[c.Alt].wasPressedThisFrame))) _hud.CategoryKey(c.Cat);
             if (kb.qKey.wasPressedThisFrame) Rotate(-1);
             if (kb.eKey.wasPressedThisFrame) Rotate(1);
-            if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); _tutorial.SpeedChanged = true; }
+            if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
             if (kb.uKey.wasPressedThisFrame)
             {
-                _tutorial.UndergroundViewed = true;
                 _ugLevel = (_ugLevel + 1) % (World.Bands + 1);
                 _hud.Toast(_ugLevel == 0 ? "Underground view off." : $"Underground view: ore band {_ugLevel} of {World.Bands}" +
                     (_ugLevel == 1 ? " (just under the surface). Ore lies in hills and mountains. Orange = ore a tunnel has revealed, brighter = richer; grey = revealed, nothing here; blue = Mining zone not dug near yet; yellow = tunnel. U for deeper." : _ugLevel < World.Bands ? ". U for deeper." : " (deepest, richest). U to turn off."), 6);
@@ -525,7 +498,6 @@ namespace CrownAndHearth.Game
 
         void Rotate(int dir)
         {
-            _tutorial.Rotated = true;
             var center = IsoView.PickTile(World, _cam.Center, _rot) ?? new Vector2Int(Defs.Start, Defs.Start);
             _rot = (_rot + dir + 4) % 4;
             _cam.CenterOn(IsoView.TileCenter(World, center.x, center.y, _rot));

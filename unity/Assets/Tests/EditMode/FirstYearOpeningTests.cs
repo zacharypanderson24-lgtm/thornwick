@@ -30,18 +30,11 @@ internal static class FirstYearPlan {
  public static void Fields(World w,int count){var farm=w.Blds.Single(b=>b.T=="farm");w.SetFlaxPercent(0);for(int r=1;r<=World.FarmReach&&w.FarmFields().Count<count;r++)for(int y=farm.Y-r;y<=farm.Y+farm.Sz-1+r&&w.FarmFields().Count<count;y++)for(int x=farm.X-r;x<=farm.X+farm.Sz-1+r&&w.FarmFields().Count<count;x++){if(w.Grid[y,x]!=null||!w.Fert[y,x])continue;w.ZoneRect(Zone.Farm,x,y,x,y);}if(w.FarmFields().Count<count)throw new Exception("Not enough usable fields");}
  public static void Lumber(World w,Building lodge){var hunter=w.Blds.First(b=>b.T=="hunter");int marked=0;for(int r=1;r<=Defs.WorkR&&marked<18;r++)for(int y=lodge.Y-r;y<=lodge.Y+lodge.Sz-1+r&&marked<18;y++)for(int x=lodge.X-r;x<=lodge.X+lodge.Sz-1+r&&marked<18;x++)if(w.HasTree(x,y)&&Dist(x,y,hunter.X,hunter.Y)>7&&w.SetZone(Zone.Wood,x,y).Ok)marked++;w.Recalc();Actions.Add("lumber tiles="+marked);}
  public static void Mining(World w,Building b){for(int y=b.Y-8;y<=b.Y+b.Sz+8;y++)for(int x=b.X-8;x<=b.X+b.Sz+8;x++)if(w.ZoneMap[y,x]==Zone.None)w.SetZone(Zone.Mine,x,y);w.Recalc();}
- // Feed only the camera/panel signals a player supplies; world goals still use the simulated village.
- static void AdvanceTutorial(World w,Tutorial t){for(int guard=0;guard<Tutorial.Steps.Count&&!t.Finished;guard++){
-  if(t.Current.Explanation){t.Next(w);continue;}
-  t.SpeedChanged=t.Panned=t.Zoomed=t.Rotated=t.WorkersOpened=t.UndergroundViewed=true;
-  if(t.Check(w)==null)break;
- }}
- public static World Run(int seed,int plots,int mineDay){Actions.Clear();var w=new World(seed);var tutorial=new Tutorial();tutorial.Start(w);Fields(w,plots);Build(w,"silo");Build(w,"hunter");double min=99999;int firstStarve=0;double firstOre=0;int firstOreDay=0;double logs=0,stone=0;int firstHarvest=0;double before;for(int i=1;i<=360;i++){
+ public static World Run(int seed,int plots,int mineDay){Actions.Clear();var w=new World(seed);Fields(w,plots);Build(w,"silo");Build(w,"hunter");double min=99999;int firstStarve=0;double firstOre=0;int firstOreDay=0;double logs=0,stone=0;int firstHarvest=0;double before;for(int i=1;i<=360;i++){
   if(i==30)Lumber(w,Build(w,"wood"));if(i==60)Build(w,"sawmill");if(i==120)Mining(w,Build(w,"quarry"));if(i==mineDay){w.SetMineSupportsRequired(true);Mining(w,Build(w,"mine"));}
-  before=w.ResAmt[Res.Food];double oldOre=w.ResAmt[Res.Ore],oldLogs=w.ResAmt[Res.Logs],oldStone=w.ResAmt[Res.Stone];w.Tick();if(firstHarvest==0&&w.ResAmt[Res.Food]>before+50)firstHarvest=i;if(firstOreDay==0&&w.ResAmt[Res.Ore]>oldOre+.01)firstOreDay=i;firstOre+=Math.Max(0,w.ResAmt[Res.Ore]-oldOre);logs+=Math.Max(0,w.ResAmt[Res.Logs]-oldLogs);stone+=Math.Max(0,w.ResAmt[Res.Stone]-oldStone);min=Math.Min(min,w.EdibleFoodStored);if(w.Starving)throw new Exception("Starvation on day "+i);if(w.WaterShortDays>0)throw new Exception("Thirst on "+i); AdvanceTutorial(w,tutorial);
+  before=w.ResAmt[Res.Food];double oldOre=w.ResAmt[Res.Ore],oldLogs=w.ResAmt[Res.Logs],oldStone=w.ResAmt[Res.Stone];w.Tick();if(firstHarvest==0&&w.ResAmt[Res.Food]>before+50)firstHarvest=i;if(firstOreDay==0&&w.ResAmt[Res.Ore]>oldOre+.01)firstOreDay=i;firstOre+=Math.Max(0,w.ResAmt[Res.Ore]-oldOre);logs+=Math.Max(0,w.ResAmt[Res.Logs]-oldLogs);stone+=Math.Max(0,w.ResAmt[Res.Stone]-oldStone);min=Math.Min(min,w.EdibleFoodStored);if(w.Starving)throw new Exception("Starvation on day "+i);if(w.WaterShortDays>0)throw new Exception("Thirst on "+i);
   if(i==180)Console.WriteLine("summer food="+Math.Round(w.EdibleFoodStored)+" pop="+w.Peasants);
  }Console.WriteLine("SEED="+seed+" plots="+plots+" mineDay="+mineDay+" starve="+firstStarve+" minFood="+Math.Round(min,1)+" finalFood="+Math.Round(w.EdibleFoodStored,1)+" pop="+w.Peasants+" wood="+Math.Round(w.ResAmt[Res.Wood])+" logsDeliveredNet="+logs+" stone="+stone+" ore="+Math.Round(firstOre,1)+" oreFirst="+firstOreDay+" harvest="+firstHarvest+" deaths="+w.MinerDeaths+" actions="+string.Join(";",Actions));
- NUnit.Framework.Assert.That(tutorial.Finished,NUnit.Framework.Is.True,"Tutorial stuck at "+tutorial.Current?.Id);
  return w;
  }
 }
