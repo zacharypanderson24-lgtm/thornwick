@@ -32,6 +32,7 @@ namespace CrownAndHearth.Sim
             {
                 ["v"] = 1, ["v2"] = true, ["farmFields"] = true, ["unity"] = true, ["seed"] = Seed, ["day"] = Day,
                 ["style"] = SaveKey(Style), ["relief"] = SaveKey(Relief),
+                ["water"] = Waters == null ? JValue.CreateNull() : new JValue(Waters.Encode()),   // surface water (rivers, lakes, seas); absent in every older save
                 // underground mining: what has been surveyed and taken (deposit sizes regenerate from the seed)
                 ["surveyed"] = new JArray(Enumerable.Range(0, N * N).Where(k => Surveyed[k])),
                 ["oreTaken"] = JObject.FromObject(OreTaken), ["minerDeaths"] = MinerDeaths, ["caveIns"] = CaveIns,
@@ -240,6 +241,11 @@ namespace CrownAndHearth.Sim
             else world.ClaimSquare(offset, offset, size);
             // underground ore: a Unity save regenerates the deposits it was made with (from the seed's untouched terrain); a browser
             // save has no mining yet, so its deposits follow the ground as loaded. Neither moves the saved ore showings.
+            if (save["water"] is JValue waterSave && waterSave.Type == JTokenType.String && size == N)
+            {
+                world.Waters = SurfaceWater.Decode(waterSave.Value<string>());
+                if (world.Waters.Size != N) { world.Waters = null; }
+            }
             world.GenDeposits(unityTerrain ? (style == TerrainStyle.Classic ? GenHeights(world.Seed) : GenRangeHeights(world.Seed, relief)) : world.Hv, false);
             if (save["surveyed"] is JArray surveyed)
                 foreach (var k in surveyed.Select(t => t.Value<int>()))

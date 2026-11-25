@@ -91,12 +91,14 @@ namespace CrownAndHearth.Sim
 
         /// <param name="style">Ranges (the game) or Classic (the browser prototype's terrain, used by the parity tests).</param>
         /// <param name="relief">How mountainous the region is (Ranges only).</param>
-        public World(int seed = 7, TerrainStyle style = TerrainStyle.Ranges, Relief relief = Relief.Upland) : this(seed, true, style, relief) { }
+        /// <param name="water">Surface water (rivers, lakes, seas; World.Hydrology.cs). None, the default, is the dry map every existing game has.</param>
+        public World(int seed = 7, TerrainStyle style = TerrainStyle.Ranges, Relief relief = Relief.Upland, WaterPreset water = WaterPreset.None) : this(seed, true, style, relief, water) { }
 
         /// <summary>createSettlement false: an empty world for World.LoadJson to fill in (terrain comes from the save).</summary>
-        World(int seed, bool createSettlement, TerrainStyle style = TerrainStyle.Ranges, Relief relief = Relief.Upland)
+        World(int seed, bool createSettlement, TerrainStyle style = TerrainStyle.Ranges, Relief relief = Relief.Upland, WaterPreset water = WaterPreset.None)
         {
             Seed = seed == 0 ? 7 : seed;
+            _waterPreset = style == TerrainStyle.Ranges ? water : WaterPreset.None;   // the browser-compatible Classic terrain stays dry
             Mil = new MilitarySystem(this);
             Style = style; Relief = relief;
             if (!createSettlement) return;
@@ -123,9 +125,13 @@ namespace CrownAndHearth.Sim
         {
             // Classic (the browser's) can keep a loaded smaller map's square clear of new mountains; Ranges always keep the town valley open
             var hv = Style == TerrainStyle.Classic ? GenHeights(Seed, avoid) : GenRangeHeights(Seed, Relief);
+            var dry = hv;   // the terrain before water was cut into it: underground deposits follow it (a save regenerates them from it)
+            if (_waterPreset != WaterPreset.None) hv = GenSurfaceWater(hv);   // rivers, lakes and seas cut into the terrain (World.Hydrology.cs)
             Array.Copy(hv, Hv, hv.Length);
             for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) GenTile(x, y);
-            GenDeposits();   // underground ore, World.Mining.cs
+            if (Waters != null) ApplyWaterFertility();
+            GenDeposits(Waters != null ? dry : null);   // underground ore, World.Mining.cs (water worlds: from the terrain before water was cut in)
+            if (Waters != null) for (int y = 0; y < N; y++) for (int x = 0; x < N; x++) if (Waters.Class[y * N + x] != WaterClass.None) DecoMap[y, x] = Deco.None;   // no ore showing on a river bed
         }
 
         // ---------- Mountains ----------
@@ -287,6 +293,7 @@ namespace CrownAndHearth.Sim
         // ---------- Tiles: fertility, mountains, outcrops, ore, forest ----------
         void GenTile(int x, int y)
         {
+            if (Waters != null && Waters.Class[y * N + x] != WaterClass.None) return;   // nothing grows on or in water
             int dist = Math.Max(Math.Abs(x - Start), Math.Abs(y - Start));
             Fert[y, x] = Math.Max(Math.Abs(x - Start), Math.Abs(y - (Start + 3))) <= 7 || Noise.VNoise(x * 0.11 + 10, y * 0.11 + 10, Seed + 20) > 0.55;
             if (dist < 6) return;
