@@ -70,10 +70,7 @@ namespace CrownAndHearth.Game
             view.gameObject.AddComponent<RectMask2D>();
             _milListContent = MilRegion(view, "Content", 0, 1, 1, 1, Vector2.zero, Vector2.zero);
             _milListContent.pivot = new Vector2(0.5f, 1);
-            var layout = _milListContent.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = 6; layout.padding = new RectOffset(4, 4, 4, 4);
-            layout.childControlWidth = true; layout.childControlHeight = false; layout.childForceExpandWidth = true; layout.childForceExpandHeight = false;
-            _milListContent.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            MilitaryListLayout.Configure(_milListContent);
             _milScroll = view.gameObject.AddComponent<ScrollRect>();
             _milScroll.content = _milListContent; _milScroll.viewport = view; _milScroll.horizontal = false; _milScroll.vertical = true;
             _milScroll.movementType = ScrollRect.MovementType.Clamped; _milScroll.scrollSensitivity = 40;
@@ -129,7 +126,7 @@ namespace CrownAndHearth.Game
         {
             var root = MakePanel(_milListContent, "Card", Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
             var img = root.GetComponent<Image>(); img.color = Btn;
-            var le = root.gameObject.AddComponent<LayoutElement>(); le.preferredHeight = 92; le.minHeight = 92;
+            MilitaryListLayout.SizeCard(root.gameObject);
             var btn = root.gameObject.AddComponent<Button>(); btn.targetGraphic = img;
             root.gameObject.AddComponent<RectMask2D>();
             var v = new MilCardView { Root = root, Bg = img };
