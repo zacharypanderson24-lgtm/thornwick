@@ -132,6 +132,7 @@ namespace CrownAndHearth.Sim
             foreach (var (i, j) in b.Tiles()) { Grid[j, i] = null; ZoneMap[j, i] = Zone.None; }
             Blds.Remove(b);
             Events.Add($"The {Names.GetValueOrDefault(b.T, b.T)} burned down.");
+            HappinessShift(-4, "A building burned down");   // World.Happiness.cs
             Touch(); Recalc();
         }
 

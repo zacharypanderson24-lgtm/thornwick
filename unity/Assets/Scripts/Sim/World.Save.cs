@@ -87,7 +87,7 @@ namespace CrownAndHearth.Sim
                 // water (World.Water.cs): what each aquifer still holds, by id (the patches regenerate from the seed)
                 ["aquifers"] = new JArray(Aquifers.Select(a => Math.Round(a.Reserve, 3))),
                 ["hallHp"] = Math.Round(HallHp, 2), ["defeat"] = (int)Defeat, ["defeatDay"] = DefeatDay,   // World.Defeat.cs; older saves have none
-                ["campaign"] = SaveCampaign(), ["campaignOn"] = CampaignOn, ["incident"] = SaveIncident(), ["scenario"] = SaveScenario(), ["lastScenarioEnd"] = LastScenarioEnd,   // World.Campaign.cs, World.Incidents.cs, World.Scenarios.cs
+                ["campaign"] = SaveCampaign(), ["campaignOn"] = CampaignOn, ["incident"] = SaveIncident(), ["scenario"] = SaveScenario(), ["lastScenarioEnd"] = LastScenarioEnd, ["happiness"] = SaveHappiness(),   // World.Happiness.cs, World.Campaign.cs, World.Incidents.cs, World.Scenarios.cs
                 ["blds"] = new JArray(Blds.Select(SaveBuilding)),
             }.ToString(Formatting.None);
         }
@@ -306,6 +306,7 @@ namespace CrownAndHearth.Sim
             world.LoadIncident(save["incident"] as JObject);
             world.LoadScenario(save["scenario"] as JObject, save.Value<int?>("lastScenarioEnd") ?? -1000);
             world.LoadCampaign(save["campaign"] as JArray, save.Value<bool?>("campaignOn") ?? false);
+            world.LoadHappiness(save["happiness"] as JObject);
             world.ComputeDemand();
             return world;
         }
