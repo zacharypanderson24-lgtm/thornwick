@@ -71,7 +71,7 @@ default:return System.Array.Empty<string>();} }
   }
   public static Sprite Rock(World w,int x,int y)=>Load(Pick(Rocks(For(w)),x,y,75));
   public static Sprite Understory(World w,int x,int y) {
-   if(w.ZoneMap[y,x]!=Zone.None||w.IsMountain(x,y)||Noise.Hash2(x,y,77)>.045)return null;
+   if(w.ZoneMap[y,x]!=Zone.None||w.IsMountain(x,y)||w.IsWaterTile(x,y)||Noise.Hash2(x,y,77)>.045)return null;
    return Load(Pick(Plants(For(w)),x,y,79));
   }
   public static int GroundCell(World w,int x,int y) {

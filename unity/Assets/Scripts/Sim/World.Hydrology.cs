@@ -20,6 +20,21 @@ namespace CrownAndHearth.Sim
         /// <summary>True when the tile is open water (river, lake, pond, sea). Wet ground (wetland) is not water.</summary>
         public bool IsWaterTile(int x, int y) => Waters != null && Waters.IsWater(x, y);
 
+        /// <summary>Why this tile cannot be built on because of water, or null. Open water of any depth blocks ordinary buildings, zones, roads
+        /// and walls (specialised ones, such as bridges and docks, will ask here too); marsh blocks buildings and zones but not roads.</summary>
+        public string WaterBlock(int x, int y, bool buildingOrZone)
+        {
+            if (Waters == null || !Inb(x, y)) return null;
+            switch (Waters.Class[y * N + x])
+            {
+                case WaterClass.None: return null;
+                case WaterClass.Wetland: return buildingOrZone ? "Cannot construct here: marsh. The ground is too wet to build on" : null;
+                case WaterClass.Stream: case WaterClass.SmallRiver: case WaterClass.MajorRiver: case WaterClass.Estuary: return "Cannot construct here: river water";
+                case WaterClass.Pond: case WaterClass.Lake: return "Cannot construct here: lake water";
+                default: return "Cannot construct here: sea water";
+            }
+        }
+
         /// <summary>Cut the water into the terrain: returns the new vertex heights.</summary>
         int[] GenSurfaceWater(int[] dry)
         {

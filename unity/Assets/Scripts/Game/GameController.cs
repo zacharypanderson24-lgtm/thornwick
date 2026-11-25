@@ -119,6 +119,8 @@ namespace CrownAndHearth.Game
         public int Seed = 7;
         [Tooltip("How mountainous the city's region is (the conquest map will set this later).")]
         public Relief Relief = Relief.Upland;
+        [Tooltip("Surface water for a new world (rivers, lakes, seas). None keeps the dry map. The New world panel sets this for the next start.")]
+        public WaterPreset Water = WaterPreset.None;
 
         public World World { get; private set; }
         int _rot, _drawnVersion = -1, _drawnRot = -1, _speed = 1;
@@ -134,19 +136,23 @@ namespace CrownAndHearth.Game
         bool _zoneDragging;          // the button is still held since the first corner (drag mode); false = click-click mode
         Vector2? _rightDown;         // where the right button went down, to tell a click (cancel) from a camera drag
         ArtLibrary _art;
-        GroundRenderer _ground; ObjectRenderer _objects; OverlayRenderer _overlay; AgentRenderer _agents;
+        GroundRenderer _ground; WaterRenderer _water; ObjectRenderer _objects; OverlayRenderer _overlay; AgentRenderer _agents;
         CameraRig _cam; Hud _hud;
         Incident _incidentSeen;   // the card the game paused for, and the speed to go back to once it is answered
         int _speedBeforeIncident;
 
         void Start()
         {
-            World = new World(Seed, TerrainStyle.Ranges, Relief);
+            // the New world panel (Menu) leaves its choice here for the next start; it is used once
+            if (PlayerPrefs.HasKey(NewWorldWater)) { Water = (WaterPreset)PlayerPrefs.GetInt(NewWorldWater); Seed = PlayerPrefs.GetInt(NewWorldSeed, Seed); if (Water != WaterPreset.None) Relief = HydroParams.For(Water).SuggestedRelief; PlayerPrefs.DeleteKey(NewWorldWater); PlayerPrefs.Save(); }
+            World = new World(Seed, TerrainStyle.Ranges, Relief, Water);
             World.StartCampaign();   // goals, and the game is lost with the Town Hall or the last villager (World.Campaign.cs, World.Defeat.cs)
             _art = new ArtLibrary();
             if (SpriteMaterial == null) Debug.LogError("GameController needs the Sprite-Unlit material. Run Crown & Hearth > Rebuild Settlement Scene.");
             _ground = new GameObject("Ground", typeof(MeshFilter), typeof(MeshRenderer), typeof(GroundRenderer)).GetComponent<GroundRenderer>();
             _ground.transform.SetParent(transform, false); _ground.Init(SpriteMaterial, _art.GroundAtlas);
+            _water = new GameObject("Water", typeof(MeshFilter), typeof(MeshRenderer), typeof(WaterRenderer)).GetComponent<WaterRenderer>();
+            _water.transform.SetParent(transform, false); _water.Init(SpriteMaterial);
             _overlay = new GameObject("Overlay", typeof(MeshFilter), typeof(MeshRenderer), typeof(OverlayRenderer)).GetComponent<OverlayRenderer>();
             _overlay.transform.SetParent(transform, false); _overlay.Init(SpriteMaterial, _art.GroundAtlas);
             _objects = new GameObject("Objects", typeof(ObjectRenderer)).GetComponent<ObjectRenderer>();
@@ -190,10 +196,19 @@ namespace CrownAndHearth.Game
                 if (_speedBeforeIncident > 0 && _speed == 0) { _speed = _speedBeforeIncident; _hud.SetSpeed(_speed); }
                 _speedBeforeIncident = 0;
             };
+            _hud.NewWorldPicked += StartNewWorld;
             _hud.RestartPicked += () => UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
             SetTool(_tool); _hud.SetSpeed(_speed);
             EnsureWorldMap();   // the raider camps live on the world map, so it is made at the start (on a worker thread)
             _hud.Toast("Welcome to Crown & Hearth. Pick a category along the bottom to build.", 6);
+        }
+
+        const string NewWorldWater = "thornwick.newWorld.water", NewWorldSeed = "thornwick.newWorld.seed";
+
+        void StartNewWorld(WaterPreset water, int seed)
+        {
+            PlayerPrefs.SetInt(NewWorldWater, (int)water); PlayerPrefs.SetInt(NewWorldSeed, seed <= 0 ? 7 : seed); PlayerPrefs.Save();
+            UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
         }
 
         static string SavePath => Path.Combine(Application.persistentDataPath, "thornwick-save-1.json");
@@ -414,7 +429,7 @@ namespace CrownAndHearth.Game
             {
                 _builtRect = new Rect(visible.x - visible.width * 0.5f, visible.y - visible.height * 0.5f, visible.width * 2f, visible.height * 2f);
                 var window = IsoView.TileWindow(_builtRect);
-                _ground.Build(drawn, _rot, window); _objects.Build(drawn, _rot, window);
+                _ground.Build(drawn, _rot, window); _water.Build(drawn, _rot, window); _objects.Build(drawn, _rot, window);
                 _drawnVersion = drawn.Version; _drawnRot = _rot;
             }
             if (_campWorld != null)

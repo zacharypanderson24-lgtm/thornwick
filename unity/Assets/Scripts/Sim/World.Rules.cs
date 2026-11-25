@@ -80,6 +80,7 @@ namespace CrownAndHearth.Sim
                 if (Grid[ty, tx] != null) return Result.No("That tile is already built on");
                 if (PenAt(tx, ty) != null) return Result.No("Remove the livestock pen first");
                 if (HasTree(tx, ty)) return Result.No(TreeMsg);
+                if (WaterBlock(tx, ty, true) is string wet) return Result.No(wet);
                 if (IsSolid(tx, ty))
                     return Result.No(IsMountain(tx, ty) ? "You cannot build on a mountain. Hills and flat ground are fine"
                         : PitDepth(tx, ty) > 0 ? "A quarry pit is in the way. Pits cannot be filled in"
@@ -156,6 +157,7 @@ namespace CrownAndHearth.Sim
                 if (g != null) return Result.No("A building is in the way", n);
                 if (PenAt(x, y) != null) return Result.No("A livestock pen is in the way", n);
                 if (HasTree(x, y)) return Result.No(TreeMsg, n);
+                if (WaterBlock(x, y, false) is string wet) return Result.No(wet + ". Roads need a bridge to cross water", n);
                 if (IsSolid(x, y)) return Result.No("A mountain, a quarry pit, ore or ground too steep to build on is in the way. Route around it", n);
                 n++;
             }
@@ -188,6 +190,7 @@ namespace CrownAndHearth.Sim
                 if (g != null && (g.T == "wall" || g.T == "road")) continue;   // already a wall, or a road acting as a gate
                 if (g != null) return Result.No("A building is in the way", n);
                 if (HasTree(x, y)) return Result.No(TreeMsg, n);
+                if (WaterBlock(x, y, false) is string wet) return Result.No(wet, n);
                 if (IsSolid(x, y)) return Result.No("A mountain, a quarry pit, ore or ground too steep to build on is in the way", n);
                 n++;
             }
@@ -223,6 +226,7 @@ namespace CrownAndHearth.Sim
             if (!Claimed(x, y)) return Result.No(NotYours);
             if (IsLivestockZone(kind)) return Result.No("Place livestock as a fenced rectangle");
             if (PenAt(x, y) != null) return Result.No("Remove the livestock pen first");
+            if (WaterBlock(x, y, true) is string wet) return Result.No(wet);
             if (Grid[y, x] != null) return ZoneMap[y, x] == kind ? Result.Yes() : Result.No("That tile is already built on");
             var dc = DecoMap[y, x];
             if (kind == Zone.Wood)

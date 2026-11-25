@@ -52,6 +52,7 @@ namespace CrownAndHearth.Game
                 {
                     var wt = IsoView.FromView(vx, vy, rot); int x = wt.x, y = wt.y;
                     if (!w.InPlay(x, y)) continue;
+                    if (w.Waters != null && w.Waters.IsWater(x, y)) continue;   // water tiles are drawn by WaterRenderer
                     int cT = IsoView.VhView(w, vx, vy, rot), cR = IsoView.VhView(w, vx + 1, vy, rot), cL = IsoView.VhView(w, vx, vy + 1, rot), cB = IsoView.VhView(w, vx + 1, vy + 1, rot);
                     int cell = biomeAtlas != null ? BiomeArt.GroundCell(w, x, y) : CellFor(w, x, y);
 
@@ -71,6 +72,7 @@ namespace CrownAndHearth.Game
                     float f = Mathf.Clamp(1 + 0.75f * dzdx - 0.28f * dzdy, 0.62f, 1f);
                     if (w.PitDepth(x, y) > 0) f *= 0.55f;
                     Color32 tint = new Color32(255, 255, 255, 255);
+                    if (w.Waters != null && WaterRenderer.ShoreTint(w, x, y) is Color32 shore) tint = shore;   // banks, beaches and marsh
                     var z = w.ZoneMap[y, x];
                     if (z != Zone.None && w.Grid[y, x] == null) tint = ZoneTint[z];
                     if (!w.Claimed(x, y)) { tint = new Color32((byte)(tint.r * 0.74f), (byte)(tint.g * 0.76f), (byte)(tint.b * 0.82f), 255); }   // land you do not own yet is dimmer
