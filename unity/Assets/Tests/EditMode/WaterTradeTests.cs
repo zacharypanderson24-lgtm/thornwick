@@ -183,7 +183,7 @@ namespace CrownAndHearth.Tests
                     var la = w.LaunchTile(sb).Value; var lb = w.LaunchTile(tb).Value;
                     var cls = w.Waters.Class[la.y * N + la.x]; bool big = !World.Freezes(cls);
                     if (big != wantBigWater) continue;
-                    a = w.AddBld("ferry", s.x, s.y); b = w.AddBld("ferry", t.x, t.y); return w;
+                    a = w.AddBld("ferry", s.x, s.y); b = w.AddBld("ferry", t.x, t.y); w.ResAmt[Res.Gold] = 500; Assert.IsTrue(w.EstablishRoute(a, b).Ok); w.FerryRoutes[0].GraceUntil = int.MaxValue; return w;   // a crewed route
                 }
             }
             Assert.Ignore("no suitable ferry crossing on this map"); return w;

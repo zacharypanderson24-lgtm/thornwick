@@ -26,7 +26,7 @@ namespace CrownAndHearth.Game
         public class ToolDef
         {
             public string Id, Label, Desc; public Cat Cat;
-            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Claim, Wall, Bridge, Canal, Moat;
+            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Claim, Wall, Bridge, Canal, Moat, FerryRoute;
         }
 
         public static readonly CatDef[] Cats =
@@ -112,6 +112,8 @@ namespace CrownAndHearth.Game
                 Desc = $"A pier on the shore where three fishermen fish water deep enough for boats, and catch {World.DockBonus:0.#} times as much as from a hut: the best use of a lake, a big river or the sea. It must stand on the shore with medium or deep water within three tiles (a pier reaches out over the shallows), on a road to the Town Hall. Costs {Cost["dock"][Res.Wood]} wood and {Cost["dock"][Res.Stone]} stone. Over-fished water thins out: the catch falls until the fish breed back." },
             new ToolDef { Id = "ferry", Cat = Cat.Water, Label = "Ferry Landing", Build = "ferry",
                 Desc = $"Build two landings on the shores of the same deep water, up to {World.FerryRange} tiles apart, to make a ferry. It joins the roads on the two shores, so homes, farms and workplaces across a wide river, a lake or a bay are served from the Town Hall where a bridge cannot reach. A ferry boat shuttles between them. People and crews do not walk through it: only roads are joined. Each landing costs {Cost["ferry"][Res.Wood]} wood and {Cost["ferry"][Res.Stone]} stone; it must stand on the shore with medium or deep water within three tiles, beside a road." },
+            new ToolDef { Id = "ferryRoute", Cat = Cat.Water, Label = "Ferry Route", FerryRoute = true,
+                Desc = $"Click a ferry landing, then the landing at the other end: green landings can be joined, red ones say why not (a route may sail at most {World.FerryMaxRoute} tiles over connected deep water, and costs {World.FerryRouteCost} gold). The route is drawn along the water it sails. A route needs {World.FerryCrew} ferrymen at a landing on a road to the Town Hall. Click a landing that already has a route to suspend or resume it; hold Shift and click to remove the route. Nothing pairs by itself: building another landing never changes a route." },
             new ToolDef { Id = "port", Cat = Cat.Water, Label = "Port", Build = "port",
                 Desc = $"A harbour on a big lake, a major river or the sea (at least {World.PortWaterNeeded} tiles of connected boat-deep water). It is not a market (overland caravans need a Market); it gives your trade one ship, and goods go by water: a port gives you a ship: it trades by water only with settlements the world map shows on the same sea or lake, and the travel time follows the water route. Costs {Cost["port"][Res.Wood]} wood, {Cost["port"][Res.Stone]} stone and {Cost["port"][Res.Gold]} gold. Needs a road to the Town Hall." },
             new ToolDef { Id = "watermill", Cat = Cat.Water, Label = "Watermill", Build = "watermill",
@@ -152,6 +154,7 @@ namespace CrownAndHearth.Game
         bool _zoneDragging;          // the button is still held since the first corner (drag mode); false = click-click mode
         Vector2? _rightDown;         // where the right button went down, to tell a click (cancel) from a camera drag
         ArtLibrary _art;
+        Building _ferryFrom;   // the landing picked first with the Ferry Route tool
         GroundRenderer _ground; WaterRenderer _water; ObjectRenderer _objects; OverlayRenderer _overlay; AgentRenderer _agents;
         CameraRig _cam; Hud _hud;
         Incident _incidentSeen;   // the card the game paused for, and the speed to go back to once it is answered
@@ -217,6 +220,62 @@ namespace CrownAndHearth.Game
             SetTool(_tool); _hud.SetSpeed(_speed);
             EnsureWorldMap();   // the raider camps live on the world map, so it is made at the start (on a worker thread)
             _hud.Toast("Welcome to Crown & Hearth. Pick a category along the bottom to build.", 6);
+        }
+
+        // ---------- the Ferry Route tool ----------
+        void FerryRouteClick(Vector2Int h)
+        {
+            var b = World.Grid[h.y, h.x];
+            if (b == null || b.T != "ferry") { _hud.Toast("Click a ferry landing."); return; }
+            if (_ferryFrom == null)
+            {
+                var route = World.RouteOf(b);
+                if (route != null)
+                {
+                    if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.shiftKey.isPressed) { World.RemoveRoute(route); _hud.Toast("Ferry route removed."); }
+                    else { World.SetRouteSuspended(route, !route.Suspended); _hud.Toast(route.Suspended ? "Ferry suspended. Click the landing again to resume it." : "Ferry resumed."); }
+                    return;
+                }
+                _ferryFrom = b; _hud.Toast("Now click the landing at the other end (green: can be joined). Esc cancels.");
+                return;
+            }
+            var made = World.EstablishRoute(_ferryFrom, b);
+            _hud.Toast(made.Ok ? $"Ferry route made: {made.Count} tiles of sailing. It needs {World.FerryCrew} ferrymen at a landing on a road." : made.Reason, made.Ok ? 4 : 6);
+            if (made.Ok || b != _ferryFrom) _ferryFrom = null;
+        }
+
+        void DrawFerryOverlay(Vector2Int h)
+        {
+            foreach (var landing in World.Blds.Where(x => x.T == "ferry"))
+            {
+                bool ok = _ferryFrom != null ? landing != _ferryFrom && World.CanRoute(_ferryFrom, landing).Ok : World.RouteOf(landing) == null;
+                if (landing == _ferryFrom) ok = true;
+                _overlay.AddTile(World, landing.X, landing.Y, _rot, ok ? Ok : Bad);
+            }
+            var hb = World.Grid[h.y, h.x];
+            List<int> path = null;
+            if (hb != null && hb.T == "ferry")
+            {
+                var other = _ferryFrom != null ? hb : World.FerryPartner(hb);
+                var from = _ferryFrom ?? hb;
+                if (other != null && other != from) path = World.SailingRoute(from, other);
+            }
+            if (path != null) foreach (int t in path) _overlay.AddTile(World, t % N, t / N, _rot, new Color32(120, 200, 255, 140));
+        }
+
+        (string, bool) FerryTip(Vector2Int h)
+        {
+            var b = World.Grid[h.y, h.x];
+            if (b == null || b.T != "ferry") return (_ferryFrom != null ? "Click the landing at the other end" : "Click a ferry landing", false);
+            var route = World.RouteOf(b);
+            if (_ferryFrom == null)
+            {
+                if (route != null) return ($"Ferry route: {World.StateText(World.StateOf(route))}. Click to {(route.Suspended ? "resume" : "suspend")}, Shift-click to remove", false);
+                return ("Click to start a ferry route from this landing", false);
+            }
+            if (b == _ferryFrom) return ("The first landing. Click another one", false);
+            var can = World.CanRoute(_ferryFrom, b);
+            return can.Ok ? ($"Click to make the route: {can.Count} tiles of sailing, {World.FerryRouteCost} gold", false) : (can.Reason, true);
         }
 
         // the tiles a drag covers: an L for roads and palisades, a straight line for a bridge
@@ -524,12 +583,13 @@ namespace CrownAndHearth.Game
                 : t.Unzone ? $"Remove Zones: drag over zoned land. Buildings stay.{stop}"
                 : t.Clear ? $"Demolish: click or drag over what you want removed.{stop}"
                 : "Inspect: hover or click a tile. Pick a category along the bottom to build.";
-            _tool = t; _roadAnchor = null; _zoneAnchor = null; _zoneDragging = false; _hud.SetTool(t, hint);
+            _tool = t; _roadAnchor = null; _zoneAnchor = null; _ferryFrom = null; _zoneDragging = false; _hud.SetTool(t, hint);
         }
 
         /// <summary>Esc or a right-click: drop the half-drawn road or rectangle first; otherwise put the tool away.</summary>
         void Cancel()
         {
+            if (_ferryFrom != null) { _ferryFrom = null; return; }
             if (_roadAnchor.HasValue || _zoneAnchor.HasValue) { _roadAnchor = null; _zoneAnchor = null; _zoneDragging = false; return; }
             SetTool(Tools[0]); _hud.CloseTray();
         }
@@ -611,6 +671,7 @@ namespace CrownAndHearth.Game
             }
             if (!mouse.leftButton.isPressed || !_hover.HasValue || overUi) { _lastPaint = null; return; }
             var h = _hover.Value;
+            if (_tool.FerryRoute) { if (mouse.leftButton.wasPressedThisFrame) FerryRouteClick(h); return; }
             if (_tool.Build != null)
             {
                 if (!mouse.leftButton.wasPressedThisFrame) return;
@@ -801,6 +862,7 @@ namespace CrownAndHearth.Game
                     bool ok = (_tool.Moat ? World.MoatPathCheck(path) : _tool.Canal ? World.CanalPathCheck(path) : _tool.Bridge ? World.BridgePathCheck(path) : _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path)).Ok;
                     foreach (var (x, y) in path) _overlay.AddTile(World, x, y, _rot, ok ? Ok : Bad);
                 }
+                else if (_tool.FerryRoute) DrawFerryOverlay(h);
                 else if (_tool.Claim)
                 {
                     var (cpx, cpy) = World.ParcelXY(World.ParcelOf(h.x, h.y));
@@ -997,6 +1059,7 @@ namespace CrownAndHearth.Game
                 if (!cc.Ok) { _tipWarn = World.ParcelTouchesYours(cpx, cpy); return (cc.Reason, !_tipWarn); }
                 return ($"Click to claim this parcel (free): {World.DescribeParcel(cpx, cpy)} ({World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} owned)", false);
             }
+            if (_tool.FerryRoute) return FerryTip(h);
             if (_tool.Road || _tool.Wall || _tool.Bridge || _tool.Canal || _tool.Moat)
             {
                 var path = ToolPath(_roadAnchor ?? h, h);
@@ -1177,8 +1240,22 @@ namespace CrownAndHearth.Game
                         lines.Add($"Fish stock: {World.StockWord(stock)} ({stock * 100:0}%). Season: {w.Season} (x{w.FishSeason(fg.kind):0.#}). Today's catch: {w.FishCatch(b):0.##} food.");
                     }
                 }
-                if (b.T == "ferry") { var fp = w.FerryPartner(b); lines.Add("Status: " + w.FerryStatus(b));
-                    lines.Add(fp == null ? "Not linked: build a second landing within " + World.FerryRange + " tiles on the shore of the same deep water." : $"Linked to the landing at {fp.X},{fp.Y}, {System.Math.Max(System.Math.Abs(b.X - fp.X), System.Math.Abs(b.Y - fp.Y))} tiles away: the roads at the two landings are joined."); }
+                if (b.T == "ferry")
+                {
+                    var rt = w.RouteOf(b);
+                    lines.Add("Ferry route: " + w.FerryStatus(b));
+                    if (rt != null)
+                    {
+                        var (ea, eb) = w.Ends(rt); var other = ea == b ? eb : ea;
+                        if (ea != null && eb != null)
+                        {
+                            int len = (w.SailingRoute(ea, eb)?.Count ?? 1) - 1; var load = w.RouteLoad(rt); double service = w.RouteService(rt, len, load.demand);
+                            lines.Add($"Linked to the landing at {other.X},{other.Y}: {len} tiles of sailing, about {World.TripsPerDay(len)} crossings a day each way.");
+                            lines.Add($"Carries {World.FerryPassengers} people and {World.FerryCargo} cargo a trip: {World.PassengerCapacityPerDay(len)} people a day. Crew {w.CrewOf(rt)} of {World.FerryCrew}.");
+                            lines.Add($"{load.buildings} buildings across the water ({load.people} people and jobs, demand about {load.demand:0} a day) depend on it. " + (service < 1 ? "It is crowded." : "It copes."));
+                        }
+                    }
+                }
                 if (b.T == "port") lines.Add($"Gives your trade one ship ({w.ShipsOut} of {w.ShipCapacity} ships at sea). It stands on {World.ModeName(w.PortMode(b)).Replace("by ", "")} water ({w.NavigableTilesInRegion(w.RegionOf(b))} boat-deep tiles). Ships sail only to settlements the world map shows on the same sea or lake; travel time follows the water route. Not a market: overland caravans need a Market.");
                 if (b.T == "watermill") lines.Add(w.RiverCurrentNear(b, 1) ? $"Mills for {World.MillFields} fields: adds {World.MillBonusShare * 100:0}% to the wheat harvest when staffed." : "No flowing river beside it (frozen or dry): the wheel is still.");
                 if (b.T == "hunter") lines.Add($"Hunts mature forest within {World.HuntingRange} tiles in all seasons.");
