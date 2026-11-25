@@ -81,6 +81,7 @@ namespace CrownAndHearth.Sim
                 if (PenAt(tx, ty) != null) return Result.No("Remove the livestock pen first");
                 if (HasTree(tx, ty)) return Result.No(TreeMsg);
                 if (WaterBlock(tx, ty, true) is string wet) return Result.No(wet);
+                if (CanalBlock(tx, ty) is string ditch) return Result.No(ditch);
                 if (IsSolid(tx, ty))
                     return Result.No(IsMountain(tx, ty) ? "You cannot build on a mountain. Hills and flat ground are fine"
                         : PitDepth(tx, ty) > 0 ? "A quarry pit is in the way. Pits cannot be filled in"
@@ -89,6 +90,7 @@ namespace CrownAndHearth.Sim
             }
             if (type == "fisher" && !NearOpenWater(fp, FishShoreNeeded)) return Result.No("A fishing hut must stand on the shore: put it within two tiles of a river, lake or the sea");
             if (type == "dock" && !NearOpenWater(fp, 3, WaterDepth.Medium)) return Result.No("A fishing dock must stand on the shore with water deep enough for boats (medium or deep) within three tiles, not a shallow stream");
+            if (type == "watermill" && !RiverCurrentNear(fp, 1)) return Result.No("A watermill must stand on a riverbank with flowing water right beside it (not a pond, lake or the sea, and not while the river is frozen)");
             if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
             if (type == "smithery" && !NextToRoad(fp)) return Result.No("Smithery must touch a road");
             if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");
@@ -113,6 +115,7 @@ namespace CrownAndHearth.Sim
         {
             if (!Inb(x, y)) return Result.No("Outside the map");
             if (!Claimed(x, y)) return Result.No(NotYours);
+            if (Grid[y, x] == null && RemoveCanal(x, y)) return Result.Yes();   // World.Irrigation.cs
             if (PenAt(x, y) is LivestockPen pen)
             {
                 RemovePen(pen);
@@ -160,6 +163,7 @@ namespace CrownAndHearth.Sim
                 if (PenAt(x, y) != null) return Result.No("A livestock pen is in the way", n);
                 if (HasTree(x, y)) return Result.No(TreeMsg, n);
                 if (WaterBlock(x, y, false) is string wet) return Result.No(wet + ". Roads need a bridge to cross water", n);
+                if (CanalBlock(x, y) is string ditch) return Result.No(ditch, n);
                 if (IsSolid(x, y)) return Result.No("A mountain, a quarry pit, ore or ground too steep to build on is in the way. Route around it", n);
                 n++;
             }
@@ -229,6 +233,7 @@ namespace CrownAndHearth.Sim
             if (IsLivestockZone(kind)) return Result.No("Place livestock as a fenced rectangle");
             if (PenAt(x, y) != null) return Result.No("Remove the livestock pen first");
             if (WaterBlock(x, y, true) is string wet) return Result.No(wet);
+            if (CanalBlock(x, y) is string ditch) return Result.No(ditch);
             if (Grid[y, x] != null) return ZoneMap[y, x] == kind ? Result.Yes() : Result.No("That tile is already built on");
             var dc = DecoMap[y, x];
             if (kind == Zone.Wood)

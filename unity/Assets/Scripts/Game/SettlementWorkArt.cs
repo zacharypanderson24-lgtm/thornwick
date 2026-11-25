@@ -15,6 +15,7 @@ namespace CrownAndHearth.Game
 
         public Sprite Building(string kind, int view)
         {
+            if (kind == "watermill") return Get("watermill", view, 33, 56, c => { DrawShop(c, false, view); DrawWheel(c); });
             if (kind == "dock") return Get("dock", view, 33, 30, DrawDock);
             if (kind == "fisher") return Get("fisher", view, 33, 56, c => { DrawShop(c, false, view); DrawFishRack(c); });
             if (kind != "storehouse" && kind != "smokehouse" && kind != "charcoal") return null;
@@ -127,6 +128,16 @@ namespace CrownAndHearth.Game
             foreach (var p in new[] { (3, 10), (16, 3), (29, 10), (16, 17) }) c.Line(p, (p.Item1, p.Item2 - 6), DarkWood);
             c.Rect(13, 11, 4, 5, Timber); c.Line((13, 13), (16, 13), DarkWood);
             c.Rect(20, 9, 5, 2, Straw);
+        }
+
+        // a watermill: the small shop with a water wheel at its side (placeholder art)
+        static void DrawWheel(Pixels c)
+        {
+            var rim = Color(112, 75, 45); var spoke = Color(159, 114, 65); var water = Color(80, 140, 200);
+            int cx = 5, cy = 9, r = 7;
+            for (int a = 0; a < 24; a++) { double t = a * Math.PI / 12; c.Set(cx + (int)Math.Round(Math.Cos(t) * r), cy + (int)Math.Round(Math.Sin(t) * r * 0.9), rim); }
+            c.Line((cx - r, cy), (cx + r, cy), spoke); c.Line((cx, cy - r + 1), (cx, cy + r - 1), spoke);
+            c.Rect(cx - 3, 0, 8, 2, water);
         }
 
         static void DrawClamp(Pixels c)

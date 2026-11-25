@@ -77,7 +77,8 @@ namespace CrownAndHearth.Sim
         {
             if (Waters == null || !Inb(x, y)) return 0.4;
             if (_moist == null) BuildMoisture();
-            return _moist[y * N + x] / 255.0;
+            double m = _moist[y * N + x] / 255.0;
+            return Waters.Class[y * N + x] == WaterClass.None ? Math.Min(1.0, m + IrrigationBonus(x, y)) : m;   // canals add to the soil's own moisture
         }
 
         /// <summary>Low land beside a real river: floods will come here when seasonal floods exist. Stored now, not simulated yet.</summary>
