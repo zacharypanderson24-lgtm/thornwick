@@ -694,6 +694,26 @@ namespace CrownAndHearth.Game
                 }
         }
 
+        static readonly Color32 QuarryLocked = new Color32(110, 120, 170, 120);
+
+        /// <summary>What a quarry will dig: orange rock tiles (brighter = more stone left) it can work now, blue-grey zoned mountain rock
+        /// still locked inside the mountain.</summary>
+        void DrawQuarryRock(Building q)
+        {
+            var w = World;
+            for (int y = q.Y - WorkR; y <= q.Y + q.Sz - 1 + WorkR; y++)
+                for (int x = q.X - WorkR; x <= q.X + q.Sz - 1 + WorkR; x++)
+                    switch (w.QuarryTileState(x, y))
+                    {
+                        case World.QuarryTile.Dig:
+                            _overlay.AddTile(w, x, y, _rot, new Color32(255, 160, 50, (byte)(90 + 110 * w.StoneFraction(x, y))));
+                            break;
+                        case World.QuarryTile.Locked:
+                            _overlay.AddTile(w, x, y, _rot, QuarryLocked);
+                            break;
+                    }
+        }
+
         void AddWatchtowerRange(int centerX, int centerY, Color32 color)
         {
             const int r = World.WatchtowerRange;
@@ -738,6 +758,7 @@ namespace CrownAndHearth.Game
             {
                 var seen = new HashSet<int>();
                 foreach (var b in World.Blds) if (Works(_tool.Zone, b.T)) AddReach(b.T, b.X, b.Y, b.Sz, Reach, seen);
+                if (_tool.Zone == Zone.Mine) foreach (var b in World.Blds) if (b.T == "quarry") DrawQuarryRock(b);
             }
             // water tools, or inspecting a water building or a home: groundwater patches, short homes, and the road network water travels
             var hb = _hover.HasValue ? World.Grid[_hover.Value.y, _hover.Value.x] : null;
@@ -790,6 +811,7 @@ namespace CrownAndHearth.Game
                     // inspecting a work building shows its reach too
                     var b = World.Grid[h.y, h.x];
                     if (b != null && ReachOf(b.T) > 0) AddReach(b.T, b.X, b.Y, b.Sz, Reach, null);
+                    if (b?.T == "quarry") DrawQuarryRock(b);
                     if (b?.T == "watchtower") AddWatchtowerRange(b.X, b.Y, Reach);
                     _overlay.AddTile(World, h.x, h.y, _rot, Hover);
                 }
@@ -1091,8 +1113,9 @@ namespace CrownAndHearth.Game
                 }
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "mine") lines.Add(w.MineStatus(b));
-                if ((b.T == "wood" || b.T == "quarry") && b.Served && w.ActiveJobs(b) == 0)
-                    lines.Add(b.T == "wood" ? $"Nothing to fell: drag a Lumber Zone over trees within {WorkR} tiles (Wood, 4)" : $"Nothing to quarry: zone rock within {WorkR} tiles (Mining, 6)");
+                if (b.T == "quarry") lines.Add(w.QuarryStatus(b));
+                if (b.T == "wood" && b.Served && w.ActiveJobs(b) == 0)
+                    lines.Add($"Nothing to fell: drag a Lumber Zone over trees within {WorkR} tiles (Wood, 4)");
                 if (b.T == "wood" || b.T == "sawmill" || b.T == "hall")
                 {
                     bool saw = w.Blds.Any(s => s.T == "sawmill" && s.Served);
