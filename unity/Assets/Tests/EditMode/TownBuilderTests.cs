@@ -30,6 +30,14 @@ namespace CrownAndHearth.Tests
             return (w, s, camp.Site);
         }
 
+        /// <summary>A built settlement of this tier for other test files (site is null when the world has none).</summary>
+        internal static (World home, Settlement s, CampSite site) BuiltForTests(SettlementTier tier)
+        {
+            var w = Home();
+            var s = w.Settlements.Where(o => o.Tier == tier).OrderBy(o => o.Id).FirstOrDefault();
+            return s == null ? (w, null, null) : (w, s, w.TownCamp(s).Site);
+        }
+
         static int Cheb(int ax, int ay, int bx, int by) => System.Math.Max(System.Math.Abs(ax - bx), System.Math.Abs(ay - by));
 
         [TestCase(SettlementTier.Hamlet)]

@@ -37,6 +37,16 @@ namespace CrownAndHearth.Sim
             return (IsWall(x - 1, y) && IsWall(x + 1, y)) || (IsWall(x, y - 1) && IsWall(x, y + 1));
         }
 
+        /// <summary>Does the palisade tile at (x, y) join the tile at (nx, ny) when drawn? Another palisade tile, or a gate in its own line
+        /// (so the stakes run right up to the gate and there is no gap).</summary>
+        public bool WallJoins(int x, int y, int nx, int ny)
+        {
+            if (!Inb(nx, ny)) return false;
+            if (IsWall(nx, ny)) return true;
+            if (!IsGateway(nx, ny)) return false;
+            return GateAlongX(nx, ny) ? ny == y : nx == x;
+        }
+
         /// <summary>Whether a gate's posts run along x (its wall line is east-west in the map).</summary>
         public bool GateAlongX(int x, int y) => IsWall(x - 1, y) && IsWall(x + 1, y);
 
