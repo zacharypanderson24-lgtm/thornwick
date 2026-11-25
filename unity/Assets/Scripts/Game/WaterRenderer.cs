@@ -146,8 +146,9 @@ namespace CrownAndHearth.Game
                     for (int vx = win.xMin; vx < win.xMax; vx++)
                     {
                         var wt = IsoView.FromView(vx, vy, rot); int x = wt.x, y = wt.y;
-                        if (!w.InPlay(x, y) || !sw.IsWater(x, y) || w.StreamDry(x, y)) continue;
-                        int cell = CellFor(sw, x, y, rot);
+                        bool canal = w.IsCanal(x, y);
+                        if (!w.InPlay(x, y) || ((!sw.IsWater(x, y) || w.StreamDry(x, y)) && !canal)) continue;
+                        int cell = canal ? StillShallow : CellFor(sw, x, y, rot);
                         int i0 = _v.Count;
                         _v.Add(IsoView.VertexPos(vx, vy, IsoView.VhView(w, vx, vy, rot)));
                         _v.Add(IsoView.VertexPos(vx + 1, vy, IsoView.VhView(w, vx + 1, vy, rot)));
@@ -157,6 +158,7 @@ namespace CrownAndHearth.Game
                         _uv.Add(new Vector2(um, 1 - inV)); _uv.Add(new Vector2(u1, 0.5f)); _uv.Add(new Vector2(um, inV)); _uv.Add(new Vector2(u0, 0.5f));
                         byte shade = w.Claimed(x, y) ? (byte)255 : (byte)190;   // water in land you do not own yet is dimmer, like the ground
                         var col = new Color32(shade, shade, (byte)Mathf.Min(255, shade + 10), 255);
+                        if (canal) col = w.CanalIsFed(x, y) ? new Color32((byte)(shade * 0.7f), (byte)(shade * 0.85f), shade, 255) : new Color32((byte)(shade * 0.55f), (byte)(shade * 0.5f), (byte)(shade * 0.42f), 255);   // a dry (unconnected) canal is mud
                         if (w.IceBears(x, y)) col = new Color32((byte)(shade * 0.86f), (byte)(shade * 0.95f), shade, 255);   // frozen: pale blue-white
                         _c.Add(col); _c.Add(col); _c.Add(col); _c.Add(col);
                         _t.Add(i0); _t.Add(i0 + 1); _t.Add(i0 + 2); _t.Add(i0); _t.Add(i0 + 2); _t.Add(i0 + 3);

@@ -56,6 +56,7 @@ namespace CrownAndHearth.Sim
             { "hunter", new Dictionary<Res, int> { { Res.Wood, 8 } } },
             { "fisher", new Dictionary<Res, int> { { Res.Wood, 6 } } },
             { "dock", new Dictionary<Res, int> { { Res.Wood, 14 }, { Res.Stone, 4 } } },
+            { "watermill", new Dictionary<Res, int> { { Res.Wood, 18 }, { Res.Stone, 8 } } },
             { "quarry", new Dictionary<Res, int> { { Res.Wood, 10 } } },
             { "mine", new Dictionary<Res, int> { { Res.Wood, 12 } } },
             { "market", new Dictionary<Res, int> { { Res.Wood, 12 } } },
@@ -87,7 +88,7 @@ namespace CrownAndHearth.Sim
         public static readonly Dictionary<string, string> Names = new Dictionary<string, string>
         {
             { "storehouse", "Storehouse" }, { "smokehouse", "Smokehouse" }, { "charcoal", "Charcoal Clamp" },
-            { "road", "Dirt Road" }, { "tent", "Raider Tent" }, { "chieftent", "Warlord Tent" }, { "campfire", "Campfire" }, { "rack", "Weapon Rack" }, { "supplies", "Supply Pile" }, { "wall", "Palisade" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "fisher", "Fishing Hut" }, { "dock", "Fishing Dock" }, { "quarry", "Quarry" },
+            { "road", "Dirt Road" }, { "tent", "Raider Tent" }, { "chieftent", "Warlord Tent" }, { "campfire", "Campfire" }, { "rack", "Weapon Rack" }, { "supplies", "Supply Pile" }, { "wall", "Palisade" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "fisher", "Fishing Hut" }, { "dock", "Fishing Dock" }, { "watermill", "Watermill" }, { "quarry", "Quarry" },
             { "mine", "Iron Mine" }, { "market", "Market" }, { "sawmill", "Sawmill" }, { "smithery", "Smithery" }, { "forester", "Forester" }, { "well", "Well" },
             { "barracks", "Barracks" }, { "muster", "Muster Ground" }, { "watchtower", "Watchtower" }, { "hall", "Town Hall" }, { "silo", "Silo" }, { "cistern", "Cistern" },
         };
@@ -95,19 +96,19 @@ namespace CrownAndHearth.Sim
         public static readonly Dictionary<string, int> Jobs = new Dictionary<string, int>
         {
             { "storehouse", 2 }, { "smokehouse", 2 }, { "charcoal", 2 },
-            { "farm", 4 }, { "wood", 3 }, { "hunter", 2 }, { "fisher", 2 }, { "dock", 3 }, { "quarry", 3 }, { "mine", 3 }, { "sawmill", 3 }, { "smithery", 3 }, { "forester", 2 },
+            { "farm", 4 }, { "wood", 3 }, { "hunter", 2 }, { "fisher", 2 }, { "dock", 3 }, { "watermill", 2 }, { "quarry", 3 }, { "mine", 3 }, { "sawmill", 3 }, { "smithery", 3 }, { "forester", 2 },
         };
 
         public static readonly Dictionary<string, string> TradeOf = new Dictionary<string, string>
         {
             { "storehouse", "hauling" }, { "smokehouse", "preserving" }, { "charcoal", "charcoal" },
-            { "farm", "farming" }, { "hunter", "hunting" }, { "fisher", "fishing" }, { "dock", "fishing" }, { "wood", "timber" }, { "forester", "timber" }, { "sawmill", "woodwork" }, { "quarry", "quarrying" }, { "mine", "mining" }, { "smithery", "smithing" },
+            { "farm", "farming" }, { "hunter", "hunting" }, { "fisher", "fishing" }, { "dock", "fishing" }, { "watermill", "milling" }, { "wood", "timber" }, { "forester", "timber" }, { "sawmill", "woodwork" }, { "quarry", "quarrying" }, { "mine", "mining" }, { "smithery", "smithing" },
         };
-        public static readonly string[] Trades = { "farming", "hunting", "timber", "woodwork", "quarrying", "mining", "smithing", "preserving", "charcoal", "hauling", "fishing" };
+        public static readonly string[] Trades = { "farming", "hunting", "timber", "woodwork", "quarrying", "mining", "smithing", "preserving", "charcoal", "hauling", "fishing", "milling" };
         public static readonly Dictionary<string, string> TradeNames = new Dictionary<string, string>
         {
             { "hauling", "Hauling" }, { "preserving", "Food preserving" }, { "charcoal", "Charcoal burning" },
-            { "farming", "Farming" }, { "hunting", "Hunting" }, { "fishing", "Fishing" }, { "timber", "Timber" }, { "woodwork", "Woodworking" }, { "quarrying", "Quarrying" }, { "mining", "Mining" }, { "smithing", "Smithing" },
+            { "farming", "Farming" }, { "hunting", "Hunting" }, { "fishing", "Fishing" }, { "milling", "Milling" }, { "timber", "Timber" }, { "woodwork", "Woodworking" }, { "quarrying", "Quarrying" }, { "mining", "Mining" }, { "smithing", "Smithing" },
         };
 
         /// <summary>Tree species: which tree_N variants each species uses, and its share of forests. tree_1 is retired (6 old oak takes its share).</summary>
@@ -129,6 +130,6 @@ namespace CrownAndHearth.Sim
         public static readonly int[,] Nb = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
         public static int PlacementSize(string type) => type == "wood" || type == "mine" || type == "quarry" || type == "hunter" || type == "forester" || type == "sawmill" ? 2 : DefaultSize(type);
-        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "muster" || type == "market" || type == "farm" || type == "smithery" || type == "storehouse" || type == "smokehouse") ? 2 : 1;
+        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "muster" || type == "market" || type == "farm" || type == "smithery" || type == "storehouse" || type == "smokehouse" || type == "watermill") ? 2 : 1;
     }
 }

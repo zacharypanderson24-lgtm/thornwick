@@ -77,6 +77,12 @@ New files: `Sim/SurfaceWater.cs` (data model, saving), `Sim/Hydrology.cs` (gener
 - **Summer drought** (days 91 to 270; about one summer in six, more in dry country, rare in wetlands): streams run dry and their beds can be walked, harvests are x0.8, freshwater fishing x0.8.
 - Not built: snowmelt pulses and lake level changes, ice thickness, floods that damage buildings, frozen-water drawing beyond a pale tint, drought effects on wells.
 
+**Irrigation and watermills (PR 7, sections 20 and 22):**
+- **Irrigation canal** (Water menu): drag in a straight line away from the bank of a river, lake or pond (or from the end of a canal that reaches one); up to 24 tiles at a time, 2 wood a tile. Water does not run uphill: the canal may not climb more than half a level over the stretch. A canal is a set of land tiles (saved as a list, no sprite, people and crews step across it), drawn as a dark water strip, or mud when it is not joined to fresh water. A canal joined to fresh water adds up to +0.35 soil moisture within 3 tiles (less with distance): dry land can then be farmed (the "too dry" rule passes) and fields yield more. Roads, buildings and zones keep off canals; Clear removes a canal tile (half the wood back).
+- **Watermill** (Water menu; 2x2; 18 wood, 8 stone; 2 jobs; new trade "Milling" at the end of the Workers list): must stand on a riverbank with flowing water (a stream, river or major river with a current) right beside it; a frozen river or a dry stream stops it. Staffed mills add 12% to the wheat harvest's food, each mill grinding for 40 fields (more fields than that, the bonus shrinks).
+- Not built: reservoirs, aqueducts, mills for sawing, wells drawing on surface water, livestock water, drought effects on canals.
+- Art still needed: a proper watermill (placeholder: the small shop with a water wheel), canal and sluice tiles.
+
 **Known gaps in PR 1 (all planned):** nothing draws the water yet; buildings and walkers still ignore it (`IsSolid`/`WalkCost` hooks are PR 2); no new-world menu entry; river deltas are simple distributaries; wetlands are saturated land, not yet slowing movement; groundwater (wells) ignores surface water.
 
 ---

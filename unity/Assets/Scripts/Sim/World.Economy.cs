@@ -32,6 +32,7 @@ namespace CrownAndHearth.Sim
             var crops = SeasonalFarming ? WorkSeasonalFields() : FarmOutput();
             if (CropYield != 1.0) crops = (crops.food * CropYield, crops.flax * CropYield);   // a failed harvest (World.Scenarios.cs)
             food += SeasonalFarming ? Math.Min(crops.food, Math.Max(0, CropStorage(Res.Food) - ResAmt[Res.Food])) : crops.food;
+            food += MillBonus(food);   // World.Irrigation.cs: staffed watermills grind the harvest into more food
             double wheat = food;
             ResAmt[Res.Flax] += SeasonalFarming ? Math.Min(crops.flax, Math.Max(0, CropStorage(Res.Flax) - ResAmt[Res.Flax])) : crops.flax;
             foreach (var b in Blds.Where(b => b.T == "forester" && b.Served).ToList())
