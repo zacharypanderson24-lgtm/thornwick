@@ -260,7 +260,7 @@ namespace CrownAndHearth.Tests
             StringAssert.Contains("Test camp", r.Summary() + r.Camp.Name);
 
             var w2 = Town(0, 0);
-            w2.RaidMinPopulation = 0; w2.Day = 150;
+            w2.RaidMinPopulation = 0; w2.RaidSlowdown = 1; w2.Day = 150;
             var c = Camp(2, 300, 360); c.Id = 3;
             w2.SetCamps(new[] { c }, 300, 300);
             for (int i = 0; i < 400 && w2.Raid == null; i++) { w2.ResAmt[Res.Food] = 400; w2.Tick(); }
@@ -270,7 +270,7 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(3 + 2 * 2, w2.Raid.Band);
 
             var w3 = Town(0, 0);
-            w3.RaidMinPopulation = 0; w3.Day = 150;
+            w3.RaidMinPopulation = 0; w3.RaidSlowdown = 1; w3.Day = 150;
             var gone = Camp(2, 300, 360); gone.Id = 5;
             w3.SetCamps(new[] { gone }, 300, 300);
             w3.DestroyedCamps.Add(5);
@@ -278,7 +278,7 @@ namespace CrownAndHearth.Tests
             Assert.IsNull(w3.Raid, "a destroyed camp sends no raiders");
 
             var w4 = Town(0, 0);
-            w4.RaidMinPopulation = 0; w4.Day = 150;
+            w4.RaidMinPopulation = 0; w4.RaidSlowdown = 1; w4.Day = 150;
             for (int i = 0; i < 300; i++) { w4.ResAmt[Res.Food] = 400; w4.Tick(); }
             Assert.IsNull(w4.Raid, "no camps set, no random raids");
         }
@@ -307,7 +307,7 @@ namespace CrownAndHearth.Tests
         public void AWarbandMarchesFromItsCampIsSpottedAndThenRaids()
         {
             var w = Town(0, 0);
-            w.RaidMinPopulation = 0; w.Day = 150;
+            w.RaidMinPopulation = 0; w.RaidSlowdown = 1; w.Day = 150;
             var c = Camp(2, 300, 390); c.Id = 4;   // 90 km south: 6 days of marching
             w.SetCamps(new[] { c }, 300, 300);
             var (leave, arrive, spotted, raided, events) = MarchOn(w);
@@ -328,7 +328,7 @@ namespace CrownAndHearth.Tests
         public void AWatchtowerSpotsAWarbandSooner()
         {
             var w = Town(0, 0);
-            w.RaidMinPopulation = 0; w.Day = 150;
+            w.RaidMinPopulation = 0; w.RaidSlowdown = 1; w.Day = 150;
             w.AddBld("watchtower", Defs.Start + 6, Defs.Start + 6);
             Assert.AreEqual(World.TowerSpotDays, w.SpotDays);
             var c = Camp(2, 300, 390); c.Id = 4;
@@ -342,7 +342,7 @@ namespace CrownAndHearth.Tests
         public void AWarbandOnTheMarchIsSavedAndStillArrives()
         {
             var w = Town(0, 0);
-            w.RaidMinPopulation = 0; w.Day = 150;
+            w.RaidMinPopulation = 0; w.RaidSlowdown = 1; w.Day = 150;
             var c = Camp(2, 300, 390); c.Id = 4;
             w.SetCamps(new[] { c }, 300, 300);
             for (int i = 0; i < 500 && w.Warband == null; i++) { w.ResAmt[Res.Food] = 400; w.Tick(); }
@@ -357,7 +357,7 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(before.Band, loaded.Warband.Band);
             Assert.AreEqual(before.ArriveDay, loaded.Warband.ArriveDay);
             Assert.AreEqual(before.Spotted, loaded.Warband.Spotted);
-            loaded.RaidMinPopulation = 0;
+            loaded.RaidMinPopulation = 0; loaded.RaidSlowdown = 1;
             loaded.SetCamps(new[] { c }, 300, 300);
             Assert.IsNotNull(loaded.Warband, "handing the camps over again does not call it off");
             for (int i = 0; i < 40 && loaded.Raid == null; i++) { loaded.ResAmt[Res.Food] = 400; loaded.Tick(); }
@@ -369,7 +369,7 @@ namespace CrownAndHearth.Tests
         public void ACampIsWeakerWhileItsRaidersAreAwayAndAfterItLosesThem()
         {
             var w = Town(0, 0);
-            w.RaidMinPopulation = 0; w.Day = 150;
+            w.RaidMinPopulation = 0; w.RaidSlowdown = 1; w.Day = 150;
             var c = Camp(5, 300, 390); c.Id = 4;   // 6 days away; 24 raiders, 4 brutes and the warlord
             w.SetCamps(new[] { c }, 300, 300);
             int full = CampBattle.RaiderCount(5), raiders = CampSize.Of(5).Raiders;
@@ -418,7 +418,7 @@ namespace CrownAndHearth.Tests
         public void ACampThatLostRaidersSendsASmallerWarband()
         {
             var w = Town(0, 0);
-            w.RaidMinPopulation = 0; w.Day = 150;
+            w.RaidMinPopulation = 0; w.RaidSlowdown = 1; w.Day = 150;
             var c = Camp(5, 300, 390); c.Id = 4;
             w.SetCamps(new[] { c }, 300, 300);
             w.CampForces[c.Id] = new CampForce { Lost = 20 };

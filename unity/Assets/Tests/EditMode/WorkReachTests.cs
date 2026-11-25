@@ -180,5 +180,36 @@ namespace CrownAndHearth.Tests
             Assert.That(Defs.WorkR, Is.GreaterThanOrEqualTo(10), "work areas are large, not the old 3 tiles");
             Assert.That(World.CrewDepth, Is.GreaterThanOrEqualTo(2 * Defs.WorkR), "crews can walk to the far corners of the work area");
         }
+
+        [Test]
+        public void HandSetWorkerLimitsCapATradeAreSavedAndAutoFillsTheRest()
+        {
+            var w = new World(7); w.ClaimAll();
+            var site = AllTiles().Where(t => Math.Abs(t.x - C) + Math.Abs(t.y - C) is > 14 and < 30 && Gentle(w, t.x, t.y, 12)).OrderBy(t => Math.Abs(t.x - C) + Math.Abs(t.y - C)).FirstOrDefault();
+            Assume.That(site.x > 0, "open ground for a lodge");
+            var lodge = w.AddBld("wood", site.x, site.y, 2);
+            Road(w, World.LPath(C, C + 7, site.x, site.y + 2));
+            Assume.That(lodge.Served);
+            for (int i = 0; i < 3; i++) { int tx = site.x + 6, ty = site.y - 1 + i; w.DecoMap[ty, tx] = Deco.Tree; w.ZoneMap[ty, tx] = Zone.Wood; }
+            w.Touch(); w.Peasants = 40; w.Recalc();
+            Assume.That(w.ActiveJobs(lodge) == 3, "three marked trees, three woodcutter jobs");
+            Assert.AreEqual(3, lodge.Workers, "automatic: every job filled");
+
+            w.SetTradeTarget("timber", 1);
+            Assert.AreEqual(1, lodge.Workers, "hand-set limit of 1");
+            w.AdjustTradeTarget("timber", 1);
+            Assert.AreEqual(2, lodge.Workers, "+ raises it by one");
+            w.AdjustTradeTarget("timber", -1); w.AdjustTradeTarget("timber", -1); w.AdjustTradeTarget("timber", -1);
+            Assert.AreEqual(0, lodge.Workers, "- cannot go below zero");
+
+            var loaded = World.LoadJson(w.SaveJson());
+            Assert.AreEqual(0, loaded.TradeTarget["timber"], "the limit is saved");
+
+            w.AdjustTradeTarget("timber", 1); w.AdjustTradeTarget("timber", 1); w.AdjustTradeTarget("timber", 1);
+            Assert.IsFalse(w.TradeTarget.ContainsKey("timber"), "+ up to the jobs goes back to automatic");
+            Assert.AreEqual(3, lodge.Workers);
+            w.SetTradeTarget("timber", 2); w.SetTradeTarget("timber", null);
+            Assert.AreEqual(3, lodge.Workers, "Auto clears the limit");
+        }
     }
 }

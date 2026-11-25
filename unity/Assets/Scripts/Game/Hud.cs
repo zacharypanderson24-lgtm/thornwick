@@ -61,6 +61,8 @@ namespace CrownAndHearth.Game
         public event Action<int> RotatePicked;
         public event Action<string> BannerPicked;
         public event Action<string, int> PrioMoved;
+        /// <summary>A trade's + (1), - (-1) or Auto (0) button on the Workforce panel.</summary>
+        public event Action<string, int> WorkersAdjusted;
         public event Action<bool> WorkforceToggled;
         public event Action TutorialOpen, TutorialNext, TutorialBack, TutorialClose;
 
@@ -155,7 +157,7 @@ namespace CrownAndHearth.Game
 
             // workforce panel
             float workforceHeight = 80 + Defs.Trades.Length * 38;
-            var wp = MakePanel(root, "Workforce", Vector2.right, Vector2.right, new Vector2(-440, BottomH + 58), new Vector2(-8, BottomH + 58 + workforceHeight));
+            var wp = MakePanel(root, "Workforce", Vector2.right, Vector2.right, new Vector2(-700, BottomH + 58), new Vector2(-8, BottomH + 58 + workforceHeight));
             _workPanel = wp.gameObject;
             var title = MakeText(wp, "Title", 17, TextAnchor.UpperLeft); title.text = "Workforce: villagers fill trades top to bottom";
             Stretch(title.rectTransform, new Vector2(10, workforceHeight - 34), new Vector2(-10, -8));
@@ -565,14 +567,18 @@ namespace CrownAndHearth.Game
                 var (workers, jobs, blds, shortCount) = w.D.Work.TryGetValue(t, out var r) ? r : (0, 0, 0, 0);
                 float y = -i * 38;
                 var row = MakeText(_workRows, "Row", 15, TextAnchor.MiddleLeft);
-                row.text = $"{i + 1}. {Defs.TradeNames[t]}   {workers}/{jobs} workers   {blds} bldg" + (shortCount > 0 ? $"   {shortCount} short" : "");
+                string wanted = w.TradeTarget.TryGetValue(t, out var hand) ? hand.ToString() : "auto";
+                row.text = $"{i + 1}. {Defs.TradeNames[t]}   working {workers}  wanted {wanted}  jobs {jobs}   {blds} bldg" + (shortCount > 0 ? $"   {shortCount} short" : "");
                 row.color = shortCount > 0 ? new Color(1f, 0.6f, 0.5f) : Ink;
-                var rt = row.rectTransform; rt.anchorMin = new Vector2(0, 1); rt.anchorMax = new Vector2(1, 1); rt.offsetMin = new Vector2(0, y - 34); rt.offsetMax = new Vector2(-80, y);
+                var rt = row.rectTransform; rt.anchorMin = new Vector2(0, 1); rt.anchorMax = new Vector2(1, 1); rt.offsetMin = new Vector2(0, y - 34); rt.offsetMax = new Vector2(-250, y);
                 string id = t;
                 MakeButton(_workRows, "Up", new Vector2(1, 1), new Vector2(-58, y - 17), new Vector2(36, 28), () => PrioMoved?.Invoke(id, -1));
                 MakeButton(_workRows, "Dn", new Vector2(1, 1), new Vector2(-18, y - 17), new Vector2(36, 28), () => PrioMoved?.Invoke(id, 1));
+                MakeButton(_workRows, "+", new Vector2(1, 1), new Vector2(-108, y - 17), new Vector2(36, 28), () => WorkersAdjusted?.Invoke(id, 1));
+                MakeButton(_workRows, "-", new Vector2(1, 1), new Vector2(-148, y - 17), new Vector2(36, 28), () => WorkersAdjusted?.Invoke(id, -1));
+                MakeButton(_workRows, "Auto", new Vector2(1, 1), new Vector2(-208, y - 17), new Vector2(60, 28), () => WorkersAdjusted?.Invoke(id, 0));
             }
-            _workText.text = $"Employed {w.D.Employed} of {w.Peasants} peasants, {w.D.Idle} idle, {w.D.Jobs} jobs in all.";
+            _workText.text = $"Employed {w.D.Employed} of {w.Peasants} peasants, {w.D.Idle} available (idle), {w.D.Jobs} jobs in all. + and - set how many work a trade; Auto fills every job.";
         }
 
         // ---------- Icons: building art where it exists, small code-drawn pictures for the rest ----------

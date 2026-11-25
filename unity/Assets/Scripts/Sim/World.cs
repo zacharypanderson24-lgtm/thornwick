@@ -40,6 +40,29 @@ namespace CrownAndHearth.Sim
         public double PopAcc;
         public bool Drafting = true, Starving;
         public string[] Prio = (string[])Trades.Clone();
+        /// <summary>Hand-set worker limits per trade (the + and - on the Workforce panel). A trade not listed is automatic: it takes as many
+        /// villagers as it has jobs, in priority order. A listed trade never takes more than this, however many jobs it has.</summary>
+        public readonly Dictionary<string, int> TradeTarget = new Dictionary<string, int>();
+
+        /// <summary>The + (dir 1) and - (dir -1) buttons: one more or one fewer villager than the trade has now (or than its hand-set limit).
+        /// + up to the number of jobs goes back to automatic; dir 0 clears the limit.</summary>
+        public void AdjustTradeTarget(string trade, int dir)
+        {
+            if (dir == 0) { SetTradeTarget(trade, null); return; }
+            if (D == null) Recalc();
+            var (workers, jobs, _, _) = D.Work.TryGetValue(trade, out var r) ? r : (0, 0, 0, 0);
+            int now = TradeTarget.TryGetValue(trade, out var hand) ? hand : workers;
+            int next = Math.Max(0, now + dir);
+            if (dir > 0 && next >= jobs) SetTradeTarget(trade, null); else SetTradeTarget(trade, next);
+        }
+
+        /// <summary>Set (or with null clear back to automatic) a trade's hand-set worker limit, and re-fill the jobs.</summary>
+        public void SetTradeTarget(string trade, int? target)
+        {
+            if (Array.IndexOf(Trades, trade) < 0) return;
+            if (target == null) TradeTarget.Remove(trade); else TradeTarget[trade] = Math.Max(0, target.Value);
+            Recalc();
+        }
 
         /// <summary>Bumped on every change to tiles or buildings, so views know when to redraw.</summary>
         public int Version { get; private set; }

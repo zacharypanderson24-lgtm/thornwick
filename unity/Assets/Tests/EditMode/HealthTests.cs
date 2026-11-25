@@ -82,7 +82,7 @@ namespace CrownAndHearth.Tests
         {
             var w = new World(7);
             w.Drafting = false;
-            w.RaidMinPopulation = 0; w.Day = 150;
+            w.RaidMinPopulation = 0; w.RaidSlowdown = 1; w.Day = 150;
             var camp = new RaiderCamp { Id = 4, X = 300, Y = 390, Strength = 2, Seed = 12347, Name = "Test camp" };   // 90 km south: 6 days of marching
             w.SetCamps(new[] { camp }, 300, 300);
             bool red = false; string warning = "", detail = "";
