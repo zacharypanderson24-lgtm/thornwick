@@ -59,7 +59,7 @@ namespace CrownAndHearth.Sim
         /// <summary>Set (or with null clear back to automatic) a trade's hand-set worker limit, and re-fill the jobs.</summary>
         public void SetTradeTarget(string trade, int? target)
         {
-            if (!Trades.Contains(trade)) return;
+            if (Array.IndexOf(Trades, trade) < 0) return;
             if (target == null) TradeTarget.Remove(trade); else TradeTarget[trade] = Math.Max(0, target.Value);
             Recalc();
         }
