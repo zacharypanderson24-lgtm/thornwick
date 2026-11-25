@@ -83,6 +83,12 @@ New files: `Sim/SurfaceWater.cs` (data model, saving), `Sim/Hydrology.cs` (gener
 - Not built: reservoirs, aqueducts, mills for sawing, wells drawing on surface water, livestock water, drought effects on canals.
 - Art still needed: a proper watermill (placeholder: the small shop with a water wheel), canal and sluice tiles.
 
+**Ferries and ports (PR 8, sections 18, 19 and 25):**
+- **Ferry** (Water menu, Ferry Landing; 20 wood, 4 stone each): two landings on the shores of the same boat-deep water, at most 20 tiles apart, form a ferry (pairs are made nearest first; a landing belongs to one ferry; a lone landing does nothing). A ferry **joins the roads** on its two shores: a road beside one landing counts as connected to the road beside the other, so homes, farms and workplaces across a wide river, a lake or a bay are served from the Town Hall where a bridge cannot reach (a bridge cannot cross deep water, more than 8 tiles, or the sea). People and crews do not walk through a ferry; only roads are joined, and it keeps working in winter. A ferry boat shuttles between the landings over boat water (hidden in winter when boats are hauled out).
+- **Port** (Water menu; 2x2; 30 wood, 12 stone, 20 gold): needs medium or deep water within 3 tiles that is part of at least 100 tiles of connected boat-deep water (a big lake, a major river, the sea). It counts as a market (a caravan can set out from it) and goods go by ship: a caravan sent while a port is free arrives in 60% of the usual time (gifts by messenger are not changed). Not tested in an automated test yet (the test map has no settlements to trade with): the speed-up is covered only by the code path.
+- Not built: cargo barges hauling goods or logs between your own buildings, river trade with specific settlements by their water connection, port upkeep, shipyards, warships.
+- Art still needed: a proper ferry landing and port (placeholders: the dock with a post and flag, and the storehouse with a pier), a ferry boat.
+
 **Known gaps in PR 1 (all planned):** nothing draws the water yet; buildings and walkers still ignore it (`IsSolid`/`WalkCost` hooks are PR 2); no new-world menu entry; river deltas are simple distributaries; wetlands are saturated land, not yet slowing movement; groundwater (wells) ignores surface water.
 
 ---

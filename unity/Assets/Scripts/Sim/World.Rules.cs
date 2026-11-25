@@ -91,6 +91,12 @@ namespace CrownAndHearth.Sim
             if (type == "fisher" && !NearOpenWater(fp, FishShoreNeeded)) return Result.No("A fishing hut must stand on the shore: put it within two tiles of a river, lake or the sea");
             if (type == "dock" && !NearOpenWater(fp, 3, WaterDepth.Medium)) return Result.No("A fishing dock must stand on the shore with water deep enough for boats (medium or deep) within three tiles, not a shallow stream");
             if (type == "watermill" && !RiverCurrentNear(fp, 1)) return Result.No("A watermill must stand on a riverbank with flowing water right beside it (not a pond, lake or the sea, and not while the river is frozen)");
+            if (type == "ferry" && !NearOpenWater(fp, 3, WaterDepth.Medium)) return Result.No("A ferry landing must stand on the shore with water deep enough for boats (medium or deep) within three tiles");
+            if (type == "port")
+            {
+                if (!NearOpenWater(fp, 3, WaterDepth.Medium)) return Result.No("A port must stand on the shore with deep water within three tiles");
+                if (NavigableTilesInRegion(RegionOf(fp)) < PortWaterNeeded) return Result.No($"The water here is too small for ships: a port needs at least {PortWaterNeeded} tiles of connected boat-deep water (a big lake, a major river or the sea)");
+            }
             if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
             if (type == "smithery" && !NextToRoad(fp)) return Result.No("Smithery must touch a road");
             if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");
@@ -396,6 +402,7 @@ namespace CrownAndHearth.Sim
                 for (int k = 0; k < 4; k++) { int x = cx + Nb[k, 0], y = cy + Nb[k, 1]; if (IsRoad(x, y) && !conn[Tk(x, y)]) { conn[Tk(x, y)] = true; stack.Push((x, y)); } }
             }
 
+            FerryJoin(conn, stack);   // World.Ferries.cs: a ferry joins the roads at its two landings
             foreach (var b in Blds)
             {
                 if (b.T == "road") { b.Served = conn[Tk(b.X, b.Y)]; continue; }

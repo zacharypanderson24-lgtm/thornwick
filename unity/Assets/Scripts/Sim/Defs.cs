@@ -57,6 +57,8 @@ namespace CrownAndHearth.Sim
             { "fisher", new Dictionary<Res, int> { { Res.Wood, 6 } } },
             { "dock", new Dictionary<Res, int> { { Res.Wood, 14 }, { Res.Stone, 4 } } },
             { "watermill", new Dictionary<Res, int> { { Res.Wood, 18 }, { Res.Stone, 8 } } },
+            { "ferry", new Dictionary<Res, int> { { Res.Wood, 20 }, { Res.Stone, 4 } } },
+            { "port", new Dictionary<Res, int> { { Res.Wood, 30 }, { Res.Stone, 12 }, { Res.Gold, 20 } } },
             { "quarry", new Dictionary<Res, int> { { Res.Wood, 10 } } },
             { "mine", new Dictionary<Res, int> { { Res.Wood, 12 } } },
             { "market", new Dictionary<Res, int> { { Res.Wood, 12 } } },
@@ -88,7 +90,7 @@ namespace CrownAndHearth.Sim
         public static readonly Dictionary<string, string> Names = new Dictionary<string, string>
         {
             { "storehouse", "Storehouse" }, { "smokehouse", "Smokehouse" }, { "charcoal", "Charcoal Clamp" },
-            { "road", "Dirt Road" }, { "tent", "Raider Tent" }, { "chieftent", "Warlord Tent" }, { "campfire", "Campfire" }, { "rack", "Weapon Rack" }, { "supplies", "Supply Pile" }, { "wall", "Palisade" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "fisher", "Fishing Hut" }, { "dock", "Fishing Dock" }, { "watermill", "Watermill" }, { "quarry", "Quarry" },
+            { "road", "Dirt Road" }, { "tent", "Raider Tent" }, { "chieftent", "Warlord Tent" }, { "campfire", "Campfire" }, { "rack", "Weapon Rack" }, { "supplies", "Supply Pile" }, { "wall", "Palisade" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "fisher", "Fishing Hut" }, { "dock", "Fishing Dock" }, { "watermill", "Watermill" }, { "ferry", "Ferry Landing" }, { "port", "Port" }, { "quarry", "Quarry" },
             { "mine", "Iron Mine" }, { "market", "Market" }, { "sawmill", "Sawmill" }, { "smithery", "Smithery" }, { "forester", "Forester" }, { "well", "Well" },
             { "barracks", "Barracks" }, { "muster", "Muster Ground" }, { "watchtower", "Watchtower" }, { "hall", "Town Hall" }, { "silo", "Silo" }, { "cistern", "Cistern" },
         };
@@ -130,6 +132,6 @@ namespace CrownAndHearth.Sim
         public static readonly int[,] Nb = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
         public static int PlacementSize(string type) => type == "wood" || type == "mine" || type == "quarry" || type == "hunter" || type == "forester" || type == "sawmill" ? 2 : DefaultSize(type);
-        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "muster" || type == "market" || type == "farm" || type == "smithery" || type == "storehouse" || type == "smokehouse" || type == "watermill") ? 2 : 1;
+        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "muster" || type == "market" || type == "farm" || type == "smithery" || type == "storehouse" || type == "smokehouse" || type == "watermill" || type == "port") ? 2 : 1;
     }
 }

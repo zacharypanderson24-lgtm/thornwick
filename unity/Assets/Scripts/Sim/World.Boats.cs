@@ -15,7 +15,8 @@ namespace CrownAndHearth.Sim
     public sealed class Boat
     {
         public int Id, X, Y, Px, Py;     // tile now and at the start of the day (the view slides between them)
-        public Building Home;            // the dock it works from
+        public Building Home;            // the dock it works from (a ferry boat: the first landing of its ferry)
+        public bool Ferry;               // shuttles between two ferry landings instead of fishing
         public int LaunchX, LaunchY, Region;
         public BoatState St = BoatState.Moored;
         public int Timer;
@@ -53,7 +54,7 @@ namespace CrownAndHearth.Sim
         public void StepBoats()
         {
             if (Waters == null || IceOn) { Boats.Clear(); return; }   // in winter the boats are hauled out
-            Boats.RemoveAll(b => !Blds.Contains(b.Home) || !b.Home.Served || b.Home.Workers <= 0);
+            Boats.RemoveAll(b => !b.Ferry && (!Blds.Contains(b.Home) || !b.Home.Served || b.Home.Workers <= 0));
             foreach (var dock in Blds)
             {
                 if (dock.T != "dock" || !dock.Served || dock.Workers <= 0) continue;
@@ -63,6 +64,7 @@ namespace CrownAndHearth.Sim
                 var (lx, ly) = launch.Value;
                 Boats.Add(new Boat { Id = ++_boatId, Home = dock, X = lx, Y = ly, Px = lx, Py = ly, LaunchX = lx, LaunchY = ly, Region = Waters.NavRegion[ly * N + lx], Timer = have });
             }
+            StepFerryBoats();   // World.Ferries.cs
             foreach (var b in Boats)
             {
                 b.Px = b.X; b.Py = b.Y;
@@ -70,10 +72,11 @@ namespace CrownAndHearth.Sim
                 {
                     case BoatState.Moored:
                         if (b.Timer-- > 0) break;
-                        if (PlanTrip(b)) b.St = BoatState.Out; else b.Timer = MooredDays;
+                        if (b.Ferry) { if (b.Path.Count > 1 && b.Path[0] != b.Y * N + b.X) b.Path.Reverse(); b.I = 0; b.St = BoatState.Out; }
+                        else if (PlanTrip(b)) b.St = BoatState.Out; else b.Timer = MooredDays;
                         break;
                     case BoatState.Out:
-                        if (Advance(b)) { b.St = BoatState.Fishing; b.Timer = FishingDays; }
+                        if (Advance(b)) { b.St = BoatState.Fishing; b.Timer = b.Ferry ? 1 : FishingDays; }
                         break;
                     case BoatState.Fishing:
                         if (--b.Timer <= 0) { b.Path.Reverse(); b.I = 0; b.St = BoatState.Back; }
