@@ -421,17 +421,18 @@ namespace CrownAndHearth.Sim
             foreach (var t in Prio)
             {
                 int w = 0, j = 0, n = 0, sh = 0;
+                int room = TradeTarget.TryGetValue(t, out var hand) ? hand : int.MaxValue;   // the player's limit for this trade, if set
                 foreach (var b in Blds)
                 {
                     if (!b.Served || !TradeOf.TryGetValue(b.T, out var tr) || tr != t) continue;
-                    int bj = ActiveJobs(b), bw = Math.Min(bj, avail); avail -= bw;
+                    int bj = ActiveJobs(b), bw = Math.Min(bj, Math.Min(avail, room)); avail -= bw; room -= bw;
                     b.Workers = bw; b.Eff = bj > 0 ? (double)bw / bj : 0;
                     w += bw; j += bj; n++; if (bw < bj) sh++;
                 }
                 if (t == "farming")
                     foreach (var p in keptPens)
                     {
-                        int pw = Math.Min(KeepersPerPen, avail); avail -= pw;
+                        int pw = Math.Min(KeepersPerPen, Math.Min(avail, room)); avail -= pw; room -= pw;
                         p.Keepers = pw;
                         w += pw; j += KeepersPerPen; if (pw < KeepersPerPen) sh++;
                     }

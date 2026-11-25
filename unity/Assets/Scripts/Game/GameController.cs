@@ -171,6 +171,7 @@ namespace CrownAndHearth.Game
             _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); _tutorial.SpeedChanged = true; };
             _hud.RotatePicked += Rotate;
             _hud.PrioMoved += MovePrio;
+            _hud.WorkersAdjusted += (trade, dir) => World.AdjustTradeTarget(trade, dir);
             _hud.WorkforceToggled += open => { if (open) _tutorial.WorkersOpened = true; };
             _hud.TutorialOpen += () => { _speed = 0; _hud.SetSpeed(_speed); _tutorial.Start(World, _tutorial.Finished ? 0 : _tutorial.Index); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };
             _hud.TutorialNext += () => { _tutorial.Next(World); if (_tutorial.Finished) PlayerPrefs.SetInt(TutorialSeenKey, 1); _hud.ShowTutorial(_tutorial); _progressVersion = -1; };

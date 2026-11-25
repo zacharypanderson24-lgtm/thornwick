@@ -39,7 +39,7 @@ namespace CrownAndHearth.Sim
                 ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["militia"] = MilitiaFights, ["gatesShut"] = KeepGatesShut,
                 ["barrierDamage"] = new JObject(BarrierDamage.Where(kv => kv.Value > 0).Select(kv => new JProperty(kv.Key.ToString(), Math.Round(kv.Value, 2)))),   // World.Walls.cs
                 ["starving"] = Starving,
-                ["prio"] = JArray.FromObject(Prio), ["hv"] = JArray.FromObject(Hv),
+                ["prio"] = JArray.FromObject(Prio), ["tradeTarget"] = JObject.FromObject(TradeTarget), ["hv"] = JArray.FromObject(Hv),
                 ["res"] = JObject.FromObject(ResAmt.ToDictionary(p => SaveKey(p.Key), p => p.Value)),
                 ["wheatStored"] = WheatStored, ["foodProduction"] = RecentFoodProduction, ["waterShortDays"] = WaterShortDays,
                 ["freshMeat"] = FreshMeatStored, ["foodUnits"] = SeasonalFarming ? 5 : 1,   // 5: one villager eats 1 food a day (see MigrateFoodUnits)
@@ -144,6 +144,8 @@ namespace CrownAndHearth.Sim
             };
             var priority = save["prio"]?.ToObject<string[]>() ?? Array.Empty<string>();
             world.Prio = priority.Where(Trades.Contains).Concat(Trades).Distinct().ToArray();
+            if (save["tradeTarget"] is JObject handSet)   // hand-set worker limits (absent in older saves: every trade automatic)
+                foreach (var hp in handSet.Properties()) if (Trades.Contains(hp.Name) && hp.Value.Type == JTokenType.Integer) world.TradeTarget[hp.Name] = Math.Max(0, hp.Value.Value<int>());
             if (size < N) world.GenTerrain((offset, offset + size));
             ReadGrid(deco, world.DecoMap, size, offset, ReadEnum<Deco>);
             ReadGrid(save["zone"] as JArray, world.ZoneMap, size, offset, token =>
