@@ -112,6 +112,8 @@ namespace CrownAndHearth.Game
                 Desc = $"A pier on the shore where three fishermen fish water deep enough for boats, and catch {World.DockBonus:0.#} times as much as from a hut: the best use of a lake, a big river or the sea. It must stand on the shore with medium or deep water within three tiles (a pier reaches out over the shallows), on a road to the Town Hall. Costs {Cost["dock"][Res.Wood]} wood and {Cost["dock"][Res.Stone]} stone. Over-fished water thins out: the catch falls until the fish breed back." },
             new ToolDef { Id = "ferry", Cat = Cat.Water, Label = "Ferry Landing", Build = "ferry",
                 Desc = $"Build two landings on the shores of the same deep water, up to {World.FerryRange} tiles apart, to make a ferry. It joins the roads on the two shores, so homes, farms and workplaces across a wide river, a lake or a bay are served from the Town Hall where a bridge cannot reach. A ferry boat shuttles between them. People and crews do not walk through it: only roads are joined. Each landing costs {Cost["ferry"][Res.Wood]} wood and {Cost["ferry"][Res.Stone]} stone; it must stand on the shore with medium or deep water within three tiles, beside a road." },
+            new ToolDef { Id = "boatyard", Cat = Cat.Water, Label = "Boatyard", Build = "boatyard",
+                Desc = $"Craftsmen build and mend the town's boats here: fishing boats, ferry boats and cargo barges, from wood, flax (rope and sails) and metal fittings. Order them in the Vessels window. A ferry route needs a ferry boat, a fishing dock fishes best with boats and a port trades with a cargo barge; a boatyard also repairs the boats that wear out. Stands on the shore with deep water within three tiles, touching a road. Costs {Cost["boatyard"][Res.Wood]} wood and {Cost["boatyard"][Res.Stone]} stone." },
             new ToolDef { Id = "ferryRoute", Cat = Cat.Water, Label = "Ferry Route", FerryRoute = true,
                 Desc = $"Click a ferry landing, then the landing at the other end: green landings can be joined, red ones say why not (a route may sail at most {World.FerryMaxRoute} tiles over connected deep water, and costs {World.FerryRouteCost} gold). The route is drawn along the water it sails. A route needs {World.FerryCrew} ferrymen at a landing on a road to the Town Hall. Click a landing that already has a route to suspend or resume it; hold Shift and click to remove the route. Nothing pairs by itself: building another landing never changes a route." },
             new ToolDef { Id = "port", Cat = Cat.Water, Label = "Port", Build = "port",
@@ -1236,7 +1238,7 @@ namespace CrownAndHearth.Game
                     {
                         double stock = w.StockOf(fg.body);
                         lines.Add($"Fishes {World.WaterClassName(fg.kind).ToLower()} water: {fg.grounds} tiles in reach, {World.FishLevel(fg.perWorker)} catch (about {fg.perWorker:0.##} food per fisherman a day at full stock).");
-                        if (b.T == "dock") lines.Add($"Boats: {w.BoatsOf(b)} (one for every two fishermen, up to {World.BoatsPerDock}). They sail the boat-deep water and come home; for now they are for show and do not change the catch.");
+                        if (b.T == "dock") lines.Add($"Boats: {w.DockBoatsInService(b)} fishing boat{(w.DockBoatsInService(b) == 1 ? "" : "s")} in service (up to {World.DockBoatsMax}, one for every two fishermen). Without boats the fishermen only get a quarter of the catch from the pier. Order boats at a Boatyard (Vessels window).");
                         lines.Add($"Fish stock: {World.StockWord(stock)} ({stock * 100:0}%). Season: {w.Season} (x{w.FishSeason(fg.kind):0.#}). Today's catch: {w.FishCatch(b):0.##} food.");
                     }
                 }
@@ -1251,12 +1253,15 @@ namespace CrownAndHearth.Game
                         {
                             int len = (w.SailingRoute(ea, eb)?.Count ?? 1) - 1; var load = w.RouteLoad(rt); double service = w.RouteService(rt, len, load.demand);
                             lines.Add($"Linked to the landing at {other.X},{other.Y}: {len} tiles of sailing, about {World.TripsPerDay(len)} crossings a day each way.");
+                            { var vs = w.VesselOfRoute(rt); lines.Add(vs == null ? "Ferry boat: none assigned (order one at a Boatyard)" : $"Ferry boat #{vs.Id}: condition {vs.Condition:0}%" + (w.InService(vs) ? "" : " (out of service)")); }
                             lines.Add($"Carries {World.FerryPassengers} people and {World.FerryCargo} cargo a trip: {World.PassengerCapacityPerDay(len)} people a day. Crew {w.CrewOf(rt)} of {World.FerryCrew}.");
                             lines.Add($"{load.buildings} buildings across the water ({load.people} people and jobs, demand about {load.demand:0} a day) depend on it. " + (service < 1 ? "It is crowded." : "It copes."));
                         }
                     }
                 }
+                if (b.T == "port") lines.Add("Port: " + w.PortStatus(b));
                 if (b.T == "port") lines.Add($"Gives your trade one ship ({w.ShipsOut} of {w.ShipCapacity} ships at sea). It stands on {World.ModeName(w.PortMode(b)).Replace("by ", "")} water ({w.NavigableTilesInRegion(w.RegionOf(b))} boat-deep tiles). Ships sail only to settlements the world map shows on the same sea or lake; travel time follows the water route. Not a market: overland caravans need a Market.");
+                if (b.T == "boatyard") lines.Add($"Boatyard: {w.VesselOrders.Count} order{(w.VesselOrders.Count == 1 ? "" : "s")} waiting, {w.Vessels.Count} vessel{(w.Vessels.Count == 1 ? "" : "s")} owned. Order and see boats in the Vessels window (button under New world). It repairs the worst boat each day while staffed and supplied with wood.");
                 if (b.T == "watermill") lines.Add(w.RiverCurrentNear(b, 1) ? $"Mills for {World.MillFields} fields: adds {World.MillBonusShare * 100:0}% to the wheat harvest when staffed." : "No flowing river beside it (frozen or dry): the wheel is still.");
                 if (b.T == "hunter") lines.Add($"Hunts mature forest within {World.HuntingRange} tiles in all seasons.");
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");

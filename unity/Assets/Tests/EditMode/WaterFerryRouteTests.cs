@@ -42,7 +42,7 @@ namespace CrownAndHearth.Tests
         {
             var w = Make(WaterPreset.Lakeside, seed); var p = Pair(w, 6, World.FerryMaxRoute).Value;
             var a = w.AddBld("ferry", p.a.x, p.a.y); var b = w.AddBld("ferry", p.b.x, p.b.y);
-            Assert.IsTrue(w.EstablishRoute(a, b).Ok); return (w, a, b);
+            Assert.IsTrue(w.EstablishRoute(a, b).Ok); w.Vessels.Add(new Vessel { Id = 1, Type = VesselType.FerryBoat, Kind = AssignKind.FerryRoute, Key = w.FerryRoutes[0].Id }); return (w, a, b);
         }
 
         [Test]

@@ -56,7 +56,7 @@ namespace CrownAndHearth.Tests
         {
             var w = Make(WaterPreset.Lakeside, 1); int dx = -1, dy = -1;
             for (int y = 8; y < N - 8 && dx < 0; y++) for (int x = 8; x < N - 8; x++) if (w.Waters.Class[y * N + x] == WaterClass.None && w.CanPlace("dock", x, y).Ok) { dx = x; dy = y; break; }
-            var d = w.AddBld("dock", dx, dy); d.Served = true; d.Workers = 3;
+            var d = w.AddBld("dock", dx, dy); d.Served = true; d.Workers = 3; w.Vessels.Add(new Vessel { Id = 1, Type = VesselType.FishingBoat, Kind = AssignKind.Dock, Key = World.Tk(dx, dy) });
             w.Day = 100; w.StepBoats(); Assert.Greater(w.Boats.Count, 0);
             w.Day = 300; w.StepBoats(); Assert.AreEqual(0, w.Boats.Count);
             w.Day = 360; w.StepBoats(); Assert.AreEqual(0, w.Boats.Count);

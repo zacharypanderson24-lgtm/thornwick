@@ -22,10 +22,12 @@ namespace CrownAndHearth.Tests
                 for (int x = 8; x < N - 8; x++)
                     if (w.Waters.Class[y * N + x] == WaterClass.None && w.CanPlace("dock", x, y).Ok)
                     {
-                        var d = w.AddBld("dock", x, y); d.Served = true; d.Workers = workers; return d;
+                        var d = w.AddBld("dock", x, y); d.Served = true; d.Workers = workers; GiveBoats(w, d, 2); return d;
                     }
             Assert.Fail("no place for a dock"); return null;
         }
+
+        static void GiveBoats(World w, Building dock, int n) { for (int i = 0; i < n; i++) w.Vessels.Add(new Vessel { Id = 900 + i + w.Vessels.Count, Type = VesselType.FishingBoat, Kind = AssignKind.Dock, Key = World.Tk(dock.X, dock.Y) }); }
 
         static void Run(World w, Building dock, int days, System.Action<int> each = null)
         {
@@ -35,10 +37,10 @@ namespace CrownAndHearth.Tests
         [Test]
         public void ADockWithFishermenLaunchesBoatsOneForEveryTwoUpToTwo()
         {
-            var w = Make(WaterPreset.Lakeside, 1); var dock = Dock(w, 1);
-            w.StepBoats(); Assert.AreEqual(1, w.BoatsOf(dock));
-            dock.Workers = 3; w.StepBoats(); Assert.AreEqual(2, w.BoatsOf(dock));
-            dock.Workers = 4; w.StepBoats(); Assert.AreEqual(World.BoatsPerDock, w.BoatsOf(dock), "never more than the limit");
+            var w = Make(WaterPreset.Lakeside, 1); var dock = Dock(w, 3);
+            w.StepBoats(); Assert.AreEqual(2, w.BoatsOf(dock), "one boat for each of the dock's two vessels in service");
+            w.Vessels[0].Condition = 5; w.StepBoats(); Assert.AreEqual(1, w.BoatsOf(dock), "a worn-out vessel is hauled out");
+            w.Vessels[0].Condition = 100; GiveBoats(w, dock, 2); w.StepBoats(); Assert.AreEqual(World.BoatsPerDock, w.BoatsOf(dock), "never more than the limit");
             Assert.IsTrue(w.Boats.All(b => b.Home == dock));
         }
 
