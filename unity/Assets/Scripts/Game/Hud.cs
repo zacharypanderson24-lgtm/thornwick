@@ -64,16 +64,6 @@ namespace CrownAndHearth.Game
         /// <summary>A trade's + (1), - (-1) or Auto (0) button on the Workforce panel.</summary>
         public event Action<string, int> WorkersAdjusted;
         public event Action<bool> WorkforceToggled;
-        public event Action TutorialOpen, TutorialNext, TutorialBack, TutorialClose;
-
-        GameObject _tutPanel;
-        Text _tutTitle, _tutBody, _tutGoal, _tutStep, _tutNextLabel;
-        string _tutGoalBase = "";
-
-        /// <summary>Progress on the tutorial's counted goal ("2 / 4"), shown after the goal line; null shows the goal alone.</summary>
-        public void SetTutorialProgress(string progress) =>
-            _tutGoal.text = _tutGoalBase + (progress != null ? $"   Progress: {progress}" : "");
-        string _highlight;   // tool the tutorial points at
         World _world;        // for card prices
 
         public void Build(IList<GameController.ToolDef> tools, IList<GameController.CatDef> cats, ArtLibrary art)
@@ -167,7 +157,6 @@ namespace CrownAndHearth.Game
             Stretch(_workText.rectTransform, new Vector2(10, 8), new Vector2(-10, 34 - workforceHeight));
             _workPanel.SetActive(false);
 
-            BuildTutorial(root);
             BuildCursorTip(root);   // last, so it draws over everything
         }
 
@@ -201,7 +190,6 @@ namespace CrownAndHearth.Game
                 "It drops when houses have room to spare or food runs short.", ""));
 
             MakeButton(bar, "Workers", new Vector2(1, 0.5f), new Vector2(-62, 0), new Vector2(104, 40), ToggleWorkforce);
-            MakeButton(bar, "Tutorial", new Vector2(1, 0.5f), new Vector2(-178, 0), new Vector2(108, 40), () => TutorialOpen?.Invoke());
 
             // what the selected tool does and how to use it: in the bar, between the categories and the Homes meter
             float chipLeft = 8 + _cats.Count * (CatW + 4) + 6;
@@ -386,43 +374,6 @@ namespace CrownAndHearth.Game
             _cursorTip.anchoredPosition = new Vector2(x, y);
         }
 
-        // ---------- Tutorial panel (top centre, clear of the info panel, banner, workforce and messages) ----------
-        void BuildTutorial(RectTransform root)
-        {
-            var tp = MakePanel(root, "Tutorial", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-330, -390), new Vector2(330, -120));
-            _tutPanel = tp.gameObject;
-            _tutTitle = MakeText(tp, "Title", 19, TextAnchor.UpperLeft); _tutTitle.fontStyle = FontStyle.Bold;
-            Stretch(_tutTitle.rectTransform, new Vector2(14, 230), new Vector2(-90, -10));
-            _tutStep = MakeText(tp, "Step", 14, TextAnchor.UpperRight);
-            Stretch(_tutStep.rectTransform, new Vector2(400, 230), new Vector2(-14, -12));
-            _tutBody = MakeText(tp, "Body", 16, TextAnchor.UpperLeft);
-            Stretch(_tutBody.rectTransform, new Vector2(14, 76), new Vector2(-14, -40));
-            _tutGoal = MakeText(tp, "Goal", 15, TextAnchor.MiddleLeft); _tutGoal.color = new Color(1f, 0.82f, 0.4f);
-            Stretch(_tutGoal.rectTransform, new Vector2(14, 44), new Vector2(-14, -196));
-            MakeButton(tp, "Back", new Vector2(0, 0), new Vector2(54, 24), new Vector2(84, 30), () => TutorialBack?.Invoke());
-            MakeButton(tp, "Close", new Vector2(1, 0), new Vector2(-54, 24), new Vector2(84, 30), () => TutorialClose?.Invoke());
-            var next = MakeButton(tp, "Next", new Vector2(1, 0), new Vector2(-146, 24), new Vector2(84, 30), () => TutorialNext?.Invoke());
-            _tutNextLabel = next.GetComponentInChildren<Text>();
-            _tutPanel.SetActive(false);
-        }
-
-        /// <summary>Show the tutorial's current step (or hide the panel when it is closed or finished).</summary>
-        public void ShowTutorial(Tutorial t)
-        {
-            bool on = t.Active && !t.Finished;
-            _tutPanel.SetActive(on);
-            _highlight = on ? t.Current.Tool : null;
-            if (!on) { RestoreColors(); return; }
-            var s = t.Current;
-            _tutTitle.text = s.Title;
-            _tutStep.text = $"{t.Index + 1} / {Tutorial.Steps.Count}";
-            _tutBody.text = t.BodyText;
-            _tutGoal.text = "Goal: " + s.Goal + (s.Tool != null ? "  (the glowing button below)" : "");
-            _tutGoalBase = _tutGoal.text;
-            _tutNextLabel.text = s.Explanation ?(t.Index == Tutorial.Steps.Count - 1 ? "Finish" : "Next") : "Skip";
-            RestoreColors();
-        }
-
         void BuildBannerPicker(RectTransform root)
         {
             var anchor = Vector2.one;
@@ -538,15 +489,6 @@ namespace CrownAndHearth.Game
         {
             UpdateCamp();
             if (_toastText != null && Time.unscaledTime > _toastUntil && _toastText.text.Length > 0) _toastText.text = "";
-            // the tutorial's tool glows until the player picks it: its card if the tray is open, else its category button
-            if (_highlight != null && _highlight != _currentTool)
-            {
-                var t = _tools.FirstOrDefault(x => x.Id == _highlight);
-                if (t == null) return;
-                float k = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f);
-                if (_openCat == t.Cat && _cards.TryGetValue(t.Id, out var card)) card.color = Color.Lerp(Btn, Pulse, k);
-                else if (_catButtons.TryGetValue(t.Cat, out var cb)) cb.color = Color.Lerp(Btn, Pulse, k);
-            }
         }
 
         void ToggleWorkforce()

@@ -36,7 +36,7 @@ A mine's road must reach its downhill entrance.
 The city map is 256 x 256 tiles; you own a 64 x 64 district round the Town Hall to start and claim more land for free (Land, L) one 16 x 16 parcel at a time, next to what you own. You can build, zone, clear and work only land you own; unowned land is drawn dimmer.
 The **Map** button (bottom right) or **M** opens the world map: a procedurally generated 600 x 600 km world of 576 regions, cold at the top and hot at the bottom, with your settlement as the gold marker. Scroll to zoom, drag or W A S D to pan, hover for the region and cell, switch between Terrain and Heat map, Esc or M closes it.
 Water (9): homes need water every day. The Town Hall's spring, wells and cisterns are one town-wide supply for every home on a connected road, however far away. Wells go on the blue groundwater patches; wells on one patch share its reserve. Placing a well or cistern shows the patches, short homes (red) and the road network the water travels; the tip says what water the town would really gain and whether the patch would run down.
-**Workers** sets staffing priorities. **Tutorial** explains the controls.
+**Workers** sets staffing priorities.
 
 A staffed market sells one unit per worker per day. Flax earns two gold and
 surplus wheat earns half a gold. Markets preserve at least ten days of food,

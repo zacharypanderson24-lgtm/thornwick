@@ -184,6 +184,7 @@ on load from the seed, never moving saved showings; browser saves load as Classi
 woodcutter, mine and farm art. Parity: the two day-by-day browser scenarios now also remove the starting farm and every Farmland zone
 (farming is Unity's own), which put ChatGPT's switched-off zone-development comparison back on.
 ### Tutorial (merged into `unity-migration` 2026-11-16)
+**Removed on 2026-11-25 (Zach's decision):** the whole in-game tutorial is gone (`Sim/Tutorial.cs`, the HUD panel and Tutorial button, `TutorialTests.cs`). The notes below are history only. The first-year opening simulation test (`FirstYearOpeningTests`) still runs, without the tutorial steps.
 
 A guided walk through the existing mechanics in a panel at the top centre (16 steps: welcome, camera, time, roads, housing zones and
 growth, farmland and farmhouses, workers, lumber, sawmill, wells and markets, stone and iron, the underground view, supports and
