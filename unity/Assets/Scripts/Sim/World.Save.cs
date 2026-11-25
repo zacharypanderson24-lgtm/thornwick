@@ -99,6 +99,7 @@ namespace CrownAndHearth.Sim
                 ["t"] = b.T, ["x"] = b.X, ["y"] = b.Y, ["sz"] = b.Sz, ["prog"] = b.Prog,
                 ["var"] = b.Var, ["face"] = b.Face, ["zoned"] = b.Zoned,
             };
+            if (b.T == "house") o["tier"] = b.Tier;
             if (b.T == "mine")
             {
                 o["adit"] = b.Adit; o["aditShored"] = b.AditShored; o["aditProg"] = b.AditProg; o["depth"] = b.Depth;
@@ -189,6 +190,7 @@ namespace CrownAndHearth.Sim
                     Shored = entry.Value<int?>("shored") ?? 0, DigProg = entry.Value<int?>("digProg") ?? 0,
                     Closed = entry.Value<int?>("closed") ?? 0, CaveIns = entry.Value<int?>("caveIns") ?? 0,
                     ShortDays = entry.Value<int?>("dry") ?? 0,
+                    Tier = Math.Clamp(entry.Value<int?>("tier") ?? 2, 1, 2),   // houses in older saves were level 2 when served and watered: they keep that
                 };
                 // stored water: older saves have none recorded, so the Town Hall's cistern starts full and a cistern empty
                 b.Water = Math.Max(0, Math.Min(StoreCapOf(b), entry.Value<double?>("water") ?? (b.T == "hall" ? WaterTuning.HallCistern : 0)));

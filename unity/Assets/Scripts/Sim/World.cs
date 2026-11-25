@@ -82,8 +82,8 @@ namespace CrownAndHearth.Sim
             int c = Start;
             AddBld("hall", c - 1, c - 1, 3);
             for (int y = c + 2; y <= c + 6; y++) AddBld("road", c, y);
-            AddBld("house", c - 1, c + 3).Zoned = true;
-            AddBld("house", c + 1, c + 3).Zoned = true;
+            { var first = AddBld("house", c - 1, c + 3); first.Zoned = true; first.Tier = 2; }   // the two starting homes are level 2 houses, so the opening village is as it was
+            { var home = AddBld("house", c + 1, c + 3); home.Zoned = true; home.Tier = 2; }
             // the starting farm: a 2x2 farmhouse (its plots come from AddStarterFarmFields); the browser-compatible Classic world
             // keeps the browser's 1x1 farm so the parity tests start from the same settlement
             if (Style == TerrainStyle.Classic) { AddBld("farm", c - 1, c + 5, 1).Zoned = true; ZoneMap[c + 5, c - 1] = Zone.Farm; }

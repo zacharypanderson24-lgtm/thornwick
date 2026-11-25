@@ -607,6 +607,7 @@ namespace CrownAndHearth.Game
         public static Color ZoneColor(Zone z, bool flax = false) => flax ? new Color(0.45f, 0.58f, 0.95f) : z switch
         {
             Zone.Res => new Color(0.92f, 0.66f, 0.32f),
+            Zone.Res2 => new Color(0.62f, 0.72f, 0.92f),
             Zone.Farm => new Color(0.92f, 0.80f, 0.25f),
             Zone.Wood => new Color(0.36f, 0.72f, 0.32f),
             Zone.Mine => new Color(0.82f, 0.48f, 0.46f),
