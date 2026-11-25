@@ -83,7 +83,7 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "quarry", Cat = Cat.Mining, Label = "Quarry", Build = "quarry",
                 Desc = $"Quarrymen dig stone from Mining zones within {WorkR} tiles, nearest first: rock outcrops, hills, and mountains from their edge inward. The quarry sets how many you can have; the zoned rock sets how many are needed. Needs a road." },
             new ToolDef { Id = "mine", Cat = Cat.Mining, Label = "Iron Mine", Build = "mine",
-                Desc = $"Miners survey Mining zones within {WorkR} tiles for iron, then tunnel into the hill. The mine sets how many miners you can have; the zoned tiles set how many are needed. Place it at the foot of high ground; its entrance faces away from the hill and needs a road there." },
+                Desc = $"Miners dig a tunnel tile by tile through the Mining zone you paint beside the mine (within {WorkR} tiles), and take iron from its walls. The tunnel shows as dark tiles; timber props make it safer. Place it at the foot of high ground; its entrance faces away from the hill and needs a road there. Zone a strip from its walls into the hill." },
             new ToolDef { Id = "smithery", Cat = Cat.Mining, Label = "Smithery", Build = "smithery",
                 Desc = $"Smelts {OrePerMetal} iron ore into 1 metal. Makes up to {SmeltRate} metal a day with a full crew." },
             new ToolDef { Id = "zoneMine", Cat = Cat.Mining, Label = "Mining Zone", Zone = Zone.Mine,
@@ -492,7 +492,7 @@ namespace CrownAndHearth.Game
                 _tutorial.UndergroundViewed = true;
                 _ugLevel = (_ugLevel + 1) % (World.Bands + 1);
                 _hud.Toast(_ugLevel == 0 ? "Underground view off." : $"Underground view: ore band {_ugLevel} of {World.Bands}" +
-                    (_ugLevel == 1 ? " (just under the surface). Ore lies in hills and mountains. Orange = surveyed ore, brighter = richer; grey = surveyed, nothing here; blue = Mining zone not surveyed yet. U for deeper." : _ugLevel < World.Bands ? ". U for deeper." : " (deepest, richest). U to turn off."), 6);
+                    (_ugLevel == 1 ? " (just under the surface). Ore lies in hills and mountains. Orange = ore a tunnel has revealed, brighter = richer; grey = revealed, nothing here; blue = Mining zone not dug near yet; yellow = tunnel. U for deeper." : _ugLevel < World.Bands ? ". U for deeper." : " (deepest, richest). U to turn off."), 6);
             }
         }
 
@@ -652,6 +652,16 @@ namespace CrownAndHearth.Game
         static readonly Color32 Ok = new Color32(120, 255, 120, 110), Bad = new Color32(255, 90, 80, 120), Hover = new Color32(255, 255, 255, 70), Warn = new Color32(255, 200, 70, 120);
 
         static readonly Color32 UgNone = new Color32(40, 40, 48, 150), UgUnknown = new Color32(70, 110, 200, 110), UgShaft = new Color32(255, 240, 120, 200);
+        static readonly Color32 TunnelBare = new Color32(45, 30, 20, 215), TunnelShored = new Color32(125, 85, 45, 215);
+
+        /// <summary>Every mine's tunnel, always visible: dark tiles, brown where the timber supports are in.</summary>
+        void DrawTunnels()
+        {
+            var w = World;
+            foreach (var b in w.Blds)
+                if (b.T == "mine")
+                    foreach (int k in b.Tunnel) _overlay.AddTile(w, k % N, k / N, _rot, b.Shored.Contains(k) ? TunnelShored : TunnelBare);
+        }
 
         /// <summary>Underground view of ore band _ugLevel (1 = just under each tile's surface, 3 = deepest): surveyed ore (orange, brighter =
         /// richer), surveyed nothing (grey), Mining zone not yet surveyed (blue), mines with an adit or shaft (yellow).</summary>
@@ -662,7 +672,8 @@ namespace CrownAndHearth.Game
                 for (int x = 0; x < N; x++)
                 {
                     var b = w.Grid[y, x];
-                    if (b != null && b.T == "mine") { if (b.Adit || b.Depth > 0) _overlay.AddTile(w, x, y, _rot, UgShaft); continue; }
+                    if (w.IsTunnel(x, y)) { _overlay.AddTile(w, x, y, _rot, UgShaft); continue; }
+                    if (b != null && b.T == "mine") continue;
                     if (w.IsSurveyed(x, y))
                     {
                         double o = w.KnownOre(x, y, L);
@@ -752,6 +763,7 @@ namespace CrownAndHearth.Game
             _overlay.Clear();
             foreach (var burning in World.Burning)   // a scenario fire: every tile of a burning building glows red
                 for (int j = 0; j < burning.Sz; j++) for (int i = 0; i < burning.Sz; i++) _overlay.AddTile(World, burning.X + i, burning.Y + j, _rot, Bad);
+            DrawTunnels();
             if (_ugLevel > 0) DrawUnderground();
             // zone tools: shade where the buildings that work this zone can reach, so the player knows where to paint
             if (_tool.Zone == Zone.Wood || _tool.Zone == Zone.Mine || (_tool.Zone == Zone.Farm && World.SeasonalFarming))
@@ -1076,7 +1088,7 @@ namespace CrownAndHearth.Game
             if (b.Crew.Count == 0) return "No crew yet (needs villagers and a road link)";
             int home = 0, outw = 0, at = 0, back = 0, down = 0;
             foreach (var a in b.Crew) switch (a.St) { case CrewState.Home: home++; break; case CrewState.Out: outw++; break; case CrewState.Work: at++; break; case CrewState.Down: down++; break; default: back++; break; }
-            if (b.T == "mine") return $"Crew: {home} resting here, {down} underground, {outw + at + back} out surveying";
+            if (b.T == "mine") return $"Crew: {home} resting here, {down} underground in the tunnel";
             return $"Crew: {home} resting here, {outw} walking out, {at} working, {back} carrying home";
         }
 
@@ -1084,10 +1096,10 @@ namespace CrownAndHearth.Game
         {
             var w = World;
             if (!w.IsSurveyed(x, y))
-                return w.ZoneMap[y, x] == Zone.Mine ? "Underground: not surveyed yet (a mine's miners will survey it)" : "Underground: unknown. Zone it for mining (Mining, 6) to have it surveyed";
+                return w.ZoneMap[y, x] == Zone.Mine ? "Underground: unknown (a mine's tunnel reveals the ore around it as it is dug)" : "Underground: unknown. Zone it for mining (Mining, 6) and let a tunnel reach it";
             var parts = new List<string>();
-            for (int l = 1; l <= World.MaxDepth; l++) { double o = w.KnownOre(x, y, l); parts.Add($"band {l} " + (o > 1e-9 ? $"{o:0} ore" : "none")); }
-            return "Underground (surveyed): " + string.Join(", ", parts);
+            for (int l = 1; l <= World.Bands; l++) { double o = w.KnownOre(x, y, l); parts.Add($"band {l} " + (o > 1e-9 ? $"{o:0} ore" : "none")); }
+            return "Underground (revealed by digging): " + string.Join(", ", parts);
         }
 
         string TileInfo(int x, int y)

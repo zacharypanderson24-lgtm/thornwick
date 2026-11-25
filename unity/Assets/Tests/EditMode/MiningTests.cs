@@ -1,5 +1,5 @@
-// Underground mining (Unity-only, World.Mining.cs): ore in hills and mountains, surveying by miners, adits into high ground,
-// shafts for what lies below, timber supports and cave-ins. These are rule tests, not browser parity (the browser still mines surface ore).
+// Tunnel mining (Unity-only, World.Mining.cs): ore in hills and mountains, a tunnel dug tile by tile through the Mining zone,
+// ore taken from its walls, timber supports and cave-ins. These are rule tests, not browser parity (the browser still mines surface ore).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -61,9 +61,7 @@ namespace CrownAndHearth.Tests
                 var reach = Patch(x, y).ToList();
                 if (wantOre)
                 {
-                    var probe = new Building { T = "mine", X = x, Y = y };
-                    int aditOre = reach.Count(t => Enumerable.Range(1, World.Bands).Any(l => w.OreAt(t.x, t.y, l) > 0 && w.NeedShaft(probe, t.x, t.y, l) == 0));
-                    if (aditOre < 4) continue;
+                    if (reach.Count(t => OreUnder(w, t.x, t.y)) < 4) continue;   // ore within the tunnel's zone
                     int face = w.MineFaceAt(x, y); if (face < 0) continue;
                     var (ex, ey) = World.EntranceTile(x, y, face);   // the road must reach the entrance
                     if (!World.Inb(ex, ey) || (w.Grid[ey, ex]?.T != "road" && !RoadTo(w, ex, ey, x, y))) continue;
@@ -160,73 +158,62 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void AnAditReachesBandsThatRiseAboveTheMineAndShaftsTheRest()
-        {
-            var w = new World(7);
-            // a lowland lot next to the highest ground within reach
-            (int x, int y, int hx, int hy) best = default; double rise = 0;
-            foreach (var (x, y) in AllTiles())
-            {
-                if (w.GenLevel(x, y) > 0.25 || w.IsSolid(x, y)) continue;
-                foreach (var (i, j) in Reach(x, y)) { double r = w.GenLevel(i, j) - w.GenLevel(x, y); if (r > rise) { rise = r; best = (x, y, i, j); } }
-            }
-            Assume.That(rise >= 3, "no lot below ground 3+ levels higher");
-            var b = new Building { T = "mine", X = best.x, Y = best.y };
-            for (int l = 1; l <= World.Bands; l++) Assert.AreEqual(0, w.NeedShaft(b, best.hx, best.hy, l), $"band {l} of ground {rise:0.#} levels up is reached by the adit");
-            for (int l = 1; l <= World.Bands; l++) Assert.AreEqual(l, w.NeedShaft(b, best.x, best.y, l), $"band {l} under the mine itself needs shaft level {l}");
-        }
-
-        [Test]
         public void QuarryingAMountainDoesNotMoveOrDestroyItsOre()
         {
             var w = new World(7);
             var t = AllTiles().First(p => w.IsMountain(p.x, p.y) && OreUnder(w, p.x, p.y));
-            var foot = AllTiles().First(p => !w.IsSolid(p.x, p.y) && Math.Max(Math.Abs(p.x - t.x), Math.Abs(p.y - t.y)) <= Defs.WorkR);
-            var b = new Building { T = "mine", X = foot.x, Y = foot.y };
-            var before = Enumerable.Range(1, World.Bands).Select(l => (w.OreAt(t.x, t.y, l), w.NeedShaft(b, t.x, t.y, l))).ToArray();
+            var before = Enumerable.Range(1, World.Bands).Select(l => (w.OreAt(t.x, t.y, l), w.GenLevel(t.x, t.y))).ToArray();
             // quarry the tile's stone out and lower its corners, as heavy quarrying would
             w.Dig[World.Tk(t.x, t.y)] = w.RockCap(t.x, t.y);
             for (int dy = 0; dy <= 1; dy++) for (int dx = 0; dx <= 1; dx++) w.Hv[(t.y + dy) * (N + 1) + t.x + dx] = 0;
             w.Touch();
-            var after = Enumerable.Range(1, World.Bands).Select(l => (w.OreAt(t.x, t.y, l), w.NeedShaft(b, t.x, t.y, l))).ToArray();
+            var after = Enumerable.Range(1, World.Bands).Select(l => (w.OreAt(t.x, t.y, l), w.GenLevel(t.x, t.y))).ToArray();
             CollectionAssert.AreEqual(before, after);
         }
 
-        [TestCase(0)]
-        [TestCase(World.MaxDepth)]
-        public void AMineAtTheFootSurveysDrivesAnAditAndBringsUpOre(int depthLimit)
+        static bool Touches(Building mine, int k)
+        {
+            int x = k % N, y = k / N;
+            foreach (var (mx, my) in mine.Tiles()) if (Math.Abs(mx - x) + Math.Abs(my - y) == 1) return true;
+            return false;
+        }
+
+        [Test]
+        public void ATunnelStartsAtTheMineGrowsThroughTheZoneAndBringsUpOre()
         {
             var (w, mine) = MineTown(wantOre: true);
             Assume.That(mine != null, "no lot at the foot of ore-bearing high ground that a road can reach");
-            w.SetShaftDepthLimit(depthLimit);
             w.CaveInRiskScale = 0;
             var showings = AllTiles().Where(t => w.DecoMap[t.y, t.x] == Deco.Ore).ToList();
-            int zoned = Reach(mine.X, mine.Y).Count(t => w.ZoneMap[t.y, t.x] == Zone.Mine);
-            bool sawDown = false, sawSurvey = false;
-            for (int d = 0; d < 400; d++)
-            {
-                Day(w);
-                sawDown |= mine.Crew.Any(a => a.St == CrewState.Down);
-                sawSurvey |= mine.Crew.Any(a => a.Survey && a.St != CrewState.Home);
-            }
-            Assert.IsTrue(sawSurvey, "miners never walked out to survey");
-            Assert.AreEqual(zoned, Reach(mine.X, mine.Y).Count(t => w.ZoneMap[t.y, t.x] == Zone.Mine && w.IsSurveyed(t.x, t.y)), "every zone tile in reach is surveyed");
+            bool sawDown = false;
+            for (int d = 0; d < 400; d++) { Day(w); sawDown |= mine.Crew.Any(a => a.St == CrewState.Down); }
             Assert.IsTrue(sawDown, "nobody went underground");
-            Assert.IsTrue(mine.Adit, "the adit was never driven");
-            Assert.IsTrue(mine.AditShored, "with wood in store the adit is shored");
-            Assert.LessOrEqual(mine.Depth, depthLimit, "the mine stays within the town shaft limit");
-            Assert.AreEqual(mine.Depth, mine.Shored, "with wood in store every shaft level is shored");
+            Assert.Greater(mine.Tunnel.Count, 0, "no tunnel was dug");
+            Assert.IsTrue(Touches(mine, mine.Tunnel[0]), "the tunnel starts at the mine's walls");
+            for (int i = 0; i < mine.Tunnel.Count; i++)
+            {
+                int k = mine.Tunnel[i], x = k % N, y = k / N;
+                Assert.AreEqual(Zone.Mine, w.ZoneMap[y, x], "the tunnel stays inside the Mining zone");
+                Assert.IsTrue(w.IsTunnel(x, y));
+                Assert.IsTrue(w.IsSolid(x, y), "a tunnel tile is not open ground");
+                if (i > 0)
+                {
+                    bool joined = Touches(mine, k);
+                    for (int j = 0; j < i && !joined; j++) joined = Math.Abs(mine.Tunnel[j] % N - x) + Math.Abs(mine.Tunnel[j] / N - y) == 1;
+                    Assert.IsTrue(joined, $"tunnel tile {i} is joined to the mine or the tunnel before it");
+                }
+                for (int j = y - World.RevealR; j <= y + World.RevealR; j++)
+                    for (int ii = x - World.RevealR; ii <= x + World.RevealR; ii++)
+                        if (World.Inb(ii, j)) Assert.IsTrue(w.IsSurveyed(ii, j), "digging reveals the ground around the tunnel");
+            }
             var mineTaken = w.OreTaken.Where(kv => { int k = kv.Key % (N * N); return Math.Max(Math.Abs(k % N - mine.X), Math.Abs(k / N - mine.Y)) <= Defs.WorkR; }).ToList();
             Assert.Greater(mineTaken.Sum(kv => kv.Value), 0, "no ore was brought up");
             foreach (var kv in mineTaken)
             {
-                int band = kv.Key / (N * N), k = kv.Key % (N * N), x = k % N, y = k / N;
-                Assert.IsTrue(w.IsSurveyed(x, y), "ore was taken from an unsurveyed tile");
-                int need = w.NeedShaft(mine, x, y, band);
-                if (w.Grid[mine.Y, mine.X] == mine) Assert.IsTrue(need == 0 ? mine.Adit : need <= mine.Depth, $"ore at {x},{y} band {band} was out of the mine's reach");
+                int k = kv.Key % (N * N), x = k % N, y = k / N;
+                Assert.IsTrue(mine.Tunnel.Any(t => Math.Max(Math.Abs(t % N - x), Math.Abs(t / N - y)) <= World.WallR), $"ore at {x},{y} was taken from outside the tunnel's walls");
             }
-            foreach (var (x, y) in showings) Assert.IsTrue(w.DecoMap[y, x] == Deco.Ore || w.Grid[y, x] != null, $"the showing at {x},{y} was mined away (only a building on top may cover it)");
-            // every mine the town grew by itself opens onto its road
+            foreach (var (x, y) in showings) Assert.IsTrue(w.DecoMap[y, x] == Deco.Ore || w.Grid[y, x] != null, $"the showing at {x},{y} was mined away");
             foreach (var m in w.Blds.Where(b => b.T == "mine" && b != mine))
             {
                 int f = w.MineFaceAt(m.X, m.Y); if (f < 0) continue;
@@ -236,89 +223,93 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void AMineOpensAwayFromTheHighGround()
+        public void TheTunnelOnlyRunsThroughZonedGroundThatTouchesTheMine()
         {
             var (w, mine) = MineTown(wantOre: true);
             Assume.That(mine != null, "no mine site in the test world");
-            int f = w.MineFaceAt(mine.X, mine.Y);
-            Assert.AreEqual(f, mine.Face, "the mine's door is its entrance");
-            var (ex, ey) = World.EntranceTile(mine.X, mine.Y, f);
-            var (bx, by) = World.EntranceTile(mine.X, mine.Y, (f + 2) % 4);   // the tile behind it
-            Assert.Less(w.GenLevel(ex, ey), w.GenLevel(bx, by), "the entrance faces downhill, the back faces the hill");
-            // the uphill side holds more high ground than the entrance side
-            double Side(int dx, int dy) { double s = 0; for (int k = 1; k <= Defs.FaceR; k++) if (World.Inb(mine.X + dx * k, mine.Y + dy * k)) s += w.GenLevel(mine.X + dx * k, mine.Y + dy * k); return s; }
-            Assert.Greater(Side(-Defs.FaceDirs[f, 0], -Defs.FaceDirs[f, 1]), Side(Defs.FaceDirs[f, 0], Defs.FaceDirs[f, 1]));
-        }
-
-        [Test]
-        public void AMineNeedsItsRoadAtTheEntrance()
-        {
-            var (w, mine) = MineTown(wantOre: true);
-            Assume.That(mine != null, "no mine site in the test world");
-            int f = w.MineFaceAt(mine.X, mine.Y);
-            var (ex, ey) = World.EntranceTile(mine.X, mine.Y, f);
-            Assert.IsTrue(mine.Served, "served with its road at the entrance");
-            // a connected road on another side does not count
-            for (int g = 0; g < 4; g++)
+            w.CaveInRiskScale = 0;
+            foreach (var (i, j) in Reach(mine.X, mine.Y)) if (w.ZoneMap[j, i] == Zone.Mine) w.ZoneMap[j, i] = Zone.None;
+            // a zoned ring two tiles out from the mine's walls, with an unzoned gap between
+            int placed = 0;
+            foreach (var (i, j) in Reach(mine.X, mine.Y))
             {
-                if (g == f) continue;
-                var (sx, sy) = World.EntranceTile(mine.X, mine.Y, g);
-                if (World.Inb(sx, sy) && w.Grid[sy, sx] == null && !w.IsSolid(sx, sy) && !w.HasTree(sx, sy) && w.DecoMap[sy, sx] == Deco.None) { w.AddBld("road", sx, sy); break; }
+                double d = Math.Max(Math.Abs(i - mine.X - 0.5), Math.Abs(j - mine.Y - 0.5));
+                if (d >= 3.5 && d <= 5 && w.Grid[j, i] == null && w.ZoneCheck(Zone.Mine, i, j).Ok) { w.SetZone(Zone.Mine, i, j); placed++; }
             }
-            w.Remove(ex, ey);
+            Assume.That(placed >= 6, "no ring of zonable ground around the mine");
             w.Recalc();
-            Assert.IsFalse(mine.Served, "without a road at the entrance the mine does not work");
-            StringAssert.Contains("Needs a road", w.MineStatus(mine));
-            w.ResAmt[Res.Wood] = 400; w.AddBld("road", ex, ey); w.Recalc();
-            Assert.IsTrue(mine.Served, "the road back at the entrance reconnects it");
+            for (int d = 0; d < 120; d++) Day(w);
+            Assert.AreEqual(0, mine.Tunnel.Count, "a zone that does not touch the mine cannot be dug");
+            StringAssert.Contains("Nothing to dig", w.MineStatus(mine));
         }
 
         [Test]
-        public void TunnellingIsCheaperAndSaferThanSinkingAndDeeperBandsPayMore()
+        public void ATunnelIsNotQuarriedAndSealsWhenTheMineIsPulledDown()
         {
-            Assert.Less(World.AditWork, World.DigWork[1], "an adit is less work than the first shaft level");
-            Assert.LessOrEqual(World.AditWood, World.SupportWood[1], "an adit needs no more timber than the first shaft level");
-            Assert.Less(World.AditRisk, 1, "an adit is safer than the first shaft level");
+            var (w, mine) = MineTown(wantOre: true);
+            Assume.That(mine != null, "no mine site in the test world");
+            w.CaveInRiskScale = 0;
+            for (int d = 0; d < 200 && mine.Tunnel.Count < 2; d++) Day(w);
+            Assume.That(mine.Tunnel.Count >= 2, "no tunnel was dug");
+            var tiles = mine.Tunnel.ToList();
+            foreach (int k in tiles)
+            {
+                Assert.AreEqual(World.QuarryTile.None, w.QuarryTileState(k % N, k / N), "a quarry does not dig a tunnel tile");
+                Assert.IsFalse(w.RockWorkable(k % N, k / N), "a tunnel tile is not workable rock");
+            }
+            w.Remove(mine.X, mine.Y);
+            w.Recalc();
+            foreach (int k in tiles) Assert.IsFalse(w.IsTunnel(k % N, k / N), "pulling the mine down seals its tunnel");
+        }
+
+        [Test]
+        public void TheTunnelDoesNotEatTheWholeZoneWhileThereIsOreToTake()
+        {
+            var (w, mine) = MineTown(wantOre: true);
+            Assume.That(mine != null, "no mine site in the test world");
+            w.CaveInRiskScale = 0;
+            for (int d = 0; d < 400; d++) Day(w);
+            Assert.Greater(mine.Tunnel.Count, 0);
+            Assert.Less(mine.Tunnel.Count, Reach(mine.X, mine.Y).Count(t => w.ZoneMap[t.y, t.x] == Zone.Mine), "the tunnel does not dig out the whole zone while there is ore to take");
+        }
+
+        [Test]
+        public void RicherBandsPayMoreForTheSameTrip()
+        {
             for (int l = 2; l <= World.Bands; l++)
             {
                 Assert.Greater(World.MineLoad[l], World.MineLoad[l - 1], "load");
-                Assert.Greater(World.MineLoad[l] / (double)World.MineTripDays[l], World.MineLoad[l - 1] / (double)World.MineTripDays[l - 1], "ore per worker-day");
                 Assert.Greater(World.LevelCapMax[l], World.LevelCapMax[l - 1], "richest tile");
-            }
-            for (int l = 2; l <= World.MaxDepth; l++)
-            {
-                Assert.Greater(World.DigWork[l], World.DigWork[l - 1], "digging work");
-                Assert.Greater(World.SupportWood[l], World.SupportWood[l - 1], "timber for supports");
+                Assert.Greater(World.MineLoad[l] / (double)(World.TripBase + l + 2), World.MineLoad[l - 1] / (double)(World.TripBase + l - 1 + 2), "ore per worker-day at the same distance");
             }
         }
 
         [Test]
-        public void CaveInRiskRisesWithDepthAndCrowdingAndSupportsCutIt()
+        public void CaveInRiskRisesWithLengthAndCrowdingAndSupportsCutIt()
         {
             var w = new World(7);
-            var b = new Building { T = "mine", Adit = true, Depth = 3, Shored = 0 };
-            Assert.Less(w.CaveInChance(b, 0, 1), w.CaveInChance(b, 1, 1), "the adit is safer than the shaft");
-            Assert.Greater(w.CaveInChance(b, 2, 1), w.CaveInChance(b, 1, 1), "deeper");
-            Assert.Greater(w.CaveInChance(b, 1, 3), w.CaveInChance(b, 1, 1), "crowded");
-            double unshored = w.CaveInChance(b, 2, 2), aditUnshored = w.CaveInChance(b, 0, 2);
-            b.Shored = 2; b.AditShored = true;
-            Assert.Less(w.CaveInChance(b, 2, 2), unshored * 0.5, "supports cut the shaft risk sharply");
-            Assert.Less(w.CaveInChance(b, 0, 2), aditUnshored * 0.5, "supports cut the adit risk sharply");
-            Assert.Greater(w.CaveInChance(b, 2, 2), 0, "supports never make a mine perfectly safe");
+            var b = new Building { T = "mine" };
+            for (int i = 0; i < 2; i++) b.Tunnel.Add(i);
+            double shortTunnel = w.CaveInChance(b, 1);
+            for (int i = 2; i < 12; i++) b.Tunnel.Add(i);
+            Assert.Greater(w.CaveInChance(b, 1), shortTunnel, "a longer tunnel is riskier");
+            Assert.Greater(w.CaveInChance(b, 3), w.CaveInChance(b, 1), "crowded");
+            double unshored = w.CaveInChance(b, 2);
+            foreach (int k in b.Tunnel) b.Shored.Add(k);
+            Assert.Less(w.CaveInChance(b, 2), unshored * 0.5, "supports cut the risk sharply");
+            Assert.Greater(w.CaveInChance(b, 2), 0, "supports never make a mine perfectly safe");
         }
 
         [Test]
-        public void ACaveInClosesTheMineSmashesSupportsAndReopens()
+        public void ACaveInClosesTheMineSmashesFarSupportsAndReopens()
         {
             var (w, mine) = MineTown(wantOre: true);
             Assume.That(mine != null, "no mine site in the test world");
             w.CaveInRiskScale = 0;
             int d = 0;
-            while (d++ < 600 && !mine.Crew.Any(a => a.St == CrewState.Down && !a.Dig && w.ShoredFor(mine, a.Need))) Day(w);
-            var miner = mine.Crew.FirstOrDefault(a => a.St == CrewState.Down);
-            Assume.That(miner != null, "nobody went underground in 600 days");
-            int need = miner.Need, peasants = w.Peasants;
-            Assume.That(w.ShoredFor(mine, need), "the miner's workings were never shored");
+            while (d++ < 600 && !(mine.Shored.Count >= 2 && mine.Crew.Any(a => a.St == CrewState.Down))) Day(w);
+            Assume.That(mine.Shored.Count >= 2 && mine.Crew.Any(a => a.St == CrewState.Down), "no shored tunnel with a miner in it in 600 days");
+            int peasants = w.Peasants, shoredBefore = mine.Shored.Count;
             w.Events.Clear();
             w.PopAcc = -3;   // no births today: the assert below is about the cave-in, not about growth
             w.CaveInRiskScale = 1e9;   // the next worker-day underground caves in
@@ -326,7 +317,7 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(1, mine.CaveIns, "exactly one cave-in at this mine");
             Assert.AreEqual(World.RepairDays, mine.Closed, "closed for repairs");
             Assert.IsFalse(mine.Crew.Any(a => a.St == CrewState.Down), "everyone came up");
-            Assert.IsFalse(w.ShoredFor(mine, need), "the supports where it happened were smashed");
+            Assert.Less(mine.Shored.Count, shoredBefore, "the supports at the far end were smashed");
             Assert.IsTrue(w.Events.Any(e => e.Contains("Cave-in")), "the player is told");
             Assert.LessOrEqual(w.Peasants, peasants, "nobody is born out of a cave-in");
 
@@ -360,18 +351,44 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void AMineOnLowlandSurveysAndFindsNothing()
+        public void RequiredSupportsKeepTheTunnelAtMostOneTileAheadOfTheTimber()
+        {
+            var (w, mine) = MineTown(wantOre: true);
+            Assume.That(mine != null, "no mine site in the test world");
+            w.CaveInRiskScale = 0;
+            w.SetMineSupportsRequired(true);
+            for (int d = 0; d < 300; d++)
+            {
+                Day(w);
+                Assert.LessOrEqual(mine.Tunnel.Count - mine.Shored.Count, 1, $"day {d}: the tunnel ran more than a tile ahead of its supports");
+            }
+            Assert.Greater(mine.Tunnel.Count, 1, "the tunnel still advances when timber is there");
+        }
+
+        [Test]
+        public void AnUnshoredTunnelWaitsForTimberWhenSupportsAreRequired()
+        {
+            var (w, mine) = MineTown(wantOre: true);
+            Assume.That(mine != null, "no mine site in the test world");
+            w.SetMineSupportsRequired(true);
+            foreach (var (i, j) in Reach(mine.X, mine.Y)) if (Touches(mine, World.Tk(i, j)) && w.ZoneMap[j, i] == Zone.Mine && w.Grid[j, i] == null) { mine.Tunnel.Add(World.Tk(i, j)); break; }
+            Assume.That(mine.Tunnel.Count == 1, "no zoned tile beside the mine");
+            w.Touch();
+            StringAssert.Contains("Waiting for timber", w.MineStatus(mine));
+            w.SetMineSupportsRequired(false);
+            StringAssert.DoesNotContain("Waiting for timber", w.MineStatus(mine));
+        }
+
+        [Test]
+        public void AMineOnLowlandDigsItsZoneAndFindsNothing()
         {
             var (w, mine) = MineTown(wantOre: false);
             Assume.That(mine != null, "no barren road-side lot in the test town");
             w.CaveInRiskScale = 0;
             w.Events.Clear(); var events = new List<string>();
-            for (int d = 0; d < 200; d++) { Day(w); events.AddRange(w.Events); w.Events.Clear(); }
-            Assert.IsTrue(Reach(mine.X, mine.Y).Where(t => w.ZoneMap[t.y, t.x] == Zone.Mine).All(t => w.IsSurveyed(t.x, t.y)), "the zone was surveyed");
-            Assert.IsFalse(mine.Adit, "no adit is driven where there is no ore");
-            Assert.AreEqual(0, mine.Depth, "no shaft is sunk where there is no ore");
-            Assert.IsFalse(mine.Crew.Any(a => a.St == CrewState.Down), "nobody goes down");
-            StringAssert.Contains("No ore found", w.MineStatus(mine));
+            for (int d = 0; d < 500; d++) { Day(w); events.AddRange(w.Events); w.Events.Clear(); }
+            Assert.AreEqual(0, w.OreTaken.Count(kv => { int k = kv.Key % (N * N); return Math.Max(Math.Abs(k % N - mine.X), Math.Abs(k / N - mine.Y)) <= Defs.WorkR; }), "no ore taken");
+            StringAssert.Contains("foot of a hill", w.MineStatus(mine));
             Assert.IsTrue(events.Any(e => e.Contains("found no ore")), "the player is told");
         }
     }

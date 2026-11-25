@@ -11,7 +11,6 @@ namespace CrownAndHearth.Game
         TownMenu _townMenu;
         readonly RectTransform[] _townPanels = new RectTransform[(int)TownMenu.Livestock];
         readonly UnityEngine.UI.Image[] _townButtons = new UnityEngine.UI.Image[(int)TownMenu.Livestock];
-        readonly UnityEngine.UI.Image[] _depthButtons = new UnityEngine.UI.Image[World.MaxDepth + 1];
         World _menuWorld;
         Text _cropTarget, _cropCount, _supportsLabel, _historyHeader, _resourceTitle, _dayValues, _populationScale, _resourceScale;
         Text _cropWindows, _cropLabor, _cropStorage;
@@ -82,18 +81,11 @@ namespace CrownAndHearth.Game
 
         void BuildMining(RectTransform panel)
         {
-            PanelLabel(panel, "DepthHeading", "Maximum shaft depth below the entrance", 16, 40, 64);
-            for (int i = 0; i < _depthButtons.Length; i++)
-            {
-                int depth = i;
-                _depthButtons[i] = MakeButton(panel, i == 0 ? "Adit only" : $"Level {i}", Vector2.up,
-                    new Vector2(53 + i * 94, -85), new Vector2(82, 30),
-                    () => _menuWorld?.SetShaftDepthLimit(depth));
-            }
-            _supportsButton = MakeButton(panel, "", Vector2.up, new Vector2(115, -128), new Vector2(206, 30),
+            PanelLabel(panel, "TunnelHeading", "Mine tunnels", 16, 40, 64);
+            _supportsButton = MakeButton(panel, "", Vector2.up, new Vector2(115, -85), new Vector2(206, 30),
                 () => { if (_menuWorld != null) _menuWorld.SetMineSupportsRequired(!_menuWorld.RequireMineSupports); });
             _supportsLabel = _supportsButton.GetComponentInChildren<Text>();
-            PanelLabel(panel, "SafetyHelp", "With supports required, miners wait for timber before extracting ore from an unshored passage.", 14, 149, 192);
+            PanelLabel(panel, "SafetyHelp", "With supports required, miners wait for timber props (2 wood a tunnel tile) before they dig on or take ore from an unshored tunnel. Without them they work faster but risk cave-ins.", 14, 106, 192);
         }
 
         Text _troopCounts, _troopMix, _troopCosts, _troopNote;
@@ -221,8 +213,6 @@ namespace CrownAndHearth.Game
                     }
                     break;
                 case TownMenu.Mining:
-                    for (int i = 0; i < _depthButtons.Length; i++)
-                        _depthButtons[i].color = i == world.ShaftDepthLimit ? BtnOn : Btn;
                     _supportsButton.color = world.RequireMineSupports ? BtnOn : Btn;
                     _supportsLabel.text = world.RequireMineSupports ? "Require supports: On" : "Require supports: Off";
                     break;

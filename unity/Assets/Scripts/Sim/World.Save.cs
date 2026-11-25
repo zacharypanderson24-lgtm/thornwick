@@ -53,7 +53,7 @@ namespace CrownAndHearth.Sim
                 ["zone"] = EncodeGrid(ZoneMap, value => value == Zone.None ? JValue.CreateNull() : new JValue(SaveKey(value))),
                 ["fert"] = EncodeGrid(Fert, value => new JValue(value)),
                 ["statistics"] = new JArray(_statistics.Select(EncodeStatistics)),
-                ["flaxPercent"] = FlaxPercent, ["shaftDepthLimit"] = ShaftDepthLimit, ["requireMineSupports"] = RequireMineSupports,
+                ["flaxPercent"] = FlaxPercent, ["requireMineSupports"] = RequireMineSupports,
                 ["sownFields"] = JObject.FromObject(_sownFields), ["flaxFields"] = JObject.FromObject(FlaxFields), ["rockAmt"] = JObject.FromObject(RockAmtMap), ["elev"] = JObject.FromObject(Elev),
                 ["stumpT"] = JObject.FromObject(StumpT), ["sapT"] = JObject.FromObject(SapT),
                 ["chop"] = JObject.FromObject(Chop), ["dig"] = JObject.FromObject(Dig),
@@ -102,8 +102,8 @@ namespace CrownAndHearth.Sim
             if (b.T == "house") o["tier"] = b.Tier;
             if (b.T == "mine")
             {
-                o["adit"] = b.Adit; o["aditShored"] = b.AditShored; o["aditProg"] = b.AditProg; o["depth"] = b.Depth;
-                o["shored"] = b.Shored; o["digProg"] = b.DigProg; o["closed"] = b.Closed; o["caveIns"] = b.CaveIns;
+                o["tunnel"] = new JArray(b.Tunnel); o["shoredTiles"] = new JArray(b.Shored.OrderBy(k => k));
+                o["digProg"] = b.DigProg; o["closed"] = b.Closed; o["caveIns"] = b.CaveIns;
             }
             if (b.T == "hall" || b.T == "cistern") o["water"] = Math.Round(b.Water, 3);
             if (b.ShortDays > 0) o["dry"] = b.ShortDays;   // days a home has gone short of water
@@ -185,9 +185,7 @@ namespace CrownAndHearth.Sim
                     Sz = entry.Value<int?>("sz") ?? 1, Prog = entry.Value<double?>("prog") ?? 0,
                     Var = entry.Value<int?>("var") ?? 0, Face = entry.Value<int?>("face") ?? -1,
                     Zoned = entry.Value<bool?>("zoned") ?? false,
-                    Adit = entry.Value<bool?>("adit") ?? false, AditShored = entry.Value<bool?>("aditShored") ?? false,
-                    AditProg = entry.Value<int?>("aditProg") ?? 0, Depth = entry.Value<int?>("depth") ?? 0,
-                    Shored = entry.Value<int?>("shored") ?? 0, DigProg = entry.Value<int?>("digProg") ?? 0,
+                    DigProg = Math.Max(0, entry.Value<int?>("digProg") ?? 0),   // old saves had adits and shafts: those are dropped, the mine starts a tunnel
                     Closed = entry.Value<int?>("closed") ?? 0, CaveIns = entry.Value<int?>("caveIns") ?? 0,
                     ShortDays = entry.Value<int?>("dry") ?? 0,
                     Tier = Math.Clamp(entry.Value<int?>("tier") ?? 2, 1, 2),   // houses in older saves were level 2 when served and watered: they keep that
@@ -195,8 +193,20 @@ namespace CrownAndHearth.Sim
                 // stored water: older saves have none recorded, so the Town Hall's cistern starts full and a cistern empty
                 b.Water = Math.Max(0, Math.Min(StoreCapOf(b), entry.Value<double?>("water") ?? (b.T == "hall" ? WaterTuning.HallCistern : 0)));
                 if (b.ShortDays < 0) throw new InvalidDataException("Invalid water shortage in settlement save.");
-                if (b.Depth < 0 || b.Depth > MaxDepth || b.Shored < 0 || b.Shored > b.Depth)
-                    throw new InvalidDataException("Invalid mine in settlement save.");
+                // the tunnel: tiles are saved as indices into the saved map; place them in the bigger one
+                foreach (var t in entry["tunnel"] as JArray ?? new JArray())
+                {
+                    int k = t.Value<int>();
+                    if (k < 0 || k >= size * size) throw new InvalidDataException("Invalid mine tunnel in settlement save.");
+                    b.Tunnel.Add(Tk(k % size + offset, k / size + offset));
+                }
+                foreach (var t in entry["shoredTiles"] as JArray ?? new JArray())
+                {
+                    int k = t.Value<int>();
+                    if (k < 0 || k >= size * size) throw new InvalidDataException("Invalid mine supports in settlement save.");
+                    int nk = Tk(k % size + offset, k / size + offset);
+                    if (b.Tunnel.Contains(nk)) b.Shored.Add(nk);
+                }
                 if (b.T == null || !Names.ContainsKey(b.T) || b.Sz < 1 || b.Sz > 3 ||
                     b.X < 0 || b.Y < 0 || b.X > size - b.Sz || b.Y > size - b.Sz ||
                     b.Face < -1 || b.Face > 3 || b.Var < 0 || b.Var > HutVariants)
@@ -250,6 +260,7 @@ namespace CrownAndHearth.Sim
                     world.Aquifers[i].Reserve = Math.Max(0, Math.Min(world.Aquifers[i].Cap, reserves[i].Value<double>()));
             world.MinerDeaths = save.Value<int?>("minerDeaths") ?? 0;
             world.CaveIns = save.Value<int?>("caveIns") ?? 0;
+            world._tunnelVersion = -1;   // the tunnels came in with the buildings: rebuild the tile set
             if (save.Value<bool?>("unity") != true) world.UpgradeBarracks();
             bool legacyZones = save.Value<bool?>("v2") != true;
             foreach (var b in world.Blds)
@@ -298,7 +309,6 @@ namespace CrownAndHearth.Sim
                 foreach (var token in campsSave["forces"] as JArray ?? new JArray())   // older saves have none
                     world.CampForces[(int)token["camp"]] = new CampForce { Lost = (double)token["lost"], Returning = (int)token["returning"], BackDay = (int)token["backDay"] };
             }
-            world.SetShaftDepthLimit(save.Value<int?>("shaftDepthLimit") ?? MaxDepth);
             world.SetMineSupportsRequired(save.Value<bool?>("requireMineSupports") ?? false);
             world.LoadStatistics(save["statistics"] as JArray);
             world.MigrateFoodUnits(save);

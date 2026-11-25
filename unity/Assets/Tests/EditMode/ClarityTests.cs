@@ -8,10 +8,10 @@ namespace CrownAndHearth.Tests
     public class ClarityTests
     {
         [Test]
-        public void AMineBringsUpOreWhileItsZoneIsStillBeingSurveyed()
+        public void AMineBringsUpOreWhileItsTunnelIsStillGrowing()
         {
             var (w, mine) = MiningTests.MineTown(true);
-            StringAssert.Contains("Surveying", w.MineStatus(mine));
+            StringAssert.Contains("Digging the first tunnel tile", w.MineStatus(mine));
             double ore = w.ResAmt[Res.Ore];
             int first = 0;
             for (int day = 1; day <= 120 && first == 0; day++)
@@ -20,9 +20,9 @@ namespace CrownAndHearth.Tests
                 if (w.ResAmt[Res.Ore] > ore + 0.5) first = day;
             }
             Assert.Greater(first, 0, "ore arrives");
-            Assert.LessOrEqual(first, 70, "within about a minute at normal speed, not after the whole zone is surveyed (it took about 90 days)");
+            Assert.LessOrEqual(first, 70, "within about a minute at normal speed, not after the whole zone is dug out");
             string status = w.MineStatus(mine);
-            Assert.That(status, Does.Contain("Mining ore").Or.Contain("Digging the adit"));
+            Assert.That(status, Does.Contain("Mining ore").Or.Contain("driving on").Or.Contain("Digging the first"));
         }
 
         [Test]

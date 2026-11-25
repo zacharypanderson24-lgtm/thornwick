@@ -15,7 +15,7 @@ namespace CrownAndHearth.Sim
 
         public QuarryTile QuarryTileState(int x, int y)
         {
-            if (!Inb(x, y) || ZoneMap[y, x] != Zone.Mine || DecoMap[y, x] != Deco.Rock || RockLeft(x, y) <= 0) return QuarryTile.None;
+            if (!Inb(x, y) || ZoneMap[y, x] != Zone.Mine || DecoMap[y, x] != Deco.Rock || RockLeft(x, y) <= 0 || IsTunnel(x, y)) return QuarryTile.None;
             return RockOpen(x, y) ? QuarryTile.Dig : QuarryTile.Locked;
         }
 
