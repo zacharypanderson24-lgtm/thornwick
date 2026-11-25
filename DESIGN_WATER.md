@@ -7,7 +7,7 @@
 | 1 Water generation (elevation, sea level, drainage, rivers, lakes, ponds, seas, classes, depth, connected waters, determinism, saving) | **Built in PR 1** (Unity only, new worlds created with a water preset; old worlds and saves stay dry). Not yet drawn in the game. |
 | 2 Terrain integration (rendering, shorelines, four camera views, start placement, building and movement restrictions) | **Built in PR 2**: water is drawn with the existing art, banks and marsh are tinted (placeholder), all four camera rotations keep currents correct, nothing can be built on water, nobody can walk through it, and Menu > New world picks a preset and seed. Shoreline transition art, biome-specific banks and wetland slowdown are still to do (see below). |
 | 3 Bridges, tile inspection, basic fishing | **Built in PR 3**: wooden bridges, water tile inspection, fishing huts (first step). No boats, docks or fish stocks yet. |
-| 4 Economic integration (soil moisture, agricultural suitability, expanded fishing, early docks) | **Built in PR 4**: soil moisture and farm yield, flood plains (data only), fishing seasons and fish stocks, fishing docks. Water transport (boats, ports, cargo) is still to do. |
+| 4 Economic integration (soil moisture, agricultural suitability, expanded fishing, early docks) | **Built in PR 4**: soil moisture and farm yield, flood plains (data only), fishing seasons and fish stocks, fishing docks. Fishing boats are in (PR 5); cargo, barges, ports and ferries are still to do. |
 | 5 Irrigation, seasons, ships, naval warfare, moats | Documented and prepared only |
 
 Everything below the line "The specification" is Zach's text, unchanged. Above it: what existed, and how Phase 1 is built.
@@ -68,6 +68,8 @@ New files: `Sim/SurfaceWater.cs` (data model, saving), `Sim/Hydrology.cs` (gener
 - **Fishing dock** (Water menu; 14 wood, 4 stone; 3 jobs): it must stand on the shore with medium or deep water within 3 tiles (a pier reaches over the shallows); it fishes only boat-deep water within 6 tiles, catching 1.4 times a hut's rate.
 - Art still needed: a real dock and pier (the placeholder is code-drawn planks), fishing boats.
 - Not built: boats, ports, cargo and water transport (phase 4's last item), seasonal floods, irrigation.
+
+**Boats (PR 5, first step of section 25):** a fishing dock with fishermen launches boats (one for every two fishermen, at most two). A boat sails one tile a day over *boat water* (medium or deep, the water layer's Navigable flag, never under a bridge), only inside the connected navigable region its dock launches into (so it can never reach another lake or cross land), out to a fishing spot up to 9 steps away, fishes 3 days and sails home. Boats are runtime agents like townsfolk: never saved, rebuilt from the docks; no fishermen, no road or no pulled-down dock means no boats. They are drawn by the agent renderer (code-drawn placeholder boat in four facings, bobbing). For now they do not change the catch (it is still worked out per dock). Not built: cargo, river barges, ferries, ports, trade by water, warships, boat pathing round other boats, boats needing wood or a shipyard. Art needed: a proper fishing boat (4 facings, 2 frames, about 21x16 px).
 
 **Known gaps in PR 1 (all planned):** nothing draws the water yet; buildings and walkers still ignore it (`IsSolid`/`WalkCost` hooks are PR 2); no new-world menu entry; river deltas are simple distributaries; wetlands are saturated land, not yet slowing movement; groundwater (wells) ignores surface water.
 

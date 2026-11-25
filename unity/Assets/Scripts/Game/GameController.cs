@@ -1160,6 +1160,7 @@ namespace CrownAndHearth.Game
                     {
                         double stock = w.StockOf(fg.body);
                         lines.Add($"Fishes {World.WaterClassName(fg.kind).ToLower()} water: {fg.grounds} tiles in reach, {World.FishLevel(fg.perWorker)} catch (about {fg.perWorker:0.##} food per fisherman a day at full stock).");
+                        if (b.T == "dock") lines.Add($"Boats: {w.BoatsOf(b)} (one for every two fishermen, up to {World.BoatsPerDock}). They sail the boat-deep water and come home; for now they are for show and do not change the catch.");
                         lines.Add($"Fish stock: {World.StockWord(stock)} ({stock * 100:0}%). Season: {w.Season} (x{w.FishSeason(fg.kind):0.#}). Today's catch: {w.FishCatch(b):0.##} food.");
                     }
                 }
