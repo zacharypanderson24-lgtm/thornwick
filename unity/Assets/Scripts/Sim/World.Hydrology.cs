@@ -35,6 +35,45 @@ namespace CrownAndHearth.Sim
             }
         }
 
+        public static string WaterClassName(WaterClass c) => c switch
+        {
+            WaterClass.Stream => "Stream", WaterClass.SmallRiver => "River", WaterClass.MajorRiver => "Major river", WaterClass.Pond => "Pond", WaterClass.Lake => "Lake",
+            WaterClass.Ocean => "Ocean", WaterClass.Sea => "Sea", WaterClass.Estuary => "Estuary", WaterClass.Wetland => "Marsh", _ => "Land",
+        };
+
+        /// <summary>What the player may read about a water tile (and a bank or marsh tile): only values the simulation really has. Empty on dry
+        /// ground away from water. Navigability describes the water's depth only: there are no boats yet.</summary>
+        public System.Collections.Generic.List<string> DescribeWater(int x, int y)
+        {
+            var lines = new System.Collections.Generic.List<string>();
+            if (Waters == null || !Inb(x, y)) return lines;
+            int i = y * N + x; var cl = Waters.Class[i];
+            if (cl == WaterClass.Wetland) { lines.Add("MARSH"); lines.Add("Saturated ground beside fresh water. You can walk through it, but nothing can be built on it."); return lines; }
+            if (cl == WaterClass.None)
+            {
+                if ((Waters.Flags[i] & WaterFlags.Bank) != 0) lines.Add("Bank: open water lies beside this tile.");
+                return lines;
+            }
+            lines.Add(WaterClassName(cl).ToUpper());
+            int sal = Waters.Salinity[i];
+            lines.Add("Water type: " + (sal >= 200 ? "Salt water" : sal >= 40 ? "Brackish (fresh and salt mixed)" : "Fresh water"));
+            lines.Add("Depth: " + Waters.Depth[i]);
+            if (SurfaceWater.River(cl) && Waters.Flow[i] != 0)
+            {
+                int st = Waters.Strength[i];
+                lines.Add("Flow direction: " + SurfaceWater.DirName[Waters.Flow[i]]);
+                lines.Add("Current: " + (st < 90 ? "Gentle" : st < 170 ? "Moderate" : "Strong") + (Waters.Width[i] > 0 ? $"   Width: about {Waters.Width[i]} tile{(Waters.Width[i] == 1 ? "" : "s")}" : ""));
+            }
+            else if (SurfaceWater.Standing(cl)) lines.Add("Still water: no current");
+            lines.Add("Surface level: " + Waters.Surface[i]);
+            var body = Waters.BodyAt(x, y); if (body != null) lines.Add($"This water covers {body.Tiles} tiles" + (body.TouchesEdge ? " and runs off the edge of the map" : ""));
+            lines.Add(IsBridge(x, y) ? "Land movement: open: a wooden bridge crosses here" : "Land movement: blocked. Only a bridge crosses water (Water menu, Bridge)");
+            double fish = FishRate(cl);
+            lines.Add("Fishing suitability: " + FishLevel(fish) + (fish > 0 ? " (a fishing hut within a few tiles of the shore can fish here)" : ""));
+            lines.Add("Navigability: " + (Waters.Depth[i] == WaterDepth.Shallow ? "too shallow for boats" : Waters.Depth[i] == WaterDepth.Medium ? "deep enough for small boats" : "deep enough for large vessels") + " (there are no boats yet)");
+            return lines;
+        }
+
         /// <summary>Cut the water into the terrain: returns the new vertex heights.</summary>
         int[] GenSurfaceWater(int[] dry)
         {

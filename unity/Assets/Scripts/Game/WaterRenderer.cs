@@ -18,7 +18,8 @@ namespace CrownAndHearth.Game
     {
         // cells of the water atlas: one cell per art set
         public const int StillShallow = 0, StillDeep = 2, OceanCoastal = 4, OceanDeep = 6, RiverEast = 8;   // each has two variants; rivers: 8 + direction * 2 + variant
-        public const int CellCount = 16, Ticks = 16;
+        public const int PlankAlongX = 16, PlankAlongY = 17;   // bridge decks (code-drawn): planks across a bridge that runs along the view's x or y axis
+        public const int CellCount = 18, Ticks = 16;
         public const float TicksPerSecond = 8f;
 
         Mesh _mesh; Texture2D[] _atlas; Material _mat; int _tick = -1;
@@ -88,7 +89,7 @@ namespace CrownAndHearth.Game
             for (int t = 0; t < Ticks; t++) { atlas[t] = new Texture2D(32 * CellCount, 16, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = "WaterAtlas" + t }; Clear(atlas[t]); }
             var rt = RenderTexture.GetTemporary(32, 16, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             var prev = RenderTexture.active;
-            for (int cell = 0; cell < CellCount; cell++)
+            for (int cell = 0; cell < PlankAlongX; cell++)
                 for (int t = 0; t < Ticks; t++)
                 {
                     bool still = cell < OceanCoastal;
@@ -98,8 +99,28 @@ namespace CrownAndHearth.Game
                     RenderTexture.active = rt; atlas[t].ReadPixels(new Rect(0, 0, 32, 16), cell * 32, 0);
                 }
             RenderTexture.active = prev; RenderTexture.ReleaseTemporary(rt);
+            foreach (var a in atlas) { a.SetPixels32(PlankAlongX * 32, 0, 32, 16, Plank(true)); a.SetPixels32(PlankAlongY * 32, 0, 32, 16, Plank(false)); }
             foreach (var a in atlas) a.Apply(false);
             return _shared = atlas;
+        }
+
+        /// <summary>A wooden deck on one tile: boards across the bridge, a rail along each side. Drawn in code (no bridge art exists yet).</summary>
+        static Color32[] Plank(bool alongX)
+        {
+            var px = new Color32[32 * 16];
+            Color32 light = new Color32(176, 130, 74, 255), dark = new Color32(112, 78, 44, 255), rail = new Color32(78, 52, 32, 255), railTop = new Color32(138, 100, 58, 255);
+            for (int y = 0; y < 16; y++)
+                for (int x = 0; x < 32; x++)
+                {
+                    float sx = x + 0.5f - 16f, sy = (15 - y) + 0.5f - 8f;   // screen offset from the tile centre, y down
+                    float u = (sx / 16f + sy / 8f + 1f) / 2f, v = (sy / 8f - sx / 16f + 1f) / 2f;
+                    if (Mathf.Abs(sx) / 16f + Mathf.Abs(sy) / 8f > 1f) continue;
+                    float along = alongX ? u : v, across = alongX ? v : u;
+                    Color32 c = (int)(along * 8f) % 2 == 0 ? light : dark;
+                    if (across < 0.12f || across > 0.88f) c = across < 0.06f || across > 0.94f ? railTop : rail;
+                    px[y * 32 + x] = c;
+                }
+            return px;
         }
 
         static void Clear(Texture2D t) { var px = new Color32[t.width * t.height]; t.SetPixels32(px); }
@@ -138,6 +159,7 @@ namespace CrownAndHearth.Game
                         var col = new Color32(shade, shade, (byte)Mathf.Min(255, shade + 10), 255);
                         _c.Add(col); _c.Add(col); _c.Add(col); _c.Add(col);
                         _t.Add(i0); _t.Add(i0 + 1); _t.Add(i0 + 2); _t.Add(i0); _t.Add(i0 + 2); _t.Add(i0 + 3);
+                        if (w.IsBridge(x, y)) AddDeck(w, x, y, rot, i0, col);
                     }
             }
             _mesh.Clear();
@@ -149,6 +171,22 @@ namespace CrownAndHearth.Game
 
         /// <summary>Show animation tick t (0..15) now (the game steps it from the clock in Update).</summary>
         public void SetTick(int t) { if (_atlas != null) { _tick = t % Ticks; _mat.mainTexture = _atlas[_tick]; } }
+
+        // a bridge tile: the same diamond again with the deck texture, drawn after the water (so over it)
+        void AddDeck(World w, int x, int y, int rot, int water, Color32 col)
+        {
+            bool Road(int a, int b) => World.Inb(a, b) && w.Grid[b, a]?.T == "road";
+            bool worldX = Road(x - 1, y) || Road(x + 1, y);
+            bool viewX = (rot % 2 == 0) == worldX;   // a world x bridge runs along the view x axis in rotations 0 and 2
+            int cell = viewX ? PlankAlongX : PlankAlongY;
+            float cw = 1f / CellCount, inU = 0.5f / (CellCount * 32f), inV = 0.5f / 16f;
+            int i0 = _v.Count;
+            for (int k = 0; k < 4; k++) _v.Add(_v[water + k]);
+            float u0 = cell * cw + inU, u1 = (cell + 1) * cw - inU, um = (cell + 0.5f) * cw;
+            _uv.Add(new Vector2(um, 1 - inV)); _uv.Add(new Vector2(u1, 0.5f)); _uv.Add(new Vector2(um, inV)); _uv.Add(new Vector2(u0, 0.5f));
+            for (int k = 0; k < 4; k++) _c.Add(col);
+            _t.Add(i0); _t.Add(i0 + 1); _t.Add(i0 + 2); _t.Add(i0); _t.Add(i0 + 2); _t.Add(i0 + 3);
+        }
 
         void Update()
         {

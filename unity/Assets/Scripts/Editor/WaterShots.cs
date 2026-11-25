@@ -17,6 +17,7 @@ namespace CrownAndHearth.EditorTools
             var mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Art/Materials/PixelUnlit.mat");
             var art = new ArtLibrary();
             Shot(dir, "valley", WaterPreset.RiverValley, 1, c => SurfaceWater.River(c) && true, 4, mat, art, 2f);
+            Shot(dir, "bridge", WaterPreset.RiverValley, 1, c => SurfaceWater.River(c), 4, mat, art, 3f);
             Shot(dir, "coast", WaterPreset.Coastal, 1, c => c == WaterClass.Ocean, 1, mat, art, 2f);
             Shot(dir, "lake", WaterPreset.Lakeside, 1, c => c == WaterClass.Lake, 1, mat, art, 2f);
             Shot(dir, "island", WaterPreset.Island, 2, c => c == WaterClass.Ocean, 1, mat, art, 1f);
@@ -38,6 +39,22 @@ namespace CrownAndHearth.EditorTools
                     int d = System.Math.Abs(x - Defs.Start) + System.Math.Abs(y - Defs.Start);
                     if (d > 20 && d < best) { best = d; bx = x; by = y; }
                 }
+            if (name == "bridge")
+            {
+                // lay a bridge over a narrow stretch of river and a fishing hut on its shore, so the shot shows both
+                w.ResAmt[Res.Wood] = 5000;
+                for (int y = 3; y < Defs.N - 3 && bx >= 0; y++)
+                    for (int x = 3; x < Defs.N - 12; x++)
+                    {
+                        if (w.Waters.IsWater(x, y) || !w.Waters.IsWater(x + 1, y)) continue;
+                        int span = 0; while (w.Waters.IsWater(x + 1 + span, y) && span < 9) span++;
+                        if (span < 3 || span > 6) continue;
+                        var path = new System.Collections.Generic.List<(int x, int y)>(); for (int i = 0; i < span + 2; i++) path.Add((x + i, y));
+                        if (!w.PlaceBridgePath(path).Ok) continue;
+                        bx = x + 1 + span / 2; by = y; y = Defs.N; break;
+                    }
+                for (int y = by - 6; y < by + 6; y++) for (int x = bx - 6; x < bx + 6; x++) if (w.CanPlace("fisher", x, y).Ok && w.Place("fisher", x, y).Ok) { y = by + 6; break; }
+            }
             var root = new GameObject("shot");
             var cam = new GameObject("cam", typeof(Camera)).GetComponent<Camera>(); cam.transform.SetParent(root.transform);
             cam.orthographic = true; cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(0.1f, 0.1f, 0.12f); cam.nearClipPlane = -50; cam.farClipPlane = 50;
