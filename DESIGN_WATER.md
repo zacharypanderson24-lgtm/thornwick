@@ -7,7 +7,7 @@
 | 1 Water generation (elevation, sea level, drainage, rivers, lakes, ponds, seas, classes, depth, connected waters, determinism, saving) | **Built in PR 1** (Unity only, new worlds created with a water preset; old worlds and saves stay dry). Not yet drawn in the game. |
 | 2 Terrain integration (rendering, shorelines, four camera views, start placement, building and movement restrictions) | **Built in PR 2**: water is drawn with the existing art, banks and marsh are tinted (placeholder), all four camera rotations keep currents correct, nothing can be built on water, nobody can walk through it, and Menu > New world picks a preset and seed. Shoreline transition art, biome-specific banks and wetland slowdown are still to do (see below). |
 | 3 Bridges, tile inspection, basic fishing | **Built in PR 3**: wooden bridges, water tile inspection, fishing huts (first step). No boats, docks or fish stocks yet. |
-| 4 Soil moisture, flooding, docks | Later, only when asked. A first fertility rule from fresh water is built (see below). |
+| 4 Economic integration (soil moisture, agricultural suitability, expanded fishing, early docks) | **Built in PR 4**: soil moisture and farm yield, flood plains (data only), fishing seasons and fish stocks, fishing docks. Water transport (boats, ports, cargo) is still to do. |
 | 5 Irrigation, seasons, ships, naval warfare, moats | Documented and prepared only |
 
 Everything below the line "The specification" is Zach's text, unchanged. Above it: what existed, and how Phase 1 is built.
@@ -59,6 +59,15 @@ New files: `Sim/SurfaceWater.cs` (data model, saving), `Sim/Hydrology.cs` (gener
 - **Inspection:** hover or click a water tile: class, water type (fresh, brackish, salt), depth, flow direction and current, width, surface level, size of the water body, land movement (blocked, or open over a bridge), fishing suitability, navigability by depth (there are no boats yet, and it says so). Marsh and bank tiles say what they are. Fishing huts show what they can fish.
 - **Fishing:** Fishing Hut (Water menu, 6 wood, 2 jobs, new trade "Fishing" in the Workers panel). It must stand within 2 tiles of water. It fishes the water within 6 tiles whose bank its fishermen can walk to; catch per fisherman per day: stream 0.25, pond 0.4, river 0.6 (major 0.8), lake 0.8, estuary 0.9, sea 1.0, scaled down when fewer than 10 water tiles are in reach. Fish joins the food stock as fresh meat, so it spoils and a smokehouse preserves it. Not built: seasons, fish stocks that run down, boats and docks, fishermen drawn walking to the shore.
 - Art still needed: a proper fishing hut (placeholder is the small shop with a drying rack, code-drawn), bridge sprites and railings (placeholder deck), fishing boats.
+
+**Phase 4 (PR 4) in short:**
+- **Soil moisture** (World.Moisture.cs, derived from the water layer, not saved; only on water maps): starts from the region's rainfall (arid 0.12, temperate about 0.4, wetlands 0.6), gains up to +0.5 from fresh water within 8 tiles (less the further away, none from water that lies more than 2 levels below the land), loses 0.3 within 2 tiles of salt water; marsh and water are saturated. Shown on the tile as Parched / Dry / Fair / Moist / Wet.
+- **Farm yield:** every wheat or flax field's harvest is multiplied by 0.55 + 0.9 x moisture (0.55 to 1.3), in the harvest and in the forecast. On a dry-world map the factor is exactly 1: nothing changes there. **Farmland needs water in dry country:** a farm zone on a tile with moisture under 0.15 is refused ("Too dry to farm"), so an arid map can be farmed only beside its water.
+- **Flood plains:** low land within 2 tiles of a river 3 or more tiles wide is flagged and shown on the tile. Floods themselves are not simulated yet.
+- **Fishing:** catch is scaled by season (winter 0.5 on fresh water, 0.8 on the sea; summer 1.1) and by the water's **fish stock** (0 to 1 per body of water, saved): each body holds 6 food a tile, fish breed back logistically at 2% a day plus a small trickle, so a pond feeds about one fisherman, a lake a village, the sea a town. The tile and hut panels show the stock and the day's catch.
+- **Fishing dock** (Water menu; 14 wood, 4 stone; 3 jobs): it must stand on the shore with medium or deep water within 3 tiles (a pier reaches over the shallows); it fishes only boat-deep water within 6 tiles, catching 1.4 times a hut's rate.
+- Art still needed: a real dock and pier (the placeholder is code-drawn planks), fishing boats.
+- Not built: boats, ports, cargo and water transport (phase 4's last item), seasonal floods, irrigation.
 
 **Known gaps in PR 1 (all planned):** nothing draws the water yet; buildings and walkers still ignore it (`IsSolid`/`WalkCost` hooks are PR 2); no new-world menu entry; river deltas are simple distributaries; wetlands are saturated land, not yet slowing movement; groundwater (wells) ignores surface water.
 

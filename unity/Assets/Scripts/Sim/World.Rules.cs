@@ -88,6 +88,7 @@ namespace CrownAndHearth.Sim
                         : "Too steep to build on");
             }
             if (type == "fisher" && !NearOpenWater(fp, FishShoreNeeded)) return Result.No("A fishing hut must stand on the shore: put it within two tiles of a river, lake or the sea");
+            if (type == "dock" && !NearOpenWater(fp, 3, WaterDepth.Medium)) return Result.No("A fishing dock must stand on the shore with water deep enough for boats (medium or deep) within three tiles, not a shallow stream");
             if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
             if (type == "smithery" && !NextToRoad(fp)) return Result.No("Smithery must touch a road");
             if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");
@@ -248,6 +249,7 @@ namespace CrownAndHearth.Sim
             if (HasTree(x, y)) return Result.No(TreeMsg);
             if (IsSolid(x, y)) return Result.No(IsMountain(x, y) ? "Mountains cannot be built on. Hills and flat ground can" : PitDepth(x, y) > 0 ? "A quarry pit is in the way" : "Ore blocks this zone. Mine it first");
             if (kind == Zone.Farm && !Fert[y, x]) return Result.No("Farms need fertile soil");
+            if (kind == Zone.Farm && TooDryReason(x, y) is string dry) return Result.No(dry);
             return Result.Yes();
         }
 

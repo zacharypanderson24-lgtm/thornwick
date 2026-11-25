@@ -108,6 +108,8 @@ namespace CrownAndHearth.Game
                 Desc = $"Stores {WaterTuning.CisternCap:0} water. Wells and the Town Hall's spring fill it with what the town does not drink, and it covers shortfalls for every home on a connected road. Anywhere on a road will do." },
             new ToolDef { Id = "fisher", Cat = Cat.Water, Label = "Fishing Hut", Build = "fisher",
                 Desc = $"Fishermen bring fish from rivers, lakes and the sea. The hut must stand within two tiles of the water and on a road to the Town Hall; the fishermen walk to the shore, so water across a river they cannot cross does not count. A pond gives least, a lake or river more, the sea most. Fish counts as fresh meat: a smokehouse preserves it. Costs {Cost["fisher"][Res.Wood]} wood." },
+            new ToolDef { Id = "dock", Cat = Cat.Water, Label = "Fishing Dock", Build = "dock",
+                Desc = $"A pier on the shore where three fishermen fish water deep enough for boats, and catch {World.DockBonus:0.#} times as much as from a hut: the best use of a lake, a big river or the sea. It must stand on the shore with medium or deep water within three tiles (a pier reaches out over the shallows), on a road to the Town Hall. Costs {Cost["dock"][Res.Wood]} wood and {Cost["dock"][Res.Stone]} stone. Over-fished water thins out: the catch falls until the fish breed back." },
             new ToolDef { Id = "bridge", Cat = Cat.Water, Label = "Wooden Bridge", Bridge = true,
                 Desc = $"Press on one bank and drag in a straight line across the water to the far bank. Costs {World.BridgeWood} wood a tile over water (1 for road on land). A wooden bridge spans up to {World.BridgeMaxSpan} tiles of shallow or medium water: not the sea, not deep channels. Walkers, workers and carts can use it once it joins your roads." },
             new ToolDef { Id = "claim", Cat = Cat.Land, Label = "Claim Land", Claim = true,
@@ -1150,7 +1152,17 @@ namespace CrownAndHearth.Game
                 if (b.T == "storehouse") lines.Add($"+{World.StorehouseSpace} storage per material. Hauls up to {b.Workers * World.HaulPerWorker} extra goods/day.");
                 if (b.T == "smokehouse") lines.Add($"Fresh meat {w.FreshMeatStored:0.#} · Winter reserve {w.ResAmt[Res.SmokedMeat]:0.#}");
                 if (b.T == "charcoal") lines.Add($"Fuel stockpile {w.ResAmt[Res.Charcoal]:0.#}. {World.LogsPerCharcoal} logs per charcoal.");
-                if (b.T == "fisher") { var fg = w.FishingGrounds(b); lines.Add(fg.grounds == 0 ? "No water it can fish: nothing reachable on foot within " + World.FishReach + " tiles." : $"Fishes {World.WaterClassName(fg.kind).ToLower()} water: {fg.grounds} tiles in reach, {World.FishLevel(fg.perWorker)} catch (about {fg.perWorker:0.##} food per fisherman a day)."); }
+                if (b.T == "fisher" || b.T == "dock")
+                {
+                    var fg = w.FishingGrounds(b);
+                    if (fg.grounds == 0) lines.Add("No water it can fish: nothing " + (b.T == "dock" ? "deep enough" : "reachable on foot") + " within " + World.FishReach + " tiles.");
+                    else
+                    {
+                        double stock = w.StockOf(fg.body);
+                        lines.Add($"Fishes {World.WaterClassName(fg.kind).ToLower()} water: {fg.grounds} tiles in reach, {World.FishLevel(fg.perWorker)} catch (about {fg.perWorker:0.##} food per fisherman a day at full stock).");
+                        lines.Add($"Fish stock: {World.StockWord(stock)} ({stock * 100:0}%). Season: {w.Season} (x{w.FishSeason(fg.kind):0.#}). Today's catch: {w.FishCatch(b):0.##} food.");
+                    }
+                }
                 if (b.T == "hunter") lines.Add($"Hunts mature forest within {World.HuntingRange} tiles in all seasons.");
                 if (b.T == "hall") lines.Add($"Pit-saws 1 log a day at half yield. Houses {HallCap}.");
                 if (b.T == "silo")
@@ -1210,6 +1222,11 @@ namespace CrownAndHearth.Game
                     : "Waiting: homes grow when the Homes meter (bottom bar) says homes are wanted.");
             if (z == Zone.Res2 && b == null && w.Note.TryGetValue(Zone.Res2, out var stoneNote) && stoneNote.StartsWith("Waiting")) lines.Add(stoneNote);
             if (w.AquiferAt(x, y) is int aq && aq >= 0 && (b == null || b.T != "well")) lines.Add(AquiferLine(w.Aquifers[aq]) + " A well here could tap it.");
+            if (w.Waters != null && w.Waters.Class[y * N + x] == WaterClass.None)
+            {
+                double moist = w.SoilMoisture(x, y);
+                lines.Add($"Soil moisture: {World.MoistureWord(moist)}" + (z == Zone.Farm || w.Fert[y, x] ? $" (crops yield x{w.MoistureYield(x, y):0.##})" : "") + (w.FloodPlain(x, y) ? "   Flood plain: low land beside a river (floods are not simulated yet)" : ""));
+            }
             lines.Add($"Tile {x},{y}   level {w.TileLevel(x, y):0.##}" + (w.Fert[y, x] ? "   fertile soil" : "") + (w.TileSpread(x, y) >= 3 ? "   too steep" : ""));
             return string.Join("\n", lines);
         }
