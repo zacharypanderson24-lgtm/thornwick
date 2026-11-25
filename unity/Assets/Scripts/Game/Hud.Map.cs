@@ -26,7 +26,7 @@ namespace CrownAndHearth.Game
         MapLayer _mapLayer = MapLayer.Terrain;
         bool _mapOpen, _mapBordersOn = true;
 
-        public bool MapOpen => _mapOpen || _campOpen;
+        public bool MapOpen => _mapOpen || _campOpen || MilitaryOpen;
         /// <summary>Raised when the map opens (true) or closes (false); the game asks for the world to be generated on open.</summary>
         public event Action<bool> MapToggled;
 

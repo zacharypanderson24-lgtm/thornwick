@@ -125,15 +125,9 @@ namespace CrownAndHearth.Sim
             }
             ApplyDehydration(water);
             if (Peasants + Soldiers > d.Civ) { if (Peasants > 0) Peasants--; else LoseSoldier(); }   // a standing army takes places in the population: its soldiers are not refilled by births
-            if (Soldiers > d.Bunks) LoseSoldier();
-            foreach (var b in Blds.Where(b => b.T == "barracks" && b.Served))
-            {
-                b.Prog = Math.Min(TrainDays, b.Prog + 1);
-                if (b.Prog >= TrainDays && Drafting && Soldiers + returning < d.Bunks && Peasants >= 3 && CanAfford(NextRecruit))
-                {
-                    TrainOne(NextRecruit); b.Prog = 0;
-                }
-            }
+            // The military (Military/MilitarySystem.cs): barracks no longer make soldiers. Professionals are recruited from the workforce into
+            // companies (towards each company's target, a couple a day, only into free bunks); soldiers whose barracks is gone stay in the population.
+            Mil.StepDaily(TroopsAway);
             int haul = Blds.Where(b => b.T == "storehouse" && b.Served).Sum(b => b.Workers) * HaulPerWorker;
             double hauling = haul;
             foreach (var k in ResAmt.Keys.ToList())

@@ -22,7 +22,7 @@ button or card to see what it does, what it costs and what it needs:
 | 5 | Hunting | Hunting lodge |
 | 6 | Mining | Quarry, iron mine, mining zone |
 | 7 | Trade | Market |
-| 8 | Military | Barracks (trains infantry and archers; the Troops menu sets the mix), Palisade (drag a wall line; a road through it is a gate) |
+| 8 (T opens the panel) | Military | Muster Ground (militia roll), Barracks (houses professionals; recruit them into companies in the Military menu, see unity/MILITARY.md), Palisade (drag a wall line; a road through it is a gate) |
 | 9 | Water | Well (on the blue groundwater patches), cistern |
 | L | Land | Claim Land: claim a 16 x 16 parcel next to your land, free |
 | 0 / Delete | Bulldoze | Demolish, remove zones |
@@ -102,3 +102,5 @@ where you played Thornwick, copy the raw value of `thornwick-save-1` from the
 site's Local Storage in Developer Tools. Save that JSON to the path above, then
 click **Load** in Unity. Old 40×40, 64×64 and 128×128 settlements are centered on the
 current 256×256 map, and you own all the land they covered.
+
+Big management menus (the Military panel, and any future ones such as fortifications or siege) are large, near full-screen panels like the world map, with exact numeric entry (type a number or use +/- buttons), not small side menus. Esc or the menu key closes them and they keep game input from leaking through.

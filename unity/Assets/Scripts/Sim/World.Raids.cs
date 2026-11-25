@@ -110,8 +110,10 @@ namespace CrownAndHearth.Sim
         /// <summary>How much the working residents around this building would add to its defence when the militia fights (soldier equivalents).</summary>
         public double MilitiaPower(Building b)
         {
-            if (!MilitiaFights) return 0;
             double power = 0;
+            // the mobilised militia stand at the muster point (Military/MilitarySystem.cs) and cover what is near it
+            if (Mil.MusterPoint() is Building muster && Math.Max(0, Math.Max(Math.Abs(muster.X - b.X), Math.Abs(muster.Y - b.Y)) - 1) <= AlertR) power += Mil.MilitiaPower();
+            if (!MilitiaFights) return power;
             foreach (var w in Blds)
             {
                 var t = MilitiaTool(w.T); if (t == null || w.Workers <= 0) continue;
@@ -537,6 +539,7 @@ namespace CrownAndHearth.Sim
             }
 
             if (MilitiaFights) MilitiaFight(r);
+            MobilisedFight(r);
             foreach (var kv in hitRaider) { kv.Key.Hp -= kv.Value; kv.Key.Hurt = true; }
             foreach (var kv in hitFighter) { kv.Key.Hp -= kv.Value; kv.Key.Hurt = true; }
 
@@ -574,6 +577,18 @@ namespace CrownAndHearth.Sim
                     if (distance < best) { x = i; y = j; best = distance; }
                 }
             return (x, y);
+        }
+
+        /// <summary>Mobilised militia (called up at the Muster Ground) fight raiders near the muster point, and the dead are real residents.</summary>
+        void MobilisedFight(RaidReport r)
+        {
+            var muster = Mil.MusterPoint();
+            if (muster == null || Mil.MobilisedCount <= 0) return;
+            var near = r.Raiders.Where(a => (a.St == RaiderState.Approach || a.St == RaiderState.Loot || a.St == RaiderState.Flee) && Reach(muster, a.X, a.Y) <= MilitaryConfig.MilitiaReach).ToList();
+            if (near.Count == 0) return;
+            double damage = Mil.FightDamage(near.Count);
+            foreach (var a in near) { a.Hp -= damage; a.Hurt = true; }
+            for (int lost = Mil.TakeWounded(); lost > 0 && Peasants > 1; lost--) { Peasants--; r.PeasantsLost++; }
         }
 
         /// <summary>Workers fight raiders in reach with their tools, and raiders at the door hurt them back.</summary>

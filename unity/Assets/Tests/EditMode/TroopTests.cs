@@ -4,6 +4,7 @@ using NUnit.Framework;
 
 namespace CrownAndHearth.Tests
 {
+    /// <summary>The soldier counts the raid, camp and conquest code read (World.Soldiers / Archers) and how they follow the companies.</summary>
     public class TroopTests
     {
         static World Barracks()
@@ -19,64 +20,26 @@ namespace CrownAndHearth.Tests
         static void Run(World w, int days) { for (int i = 0; i < days; i++) { w.ResAmt[Res.Food] = 300; w.Tick(); } }
 
         [Test]
-        public void ByDefaultOnlyInfantryAreTrainedWithTheOldCost()
+        public void ABarracksAloneNeverMakesSoldiers()
         {
             var w = Barracks();
-            Assert.AreEqual(0, w.ArcherPercent);
-            Run(w, 12);
-            Assert.Greater(w.Soldiers, 0);
-            Assert.AreEqual(0, w.Archers);
-            Assert.AreEqual(w.Soldiers, w.Infantry);
-            Assert.AreEqual(w.Trained, w.Soldiers);
+            Run(w, 40);
+            Assert.AreEqual(0, w.Soldiers, "soldiers only come from recruitment into a company");
+            Assert.AreEqual(0, w.Mil.Companies.Count);
         }
 
         [Test]
-        public void ArcherShareSetsTheMixOfNewRecruitsAndArchersCostFlax()
+        public void OldSavesLoadAsAllInfantryInGarrisonCompanies()
         {
             var w = Barracks();
-            w.SetArcherPercent(100);
-            double flax = w.ResAmt[Res.Flax];
-            Run(w, 12);
-            Assert.Greater(w.Archers, 0);
-            Assert.AreEqual(w.Soldiers, w.Archers, "only archers at 100%");
-            Assert.Less(w.ResAmt[Res.Flax], flax, "each archer takes flax");
-
-            var half = Barracks();
-            half.SetArcherPercent(50);
-            Run(half, 40);
-            Assert.GreaterOrEqual(half.Soldiers, 4);
-            Assert.That(half.Archers, Is.InRange(half.Soldiers / 2 - 1, half.Soldiers / 2 + 1));
-            Assert.AreEqual(half.Soldiers, half.Infantry + half.Archers);
-        }
-
-        [Test]
-        public void ArchersWaitWithoutFlaxAndTheShareIsClampedAndSaved()
-        {
-            var w = Barracks();
-            w.SetArcherPercent(250);
-            Assert.AreEqual(100, w.ArcherPercent);
-            w.ResAmt[Res.Flax] = 0;
-            for (int i = 0; i < 12; i++) { w.ResAmt[Res.Flax] = 0; w.ResAmt[Res.Food] = 300; w.Tick(); }
-            Assert.AreEqual(0, w.Soldiers, "no flax, no archers (no fallback to infantry)");
-            w.SetArcherPercent(30);
-            Run(w, 20);
-            var loaded = World.LoadJson(w.SaveJson());
-            Assert.AreEqual(30, loaded.ArcherPercent);
-            Assert.AreEqual(w.Archers, loaded.Archers);
-            Assert.AreEqual(w.Soldiers, loaded.Soldiers);
-            Assert.AreEqual(w.Infantry, loaded.Infantry);
-        }
-
-        [Test]
-        public void OldSavesLoadAsAllInfantry()
-        {
-            var w = Barracks();
-            Run(w, 12);
+            w.Soldiers = 5; w.Recalc();
             var json = Newtonsoft.Json.Linq.JObject.Parse(w.SaveJson());
-            json.Remove("archers"); json.Remove("archerPercent");
+            json.Remove("archers"); json.Remove("archerPercent"); json.Remove("military");
             var loaded = World.LoadJson(json.ToString());
-            Assert.AreEqual(w.Soldiers, loaded.Infantry);
+            Assert.AreEqual(5, loaded.Infantry);
             Assert.AreEqual(0, loaded.Archers);
+            Assert.AreEqual(5, loaded.Mil.Professionals, "the old soldiers became company members, nobody was added");
+            Assert.AreEqual(w.Peasants, loaded.Peasants);
         }
 
         [Test]
@@ -86,18 +49,18 @@ namespace CrownAndHearth.Tests
             w.Tick();
             w.Peasants = w.D.Civ;   // a full town
             int workers = w.Peasants;
-            w.Soldiers = 0; w.Archers = 0;
-            w.Blds.First(b => b.T == "barracks").Prog = World.TrainDays;
+            Assert.IsTrue(w.Mil.CreateCompany(MilitaryUnitType.Spearman).Ok);
+            Assert.IsTrue(w.Mil.SetTarget(w.Mil.Companies[0].Id, 2).Ok);
             Run(w, 1);
-            Assert.AreEqual(1, w.Soldiers, "one recruit");
-            Assert.AreEqual(workers - 1, w.Peasants, "the recruit left the workforce");
+            Assert.AreEqual(2, w.Soldiers, "two recruits arrive in a day");
+            Assert.AreEqual(workers - 2, w.Peasants, "the recruits left the workforce");
             Run(w, 60);
             Assert.LessOrEqual(w.Peasants + w.Soldiers, w.D.Civ, "troops keep their place in the population");
             Assert.Less(w.Peasants, workers, "births did not refill the workforce past the housing cap");
         }
 
         [Test]
-        public void StarvationAndMissingBunksLoseTheBiggerGroup()
+        public void StarvationLosesTheBiggerGroup()
         {
             var w = Barracks();
             w.Soldiers = 5; w.Archers = 3;
@@ -107,6 +70,7 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(4, w.Soldiers);
             Assert.AreEqual(2, w.Archers, "archers were the bigger group");
             Assert.AreEqual(2, w.Infantry);
+            Assert.AreEqual(w.Soldiers, w.Mil.Professionals, "the companies lost the same men");
         }
     }
 }
