@@ -71,6 +71,12 @@ New files: `Sim/SurfaceWater.cs` (data model, saving), `Sim/Hydrology.cs` (gener
 
 **Boats (PR 5, first step of section 25):** a fishing dock with fishermen launches boats (one for every two fishermen, at most two). A boat sails one tile a day over *boat water* (medium or deep, the water layer's Navigable flag, never under a bridge), only inside the connected navigable region its dock launches into (so it can never reach another lake or cross land), out to a fishing spot up to 9 steps away, fishes 3 days and sails home. Boats are runtime agents like townsfolk: never saved, rebuilt from the docks; no fishermen, no road or no pulled-down dock means no boats. They are drawn by the agent renderer (code-drawn placeholder boat in four facings, bobbing). For now they do not change the catch (it is still worked out per dock). Not built: cargo, river barges, ferries, ports, trade by water, warships, boat pathing round other boats, boats needing wood or a shipyard. Art needed: a proper fishing boat (4 facings, 2 frames, about 21x16 px).
 
+**Seasonal water (PR 6, section 23):** all of it is a function of the day and the world seed, so nothing is saved and old saves show the right season.
+- **Winter ice** (day 271 to the year's end): ponds, lakes, streams and small rivers freeze and bear walkers and raiders (`IsSolid` is false on them; building and roads are still refused on ice). Major rivers, estuaries and the sea never freeze. Boats are hauled out in winter. The first tick of winter and of spring touches the world so paths, reach and drawing refresh, and the player is told.
+- **Spring flood** (day 50, about half the years, more in wet country, never in arid country): the flood plains get silt, so their harvest that year is x1.2. A message says so.
+- **Summer drought** (days 91 to 270; about one summer in six, more in dry country, rare in wetlands): streams run dry and their beds can be walked, harvests are x0.8, freshwater fishing x0.8.
+- Not built: snowmelt pulses and lake level changes, ice thickness, floods that damage buildings, frozen-water drawing beyond a pale tint, drought effects on wells.
+
 **Known gaps in PR 1 (all planned):** nothing draws the water yet; buildings and walkers still ignore it (`IsSolid`/`WalkCost` hooks are PR 2); no new-world menu entry; river deltas are simple distributaries; wetlands are saturated land, not yet slowing movement; groundwater (wells) ignores surface water.
 
 ---

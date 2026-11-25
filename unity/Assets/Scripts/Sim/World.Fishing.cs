@@ -32,7 +32,8 @@ namespace CrownAndHearth.Sim
         public double FishSeason(WaterClass kind)
         {
             bool salt = SurfaceWater.Salty(kind) || kind == WaterClass.Estuary;
-            switch (Season) { case "Winter": return salt ? 0.8 : 0.5; case "Summer": return 1.1; default: return 1.0; }
+            double drought = DroughtOn && !salt ? 0.8 : 1.0;   // low water in a drought summer
+            switch (Season) { case "Winter": return salt ? 0.8 : 0.5; case "Summer": return 1.1 * drought; default: return 1.0; }
         }
 
         public static string FishLevel(double perWorker) => perWorker <= 0 ? "None" : perWorker < 0.35 ? "Poor" : perWorker < 0.65 ? "Fair" : perWorker < 0.9 ? "Good" : "High";

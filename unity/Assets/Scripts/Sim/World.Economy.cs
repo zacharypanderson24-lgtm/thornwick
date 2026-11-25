@@ -20,6 +20,7 @@ namespace CrownAndHearth.Sim
 
         public void Tick()
         {
+            StepWaterSeason();   // World.WaterSeasons.cs: ice, floods and drought
             // sync
             var d = Recalc();
             var before = ResAmt.ToDictionary(kv => kv.Key, kv => kv.Value);
