@@ -39,7 +39,7 @@ namespace CrownAndHearth.Game
             new CatDef { Cat = Cat.Hunting, Label = "Hunting", Key = "5", Hotkey = Key.Digit5, Icon = "hunter", Desc = "Hunting lodges bring back food from the forest all year, even in winter." },
             new CatDef { Cat = Cat.Mining, Label = "Mining", Key = "6", Hotkey = Key.Digit6, Icon = "mine", Desc = "Quarries for stone, mines for iron ore, and smitheries for metal." },
             new CatDef { Cat = Cat.Trade, Label = "Trade", Key = "7", Hotkey = Key.Digit7, Icon = "market", Desc = "Markets send trade caravans to settlements on the world map; storehouses hold more." },
-            new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Train troops, build palisades, and place watchtowers to spot incoming raiders." },
+            new CatDef { Cat = Cat.Military, Label = "Military", Key = "8", Hotkey = Key.Digit8, Icon = "barracks", Desc = "Muster grounds for militia, barracks for professional soldiers, palisades, and watchtowers to spot incoming raiders." },
             new CatDef { Cat = Cat.Water, Label = "Water", Key = "9", Hotkey = Key.Digit9, Icon = "well", Desc = "Wells that pump groundwater and cisterns that store it. Homes need water every day, carried along the roads." },
             new CatDef { Cat = Cat.Land, Label = "Land", Key = "L", Hotkey = Key.L, Desc = "Your district is 64 x 64 tiles. claim the land beyond it, one 16 x 16 parcel at a time, for free." },
             new CatDef { Cat = Cat.Bulldoze, Label = "Bulldoze", Key = "0", Hotkey = Key.Digit0, Alt = Key.Delete, Desc = "Demolish buildings and roads, clear trees and rocks, or remove zones." },
@@ -92,8 +92,10 @@ namespace CrownAndHearth.Game
                 Desc = "Must touch a road. Sends one trade caravan at a time to settlements willing to deal with you: open the world map (M) and click a settlement." },
             new ToolDef { Id = "storehouse", Cat = Cat.Trade, Label = "Storehouse", Build = "storehouse",
                 Desc = $"Haulers move construction supplies, ores, and fuel into extra storage via connected roads. Holds {World.StorehouseSpace} extra of each material." },
+            new ToolDef { Id = "muster", Cat = Cat.Military, Label = "Muster Ground", Build = "muster",
+                Desc = "Where militia register and gather in an emergency (30 on the roll). Registered militia keep their jobs and homes; only mobilised ones leave work. Houses nobody. Open the Military menu to register and mobilise." },
             new ToolDef { Id = "barracks", Cat = Cat.Military, Label = "Barracks", Build = "barracks",
-                Desc = "Trains infantry and archers from your peasants, one every 4 days (set the mix in the Troops menu). Troops eat more and do no other work. Must touch a road." },
+                Desc = "Houses 16 professional soldiers. It makes none by itself: open the Military menu to recruit them from your workforce into companies, which takes workers off their jobs. Must touch a road." },
             new ToolDef { Id = "wall", Cat = Cat.Military, Label = "Palisade", Wall = true,
                 Desc = "A wooden palisade, 2 wood a tile: press and drag a line. It is a thin wall through the middle of each tile, and people and raiders must go around it. A road through the line is a gate." },
             new ToolDef { Id = "wall2", Cat = Cat.Military, Label = "Palisade + Walkway", Wall = true,
@@ -449,6 +451,7 @@ namespace CrownAndHearth.Game
         {
             var kb = Keyboard.current; if (kb == null || _hud.EditingBanner) return;
             if (kb.mKey.wasPressedThisFrame) { _hud.ToggleMap(); return; }
+            if (kb.tKey.wasPressedThisFrame) { _hud.ToggleMilitary(); return; }
             if (_hud.MapOpen)
             {
                 // the map is modal: Esc closes it, Space still pauses, nothing else reaches the town
@@ -1084,6 +1087,8 @@ namespace CrownAndHearth.Game
                 lines.Add(b.Name.ToUpper());
                 lines.Add(b.T == "watchtower" ? $"On watch within {World.WatchtowerRange} tiles. Alerts the whole town." :
                     b.Served ? "Connected to the Town Hall" : "Not connected: needs a road to the Town Hall");
+                if (b.T == "muster") lines.Add($"Militia roll: {w.Mil.Registered} of {w.Mil.MusterCapacity} places in all muster grounds, {w.Mil.MobilisedCount} mobilised. Houses nobody.");
+                if (b.T == "barracks") lines.Add($"Professional soldiers: {w.Soldiers} for {w.D.Bunks} bunks in connected barracks. Recruit in the Military menu.");
                 if (b.T == "house") lines.Add($"Homes {b.Capacity} villagers. Level {b.Lvl}");
                 if (b.Jobs > 0)
                 {

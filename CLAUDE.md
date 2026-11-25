@@ -57,3 +57,4 @@ For texture or animation work on the Unity game, read the [current texture style
 4. Hut textures pass the clipping checks but sit at 2 px margin (checker wants 3): relax or redo.
 5. Starting huts overlap the Hall porch (move start layout down one tile).
 6. Older goals: tech tree, conquest map with governors, villager sprites, threats.
+7. UNITY MILITARY OVERHAUL (Unity port only; the browser prototype is untouched): Phase 1 done (population-driven companies, militia roll, muster ground, mobilisation, Military menu, versioned saves). See unity/MILITARY.md for the rules, the balance numbers and what is still open (equipment, training facilities, company movement, field armies).

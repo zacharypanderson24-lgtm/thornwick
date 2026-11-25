@@ -396,7 +396,7 @@ namespace CrownAndHearth.Tests
             int bunks = w.Recalc().Bunks;
             // the barracks are ready to train and the town can pay; the only free bunks belong to the army on its way home
             w.Soldiers = System.Math.Max(0, bunks - coming); w.Archers = 0; w.Drafting = true; w.Peasants = 100;
-            foreach (var bk in w.Blds.Where(x => x.T == "barracks")) bk.Prog = World.TrainDays;
+            w.Recalc(); foreach (var co in w.Mil.Companies) co.Target = co.Max;   // the companies want more men, but the free bunks belong to the army coming home
             int before = w.Soldiers;
             foreach (var r in System.Enum.GetValues(typeof(Res)).Cast<Res>()) w.ResAmt[r] = 300;
             w.Tick();
