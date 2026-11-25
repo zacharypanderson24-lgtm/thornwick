@@ -23,12 +23,20 @@ namespace CrownAndHearth.Tests
             var w = new World(7);
             foreach (var r in Enum.GetValues(typeof(Res)).Cast<Res>()) w.ResAmt[r] = 500;
             Place(w, "barracks"); Place(w, "muster");
+            // fixed-size jobs (storehouses, smokehouses, charcoal clamps) so the workforce maths has work to fill whatever the season
+            foreach (var type in new[] { "storehouse", "storehouse", "smokehouse", "smokehouse", "charcoal", "charcoal" })
+            {
+                int c0 = Defs.Start;
+                var spot = Enumerable.Range(0, 31 * 31).Select(i => (x: c0 - 15 + i % 31, y: c0 - 15 + i / 31)).Cast<(int x, int y)?>().FirstOrDefault(t => w.CanPlace(type, t.Value.x, t.Value.y).Ok);
+                if (spot != null) w.Place(type, spot.Value.x, spot.Value.y);
+            }
             w.Peasants = peasants; w.Recalc();
+            Assert.GreaterOrEqual(w.D.Jobs, 4, "the test town has work to do");
             return w;
         }
 
         static int WorkersTotal(World w) => w.Blds.Sum(b => b.Workers);
-        static void Recruit(World w, MilitaryCompany c, int n) { w.Mil.SetTarget(c.Id, n); for (int i = 0; i < 20; i++) w.Mil.StepDaily(0); }
+        static void Recruit(World w, MilitaryCompany c, int n) { w.Mil.SetTarget(c.Id, n); for (int i = 0; i < 20; i++) w.Mil.StepDaily(0); w.Recalc(); }
         static MilitaryCompany Spears(World w) { Assert.IsTrue(w.Mil.CreateCompany(MilitaryUnitType.Spearman).Ok); return w.Mil.Companies.Last(); }
 
         static void Invariants(World w, string when)
