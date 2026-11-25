@@ -38,7 +38,7 @@ namespace CrownAndHearth.Sim
             Res.Food => 0.2, Res.Logs => 1, Res.Wood => 2, Res.Stone => 2, Res.Flax => 2, Res.Ore => 3, Res.Wool => 3, Res.Metal => 8, _ => 2,
         };
 
-        public int Markets => Blds.Count(b => b.T == "market" && b.Served);
+        public int Markets => Blds.Count(b => (b.T == "market" || b.T == "port") && b.Served);   // a port is a market for ships (World.Ferries.cs)
         /// <summary>Trading caravans on the road (gifts go by messenger and do not count).</summary>
         public int TradeCaravansOut => Caravans.Count(c => c.Kind != CaravanKind.Gift);
 
@@ -72,7 +72,7 @@ namespace CrownAndHearth.Sim
             if (s == null) return Result.No("Choose a settlement");
             if (s.Tier == SettlementTier.Hamlet) return Result.No($"{s.Name} is a hamlet: too small to have a market");
             if (!s.WillTrade) return Result.No($"{s.Name} will not trade with you yet: it needs to feel at least {SettlementRules.AttitudeName(SettlementRules.TradeThreshold(s.Personality))} towards you ({SettlementRules.TradeThreshold(s.Personality):+0;-0;0}). Gifts help.");
-            if (Markets == 0) return Result.No("Build a Market (Trade, 7) beside a road: caravans set out from it");
+            if (Markets == 0) return Result.No("Build a Market (Trade, 7) beside a road, or a Port on the water: caravans set out from it");
             if (TradeCaravansOut >= Markets) return Result.No(Markets == 1 ? "Your market's caravan is already on the road. Build another market for a second caravan." : $"All {Markets} of your markets' caravans are on the road");
             return Result.Yes();
         }
@@ -89,7 +89,7 @@ namespace CrownAndHearth.Sim
             if (ResAmt[Res.Gold] < cost) return Result.No($"That costs {cost} gold; you have {ResAmt[Res.Gold]:0}");
             ResAmt[Res.Gold] -= cost;
             s.SoldThisMonth += amount; s.SoldOf[r] = s.SoldOf.GetValueOrDefault(r) + amount;
-            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Buy, Res = r, Amount = amount, Gold = cost, ArriveDay = Day + SettlementMarchDays(s) });
+            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Buy, Res = r, Amount = amount, Gold = cost, ArriveDay = Day + TradeMarchDays(s) });
             return Result.Yes(amount);
         }
 
@@ -105,7 +105,7 @@ namespace CrownAndHearth.Sim
             int gold = (int)Math.Floor(amount * PriceToSell(s, r));
             ResAmt[r] -= amount;
             s.BoughtThisMonth += amount; s.BoughtOf[r] = s.BoughtOf.GetValueOrDefault(r) + amount;
-            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Sell, Res = r, Amount = amount, Gold = gold, ArriveDay = Day + SettlementMarchDays(s) });
+            Caravans.Add(new Caravan { SettlementId = s.Id, Kind = CaravanKind.Sell, Res = r, Amount = amount, Gold = gold, ArriveDay = Day + TradeMarchDays(s) });
             return Result.Yes(amount);
         }
 

@@ -15,6 +15,8 @@ namespace CrownAndHearth.Game
 
         public Sprite Building(string kind, int view)
         {
+            if (kind == "ferry") return Get("ferry", view, 33, 30, c => { DrawDock(c); c.Line((16, 12), (16, 24), DarkWood); c.Rect(14, 22, 6, 3, Color(190, 70, 50)); });
+            if (kind == "port") return Get("port", view, 65, 56, c => { DrawShop(c, true, view); DrawDock(c); });
             if (kind == "watermill") return Get("watermill", view, 33, 56, c => { DrawShop(c, false, view); DrawWheel(c); });
             if (kind == "dock") return Get("dock", view, 33, 30, DrawDock);
             if (kind == "fisher") return Get("fisher", view, 33, 56, c => { DrawShop(c, false, view); DrawFishRack(c); });
