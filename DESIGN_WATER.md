@@ -5,7 +5,7 @@
 | Phase | State |
 |---|---|
 | 1 Water generation (elevation, sea level, drainage, rivers, lakes, ponds, seas, classes, depth, connected waters, determinism, saving) | **Built in PR 1** (Unity only, new worlds created with a water preset; old worlds and saves stay dry). Not yet drawn in the game. |
-| 2 Terrain integration (rendering, shorelines, four camera views, start placement, building and movement restrictions) | Next (PR 2). Start placement is already part of generation. |
+| 2 Terrain integration (rendering, shorelines, four camera views, start placement, building and movement restrictions) | **Built in PR 2**: water is drawn with the existing art, banks and marsh are tinted (placeholder), all four camera rotations keep currents correct, nothing can be built on water, nobody can walk through it, and Menu > New world picks a preset and seed. Shoreline transition art, biome-specific banks and wetland slowdown are still to do (see below). |
 | 3 Bridges, tile inspection, basic fishing | PR 3 |
 | 4 Soil moisture, flooding, docks | Later, only when asked. A first fertility rule from fresh water is built (see below). |
 | 5 Irrigation, seasons, ships, naval warfare, moats | Documented and prepared only |
@@ -49,6 +49,10 @@ New files: `Sim/SurfaceWater.cs` (data model, saving), `Sim/Hydrology.cs` (gener
 **Performance:** about 0.25 s per attempt at 256 x 256 (no per-frame work; everything is generated once and saved as a compressed array). 512 x 512 is covered by a test with synthetic terrain.
 
 **Saves:** a world with water adds one string (`"water"`, base64 of the gzipped arrays, about 100 KB at 256 x 256). Loading uses the saved arrays and never regenerates, so a later change to the generator cannot move rivers in an existing save. No existing save is incompatible.
+
+**Phase 2 (PR 2) in short:** `IsSolid` is true on open water, so every walker, crew, raider and builder treats it as a wall (World.Crews.cs is untouched: it asks `IsSolid`); `WaterBlock` gives the player-facing message ("Cannot construct here: river water / lake water / sea water", marsh blocks buildings and zones but not roads); roads need bridges (part 3). `Game/WaterRenderer.cs` draws all water tiles as one mesh; 16 art sets (still shallow/deep, ocean coastal/deep, river east/south/west/north, two variants) are packed into 16 small atlases and the mesh swaps atlas at 8 ticks a second (no per-tile objects). River art is chosen from the flow direction in world space plus the camera rotation, using the commonest direction among neighbouring river tiles so wide rivers do not flip between two patterns. Banks are tinted by the ground renderer (sand beside the sea or in dry biomes, pale rock in mountain biomes, mud otherwise; marsh is dark green). Screenshots from the real renderers: Editor menu Crown & Hearth > Water Screenshots.
+
+**Art still needed (placeholders used now):** shoreline transition tiles (grass bank, sand, rock, mud, reeds; 32x16 ground diamonds with alpha, one set per biome group), river mouth and junction pieces, a shallow-river variant (rivers currently use the one flowing art at every depth), wetland ground tiles with reeds, bridge sprites (part 3).
 
 **Known gaps in PR 1 (all planned):** nothing draws the water yet; buildings and walkers still ignore it (`IsSolid`/`WalkCost` hooks are PR 2); no new-world menu entry; river deltas are simple distributaries; wetlands are saturated land, not yet slowing movement; groundwater (wells) ignores surface water.
 

@@ -27,7 +27,7 @@ namespace CrownAndHearth.Game
         static readonly Color MilCard = new Color(0.17f, 0.13f, 0.09f, 1f), MilSunk = new Color(0.06f, 0.05f, 0.04f, 1f), MilGold = new Color(0.82f, 0.66f, 0.25f);
 
         public bool MilitaryOpen => _townMenu == TownMenu.Troops;
-        public bool EditingMilitaryName => _milWin != null && _milWin.GetComponentsInChildren<InputField>(false).Any(f => f.isFocused);
+        public bool EditingMilitaryName => (_newWorldSeed != null && _newWorldSeed.isFocused) || _milWin != null && _milWin.GetComponentsInChildren<InputField>(false).Any(f => f.isFocused);
         public void ToggleMilitary() { if (_campOpen && _campPhase == CampPhase.Fight) return; if (_mapOpen) CloseMap(); ShowTownMenu(MilitaryOpen ? TownMenu.Closed : TownMenu.Troops); }
 
         // ---------- reusable parts ----------

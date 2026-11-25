@@ -112,6 +112,7 @@ namespace CrownAndHearth.Game
 
             BuildNeeds(root);
             BuildCampaign(root);
+            BuildNewWorld(root);
             BuildScenario(root);
             BuildIncident(root);
             BuildBar(root);
