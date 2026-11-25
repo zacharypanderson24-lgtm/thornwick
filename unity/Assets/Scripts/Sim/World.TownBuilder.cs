@@ -433,6 +433,19 @@ namespace CrownAndHearth.Sim
             if (site.Wall is var (wx0, wy0, wx1, wy1))
             {
                 int every = s.Kind == TownKind.Fortress ? 6 : tier >= SettlementTier.City ? 10 : tier >= SettlementTier.Town ? 16 : 0;
+                bool NearRoad(int x, int y) => BesideRoadTile(x, y) || BesideRoadTile(x - 1, y) || BesideRoadTile(x + 1, y) || BesideRoadTile(x, y - 1) || BesideRoadTile(x, y + 1);
+                // the corners are palisade; each corner's tower stands on the tile beside it along the wall (turning the same way round
+                // the perimeter), or on the other side if a road or something else is in the way
+                var cornerTowers = new HashSet<(int, int)>();
+                foreach (var (a, b) in new[]
+                {
+                    ((wx0 + 1, wy0), (wx0, wy0 + 1)), ((wx1, wy0 + 1), (wx1 - 1, wy0)),
+                    ((wx1 - 1, wy1), (wx1, wy1 - 1)), ((wx0, wy1 - 1), (wx0 + 1, wy1)),
+                })
+                {
+                    bool Free((int x, int y) t) => Inb(t.x, t.y) && Grid[t.y, t.x] == null && !IsSolid(t.x, t.y) && !NearRoad(t.x, t.y);
+                    if (Free(a)) cornerTowers.Add(a); else if (Free(b)) cornerTowers.Add(b);
+                }
                 for (int y = wy0; y <= wy1; y++)
                     for (int x = wx0; x <= wx1; x++)
                     {
@@ -440,8 +453,8 @@ namespace CrownAndHearth.Sim
                         if (Grid[y, x] != null || IsSolid(x, y)) continue;
                         bool corner = (x == wx0 || x == wx1) && (y == wy0 || y == wy1);
                         int along = x == wx0 || x == wx1 ? y - wy0 : x - wx0;
-                        bool nearRoad = BesideRoadTile(x, y) || BesideRoadTile(x - 1, y) || BesideRoadTile(x + 1, y) || BesideRoadTile(x, y - 1) || BesideRoadTile(x, y + 1);
-                        bool tower = corner || (every > 0 && along % every == every / 2 && !nearRoad);
+                        bool nearRoad = NearRoad(x, y);
+                        bool tower = !corner && (cornerTowers.Contains((x, y)) || (every > 0 && along % every == every / 2 && !nearRoad));
                         DecoMap[y, x] = Deco.None;
                         if (tower) { AddBld("watchtower", x, y); plan.Towers++; }
                         else { AddBld("wall", x, y); plan.WallTiles++; }
