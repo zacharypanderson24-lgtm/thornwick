@@ -33,7 +33,8 @@ namespace CrownAndHearth.Sim
                 ["v"] = 1, ["v2"] = true, ["farmFields"] = true, ["unity"] = true, ["seed"] = Seed, ["day"] = Day,
                 ["style"] = SaveKey(Style), ["relief"] = SaveKey(Relief),
                 ["water"] = Waters == null ? JValue.CreateNull() : new JValue(Waters.Encode()),
-                ["canals"] = new JArray(Canals.OrderBy(k => k)),   // dug irrigation canal tiles
+                ["canals"] = new JArray(Canals.OrderBy(k => k)),
+                ["moats"] = new JArray(Moats.OrderBy(k => k)),   // dug moat tiles   // dug irrigation canal tiles
                 ["fishStock"] = JObject.FromObject(FishStock.ToDictionary(kv => kv.Key.ToString(), kv => Math.Round(kv.Value, 4))),   // fish left in each water body (absent: untouched)   // surface water (rivers, lakes, seas); absent in every older save
                 // underground mining: what has been surveyed and taken (deposit sizes regenerate from the seed)
                 ["surveyed"] = new JArray(Enumerable.Range(0, N * N).Where(k => Surveyed[k])),
@@ -248,6 +249,8 @@ namespace CrownAndHearth.Sim
                 world.Waters = SurfaceWater.Decode(waterSave.Value<string>());
                 if (world.Waters.Size != N) { world.Waters = null; }
             }
+            if (world.Waters != null && save["moats"] is JArray moatTiles)
+                foreach (var t in moatTiles) { int mk = t.Value<int>(); if (mk >= 0 && mk < N * N) world.Moats.Add(mk); }
             if (world.Waters != null && save["canals"] is JArray canalTiles)
                 foreach (var t in canalTiles) { int ck = t.Value<int>(); if (ck >= 0 && ck < N * N) world.Canals.Add(ck); }
             if (world.Waters != null && save["fishStock"] is JObject fish)

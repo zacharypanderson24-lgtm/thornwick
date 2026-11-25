@@ -82,6 +82,7 @@ namespace CrownAndHearth.Sim
                 if (HasTree(tx, ty)) return Result.No(TreeMsg);
                 if (WaterBlock(tx, ty, true) is string wet) return Result.No(wet);
                 if (CanalBlock(tx, ty) is string ditch) return Result.No(ditch);
+                if (MoatBlock(tx, ty) is string moatMsg) return Result.No(moatMsg);
                 if (IsSolid(tx, ty))
                     return Result.No(IsMountain(tx, ty) ? "You cannot build on a mountain. Hills and flat ground are fine"
                         : PitDepth(tx, ty) > 0 ? "A quarry pit is in the way. Pits cannot be filled in"
@@ -122,6 +123,7 @@ namespace CrownAndHearth.Sim
             if (!Inb(x, y)) return Result.No("Outside the map");
             if (!Claimed(x, y)) return Result.No(NotYours);
             if (Grid[y, x] == null && RemoveCanal(x, y)) return Result.Yes();   // World.Irrigation.cs
+            if (Grid[y, x]?.T != "hall" && RemoveMoat(x, y) && Grid[y, x] == null) return Result.Yes();   // World.Moats.cs (a causeway road stays when its moat goes)
             if (PenAt(x, y) is LivestockPen pen)
             {
                 RemovePen(pen);
@@ -170,7 +172,7 @@ namespace CrownAndHearth.Sim
                 if (HasTree(x, y)) return Result.No(TreeMsg, n);
                 if (WaterBlock(x, y, false) is string wet) return Result.No(wet + ". Roads need a bridge to cross water", n);
                 if (CanalBlock(x, y) is string ditch) return Result.No(ditch, n);
-                if (IsSolid(x, y)) return Result.No("A mountain, a quarry pit, ore or ground too steep to build on is in the way. Route around it", n);
+                if (IsSolid(x, y) && !IsMoat(x, y)) return Result.No("A mountain, a quarry pit, ore or ground too steep to build on is in the way. Route around it", n);   // a moat is crossed on a causeway
                 n++;
             }
             if (ResAmt[Res.Wood] < n * Cost["road"][Res.Wood]) return Result.No($"Not enough wood: {n} new road tiles need {n} wood", n);
@@ -240,6 +242,7 @@ namespace CrownAndHearth.Sim
             if (PenAt(x, y) != null) return Result.No("Remove the livestock pen first");
             if (WaterBlock(x, y, true) is string wet) return Result.No(wet);
             if (CanalBlock(x, y) is string ditch) return Result.No(ditch);
+            if (MoatBlock(x, y) is string moatMsg) return Result.No(moatMsg);
             if (Grid[y, x] != null) return ZoneMap[y, x] == kind ? Result.Yes() : Result.No("That tile is already built on");
             var dc = DecoMap[y, x];
             if (kind == Zone.Wood)

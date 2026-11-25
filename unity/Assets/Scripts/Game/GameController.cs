@@ -26,7 +26,7 @@ namespace CrownAndHearth.Game
         public class ToolDef
         {
             public string Id, Label, Desc; public Cat Cat;
-            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Claim, Wall, Bridge, Canal;
+            public string Build; public Zone Zone; public bool Road, Clear, Unzone, Claim, Wall, Bridge, Canal, Moat;
         }
 
         public static readonly CatDef[] Cats =
@@ -116,6 +116,8 @@ namespace CrownAndHearth.Game
                 Desc = $"A harbour on a big lake, a major river or the sea (at least {World.PortWaterNeeded} tiles of connected boat-deep water). It counts as a market, so a caravan can set out from it, and goods go by ship: a caravan sent while a port is free arrives in {World.PortSpeed * 100:0}% of the usual time. Costs {Cost["port"][Res.Wood]} wood, {Cost["port"][Res.Stone]} stone and {Cost["port"][Res.Gold]} gold. Needs a road to the Town Hall." },
             new ToolDef { Id = "watermill", Cat = Cat.Water, Label = "Watermill", Build = "watermill",
                 Desc = $"Stands on a riverbank with flowing water beside it and grinds the wheat harvest: staffed mills add {World.MillBonusShare * 100:0}% to the food from the fields (each mill grinds for {World.MillFields} fields), more mills for more fields. Ponds, lakes and the sea have no current; a frozen river stops the wheel. Needs a road to the Town Hall. Costs {Cost["watermill"][Res.Wood]} wood and {Cost["watermill"][Res.Stone]} stone." },
+            new ToolDef { Id = "moat", Cat = Cat.Military, Label = "Moat", Moat = true,
+                Desc = $"A water-filled ditch dug from fresh water: press on the bank of a river, lake or pond (or the end of a moat) and drag in a straight line; dig the next stretch from its end to bend it round your town. Up to {World.MoatMaxLength} tiles at a time, {World.MoatWood} wood a tile, on gently sloping ground. A moat is a wall to everyone, raiders included, except where a road crosses it: a road laid over a moat is a causeway, the one way across, and the place to defend. Buildings and zones keep off it; Clear removes a tile." },
             new ToolDef { Id = "canal", Cat = Cat.Water, Label = "Irrigation Canal", Canal = true,
                 Desc = $"Press on the bank of a river, lake or pond (or the end of a canal that reaches one) and drag in a straight line away from the water. Water does not run uphill, so the canal may not climb. The soil within {World.CanalReach} tiles of a canal joined to fresh water gets moister, so dry land can be farmed and crops yield more. {World.CanalWood} wood a tile, up to {World.CanalMaxLength} tiles at a time. Roads, buildings and zones keep off canals; people step across them. Clear removes one." },
             new ToolDef { Id = "bridge", Cat = Cat.Water, Label = "Wooden Bridge", Bridge = true,
@@ -218,7 +220,7 @@ namespace CrownAndHearth.Game
         }
 
         // the tiles a drag covers: an L for roads and palisades, a straight line for a bridge
-        System.Collections.Generic.List<(int x, int y)> ToolPath(Vector2Int a, Vector2Int b) => _tool.Bridge || _tool.Canal ? World.BridgeLine(a.x, a.y, b.x, b.y) : World.LPath(a.x, a.y, b.x, b.y);
+        System.Collections.Generic.List<(int x, int y)> ToolPath(Vector2Int a, Vector2Int b) => _tool.Bridge || _tool.Canal || _tool.Moat ? World.BridgeLine(a.x, a.y, b.x, b.y) : World.LPath(a.x, a.y, b.x, b.y);
 
         const string NewWorldWater = "thornwick.newWorld.water", NewWorldSeed = "thornwick.newWorld.seed";
 
@@ -513,6 +515,7 @@ namespace CrownAndHearth.Game
                 : t.Build != null ? $"{t.Label} ({Hud.CostText(t.Build)}): click a spot to build it." + (ReachOf(t.Build) > 0 ? " The shaded ring is the land it works." : "") + stop
                 : t.Claim ? $"Claim Land: click a 16 x 16 parcel next to your land for free (green = you can, red = not next to your land).{stop}"
                 : t.Road ? $"Road (1 wood a tile): press and drag from a road to lay one.{stop}"
+                : t.Moat ? $"Moat ({World.MoatWood} wood a tile): press on a bank and drag away from the water in a straight line; lay a road across it for a causeway.{stop}"
                 : t.Canal ? $"Irrigation canal ({World.CanalWood} wood a tile): press on a bank and drag away from the water in a straight line.{stop}"
                 : t.Bridge ? $"Wooden bridge ({World.BridgeWood} wood a tile over water): press on one bank and drag in a straight line to the far bank.{stop}"
                 : t.Wall ? $"Palisade (2 wood a tile): press and drag a line. Raiders and people walk around it; a road through the line is a gate.{stop}"
@@ -587,14 +590,14 @@ namespace CrownAndHearth.Game
                 return;
             }
 
-            if (_tool.Road || _tool.Wall || _tool.Bridge || _tool.Canal)
+            if (_tool.Road || _tool.Wall || _tool.Bridge || _tool.Canal || _tool.Moat)
             {
                 if (mouse.leftButton.wasPressedThisFrame && _hover.HasValue) _roadAnchor = _hover;
                 if (mouse.leftButton.wasReleasedThisFrame && _roadAnchor.HasValue)
                 {
                     var end = _hover ?? _roadAnchor.Value;
                     var line = ToolPath(_roadAnchor.Value, end);
-                    var r = _tool.Canal ? World.PlaceCanalPath(line) : _tool.Bridge ? World.PlaceBridgePath(line) : _tool.Wall ? World.PlaceWallPath(line) : World.PlaceRoadPath(line);
+                    var r = _tool.Moat ? World.PlaceMoatPath(line) : _tool.Canal ? World.PlaceCanalPath(line) : _tool.Bridge ? World.PlaceBridgePath(line) : _tool.Wall ? World.PlaceWallPath(line) : World.PlaceRoadPath(line);
                     if (!r.Ok) _hud.Toast(r.Reason);
                     else if (_tool.Id == "wall2")
                     {
@@ -790,11 +793,11 @@ namespace CrownAndHearth.Game
             if (_hover.HasValue)
             {
                 var h = _hover.Value;
-                if (_tool.Road || _tool.Wall || _tool.Bridge || _tool.Canal)
+                if (_tool.Road || _tool.Wall || _tool.Bridge || _tool.Canal || _tool.Moat)
                 {
                     var from = _roadAnchor ?? h;
                     var path = ToolPath(from, h);
-                    bool ok = (_tool.Canal ? World.CanalPathCheck(path) : _tool.Bridge ? World.BridgePathCheck(path) : _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path)).Ok;
+                    bool ok = (_tool.Moat ? World.MoatPathCheck(path) : _tool.Canal ? World.CanalPathCheck(path) : _tool.Bridge ? World.BridgePathCheck(path) : _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path)).Ok;
                     foreach (var (x, y) in path) _overlay.AddTile(World, x, y, _rot, ok ? Ok : Bad);
                 }
                 else if (_tool.Claim)
@@ -993,13 +996,13 @@ namespace CrownAndHearth.Game
                 if (!cc.Ok) { _tipWarn = World.ParcelTouchesYours(cpx, cpy); return (cc.Reason, !_tipWarn); }
                 return ($"Click to claim this parcel (free): {World.DescribeParcel(cpx, cpy)} ({World.ClaimedParcels} of {World.ParcelsPerSide * World.ParcelsPerSide} owned)", false);
             }
-            if (_tool.Road || _tool.Wall || _tool.Bridge || _tool.Canal)
+            if (_tool.Road || _tool.Wall || _tool.Bridge || _tool.Canal || _tool.Moat)
             {
                 var path = ToolPath(_roadAnchor ?? h, h);
-                var r = _tool.Canal ? World.CanalPathCheck(path) : _tool.Bridge ? World.BridgePathCheck(path) : _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path);
+                var r = _tool.Moat ? World.MoatPathCheck(path) : _tool.Canal ? World.CanalPathCheck(path) : _tool.Bridge ? World.BridgePathCheck(path) : _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path);
                 if (!r.Ok) return (r.Reason, true);
-                int n = r.Count, cost = _tool.Canal ? n * World.CanalWood : _tool.Bridge ? World.BridgeCost(path) : _tool.Wall ? n * Defs.Cost["wall"][Res.Wood] : n;
-                string what = _tool.Canal ? "canal" : _tool.Bridge ? "bridge" : _tool.Wall ? "palisade" : "road";
+                int n = r.Count, cost = _tool.Moat ? n * World.MoatWood : _tool.Canal ? n * World.CanalWood : _tool.Bridge ? World.BridgeCost(path) : _tool.Wall ? n * Defs.Cost["wall"][Res.Wood] : n;
+                string what = _tool.Moat ? "moat" : _tool.Canal ? "canal" : _tool.Bridge ? "bridge" : _tool.Wall ? "palisade" : "road";
                 return _roadAnchor.HasValue ? ($"{n} new {what} tile{(n == 1 ? "" : "s")}, {cost} wood. Let go to build", false) : ($"Press and drag to lay a {what}", false);
             }
             if (_tool.Build != null)
@@ -1235,6 +1238,7 @@ namespace CrownAndHearth.Game
                     : "Waiting: homes grow when the Homes meter (bottom bar) says homes are wanted.");
             if (z == Zone.Res2 && b == null && w.Note.TryGetValue(Zone.Res2, out var stoneNote) && stoneNote.StartsWith("Waiting")) lines.Add(stoneNote);
             if (w.AquiferAt(x, y) is int aq && aq >= 0 && (b == null || b.T != "well")) lines.Add(AquiferLine(w.Aquifers[aq]) + " A well here could tap it.");
+            if (w.IsMoat(x, y)) lines.Add(w.Grid[y, x]?.T == "road" ? "MOAT CAUSEWAY: the road is the one way across the moat here" : "MOAT: a wall to walkers and raiders; only a road across it (a causeway) lets anyone over");
             if (w.IsCanal(x, y)) lines.Add(w.CanalIsFed(x, y) ? "IRRIGATION CANAL: joined to fresh water, so the soil within " + World.CanalReach + " tiles is moister" : "IRRIGATION CANAL: not joined to fresh water, so it irrigates nothing yet");
             if (w.IrrigationBonus(x, y) > 0 && !w.IsCanal(x, y)) lines.Add($"Irrigated: a canal adds {w.IrrigationBonus(x, y):0.00} to the soil moisture here");
             if (w.SeasonNote(x, y) is string seasonNote && w.Waters.Class[y * N + x] == WaterClass.None) lines.Add(seasonNote);
