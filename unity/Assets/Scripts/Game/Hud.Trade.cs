@@ -246,15 +246,15 @@ namespace CrownAndHearth.Game
             }
 
             var road = _world.Caravans.OrderBy(c => c.ArriveDay).ToList();
-            var lines = new StringBuilder($"<b>On the road</b> ({_world.TradeCaravansOut} of {_world.Markets} market caravans out)\n");
+            var lines = new StringBuilder($"<b>On the road</b> ({_world.LandCaravansOut} of {_world.Markets} caravans, {_world.ShipsOut} of {_world.ShipCapacity} ships out)\n");
             if (road.Count == 0) lines.Append("Nothing.");
             foreach (var c in road.Take(8))
             {
                 var to = _world.SettlementById(c.SettlementId); string where = to?.Name ?? "?"; int days = Math.Max(0, c.ArriveDay - _world.Day);
                 lines.AppendLine(c.Kind switch
                 {
-                    CaravanKind.Buy => $"{c.Amount} {World.GoodName(c.Res)} coming from {where}: {days} days",
-                    CaravanKind.Sell => $"{c.Amount} {World.GoodName(c.Res)} going to {where} for {c.Gold} gold: {days} days",
+                    CaravanKind.Buy => $"{c.Amount} {World.GoodName(c.Res)} coming from {where} {World.ModeName(c.Mode)}: {days} days",
+                    CaravanKind.Sell => $"{c.Amount} {World.GoodName(c.Res)} going to {where} {World.ModeName(c.Mode)} for {c.Gold} gold: {days} days",
                     _ => $"A gift of {c.Gold} gold going to {where}: {days} days",
                 });
             }

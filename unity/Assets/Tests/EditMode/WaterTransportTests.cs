@@ -96,7 +96,7 @@ namespace CrownAndHearth.Tests
                 if (Enumerable.Range(0, 4).All(k => w.Waters.Class[(y + k / 2) * N + x + k % 2] == WaterClass.None && w.Grid[y + k / 2, x + k % 2] == null) && w.CanPlace("port", x, y).Ok) { px = x; py = y; break; }
             Assert.GreaterOrEqual(px, 0, "a port fits on the coast");
             int before = w.Markets; var port = w.AddBld("port", px, py); port.Served = true; w.Recalc(); port.Served = true;
-            Assert.AreEqual(2, port.Sz); Assert.AreEqual(before + 1, w.Markets, "a port counts as a market"); Assert.AreEqual(1, w.Ports);
+            Assert.AreEqual(2, port.Sz); Assert.AreEqual(before, w.Markets, "a port is not a market: caravans and ships have separate capacity"); Assert.AreEqual(1, w.Ports); Assert.AreEqual(1, w.ShipCapacity); Assert.AreEqual(TradeMode.Coastal, w.PortMode(port));
             var inland = Make(WaterPreset.BalancedInland, 1); string why = null;
             for (int y = 8; y < N - 8 && why == null; y++) for (int x = 8; x < N - 8; x++)
             {
@@ -107,29 +107,21 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void ShipsMakeCaravansFaster()
-        {
-            var w = Make(WaterPreset.Coastal, 1);
-            if (w.Settlements.Count == 0) Assert.Ignore("this map has no settlements to trade with");
-            var s = w.Settlements[0]; int days = w.SettlementMarchDays(s);
-            Assert.AreEqual(days, w.TradeMarchDays(s), "no port, the usual march");
-            int px = -1, py = -1;
-            for (int y = 8; y < N - 8 && px < 0; y++) for (int x = 8; x < N - 8; x++) if (Enumerable.Range(0, 4).All(k => w.Waters.Class[(y + k / 2) * N + x + k % 2] == WaterClass.None && w.Grid[y + k / 2, x + k % 2] == null) && w.CanPlace("port", x, y).Ok) { px = x; py = y; break; }
-            var port = w.AddBld("port", px, py); port.Served = true; w.Recalc(); port.Served = true;
-            int byShip = w.TradeMarchDays(s);
-            Assert.LessOrEqual(byShip, days); Assert.GreaterOrEqual(byShip, 1);
-            if (days >= 3) Assert.Less(byShip, days);
-        }
-
-        [Test]
         public void FerriesAndPortsSurviveSaveAndLoad()
         {
             var w = Make(WaterPreset.Lakeside, 1); var spots = Landings(w); var a = spots[0];
             var b = spots.First(s => Region(w, s) == Region(w, a) && System.Math.Max(System.Math.Abs(s.x - a.x), System.Math.Abs(s.y - a.y)) is >= 6 and <= World.FerryRange);
             w.AddBld("ferry", a.x, a.y); w.AddBld("ferry", b.x, b.y);
+            var coast = new World(1, TerrainStyle.Ranges, Relief.Lowland, WaterPreset.Coastal); coast.ClaimAll();
+            int px = -1, py = -1;
+            for (int y = 8; y < N - 8 && px < 0; y++) for (int x = 8; x < N - 8; x++) if (Enumerable.Range(0, 4).All(k => coast.Waters.Class[(y + k / 2) * N + x + k % 2] == WaterClass.None && coast.Grid[y + k / 2, x + k % 2] == null) && coast.CanPlace("port", x, y).Ok) { px = x; py = y; break; }
+            Assert.GreaterOrEqual(px, 0); coast.AddBld("port", px, py);
             var back = World.LoadJson(w.SaveJson());
             Assert.AreEqual(1, back.FerryPairs().Count);
             Assert.AreEqual(2, back.Blds.Count(x => x.T == "ferry"));
+            var backCoast = World.LoadJson(coast.SaveJson());
+            var port = backCoast.Blds.Single(x => x.T == "port"); Assert.AreEqual(px, port.X); Assert.AreEqual(2, port.Sz);
+            Assert.AreEqual(TradeMode.Coastal, backCoast.PortMode(port), "the saved port still stands on the sea");
         }
 
         [Test]

@@ -6,8 +6,8 @@
 // two landings (in winter, with the boats hauled out, the link still holds). People and crews do not walk through a ferry: only roads are
 // linked (use a bridge, or the winter ice, to walk across).
 //
-// PORT: a trading harbour on a shore with a sea, lake or river big enough for ships. It counts as a market (a caravan can set out from it) and
-// goods go by water, so a caravan sent while a port is free arrives in 60% of the usual time.
+// PORT: a trading harbour on a shore with a sea, lake or river big enough for ships. It gives your trade one ship (World.MaritimeTrade.cs): trade
+// goes by water only to settlements the world map shows on the same sea or lake, and the travel time comes from the water route.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +18,6 @@ namespace CrownAndHearth.Sim
     public partial class World
     {
         public const int FerryRange = 20, PortWaterNeeded = 100;
-        public const double PortSpeed = 0.6;
 
         /// <summary>The navigable region (boat-deep water) a landing or port launches into, or 0.</summary>
         public int RegionOf(Building b)
@@ -70,7 +69,7 @@ namespace CrownAndHearth.Sim
         void FerryJoin(bool[] conn, Stack<(int, int)> stack)
         {
             if (Waters == null) return;
-            var pairs = FerryPairs(); if (pairs.Count == 0) return;
+            var pairs = FerryPairs().Where(FerryOperating).ToList(); if (pairs.Count == 0) return;   // a ferry that is not running joins nothing
             bool grew = true;
             while (grew)
             {
@@ -94,11 +93,33 @@ namespace CrownAndHearth.Sim
             }
         }
 
+        // ---------- winter: does the ferry run? ----------
+        Dictionary<(Building, Building), bool> _runCache = new Dictionary<(Building, Building), bool>(); int _runVersion = -1; bool _runIce;
+
+        /// <summary>A ferry runs unless its route freezes: in winter, if any water on the sailing route is a kind that freezes (small fresh waters), the
+        /// ferry is suspended; routes over big rivers, estuaries and the sea keep running. (Walking over the ice is a separate matter: IceBears.)</summary>
+        public bool FerryOperating((Building a, Building b) pair)
+        {
+            if (!IceOn) return true;
+            if (_runVersion != Version || _runIce != IceOn) { _runCache.Clear(); _runVersion = Version; _runIce = IceOn; }
+            if (_runCache.TryGetValue(pair, out bool run)) return run;
+            var la = LaunchTile(pair.a); var lb = LaunchTile(pair.b); var route = la.HasValue && lb.HasValue ? BoatRoute(la.Value, lb.Value) : null;
+            run = route != null && !route.Any(t => Freezes(Waters.Class[t]) && Waters.Salinity[t] < 40);
+            return _runCache[pair] = run;
+        }
+
+        /// <summary>What a landing is doing, for its panel.</summary>
+        public string FerryStatus(Building landing)
+        {
+            foreach (var p in FerryPairs()) if (p.a == landing || p.b == landing) return FerryOperating(p) ? "Operational" : "Temporarily suspended: the water on its route is frozen";
+            return "Not linked to another landing";
+        }
+
         // ---------- ferry boats ----------
         void StepFerryBoats()
         {
             if (Waters == null) return;
-            var pairs = FerryPairs();
+            var pairs = FerryPairs().Where(FerryOperating).ToList();
             Boats.RemoveAll(b => b.Ferry && !pairs.Any(p => p.a == b.Home));
             foreach (var (a, partner) in pairs)
             {
@@ -125,13 +146,6 @@ namespace CrownAndHearth.Sim
 
         // ---------- ports and trade by water ----------
         public int Ports => Blds.Count(b => b.T == "port" && b.Served);
-
-        /// <summary>Days a caravan to this settlement takes: while a port has a free ship the goods go by water, in 60% of the time.</summary>
-        public int TradeMarchDays(Settlement s)
-        {
-            int days = SettlementMarchDays(s);
-            return Ports > 0 && TradeCaravansOut < Ports ? Math.Max(1, (int)Math.Ceiling(days * PortSpeed)) : days;
-        }
 
         /// <summary>Boat-deep water joined to this region: how big a body of water the port opens on (tiles).</summary>
         public int NavigableTilesInRegion(int region)
