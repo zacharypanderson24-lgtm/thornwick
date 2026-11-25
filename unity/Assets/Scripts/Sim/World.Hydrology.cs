@@ -67,7 +67,8 @@ namespace CrownAndHearth.Sim
             else if (SurfaceWater.Standing(cl)) lines.Add("Still water: no current");
             lines.Add("Surface level: " + Waters.Surface[i]);
             var body = Waters.BodyAt(x, y); if (body != null) lines.Add($"This water covers {body.Tiles} tiles" + (body.TouchesEdge ? " and runs off the edge of the map" : ""));
-            lines.Add(IsBridge(x, y) ? "Land movement: open: a wooden bridge crosses here" : "Land movement: blocked. Only a bridge crosses water (Water menu, Bridge)");
+            lines.Add(IsBridge(x, y) ? "Land movement: open: a wooden bridge crosses here" : IceBears(x, y) ? "Land movement: open: the water is frozen over" : StreamDry(x, y) ? "Land movement: open: the stream bed is dry" : "Land movement: blocked. Only a bridge crosses water (Water menu, Bridge)");
+            if (SeasonNote(x, y) is string season) lines.Add(season);
             double fish = FishRate(cl);
             lines.Add("Fishing suitability: " + FishLevel(fish) + (fish > 0 ? " (a fishing hut within a few tiles of the shore can fish here)" : ""));
             lines.Add("Navigability: " + (Waters.Depth[i] == WaterDepth.Shallow ? "too shallow for boats" : Waters.Depth[i] == WaterDepth.Medium ? "deep enough for small boats" : "deep enough for large vessels") + " (there are no boats yet)");

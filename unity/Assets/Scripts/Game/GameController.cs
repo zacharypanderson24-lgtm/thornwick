@@ -1223,6 +1223,7 @@ namespace CrownAndHearth.Game
                     : "Waiting: homes grow when the Homes meter (bottom bar) says homes are wanted.");
             if (z == Zone.Res2 && b == null && w.Note.TryGetValue(Zone.Res2, out var stoneNote) && stoneNote.StartsWith("Waiting")) lines.Add(stoneNote);
             if (w.AquiferAt(x, y) is int aq && aq >= 0 && (b == null || b.T != "well")) lines.Add(AquiferLine(w.Aquifers[aq]) + " A well here could tap it.");
+            if (w.SeasonNote(x, y) is string seasonNote && w.Waters.Class[y * N + x] == WaterClass.None) lines.Add(seasonNote);
             if (w.Waters != null && w.Waters.Class[y * N + x] == WaterClass.None)
             {
                 double moist = w.SoilMoisture(x, y);

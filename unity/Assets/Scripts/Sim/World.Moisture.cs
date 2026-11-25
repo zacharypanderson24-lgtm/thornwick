@@ -95,7 +95,10 @@ namespace CrownAndHearth.Sim
         public double MoistureYield(int x, int y)
         {
             if (Waters == null) return 1.0;
-            return Math.Clamp(0.55 + 0.9 * SoilMoisture(x, y), 0.55, 1.3);
+            double f = Math.Clamp(0.55 + 0.9 * SoilMoisture(x, y), 0.55, 1.3);
+            if (SiltThisYear && FloodPlain(x, y)) f *= SiltYield;   // World.WaterSeasons.cs: a flood year leaves silt
+            if (DroughtOn) f *= DroughtYield;
+            return f;
         }
 
         /// <summary>Why this farm tile cannot be farmed for want of water, or null.</summary>

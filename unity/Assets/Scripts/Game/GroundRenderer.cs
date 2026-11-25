@@ -52,7 +52,7 @@ namespace CrownAndHearth.Game
                 {
                     var wt = IsoView.FromView(vx, vy, rot); int x = wt.x, y = wt.y;
                     if (!w.InPlay(x, y)) continue;
-                    if (w.Waters != null && w.Waters.IsWater(x, y)) continue;   // water tiles are drawn by WaterRenderer
+                    if (w.Waters != null && w.Waters.IsWater(x, y) && !w.StreamDry(x, y)) continue;   // water tiles are drawn by WaterRenderer (a dried stream is ground again)
                     int cT = IsoView.VhView(w, vx, vy, rot), cR = IsoView.VhView(w, vx + 1, vy, rot), cL = IsoView.VhView(w, vx, vy + 1, rot), cB = IsoView.VhView(w, vx + 1, vy + 1, rot);
                     int cell = biomeAtlas != null ? BiomeArt.GroundCell(w, x, y) : CellFor(w, x, y);
 
