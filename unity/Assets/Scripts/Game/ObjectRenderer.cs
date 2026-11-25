@@ -191,7 +191,7 @@ namespace CrownAndHearth.Game
             for (int k = 0; k < 4; k++)
             {
                 int nx = b.X + Defs.Nb[k, 0], ny = b.Y + Defs.Nb[k, 1];
-                if (!World.Inb(nx, ny) || w.Grid[ny, nx]?.T != "wall") continue;
+                if (!w.WallJoins(b.X, b.Y, nx, ny)) continue;   // a palisade runs on into the gate beside it: no gap
                 var there = IsoView.ToView(nx, ny, rot);
                 int dx = there.x - here.x, dy = there.y - here.y;
                 mask |= dx == 1 ? WallArt.E : dx == -1 ? WallArt.W : dy == 1 ? WallArt.S : WallArt.N;

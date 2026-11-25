@@ -15,6 +15,7 @@ namespace CrownAndHearth.Game
         BattleArt _battle;
         readonly List<SpriteRenderer> _pool = new List<SpriteRenderer>();
         int _used;
+        readonly BattleSpread _spread = new BattleSpread();   // moves fighters apart inside their tile so a fight is a crowd
 
         public void Init(Material mat) { _mat = mat; _battle = new BattleArt(); }
 
@@ -66,7 +67,7 @@ namespace CrownAndHearth.Game
         /// settlement agents. An NPC settlement's own workers and townsfolk go about their day around it (townFrac: how far through its day).</summary>
         public void DrawCamp(World cw, CampBattle battle, int rot, float frac, float townFrac = 0f)
         {
-            _used = 0;
+            _used = 0; _spread.Reset();
             if (_battle != null && battle != null && battle.Camp.IsTown) DrawPeople(cw, rot, townFrac);
             if (_battle != null && battle != null)
             {
@@ -97,7 +98,8 @@ namespace CrownAndHearth.Game
                     var sprite = townSoldier
                         ? _battle.PoseTinted(actor, WorldMapRenderer.RealmColor(battle.Camp.Town), pose, facing, battle.Tick, phase, u.Id)
                         : _battle.Pose(actor, pose, facing, battle.Tick, phase, u.Id);
-                    Put(cw, rot, sprite, dead ? x : px, dead ? y : py, x, y, frac, Jitter(u.Id), (u.Id * 7) % 3 - 1);
+                    var off = _spread.Place(u.Id, x, y, dead);
+                    Put(cw, rot, sprite, dead ? x : px, dead ? y : py, x, y, frac, off.dx, off.dy);
                     if (u.Shooting && !dead) DrawArrow(cw, rot, x, y, ox + u.ShotX, oy + u.ShotY, frac);
                     if (!dead) DrawBattleEffects(cw, rot, px, py, x, y, frac, u.Hurt, pose == "run");
                 }
@@ -107,6 +109,7 @@ namespace CrownAndHearth.Game
 
         void DrawBattle(World w, RaidReport raid, int rot, float frac)
         {
+            _spread.Reset();
             foreach (var a in raid.Raiders)
             {
                 if (a.St == RaiderState.Waiting || a.St == RaiderState.Gone) continue;
@@ -120,8 +123,9 @@ namespace CrownAndHearth.Game
                 string pose = dead ? "fall" : recoiling ? "hurt" : a.Fighting ? "attack" : a.St == RaiderState.Loot ? (a.Rebel ? "attack" : "loot") :
                     a.St == RaiderState.Flee ? (a.Carry > 0 ? "carry" : "run") : moving ? "walk" : "idle";
                 float phase = dead ? w.Day - a.DeadDay - 1 + frac : HitPhase(a.Hurt, frac);
+                var off = _spread.Place(a.Id, x, y, dead);
                 Put(w, rot, _battle.Pose(a.Rebel ? TradeSprite(a.Trade) ?? "raider" : "raider", pose, facing, w.Day, phase, a.Id),
-                    dead ? x : px, dead ? y : py, x, y, frac, Jitter(a.Id), (a.Id * 7) % 3 - 1);
+                    dead ? x : px, dead ? y : py, x, y, frac, off.dx, off.dy);
                 if (!dead) DrawBattleEffects(w, rot, px, py, x, y, frac, a.Hurt, pose == "run" || pose == "carry");
             }
 
@@ -138,8 +142,9 @@ namespace CrownAndHearth.Game
                 string pose = dead ? "fall" : f.Shooting ? "attack" : recoiling ? "hurt" : f.Attacked ? "attack" :
                     moving ? (f.St == FighterState.Engage ? "run" : "walk") : "idle";
                 float phase = dead ? w.Day - f.DeadDay - 1 + frac : HitPhase(f.Hurt && !f.Shooting, frac);
+                var off = _spread.Place(f.Id + 100000, f.X, f.Y, dead);   // soldiers and raiders count ids separately: keep their wobbles apart
                 Put(w, rot, _battle.Pose(actor, pose, facing, w.Day, phase, f.Id),
-                    dead ? f.X : f.Px, dead ? f.Y : f.Py, f.X, f.Y, frac, Jitter(f.Id), (f.Id * 7) % 3 - 1);
+                    dead ? f.X : f.Px, dead ? f.Y : f.Py, f.X, f.Y, frac, off.dx, off.dy);
                 if (f.Shooting && !dead) DrawArrow(w, rot, f.X, f.Y, f.ShotX, f.ShotY, frac);
                 if (!dead) DrawBattleEffects(w, rot, f.Px, f.Py, f.X, f.Y, frac, f.Hurt, pose == "run");
             }
