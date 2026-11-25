@@ -164,7 +164,7 @@ namespace CrownAndHearth.Sim
             Recalc();
             Develop();
             _statistics.Add(CaptureStatistics(Day - 1));
-            MendHall(); StepCampaign(); StepIncidents(); CheckDefeat();   // World.Defeat.cs, World.Campaign.cs
+            MendHall(); StepCampaign(); StepIncidents(); StepHappiness(); CheckDefeat();   // World.Defeat.cs, World.Campaign.cs, World.Happiness.cs
         }
 
         public (int x, int y)? NearestZoned(int x, int y, int r, Deco kind, Zone zone)

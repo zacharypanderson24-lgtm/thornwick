@@ -34,6 +34,8 @@ namespace CrownAndHearth.Sim
         /// <summary>Its target is behind a palisade or a shut gate: it is hacking its way in (World.Walls.cs).</summary>
         public bool Breaching;
         public int DeadDay;           // the body stays on the field for a few days
+        /// <summary>An uprising (World.Uprising.cs): one of your own workers, in the clothes of Trade (a building type), marching on the Town Hall. It never loots or flees.</summary>
+        public bool Rebel; public string Trade;
         public readonly List<int> Path = new List<int>();   // the way in, walked back when fleeing
     }
 
@@ -58,6 +60,8 @@ namespace CrownAndHearth.Sim
         public string From = "";
         public RaiderCamp Camp;   // the camp the band came from (null when no camps are set)
         public bool Over, StartAnnounced, EndAnnounced, Alarm;   // Once raised, all garrisons respond for the rest of the raid.
+        /// <summary>The raiders are your own workers risen against you (World.Uprising.cs).</summary>
+        public bool IsUprising;
         public readonly Dictionary<Res, int> Stolen = new Dictionary<Res, int>();   // what got away with the raiders
         public readonly List<Raider> Raiders = new List<Raider>();
         public readonly List<Fighter> Fighters = new List<Fighter>();
@@ -316,7 +320,8 @@ namespace CrownAndHearth.Sim
                 if (a.St == RaiderState.Waiting)
                 {
                     if (days < a.Delay) continue;
-                    a.Target = RaidTarget(a.X, a.Y, out a.Breaching);
+                    if (a.Rebel) { a.Target = Hall; a.Breaching = false; }   // rebels go straight for the Town Hall (World.Uprising.cs)
+                    else a.Target = RaidTarget(a.X, a.Y, out a.Breaching);
                     if (a.Target == null) { a.St = RaiderState.Gone; continue; }
                     a.Path.Add(a.Y * N + a.X); a.St = RaiderState.Approach;
                 }
@@ -347,6 +352,7 @@ namespace CrownAndHearth.Sim
                 }
                 else if (a.St == RaiderState.Loot)
                 {
+                    if (a.Rebel) { HitHall(RebelHallHit); a.Fighting = true; continue; }   // a rebel at the Hall keeps hitting it, every day, until it is cut down
                     if (a.Target != null && Blds.Contains(a.Target))
                     {
                         var (res, stock) = RaidLoot(a.Target);
