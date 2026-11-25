@@ -35,6 +35,9 @@ namespace CrownAndHearth.Sim
                 ["water"] = Waters == null ? JValue.CreateNull() : new JValue(Waters.Encode()),
                 ["canals"] = new JArray(Canals.OrderBy(k => k)),
                 ["moats"] = new JArray(Moats.OrderBy(k => k)),   // dug moat tiles
+                ["vessels"] = new JArray(Vessels.Select(v => new JObject { ["id"] = v.Id, ["type"] = v.Type.ToString(), ["cond"] = Math.Round(v.Condition, 2), ["kind"] = v.Kind.ToString(), ["key"] = v.Key, ["built"] = v.BuiltDay })),
+                ["vesselOrders"] = new JArray(VesselOrders.Select(o => new JObject { ["type"] = o.Type.ToString(), ["progress"] = Math.Round(o.Progress, 2), ["started"] = o.Started })),
+                ["legacyGrace"] = LegacyGraceUntil,
                 ["ferryRoutes"] = new JArray(FerryRoutes.Select(r => new JObject { ["id"] = r.Id, ["ax"] = r.AX, ["ay"] = r.AY, ["bx"] = r.BX, ["by"] = r.BY, ["off"] = r.Suspended, ["grace"] = r.GraceUntil, ["mil"] = r.MilitaryAllowed })),   // player-defined ferry routes   // dug irrigation canal tiles
                 ["fishStock"] = JObject.FromObject(FishStock.ToDictionary(kv => kv.Key.ToString(), kv => Math.Round(kv.Value, 4))),   // fish left in each water body (absent: untouched)   // surface water (rivers, lakes, seas); absent in every older save
                 // underground mining: what has been surveyed and taken (deposit sizes regenerate from the seed)
@@ -255,7 +258,17 @@ namespace CrownAndHearth.Sim
                 if (save["ferryRoutes"] is JArray routes)
                     foreach (var rt in routes.OfType<JObject>())
                         world.RestoreRoute(new FerryRoute { Id = (int)rt["id"], AX = (int)rt["ax"], AY = (int)rt["ay"], BX = (int)rt["bx"], BY = (int)rt["by"], Suspended = (bool?)rt["off"] ?? false, GraceUntil = (int?)rt["grace"] ?? 0, MilitaryAllowed = (bool?)rt["mil"] ?? true });
-                else world.PendingFerryMigration = true;   // a save from before ferry routes: its automatically paired ferries become routes once the buildings are in
+                else world.PendingFerryMigration = true;
+                if (save["vessels"] is JArray vessels)
+                {
+                    foreach (var vj in vessels.OfType<JObject>())
+                        if (Enum.TryParse<VesselType>((string)vj["type"], out var vt))
+                            world.RestoreVessel(new Vessel { Id = (int)vj["id"], Type = vt, Condition = (double)vj["cond"], Kind = Enum.TryParse<AssignKind>((string)vj["kind"], out var ak) ? ak : AssignKind.None, Key = (int?)vj["key"] ?? 0, BuiltDay = (int?)vj["built"] ?? 0 });
+                    if (save["vesselOrders"] is JArray orders)
+                        foreach (var oj in orders.OfType<JObject>()) if (Enum.TryParse<VesselType>((string)oj["type"], out var ot)) world.VesselOrders.Add(new VesselOrder { Type = ot, Progress = (double?)oj["progress"] ?? 0, Started = (bool?)oj["started"] ?? false });
+                    world.LegacyGraceUntil = (int?)save["legacyGrace"] ?? 0;
+                }
+                else world.PendingVesselMigration = true;   // a save from before ferry routes: its automatically paired ferries become routes once the buildings are in
             }
             if (world.Waters != null && save["moats"] is JArray moatTiles)
                 foreach (var t in moatTiles) { int mk = t.Value<int>(); if (mk >= 0 && mk < N * N) world.Moats.Add(mk); }
@@ -313,6 +326,7 @@ namespace CrownAndHearth.Sim
                 world.AddPen(pen);
             }
             if (world.PendingFerryMigration) world.MigrateAutomaticFerries();   // World.FerryRoutes.cs
+            if (world.PendingVesselMigration) world.MigrateLegacyVessels();   // World.Vessels.cs (after the routes exist)
             world.Recalc();
             if (save.Value<bool?>("farmFields") != true) world.AddStarterFarmFields();
             if (save.Value<int?>("flaxPercent") is int mix) world.SetFlaxPercent(mix);

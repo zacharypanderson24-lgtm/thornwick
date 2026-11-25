@@ -17,7 +17,7 @@ using static CrownAndHearth.Sim.Defs;
 
 namespace CrownAndHearth.Sim
 {
-    public enum FerryState { Operational, WaitingForCrew, SuspendedByPlayer, FrozenRoute, MissingLanding, NoRoute }
+    public enum FerryState { Operational, WaitingForCrew, SuspendedByPlayer, FrozenRoute, MissingLanding, NoRoute, MissingVessel, VesselUnderRepair }
 
     public sealed class FerryRoute
     {
@@ -99,6 +99,9 @@ namespace CrownAndHearth.Sim
             if (route == null || route.Count - 1 > FerryMaxRoute) return FerryState.NoRoute;
             if (IceOn && route.Any(t => Freezes(Waters.Class[t]) && Waters.Salinity[t] < 40)) return FerryState.FrozenRoute;
             if (CrewOf(r) < FerryCrew && Day >= r.GraceUntil) return FerryState.WaitingForCrew;
+            var vessel = VesselOfRoute(r);
+            if (vessel == null) return FerryState.MissingVessel;
+            if (!InService(vessel)) return FerryState.VesselUnderRepair;
             return FerryState.Operational;
         }
 
@@ -109,6 +112,8 @@ namespace CrownAndHearth.Sim
             FerryState.SuspendedByPlayer => "Suspended by you",
             FerryState.FrozenRoute => "Temporarily suspended: the water on its route is frozen",
             FerryState.MissingLanding => "Suspended: a landing is missing (rebuild it on the same tile)",
+            FerryState.MissingVessel => "Suspended: no ferry boat assigned (order one at a Boatyard)",
+            FerryState.VesselUnderRepair => "Suspended: its ferry boat is worn out and needs a Boatyard to repair it",
             _ => "No valid route",
         };
 

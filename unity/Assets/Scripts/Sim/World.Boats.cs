@@ -5,6 +5,7 @@
 // lakes or across land. They are runtime agents like townsfolk and work crews: never saved, rebuilt from the docks, and for now they do not
 // change the catch (a dock's catch is still worked out per dock, World.Fishing.cs). Not built yet: cargo, barges, ferries, ports, warships.
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using static CrownAndHearth.Sim.Defs;
 
@@ -56,15 +57,18 @@ namespace CrownAndHearth.Sim
         {
             if (Waters == null) { Boats.Clear(); return; }
             if (IceOn) Boats.RemoveAll(b => !b.Ferry);   // in winter the fishing boats are hauled out; a ferry keeps sailing if its route stays open water
-            Boats.RemoveAll(b => !b.Ferry && (!Blds.Contains(b.Home) || !b.Home.Served || b.Home.Workers <= 0));
+            Boats.RemoveAll(b => !b.Ferry && (!Blds.Contains(b.Home) || !b.Home.Served || b.Home.Workers <= 0 || DockBoatsInService(b.Home) == 0));
             foreach (var dock in Blds)
             {
                 if (IceOn || dock.T != "dock" || !dock.Served || dock.Workers <= 0) continue;
-                int want = Math.Min(BoatsPerDock, (dock.Workers + 1) / 2), have = BoatsOf(dock);
+                int want = Math.Min(BoatsPerDock, DockBoatsInService(dock)), have = BoatsOf(dock);   // the boats are the dock's vessels in service (World.Vessels.cs)
+                while (BoatsOf(dock) > want) { var extra = Boats.Last(x => x.Home == dock); Boats.Remove(extra); }
+                have = BoatsOf(dock);
                 if (have >= want) continue;
                 var launch = LaunchTile(dock); if (!launch.HasValue) continue;
                 var (lx, ly) = launch.Value;
-                Boats.Add(new Boat { Id = ++_boatId, Home = dock, X = lx, Y = ly, Px = lx, Py = ly, LaunchX = lx, LaunchY = ly, Region = Waters.NavRegion[ly * N + lx], Timer = have });
+                for (int k = have; k < want; k++)   // every boat the dock has in service goes out, one day apart
+                    Boats.Add(new Boat { Id = ++_boatId, Home = dock, X = lx, Y = ly, Px = lx, Py = ly, LaunchX = lx, LaunchY = ly, Region = Waters.NavRegion[ly * N + lx], Timer = k });
             }
             StepFerryBoats();   // World.Ferries.cs
             foreach (var b in Boats)

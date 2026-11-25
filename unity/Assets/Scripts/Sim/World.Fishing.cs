@@ -84,7 +84,7 @@ namespace CrownAndHearth.Sim
         {
             if (Waters == null || !(b.T == "fisher" || b.T == "dock") || !b.Served || b.Workers <= 0) return 0;
             var g = FishingGrounds(b);
-            return b.Workers * g.perWorker * FishSeason(g.kind) * StockOf(g.body);
+            return b.Workers * g.perWorker * FishSeason(g.kind) * StockOf(g.body) * DockBoatFactor(b);
         }
 
         /// <summary>The day's catch from every staffed, road-connected hut and dock. Fishing draws the water's stock down and the fish breed back.</summary>
@@ -96,7 +96,7 @@ namespace CrownAndHearth.Sim
             foreach (var b in Blds)
             {
                 if (!(b.T == "fisher" || b.T == "dock") || !b.Served || b.Workers <= 0) continue;
-                var g = FishingGrounds(b); double c = b.Workers * g.perWorker * FishSeason(g.kind) * StockOf(g.body);
+                var g = FishingGrounds(b); double c = b.Workers * g.perWorker * FishSeason(g.kind) * StockOf(g.body) * DockBoatFactor(b);
                 fish += c; taken[g.body] = taken.GetValueOrDefault(g.body) + c;
             }
             foreach (var id in new List<int>(FishStock.Keys)) if (!taken.ContainsKey(id)) taken[id] = 0;   // waters that recover with nobody fishing them
@@ -111,6 +111,9 @@ namespace CrownAndHearth.Sim
             }
             return fish;
         }
+
+        /// <summary>A dock's catch with no boats is only what its fishermen get from the pier (a quarter); with boats for all its crews (one for every two fishermen) it is full.</summary>
+        public double DockBoatFactor(Building b) => b.T != "dock" ? 1.0 : 0.25 + 0.75 * Math.Min(1.0, DockBoatsInService(b) / (double)Math.Max(1, (b.Workers + 1) / 2));
 
         public static string StockWord(double s) => s >= 0.9 ? "plentiful" : s >= 0.6 ? "good" : s >= 0.3 ? "thinning" : "nearly fished out";
     }

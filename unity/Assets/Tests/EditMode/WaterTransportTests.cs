@@ -60,7 +60,7 @@ namespace CrownAndHearth.Tests
             Assert.IsFalse(w.Grid[nb.y, nb.x].Served, "one landing alone joins nothing");
             var fb = w.AddBld("ferry", b.x, b.y); w.Recalc();
             Assert.IsFalse(w.Grid[nb.y, nb.x].Served, "two landings nobody has linked join nothing");
-            Assert.IsTrue(w.EstablishRoute(fa, fb).Ok); w.FerryRoutes[0].GraceUntil = int.MaxValue; w.Recalc();
+            Assert.IsTrue(w.EstablishRoute(fa, fb).Ok); w.FerryRoutes[0].GraceUntil = int.MaxValue; w.Vessels.Add(new Vessel { Id = 1, Type = VesselType.FerryBoat, Kind = AssignKind.FerryRoute, Key = w.FerryRoutes[0].Id }); w.Recalc();
             Assert.IsTrue(w.Grid[nb.y, nb.x].Served, "with the second landing the far shore's road is served from the Town Hall");
             // and it works the other way round, and a road further along the far shore joins too
             var far2 = Beside(nb); w.AddBld("road", far2.x, far2.y); w.Recalc(); Assert.IsTrue(w.Grid[far2.y, far2.x].Served);
@@ -72,7 +72,7 @@ namespace CrownAndHearth.Tests
             var w = Make(WaterPreset.Lakeside, 1); var spots = Landings(w); var a = spots[0];
             var b = spots.First(s => Region(w, s) == Region(w, a) && System.Math.Max(System.Math.Abs(s.x - a.x), System.Math.Abs(s.y - a.y)) is >= 6 and <= World.FerryRange);
             var la = w.AddBld("ferry", a.x, a.y); var lb = w.AddBld("ferry", b.x, b.y);
-            Assert.IsTrue(w.EstablishRoute(la, lb).Ok); w.FerryRoutes[0].GraceUntil = int.MaxValue;
+            Assert.IsTrue(w.EstablishRoute(la, lb).Ok); w.FerryRoutes[0].GraceUntil = int.MaxValue; w.Vessels.Add(new Vessel { Id = 1, Type = VesselType.FerryBoat, Kind = AssignKind.FerryRoute, Key = w.FerryRoutes[0].Id });
             var launchA = w.LaunchTile(la).Value; var launchB = w.LaunchTile(lb).Value; bool atA = false, atB = false;
             for (int d = 0; d < 120; d++)
             {
@@ -95,7 +95,8 @@ namespace CrownAndHearth.Tests
                 if (Enumerable.Range(0, 4).All(k => w.Waters.Class[(y + k / 2) * N + x + k % 2] == WaterClass.None && w.Grid[y + k / 2, x + k % 2] == null) && w.CanPlace("port", x, y).Ok) { px = x; py = y; break; }
             Assert.GreaterOrEqual(px, 0, "a port fits on the coast");
             int before = w.Markets; var port = w.AddBld("port", px, py); port.Served = true; w.Recalc(); port.Served = true;
-            Assert.AreEqual(2, port.Sz); Assert.AreEqual(before, w.Markets, "a port is not a market: caravans and ships have separate capacity"); Assert.AreEqual(1, w.Ports); Assert.AreEqual(1, w.ShipCapacity); Assert.AreEqual(TradeMode.Coastal, w.PortMode(port));
+            Assert.AreEqual(2, port.Sz); Assert.AreEqual(before, w.Markets, "a port is not a market: caravans and ships have separate capacity"); Assert.AreEqual(1, w.Ports); Assert.AreEqual(0, w.ShipCapacity, "a port with no barge and no crew has no ship");
+            port.Workers = World.PortCrew; w.Vessels.Add(new Vessel { Id = 1, Type = VesselType.CargoBarge, Kind = AssignKind.Port, Key = World.Tk(px, py) }); Assert.AreEqual(1, w.ShipCapacity); Assert.AreEqual(TradeMode.Coastal, w.PortMode(port));
             var inland = Make(WaterPreset.BalancedInland, 1); string why = null;
             for (int y = 8; y < N - 8 && why == null; y++) for (int x = 8; x < N - 8; x++)
             {

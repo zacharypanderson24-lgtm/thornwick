@@ -98,6 +98,11 @@ namespace CrownAndHearth.Sim
                 if (!NearOpenWater(fp, 3, WaterDepth.Medium)) return Result.No("A port must stand on the shore with deep water within three tiles");
                 if (NavigableTilesInRegion(RegionOf(fp)) < PortWaterNeeded) return Result.No($"The water here is too small for ships: a port needs at least {PortWaterNeeded} tiles of connected boat-deep water (a big lake, a major river or the sea)");
             }
+            if (type == "boatyard")
+            {
+                if (!NearOpenWater(fp, 3, WaterDepth.Medium)) return Result.No("A boatyard must stand on the shore with water deep enough for boats (medium or deep) within three tiles, so boats can be launched");
+                if (!NextToRoad(fp)) return Result.No("A boatyard must touch a road: its craftsmen and timber come by road");
+            }
             if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
             if (type == "smithery" && !NextToRoad(fp)) return Result.No("Smithery must touch a road");
             if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");

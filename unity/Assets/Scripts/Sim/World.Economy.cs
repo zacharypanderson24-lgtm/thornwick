@@ -46,6 +46,7 @@ namespace CrownAndHearth.Sim
             got[Res.Food] = food;
             StepCrews(got);
             food = got[Res.Food] + StepFishing();   // World.Fishing.cs: fish joins the food stock as fresh meat
+            StepVessels();   // World.Vessels.cs: boatyard work, wear, repair, assignment
             StepBoats();   // World.Boats.cs: fishing boats sail from the docks
             StepFerryRoutes();   // World.FerryRoutes.cs: crowded-ferry warnings
             StepFolk();

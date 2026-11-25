@@ -42,7 +42,10 @@ namespace CrownAndHearth.Sim
         /// <summary>Land caravans out (they use a market's place) and ships out (they use a port's).</summary>
         public int LandCaravansOut => Caravans.Count(c => c.Kind != CaravanKind.Gift && c.Mode == TradeMode.Overland);
         public int ShipsOut => Caravans.Count(c => c.Kind != CaravanKind.Gift && c.Mode != TradeMode.Overland);
-        public int ShipCapacity => Blds.Count(b => b.T == "port" && b.Served) * ShipsPerPort;
+        public int ShipCapacity => Blds.Count(b => b.T == "port" && b.Served && PortRuns(b)) * ShipsPerPort;
+        /// <summary>A port works when a cargo barge is assigned to it and in service and it has a harbour crew (old saves have a grace period for the crew).</summary>
+        public bool PortRuns(Building port) { var v = VesselOfPort(port); return v != null && InService(v) && (port.Workers >= PortCrew || Day < LegacyGraceUntil); }
+        public string PortStatus(Building port) => !port.Served ? "No road to the Town Hall" : VesselOfPort(port) == null ? "No cargo barge assigned (order one at a Boatyard)" : !InService(VesselOfPort(port)) ? "Its cargo barge is worn out: a Boatyard must repair it" : port.Workers < PortCrew && Day >= LegacyGraceUntil ? "Waiting for a harbour crew" : "Operational";
         public int CaravanCapacity => Markets;
 
         /// <summary>The length of the water route (km) from your region to a settlement, and why not when there is none.</summary>
@@ -76,6 +79,7 @@ namespace CrownAndHearth.Sim
             if (seaFree) return new TradePlan { Ok = true, Mode = sea.mode, Days = seaDays, RouteKm = sea.km };
             // nothing can set out: say why in terms of what the player can do
             if (Markets == 0 && Ports == 0) return TradePlan.No("Build a Market (Trade, 7) beside a road, or a Port on the water: caravans and ships set out from them");
+            if (Markets == 0 && sea.ok && ShipCapacity == 0) return TradePlan.No("Your port is not working yet: it needs a cargo barge in service and a harbour crew (see its panel). Or build a Market for an overland caravan");
             if (Markets == 0) return sea.ok ? TradePlan.No($"All {ShipCapacity} of your ships are at sea. Build another Port, or a Market for an overland caravan") : TradePlan.No($"You have no Market for an overland caravan, and a ship cannot reach {s.Name}: {sea.why}");
             if (sea.ok && ShipCapacity > 0) return TradePlan.No($"Your {(Markets == 1 ? "market's caravan is" : $"{Markets} markets' caravans are")} on the road and {(ShipCapacity == 1 ? "your ship is" : $"all {ShipCapacity} ships are")} at sea");
             return TradePlan.No(Markets == 1 ? "Your market's caravan is already on the road. Build another market for a second caravan." : $"All {Markets} of your markets' caravans are on the road");

@@ -40,7 +40,7 @@ namespace CrownAndHearth.Tests
             w.SetAtlas(FakeAtlas()); w.HomeCellX = homeX; w.HomeCellY = homeY;
             w.SetSettlements(new[] { Place(0, "Nearby", 11, 120), Place(1, "Faraway", 11, 199), Place(2, "Inland", 100, 100), Place(3, "OtherSea", 52, 12), Place(4, "Lakeside", 31, 66) });
             if (market) { var m = w.AddBld("market", C + 10, C + 10); m.Served = true; }
-            if (port) { var p = PlacePort(w); p.Served = true; }
+            if (port) { var p = PlacePort(w); p.Served = true; p.Workers = World.PortCrew; w.Vessels.Add(new Vessel { Id = 1, Type = VesselType.CargoBarge, Kind = AssignKind.Port, Key = World.Tk(p.X, p.Y) }); }
             return w;
         }
 
@@ -183,7 +183,7 @@ namespace CrownAndHearth.Tests
                     var la = w.LaunchTile(sb).Value; var lb = w.LaunchTile(tb).Value;
                     var cls = w.Waters.Class[la.y * N + la.x]; bool big = !World.Freezes(cls);
                     if (big != wantBigWater) continue;
-                    a = w.AddBld("ferry", s.x, s.y); b = w.AddBld("ferry", t.x, t.y); w.ResAmt[Res.Gold] = 500; Assert.IsTrue(w.EstablishRoute(a, b).Ok); w.FerryRoutes[0].GraceUntil = int.MaxValue; return w;   // a crewed route
+                    a = w.AddBld("ferry", s.x, s.y); b = w.AddBld("ferry", t.x, t.y); w.ResAmt[Res.Gold] = 500; Assert.IsTrue(w.EstablishRoute(a, b).Ok); w.FerryRoutes[0].GraceUntil = int.MaxValue; w.Vessels.Add(new Vessel { Id = 1, Type = VesselType.FerryBoat, Kind = AssignKind.FerryRoute, Key = w.FerryRoutes[0].Id }); return w;   // a crewed route with its ferry boat
                 }
             }
             Assert.Ignore("no suitable ferry crossing on this map"); return w;
