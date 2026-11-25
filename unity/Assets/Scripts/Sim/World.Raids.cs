@@ -58,6 +58,7 @@ namespace CrownAndHearth.Sim
         public int Band, Defenders, Killed, Escaped, SoldiersLost, StartDay, PeasantsLost;
         public readonly HashSet<string> Tools = new HashSet<string>();   // what the residents fought with
         public string From = "";
+        public bool ByShip; public int ShipX, ShipY;   // a longship raid: where the ship lies (World.Moats.cs)
         public RaiderCamp Camp;   // the camp the band came from (null when no camps are set)
         public bool Over, StartAnnounced, EndAnnounced, Alarm;   // Once raised, all garrisons respond for the rest of the raid.
         /// <summary>The raiders are your own workers risen against you (World.Uprising.cs).</summary>
@@ -199,6 +200,13 @@ namespace CrownAndHearth.Sim
                 if (ParcelClaimed(px, py)) { minX = Math.Min(minX, px * ParcelSize); maxX = Math.Max(maxX, (px + 1) * ParcelSize - 1); minY = Math.Min(minY, py * ParcelSize); maxY = Math.Max(maxY, (py + 1) * ParcelSize - 1); }
             if (minX > maxX) { minX = minY = Start; maxX = maxY = Start; }
             int mid = Start + (int)Math.Floor((Noise.Hash2(Day, Seed, 92) - 0.5) * 24);   // where along the edge they come
+            var landing = RaidByShip() ? LongshipLanding() : null;
+            if (landing.HasValue)
+            {
+                var lw = Waters.BodyAt(landing.Value.ship_x, landing.Value.ship_y);
+                r.From = lw != null && (lw.Kind == WaterClass.Ocean || lw.Kind == WaterClass.Sea || lw.Kind == WaterClass.Estuary) ? "sea" : "river";
+                r.ByShip = true; r.ShipX = landing.Value.ship_x; r.ShipY = landing.Value.ship_y;
+            }
             for (int i = 0; i < raiders; i++)
             {
                 int along = Math.Clamp(mid + (i % 5) * 2 - 4, 1, N - 2);
@@ -210,6 +218,7 @@ namespace CrownAndHearth.Sim
                     case 2: x = along; y = Math.Min(N - 2, maxY + 3); break;
                     default: x = Math.Max(1, minX - 3); y = along; break;
                 }
+                if (landing.HasValue) { x = landing.Value.x + i % 3 - 1; y = landing.Value.y + (i / 3) % 3 - 1; }   // landed from the longship
                 var (sx, sy) = NearestOpen(x, y);
                 r.Raiders.Add(new Raider { Id = i, Delay = i / 3, X = sx, Y = sy, Px = sx, Py = sy, St = RaiderState.Waiting });
             }

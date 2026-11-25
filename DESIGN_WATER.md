@@ -89,6 +89,11 @@ New files: `Sim/SurfaceWater.cs` (data model, saving), `Sim/Hydrology.cs` (gener
 - Not built: cargo barges hauling goods or logs between your own buildings, river trade with specific settlements by their water connection, port upkeep, shipyards, warships.
 - Art still needed: a proper ferry landing and port (placeholders: the dock with a post and flag, and the storehouse with a pier), a ferry boat.
 
+**Moats and longships (PR 9, section 24):**
+- **Moat** (Military menu): a water-filled ditch dug from fresh water: press on the bank of a river, lake or pond (or the end of a moat) and drag in a straight line; dig the next stretch from its end to bend it round the town. Up to 24 tiles at a time, 3 wood a tile, on gently sloping ground (spread 1 or less). A moat is a wall to everyone, raiders included (`IsSolid`), except where a road crosses it: a road laid across a moat is a **causeway**, the one way over and the place to defend. Buildings and zones keep off a moat; Clear removes a tile (the causeway road stays). Moats are saved as a tile list.
+- **Longship raids:** a town with a beach (dry ground beside the sea or a major river that runs off the map, 10 to 100 tiles from the Town Hall, the nearest to it) can be raided from the water: about two raids in five arrive by longship and land there instead of walking in from the map edge. A boat sprite lies at the landing for the raid (placeholder art). Dry worlds and towns with no such shore are unaffected.
+- Not built: drawbridges that can be raised, dry ditches, sea walls, coastal towers, harbour chains, siege crossing rules, longships that fight at sea.
+
 **Known gaps in PR 1 (all planned):** nothing draws the water yet; buildings and walkers still ignore it (`IsSolid`/`WalkCost` hooks are PR 2); no new-world menu entry; river deltas are simple distributaries; wetlands are saturated land, not yet slowing movement; groundwater (wells) ignores surface water.
 
 ---

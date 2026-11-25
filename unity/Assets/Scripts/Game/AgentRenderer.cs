@@ -117,6 +117,7 @@ namespace CrownAndHearth.Game
         void DrawBattle(World w, RaidReport raid, int rot, float frac)
         {
             _spread.Reset();
+            if (raid.ByShip && !raid.Over) Put(w, rot, BoatArt.Get(2, w.Day % 2), raid.ShipX, raid.ShipY, raid.ShipX, raid.ShipY, 0, 0, 1);   // the longship lies at the landing (placeholder: the fishing boat)
             foreach (var a in raid.Raiders)
             {
                 if (a.St == RaiderState.Waiting || a.St == RaiderState.Gone) continue;

@@ -146,9 +146,9 @@ namespace CrownAndHearth.Game
                     for (int vx = win.xMin; vx < win.xMax; vx++)
                     {
                         var wt = IsoView.FromView(vx, vy, rot); int x = wt.x, y = wt.y;
-                        bool canal = w.IsCanal(x, y);
-                        if (!w.InPlay(x, y) || ((!sw.IsWater(x, y) || w.StreamDry(x, y)) && !canal)) continue;
-                        int cell = canal ? StillShallow : CellFor(sw, x, y, rot);
+                        bool canal = w.IsCanal(x, y), moat = w.IsMoat(x, y);
+                        if (!w.InPlay(x, y) || ((!sw.IsWater(x, y) || w.StreamDry(x, y)) && !canal && !moat)) continue;
+                        int cell = moat ? StillDeep : canal ? StillShallow : CellFor(sw, x, y, rot);
                         int i0 = _v.Count;
                         _v.Add(IsoView.VertexPos(vx, vy, IsoView.VhView(w, vx, vy, rot)));
                         _v.Add(IsoView.VertexPos(vx + 1, vy, IsoView.VhView(w, vx + 1, vy, rot)));
@@ -162,7 +162,7 @@ namespace CrownAndHearth.Game
                         if (w.IceBears(x, y)) col = new Color32((byte)(shade * 0.86f), (byte)(shade * 0.95f), shade, 255);   // frozen: pale blue-white
                         _c.Add(col); _c.Add(col); _c.Add(col); _c.Add(col);
                         _t.Add(i0); _t.Add(i0 + 1); _t.Add(i0 + 2); _t.Add(i0); _t.Add(i0 + 2); _t.Add(i0 + 3);
-                        if (w.IsBridge(x, y)) AddDeck(w, x, y, rot, i0, col);
+                        if (w.IsBridge(x, y) || (moat && w.Grid[y, x]?.T == "road")) AddDeck(w, x, y, rot, i0, col);
                     }
             }
             _mesh.Clear();
