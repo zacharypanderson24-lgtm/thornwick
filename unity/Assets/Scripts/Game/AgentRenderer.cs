@@ -52,6 +52,13 @@ namespace CrownAndHearth.Game
                         Put(w, rot, _battle.Pose(actor, pose, facing, w.Day, frac, i), a.Px, a.Py, a.X, a.Y, frac, Jitter(i), 0);
                     }
                 }
+                foreach (var bt in w.Boats)   // fishing boats on the water (World.Boats.cs)
+                {
+                    int bdx = bt.X - bt.Px, bdy = bt.Y - bt.Py;
+                    if (bdx == 0 && bdy == 0 && bt.Path.Count > 1) { int ni = Mathf.Min(bt.Path.Count - 1, bt.I + 1); bdx = bt.Path[ni] % N - bt.X; bdy = bt.Path[ni] / N - bt.Y; }
+                    int bf = Facing(rot, bdx == 0 && bdy == 0 ? 1 : bdx, bdx == 0 && bdy == 0 ? 0 : bdy);
+                    Put(w, rot, BoatArt.Get(bf, (w.Day + bt.Id) % 2), bt.Px, bt.Py, bt.X, bt.Y, frac, 0, 1);
+                }
                 foreach (var v in w.Folk)
                 {
                     if (v.St == FolkState.Home || (v.St == FolkState.Shelter && v.X == v.Px && v.Y == v.Py)) continue;   // at home, or hiding in the Town Hall

@@ -18,6 +18,7 @@ namespace CrownAndHearth.EditorTools
             var art = new ArtLibrary();
             Shot(dir, "valley", WaterPreset.RiverValley, 1, c => SurfaceWater.River(c) && true, 4, mat, art, 2f);
             Shot(dir, "bridge", WaterPreset.RiverValley, 1, c => SurfaceWater.River(c), 4, mat, art, 3f);
+            Shot(dir, "boats", WaterPreset.Lakeside, 1, c => c == WaterClass.Lake, 1, mat, art, 3f);
             Shot(dir, "coast", WaterPreset.Coastal, 1, c => c == WaterClass.Ocean, 1, mat, art, 2f);
             Shot(dir, "lake", WaterPreset.Lakeside, 1, c => c == WaterClass.Lake, 1, mat, art, 2f);
             Shot(dir, "island", WaterPreset.Island, 2, c => c == WaterClass.Ocean, 1, mat, art, 1f);
@@ -55,12 +56,21 @@ namespace CrownAndHearth.EditorTools
                     }
                 for (int y = by - 6; y < by + 6; y++) for (int x = bx - 6; x < bx + 6; x++) if (w.CanPlace("fisher", x, y).Ok && w.Place("fisher", x, y).Ok) { y = by + 6; break; }
             }
+            if (name == "boats")
+            {
+                // a fishing dock on the lake shore with its boats a few days out
+                w.ResAmt[Res.Wood] = 5000; w.ResAmt[Res.Stone] = 500;
+                for (int y = by - 8; y < by + 8; y++) for (int x = bx - 8; x < bx + 8; x++)
+                    if (w.Waters.Class[y * Defs.N + x] == WaterClass.None && w.CanPlace("dock", x, y).Ok) { var d = w.AddBld("dock", x, y); d.Served = true; d.Workers = 3; bx = x; by = y; y = by + 9; break; }
+                foreach (var dock in w.Blds) if (dock.T == "dock") for (int day = 0; day < 9; day++) { dock.Served = true; dock.Workers = 3; w.StepBoats(); w.Day++; }
+            }
             var root = new GameObject("shot");
             var cam = new GameObject("cam", typeof(Camera)).GetComponent<Camera>(); cam.transform.SetParent(root.transform);
             cam.orthographic = true; cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(0.1f, 0.1f, 0.12f); cam.nearClipPlane = -50; cam.farClipPlane = 50;
             var g = new GameObject("g", typeof(MeshFilter), typeof(MeshRenderer), typeof(GroundRenderer)).GetComponent<GroundRenderer>(); g.transform.SetParent(root.transform); g.Init(mat, art.GroundAtlas);
             var wr = new GameObject("w", typeof(MeshFilter), typeof(MeshRenderer), typeof(WaterRenderer)).GetComponent<WaterRenderer>(); wr.transform.SetParent(root.transform); wr.Init(mat);
             var o = new GameObject("o", typeof(ObjectRenderer)).GetComponent<ObjectRenderer>(); o.transform.SetParent(root.transform); o.Init(art, mat);
+            var ag = new GameObject("a", typeof(AgentRenderer)).GetComponent<AgentRenderer>(); ag.transform.SetParent(root.transform); ag.Init(mat);
             const int W = 1280, H = 720;
             var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32); cam.targetTexture = rt;
             cam.orthographicSize = H / 2f / (32f * zoom);
@@ -70,7 +80,7 @@ namespace CrownAndHearth.EditorTools
                     var center = IsoView.TileCenter(w, bx, by, rot); cam.transform.position = new Vector3(center.x, center.y, -10);
                     var half = new Vector2(H / 2f * 16f / 9f / (32f * zoom), H / 2f / (32f * zoom));
                     var win = IsoView.TileWindow(new Rect(center.x - half.x * 1.5f, center.y - half.y * 1.5f, half.x * 3, half.y * 3));
-                    g.Build(w, rot, win); wr.Build(w, rot, win); o.Build(w, rot, win); wr.SetTick(tick * 3);
+                    g.Build(w, rot, win); wr.Build(w, rot, win); o.Build(w, rot, win); wr.SetTick(tick * 3); ag.Draw(w, rot, 0.5f, false);
                     cam.Render();
                     RenderTexture.active = rt; var tex = new Texture2D(W, H, TextureFormat.RGB24, false); tex.ReadPixels(new Rect(0, 0, W, H), 0, 0); tex.Apply(); RenderTexture.active = null;
                     File.WriteAllBytes(Path.Combine(dir, $"{name}_rot{rot}{(tick > 0 ? "_t" + tick : "")}.png"), tex.EncodeToPNG()); Object.DestroyImmediate(tex);
