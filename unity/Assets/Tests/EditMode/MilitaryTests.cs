@@ -18,7 +18,7 @@ namespace CrownAndHearth.Tests
         }
 
         /// <summary>A town with a barracks and a muster ground and this many peasants (set directly, so no tick trims them to the housing cap).</summary>
-        static World Town(int peasants = 30)
+        public static World Town(int peasants = 30)
         {
             var w = new World(7);
             foreach (var r in Enum.GetValues(typeof(Res)).Cast<Res>()) w.ResAmt[r] = 500;

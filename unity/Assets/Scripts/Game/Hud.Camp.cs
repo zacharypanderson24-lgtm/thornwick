@@ -326,7 +326,7 @@ namespace CrownAndHearth.Game
         }
 
         /// <summary>Esc: close the camp screen first (not during a fight), otherwise the map.</summary>
-        public void EscapePanels() { if (MilitaryOpen) ShowTownMenu(TownMenu.Closed); else if (_campOpen) CloseCamp(); else if (SettlementOpen) CloseSettlement(); else CloseMap(); }
+        public void EscapePanels() { if (MilitaryOpen) { if (!MilCloseDialog()) ShowTownMenu(TownMenu.Closed); } else if (_campOpen) CloseCamp(); else if (SettlementOpen) CloseSettlement(); else CloseMap(); }
 
         // ---------- planning ----------
         BattleGroup SelectedGroup => _campSelected.HasValue ? _campGroups.FirstOrDefault(g => g.X == _campSelected.Value.x && g.Y == _campSelected.Value.y) : null;

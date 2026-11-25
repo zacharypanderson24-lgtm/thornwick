@@ -142,6 +142,7 @@ namespace CrownAndHearth.Game
                 _townPanels[i].gameObject.SetActive(selected);
                 _townButtons[i].color = selected ? BtnOn : Btn;
             }
+            MilCloseDialog();
             if (menu == TownMenu.Troops) { _townPanels[2].SetAsLastSibling(); _tip.SetAsLastSibling(); _cursorTip.SetAsLastSibling(); _milStamp = -1; }   // a big panel like the world map: above the bars
             _historyVersion = -1;
         }

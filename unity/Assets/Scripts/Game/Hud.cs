@@ -330,6 +330,7 @@ namespace CrownAndHearth.Game
         void ShowTip(bool on, RectTransform over, string title, string body, string foot)
         {
             if (_tip == null) return;   // hiding the trays while the bar is still being built
+            _tip.pivot = Vector2.zero;
             _tip.gameObject.SetActive(on);
             if (!on) return;
             _tipTitle.text = title; _tipBody.text = body;
