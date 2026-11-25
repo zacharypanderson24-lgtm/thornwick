@@ -26,9 +26,9 @@ namespace CrownAndHearth.Game
 
         void BuildTownMenus(RectTransform root, RectTransform toolbar)
         {
-            string[] titles = { "Farming", "Mining", "Troops", "Statistics", "Livestock" };
-            int[] widths = { 440, 392, 440, 446, 436 };
-            int[] heights = { 356, 208, 330, 396, 309 };
+            string[] titles = { "Farming", "Mining", "Military", "Statistics", "Livestock" };
+            int[] widths = { 440, 392, 668, 446, 436 };
+            int[] heights = { 356, 208, 480, 396, 309 };
             for (int i = 0; i < titles.Length; i++)
             {
                 var menu = (TownMenu)(i + 1);
@@ -41,7 +41,7 @@ namespace CrownAndHearth.Game
             }
             BuildFarming(_townPanels[0]);
             BuildMining(_townPanels[1]);
-            BuildTroops(_townPanels[2]);
+            BuildMilitary(_townPanels[2]);
             BuildStatistics(_townPanels[3]);
             BuildLivestock(_townPanels[4]);
             ShowTownMenu(TownMenu.Closed);
@@ -86,37 +86,6 @@ namespace CrownAndHearth.Game
                 () => { if (_menuWorld != null) _menuWorld.SetMineSupportsRequired(!_menuWorld.RequireMineSupports); });
             _supportsLabel = _supportsButton.GetComponentInChildren<Text>();
             PanelLabel(panel, "SafetyHelp", "With supports required, miners wait for timber props (2 wood a tunnel tile) before they dig on or take ore from an unshored tunnel. Without them they work faster but risk cave-ins.", 14, 106, 192);
-        }
-
-        Text _troopCounts, _troopMix, _troopCosts, _troopNote;
-        UnityEngine.UI.Slider _troopSlider;
-        UnityEngine.UI.Image _draftButton, _gatesButton;
-        UnityEngine.UI.Image _militiaButton;
-
-        void BuildTroops(RectTransform panel)
-        {
-            _troopCounts = PanelLabel(panel, "TroopCounts", "", 14, 40, 96);   // three lines: at home, bunks, away
-            _troopMix = PanelLabel(panel, "TroopMix", "", 17, 98, 124);
-            var track = MakePanel(panel, "ArcherPercent", Vector2.up, Vector2.one, new Vector2(20, -149), new Vector2(-20, -132));
-            track.GetComponent<UnityEngine.UI.Image>().color = Btn;
-            var knob = MakePanel(track, "Handle", Vector2.zero, Vector2.up, new Vector2(-7, -5), new Vector2(7, 5));
-            var knobImage = knob.GetComponent<UnityEngine.UI.Image>();
-            knobImage.color = BtnOn;
-            _troopSlider = track.gameObject.AddComponent<UnityEngine.UI.Slider>();
-            _troopSlider.targetGraphic = knobImage;
-            _troopSlider.handleRect = knob;
-            _troopSlider.maxValue = 100;
-            _troopSlider.wholeNumbers = true;
-            _troopSlider.onValueChanged.AddListener(value => _menuWorld?.SetArcherPercent((int)value));
-            _draftButton = MakeButton(panel, "", Vector2.up, new Vector2(82, -178), new Vector2(136, 30),
-                () => { if (_menuWorld != null) { _menuWorld.Drafting = !_menuWorld.Drafting; } });
-            _militiaButton = MakeButton(panel, "", Vector2.up, new Vector2(225, -178), new Vector2(136, 30),
-                () => { if (_menuWorld != null) { _menuWorld.MilitiaFights = !_menuWorld.MilitiaFights; } });
-            // keep every gate in the palisade shut, raid or not (they shut by themselves while raiders are about)
-            _gatesButton = MakeButton(panel, "", Vector2.up, new Vector2(368, -178), new Vector2(136, 30),
-                () => { if (_menuWorld != null) { _menuWorld.KeepGatesShut = !_menuWorld.KeepGatesShut; } });
-            _troopCosts = PanelLabel(panel, "TroopCosts", "", 14, 198, 272);
-            _troopNote = PanelLabel(panel, "TroopNote", "", 14, 276, 324);
         }
 
         void BuildStatistics(RectTransform panel)
@@ -173,6 +142,7 @@ namespace CrownAndHearth.Game
                 _townPanels[i].gameObject.SetActive(selected);
                 _townButtons[i].color = selected ? BtnOn : Btn;
             }
+            if (menu == TownMenu.Troops) { _townPanels[2].SetAsLastSibling(); _tip.SetAsLastSibling(); _cursorTip.SetAsLastSibling(); _milStamp = -1; }   // a big panel like the world map: above the bars
             _historyVersion = -1;
         }
 
@@ -217,7 +187,7 @@ namespace CrownAndHearth.Game
                     _supportsLabel.text = world.RequireMineSupports ? "Require supports: On" : "Require supports: Off";
                     break;
                 case TownMenu.Troops:
-                    RefreshTroops(world);
+                    RefreshMilitary(world);
                     break;
                 case TownMenu.Statistics:
                     RefreshStatistics(world);
@@ -226,28 +196,6 @@ namespace CrownAndHearth.Game
                     RefreshLivestock(world);
                     break;
             }
-        }
-
-        void RefreshTroops(World world)
-        {
-            // where every soldier is: at home, coming home (they keep their bunk), holding settlements or marching to them; all draw wages
-            int coming = world.TroopsReturning, held = world.TroopsStationed;
-            _troopCounts.text = $"At home: infantry {world.Infantry}   |   archers {world.Archers}\nBunks {world.Soldiers + coming}/{world.D.Bunks} · peasants {world.Peasants}" +
-                (coming + held > 0 ? $"\nAway: {coming} coming home · {held} holding settlements or marching to them" : "");
-            _troopSlider.SetValueWithoutNotify(world.ArcherPercent);
-            _troopMix.text = $"New recruits: Infantry {100 - world.ArcherPercent}%   |   Archers {world.ArcherPercent}%";
-            _draftButton.color = world.Drafting ? BtnOn : Btn;
-            _draftButton.GetComponentInChildren<Text>().text = world.Drafting ? "Training: On" : "Training: Off";
-            _gatesButton.color = world.KeepGatesShut ? BtnOn : Btn;
-            _gatesButton.GetComponentInChildren<Text>().text = world.KeepGatesShut ? "Gates: kept shut" : "Gates: open";
-            _militiaButton.color = world.MilitiaFights ? BtnOn : Btn;
-            _militiaButton.GetComponentInChildren<Text>().text = world.MilitiaFights ? "Militia: On" : "Militia: Off";
-            string Cost(Troop t) { var parts = new System.Collections.Generic.List<string>(); foreach (var (res, amount) in World.TrainCost(t)) parts.Add($"{amount} {res.ToString().ToLower()}"); return string.Join(", ", parts); }
-            _troopCosts.text = $"Infantry: {Cost(Troop.Infantry)}. Sword and mail.\nArchers: {Cost(Troop.Archer)}. Bow and string.\nOne recruit per barracks every {World.TrainDays} days; each soldier eats half as much again at home and costs 0.1 gold a day wherever he is.";
-            int barracks = 0; foreach (var b in world.Blds) if (b.T == "barracks" && b.Served) barracks++;
-            _troopNote.text = barracks == 0 ? "Build a Barracks (Military, 8) beside a road to train troops."
-                : world.Soldiers >= world.D.Bunks ? "Bunks are full: more barracks or the Town Hall hold more."
-                : world.CanAfford(world.NextRecruit) ? $"Next recruit: {World.TroopName(world.NextRecruit)}." : $"Next recruit: {World.TroopName(world.NextRecruit)} (waiting for materials).";
         }
 
         void ChangeResource(int direction)

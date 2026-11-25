@@ -35,7 +35,7 @@ namespace CrownAndHearth.Sim
                 // underground mining: what has been surveyed and taken (deposit sizes regenerate from the seed)
                 ["surveyed"] = new JArray(Enumerable.Range(0, N * N).Where(k => Surveyed[k])),
                 ["oreTaken"] = JObject.FromObject(OreTaken), ["minerDeaths"] = MinerDeaths, ["caveIns"] = CaveIns,
-                ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["archers"] = Archers, ["archerPercent"] = ArcherPercent, ["trained"] = Trained,
+                ["peasants"] = Peasants, ["soldiers"] = Soldiers, ["archers"] = Archers, ["trained"] = Trained, ["era"] = Era, ["military"] = Mil.Save(),
                 ["banner"] = BannerColor, ["popAcc"] = PopAcc, ["drafting"] = Drafting, ["militia"] = MilitiaFights, ["gatesShut"] = KeepGatesShut,
                 ["barrierDamage"] = new JObject(BarrierDamage.Where(kv => kv.Value > 0).Select(kv => new JProperty(kv.Key.ToString(), Math.Round(kv.Value, 2)))),   // World.Walls.cs
                 ["starving"] = Starving,
@@ -290,7 +290,9 @@ namespace CrownAndHearth.Sim
             world.Recalc();
             if (save.Value<bool?>("farmFields") != true) world.AddStarterFarmFields();
             if (save.Value<int?>("flaxPercent") is int mix) world.SetFlaxPercent(mix);
-            world.SetArcherPercent(save.Value<int?>("archerPercent") ?? 0);
+            world.Era = Math.Clamp(save.Value<int?>("era") ?? MilitaryConfig.CurrentEra, 1, 5);
+            world.Mil.Load(save["military"] as JObject);   // Military/MilitarySystem.Save.cs; saves without it get garrison companies made from their soldiers
+            world.Recalc();   // mobilised militia are off the job: the workforce must be worked out again
             world.LoadSettlements(save["settlements"] as JArray, save["caravans"] as JArray);
             world.LoadConquest(save["conquest"] as JObject);
             foreach (var p in (save["barrierDamage"] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>())   // World.Walls.cs; older saves have none

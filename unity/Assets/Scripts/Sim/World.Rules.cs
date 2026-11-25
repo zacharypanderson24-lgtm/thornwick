@@ -89,6 +89,7 @@ namespace CrownAndHearth.Sim
             if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
             if (type == "smithery" && !NextToRoad(fp)) return Result.No("Smithery must touch a road");
             if (type == "barracks" && !NextToRoad(fp)) return Result.No("Barracks must touch a road");
+            if (MilitaryBuildings.Get(type) is MilitaryBuildingDefinition mil && mil.Era > Era) return Result.No($"{mil.Name} needs a later era");
             if ((type == "storehouse" || type == "smokehouse" || type == "charcoal") && !NextToRoad(fp))
                 return Result.No($"{Names[type]} must touch a road");
             return CanAfford(type);
@@ -366,6 +367,7 @@ namespace CrownAndHearth.Sim
         /// <summary>Road connectivity, service, house levels and the workforce, recomputed from scratch. JS: recalc / auditCaches.</summary>
         public Derived Recalc()
         {
+            Mil.Reconcile();   // companies follow World.Soldiers / Peasants, whoever changed them (MilitarySystem.cs)
             var d = new Derived();
             var conn = d.Conn;
             bool IsRoad(int x, int y) => Inb(x, y) && Grid[y, x] != null && Grid[y, x].T == "road";
@@ -415,7 +417,8 @@ namespace CrownAndHearth.Sim
             jobs += keptPens.Count * KeepersPerPen;
 
             // Fill the jobs: villagers go to trades in priority order, and within a trade to the oldest buildings first.
-            int avail = Peasants;
+            int workforce = Mil.CivilianWorkforce;   // the mobilised militia have left their jobs; registered militia still work
+            int avail = workforce;
             foreach (var b in Blds) { b.Workers = 0; b.Eff = 0; }
             foreach (var p in _pens) p.Keepers = 0;
             foreach (var t in Prio)
@@ -437,8 +440,8 @@ namespace CrownAndHearth.Sim
                     }
                 d.Work[t] = (w, j, n, sh);
             }
-            d.Civ = civ; d.Bunks = bunks; d.Jobs = jobs; d.Idle = avail; d.Employed = Peasants - avail;
-            d.Ratio = jobs > 0 ? Math.Min(1, (double)Peasants / jobs) : 0;
+            d.Civ = civ; d.Bunks = bunks; d.Jobs = jobs; d.Idle = avail; d.Employed = workforce - avail;
+            d.Ratio = jobs > 0 ? Math.Min(1, (double)workforce / jobs) : 0;
             D = d;
             return d;
         }

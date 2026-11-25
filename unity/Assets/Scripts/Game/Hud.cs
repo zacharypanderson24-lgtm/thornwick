@@ -458,7 +458,7 @@ namespace CrownAndHearth.Game
             panel.gameObject.SetActive(false);
         }
 
-        public bool EditingBanner => _bannerInput != null && _bannerInput.isFocused;
+        public bool EditingBanner => (_bannerInput != null && _bannerInput.isFocused) || EditingMilitaryName;
 
         public void ShowBannerColor(string hex) => _bannerInput.SetTextWithoutNotify(hex ?? "#B3202A");
 

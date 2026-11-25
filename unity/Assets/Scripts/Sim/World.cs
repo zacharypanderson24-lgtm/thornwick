@@ -74,6 +74,7 @@ namespace CrownAndHearth.Sim
         World(int seed, bool createSettlement, TerrainStyle style = TerrainStyle.Ranges, Relief relief = Relief.Upland)
         {
             Seed = seed == 0 ? 7 : seed;
+            Mil = new MilitarySystem(this);
             Style = style; Relief = relief;
             if (!createSettlement) return;
             ClaimStartDistrict();   // a 64 x 64 owned district round the Town Hall (World.Claims.cs); a save brings its own

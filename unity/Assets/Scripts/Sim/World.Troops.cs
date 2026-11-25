@@ -1,6 +1,7 @@
-// Troops: the first two kinds, infantry and archers. Both are trained from peasants at a served Barracks, both live in bunks, eat half as
-// much again as a peasant and cost gold upkeep (World.Economy.cs). `Soldiers` stays the total, so older code and saves keep working; the
-// archers are counted separately and the rest are infantry. The Troops menu sets the share of archers among new recruits.
+// Troops: the two kinds of professional soldier so far, infantry (spearmen) and archers. `Soldiers` is the total of professionals and
+// `Archers` the archers among them, so the raid, camp and conquest code and old saves keep working. Soldiers are no longer made by barracks:
+// the military system (Military/MilitarySystem.cs) recruits them from the workforce into companies, houses them in barracks, and keeps its
+// companies in step with these two numbers. Each soldier eats half as much again as a peasant and costs gold upkeep (World.Economy.cs).
 using System;
 
 namespace CrownAndHearth.Sim
@@ -9,48 +10,21 @@ namespace CrownAndHearth.Sim
 
     public partial class World
     {
-        /// <summary>Days a barracks needs between two recruits.</summary>
-        public const int TrainDays = 4;
-
-        /// <summary>Whether working residents fight raiders with their trade tools (weakly, next to soldiers or alone). Set in the Troops menu.</summary>
+        /// <summary>Whether working residents fight raiders with their trade tools (weakly, next to soldiers or alone). Set in the Military menu.</summary>
         public bool MilitiaFights = true;
         public int Archers;
-        /// <summary>Share of new recruits that are archers, 0..100 (the rest are infantry).</summary>
-        public int ArcherPercent;
         public int Infantry => Soldiers - Archers;
+
+        /// <summary>The settlement's military: companies, registered and mobilised militia, professionals.</summary>
+        public MilitarySystem Mil { get; private set; }
+
+        /// <summary>The current era (1 to 5). There is no tech tree yet, so it starts at MilitaryConfig.CurrentEra; buildings and units carry their own era and are
+        /// refused until the settlement reaches it. Saved.</summary>
+        public int Era = MilitaryConfig.CurrentEra;
 
         public static string TroopName(Troop t) => t == Troop.Archer ? "Archer" : "Infantry";
 
-        /// <summary>What one recruit costs: infantry need iron for sword and mail, archers need timber for the bow and flax for the string.</summary>
-        public static (Res res, int amount)[] TrainCost(Troop t) => t == Troop.Archer
-            ? new[] { (Res.Wood, 3), (Res.Gold, 1), (Res.Flax, 1) }
-            : new[] { (Res.Wood, 2), (Res.Gold, 1), (Res.Ore, 1) };
-
-        public void SetArcherPercent(int percent)
-        {
-            int next = Math.Clamp(percent, 0, 100);
-            if (ArcherPercent == next) return;
-            ArcherPercent = next;
-            Touch();
-        }
-
-        /// <summary>The kind the next recruit will be: an archer whenever the archers are below their share of the army.</summary>
-        public Troop NextRecruit => Archers * 100 < ArcherPercent * (Soldiers + 1) ? Troop.Archer : Troop.Infantry;
-
-        public bool CanAfford(Troop t)
-        {
-            foreach (var (res, amount) in TrainCost(t)) if (ResAmt[res] < amount) return false;
-            return true;
-        }
-
-        void TrainOne(Troop t)
-        {
-            foreach (var (res, amount) in TrainCost(t)) ResAmt[res] -= amount;
-            Soldiers++; Peasants--; Trained++;
-            if (t == Troop.Archer) Archers++;
-        }
-
-        /// <summary>One soldier is lost (starvation, no bunk): from the bigger group, so the mix stays roughly as chosen.</summary>
+        /// <summary>One soldier is lost (starvation, casualties): from the bigger group, so the mix stays roughly as it was.</summary>
         void LoseSoldier()
         {
             if (Soldiers <= 0) return;

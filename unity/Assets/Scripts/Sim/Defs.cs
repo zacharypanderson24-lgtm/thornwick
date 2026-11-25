@@ -67,6 +67,7 @@ namespace CrownAndHearth.Sim
             { "well", new Dictionary<Res, int> { { Res.Wood, 5 }, { Res.Stone, 5 } } },
             { "cistern", new Dictionary<Res, int> { { Res.Wood, 10 }, { Res.Stone, 10 } } },
             { "barracks", new Dictionary<Res, int> { { Res.Wood, 20 }, { Res.Stone, 15 }, { Res.Gold, 20 } } },
+            { "muster", new Dictionary<Res, int> { { Res.Wood, 14 } } },   // see MilitaryBuildings (the military buildings' numbers live there)
         };
         public static readonly Dictionary<string, Dictionary<Res, int>> Cost2 = new Dictionary<string, Dictionary<Res, int>>
         {
@@ -86,7 +87,7 @@ namespace CrownAndHearth.Sim
             { "storehouse", "Storehouse" }, { "smokehouse", "Smokehouse" }, { "charcoal", "Charcoal Clamp" },
             { "road", "Dirt Road" }, { "tent", "Raider Tent" }, { "chieftent", "Warlord Tent" }, { "campfire", "Campfire" }, { "rack", "Weapon Rack" }, { "supplies", "Supply Pile" }, { "wall", "Palisade" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "quarry", "Quarry" },
             { "mine", "Iron Mine" }, { "market", "Market" }, { "sawmill", "Sawmill" }, { "smithery", "Smithery" }, { "forester", "Forester" }, { "well", "Well" },
-            { "barracks", "Barracks" }, { "watchtower", "Watchtower" }, { "hall", "Town Hall" }, { "silo", "Silo" }, { "cistern", "Cistern" },
+            { "barracks", "Barracks" }, { "muster", "Muster Ground" }, { "watchtower", "Watchtower" }, { "hall", "Town Hall" }, { "silo", "Silo" }, { "cistern", "Cistern" },
         };
 
         public static readonly Dictionary<string, int> Jobs = new Dictionary<string, int>
@@ -126,6 +127,6 @@ namespace CrownAndHearth.Sim
         public static readonly int[,] Nb = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
         public static int PlacementSize(string type) => type == "wood" || type == "mine" || type == "quarry" || type == "hunter" || type == "forester" || type == "sawmill" ? 2 : DefaultSize(type);
-        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "market" || type == "farm" || type == "smithery" || type == "storehouse" || type == "smokehouse") ? 2 : 1;
+        public static int DefaultSize(string type) => type == "hall" ? 3 : (type == "barracks" || type == "muster" || type == "market" || type == "farm" || type == "smithery" || type == "storehouse" || type == "smokehouse") ? 2 : 1;
     }
 }
