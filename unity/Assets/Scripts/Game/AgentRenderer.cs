@@ -117,10 +117,10 @@ namespace CrownAndHearth.Game
                 bool dead = a.St == RaiderState.Dead;
                 if (dead && w.Day - a.DeadDay > World.BodyDays) continue;
                 bool recoiling = a.Hurt && frac < 0.30f;
-                string pose = dead ? "fall" : recoiling ? "hurt" : a.Fighting ? "attack" : a.St == RaiderState.Loot ? "loot" :
+                string pose = dead ? "fall" : recoiling ? "hurt" : a.Fighting ? "attack" : a.St == RaiderState.Loot ? (a.Rebel ? "attack" : "loot") :
                     a.St == RaiderState.Flee ? (a.Carry > 0 ? "carry" : "run") : moving ? "walk" : "idle";
                 float phase = dead ? w.Day - a.DeadDay - 1 + frac : HitPhase(a.Hurt, frac);
-                Put(w, rot, _battle.Pose("raider", pose, facing, w.Day, phase, a.Id),
+                Put(w, rot, _battle.Pose(a.Rebel ? TradeSprite(a.Trade) ?? "raider" : "raider", pose, facing, w.Day, phase, a.Id),
                     dead ? x : px, dead ? y : py, x, y, frac, Jitter(a.Id), (a.Id * 7) % 3 - 1);
                 if (!dead) DrawBattleEffects(w, rot, px, py, x, y, frac, a.Hurt, pose == "run" || pose == "carry");
             }

@@ -184,6 +184,11 @@ namespace CrownAndHearth.Game
                 _hud.Toast(battle.Victory ? $"The {battle.Camp.Name} is destroyed." : $"The attack on the {battle.Camp.Name} is over.", 6);
             };
             _hud.LoadPicked += LoadSettlement;
+            _hud.FestivalPicked += () =>
+            {
+                var held = World.HoldFestival();
+                _hud.Toast(held.Ok ? "The town holds a festival. Spirits are high." : held.Reason, held.Ok ? 4f : 5f);
+            };
             _hud.IncidentChosen += choice =>
             {
                 var answer = World.ResolveIncident(choice);

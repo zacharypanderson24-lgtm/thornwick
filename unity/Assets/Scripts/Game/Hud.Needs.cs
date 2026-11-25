@@ -22,6 +22,7 @@ namespace CrownAndHearth.Game
         {
             public Text Amount, Alert;
             public Image Fill, Track;
+            public RectTransform Card;
         }
 
         void BuildStockpileDropdown(RectTransform row, string title, params (string label, Res resource)[] entries)
@@ -85,16 +86,17 @@ namespace CrownAndHearth.Game
         void BuildNeeds(RectTransform root)
         {
             var strip = MakePanel(root, "Needs", Vector2.zero, Vector2.right, Vector2.zero, new Vector2(0, NeedsH));
-            _foodMeter = BuildNeedMeter(strip, "Food", 0, 0.25f, WheatBar, w =>
+            _foodMeter = BuildNeedMeter(strip, "Food", 0, 0.2f, WheatBar, w =>
                 $"Stored {w.EdibleFoodStored:0.#} of {w.EdibleFoodCapacity:0.#} food units. " +
                 $"Fresh food: {w.ResAmt[Res.Food]:0.#}; smoked meat: {w.ResAmt[Res.SmokedMeat]:0.#}; " +
                 $"eggs: {w.ResAmt[Res.Eggs]:0.#} ({w.ResAmt[Res.Eggs] / World.EggsPerFood:0.#} food; each egg counts as {1.0 / World.EggsPerFood:0.##} food). " +
                 $"The town eats {w.DailyFoodDemand:0.#} per day. " +
                 (w.DailyFoodDemand > 0 ? $"Stored supplies cover about {w.EdibleFoodStored / w.DailyFoodDemand:0.#} days before new production or livestock feed. " : "") +
                 (w.RecentFoodProduction is double food ? $"Recent production averages {food:0.#} per day." : ""));
-            _workMeter = BuildNeedMeter(strip, "Work", 0.5f, 0.75f, WorkBar, w => w.WorkHealth().Detail);
-            _safetyMeter = BuildNeedMeter(strip, "Safety", 0.75f, 1, SafetyBar, w => w.SafetyHealth().Detail, false);
-            _waterMeter = BuildNeedMeter(strip, "Water", 0.25f, 0.5f, WaterBar, w =>
+            _workMeter = BuildNeedMeter(strip, "Work", 0.4f, 0.6f, WorkBar, w => w.WorkHealth().Detail);
+            _safetyMeter = BuildNeedMeter(strip, "Safety", 0.6f, 0.8f, SafetyBar, w => w.SafetyHealth().Detail, false);
+            BuildMood(strip);
+            _waterMeter = BuildNeedMeter(strip, "Water", 0.2f, 0.4f, WaterBar, w =>
             {
                 var plan = w.LastWater ?? _initialWater;
                 var storage = plan.StoreDays is double days ? $" Reserve lasts about {Math.Floor(days)} days at this rate." : "";
@@ -129,7 +131,7 @@ namespace CrownAndHearth.Game
             {
                 if (_world != null) ShowTip(on, card, title, on ? details(_world) : "", "");
             });
-            return new NeedMeter { Amount = amount, Alert = alert, Track = track.GetComponent<Image>(), Fill = fill.GetComponent<Image>() };
+            return new NeedMeter { Amount = amount, Alert = alert, Track = track.GetComponent<Image>(), Fill = fill.GetComponent<Image>(), Card = card };
         }
 
         void UpdateNeeds(World world)
@@ -151,6 +153,7 @@ namespace CrownAndHearth.Game
             SetNeedMeter(_workMeter, world.D.Employed, Math.Max(1, world.D.Jobs), WorkBar, work.Level == HealthLevel.Good ? "" : work.Warning, work.Value);
             var safety = world.SafetyHealth();
             SetNeedMeter(_safetyMeter, 0, 1, SafetyBar, safety.Level == HealthLevel.Good ? "" : safety.Warning, safety.Value);
+            UpdateMood(world);
         }
 
         static void SetNeedMeter(NeedMeter meter, double stored, double capacity, Color accent, string warning, string amount = null)
