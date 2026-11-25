@@ -50,8 +50,10 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "look", Cat = Cat.Inspect, Label = "Inspect", Desc = "Hover or click a tile to see what it is and what it needs." },
             new ToolDef { Id = "road", Cat = Cat.Roads, Label = "Dirt Road", Road = true,
                 Desc = "Press on a tile and drag: an L-shaped road follows the mouse and is built when you let go. Homes and work buildings need a road back to the Town Hall. Roads climb hills but not mountains, and cannot go through forest." },
-            new ToolDef { Id = "zoneRes", Cat = Cat.Housing, Label = "Housing Zone", Zone = Zone.Res,
-                Desc = "Drag over land to mark it for homes. Villagers build houses here by themselves, on tiles touching a connected road, when the town needs room." },
+            new ToolDef { Id = "zoneRes", Cat = Cat.Housing, Label = "Housing Zone, Level 1", Zone = Zone.Res,
+                Desc = $"Drag over land to mark it for cottages. Villagers build them here by themselves, on tiles touching a connected road, when the town needs room. A cottage costs {Cost["house"][Res.Wood]} wood and holds {HouseCap[1]} people." },
+            new ToolDef { Id = "zoneRes2", Cat = Cat.Housing, Label = "Housing Zone, Level 2", Zone = Zone.Res2,
+                Desc = $"Drag over land to mark it for stone houses. They grow the same way, but each costs {House2Cost[Res.Wood]} wood and {House2Cost[Res.Stone]} stone, and holds {HouseCap[2]} people. Growth waits when the town is short of stone." },
             new ToolDef { Id = "farmhouse", Cat = Cat.Farming, Label = "Farmhouse", Build = "farm",
                 Desc = $"Works the Farmland within {World.FarmReach} tiles (the shaded ring), nearest first. Each farmer sows, tends and reaps {World.FieldsPerFarmer} fields a year, enough to feed about 10 people; its jobs are how many farmers it can have. Needs a road to the Town Hall." },
             new ToolDef { Id = "zoneFarm", Cat = Cat.Farming, Label = "Farmland", Zone = Zone.Farm,
@@ -633,9 +635,9 @@ namespace CrownAndHearth.Game
             else
             {
                 msg = $"Zoned {zoned} tile{(zoned == 1 ? "" : "s")}." + (skipped > 0 ? $" {skipped} skipped: {why.TrimEnd('.')}." : "");
-                if (_tool.Zone == Zone.Res)
+                if (_tool.Zone == Zone.Res || _tool.Zone == Zone.Res2)
                 {
-                    int offRoad = fresh.Count(p => World.Grid[p.y, p.x] == null && World.ZoneMap[p.y, p.x] == Zone.Res && !World.BesideConnectedRoad(p.x, p.y));
+                    int offRoad = fresh.Count(p => World.Grid[p.y, p.x] == null && (World.ZoneMap[p.y, p.x] == Zone.Res || World.ZoneMap[p.y, p.x] == Zone.Res2) && !World.BesideConnectedRoad(p.x, p.y));
                     if (offRoad > 0) msg += $" {offRoad} do not touch a connected road, so homes will not grow there yet.";
                 }
             }
@@ -892,7 +894,7 @@ namespace CrownAndHearth.Game
 
         static string ZoneName(Zone z, bool flax = false) => z switch
         {
-            Zone.Res => "Housing", Zone.Farm => flax ? "Flax field" : "Wheat field", Zone.Wood => "Lumber", Zone.Mine => "Mining", Zone.Comm => "Commerce",
+            Zone.Res => "Housing (level 1)", Zone.Res2 => "Housing (level 2)", Zone.Farm => flax ? "Flax field" : "Wheat field", Zone.Wood => "Lumber", Zone.Mine => "Mining", Zone.Comm => "Commerce",
             Zone.Pigs => "Pig pen", Zone.Sheep => "Sheep pen", Zone.Chickens => "Chicken pen", _ => "No",
         };
 
@@ -990,7 +992,7 @@ namespace CrownAndHearth.Game
                         if (!r.Ok) { bad++; why ??= r.Reason; continue; }
                         if (World.Grid[y, x] != null) continue;   // a building already carrying this zone: nothing to do
                         ok++;
-                        if (_tool.Zone == Zone.Res && !World.BesideConnectedRoad(x, y)) offRoad++;
+                        if ((_tool.Zone == Zone.Res || _tool.Zone == Zone.Res2) && !World.BesideConnectedRoad(x, y)) offRoad++;
                     }
                 string alreadyNote = already > 0 ? $"{already} already {_tool.Label}" : null;
                 if (!_zoneAnchor.HasValue)
@@ -1153,10 +1155,11 @@ namespace CrownAndHearth.Game
             if (d == Deco.Sapling) lines.Add("It grows into a tree in three years.");
             if (z == Zone.Farm) lines.Add(flax ? "Produces flax." : "Produces food.");
             else if (z != Zone.None && !zoneHeading) lines.Add(ZoneName(z) + " zone");
-            if (z == Zone.Res && b == null)
+            if ((z == Zone.Res || z == Zone.Res2) && b == null)
                 lines.Add(!w.BesideConnectedRoad(x, y) ? "No home will grow here: it does not touch a road connected to the Town Hall."
                     : w.Dem[Zone.Res] > World.DemandThreshold ? "Homes are wanted: one should grow here soon."
                     : "Waiting: homes grow when the Homes meter (bottom bar) says homes are wanted.");
+            if (z == Zone.Res2 && b == null && w.Note.TryGetValue(Zone.Res2, out var stoneNote) && stoneNote.StartsWith("Waiting")) lines.Add(stoneNote);
             if (w.AquiferAt(x, y) is int aq && aq >= 0 && (b == null || b.T != "well")) lines.Add(AquiferLine(w.Aquifers[aq]) + " A well here could tap it.");
             lines.Add($"Tile {x},{y}   level {w.TileLevel(x, y):0.##}" + (w.Fert[y, x] ? "   fertile soil" : "") + (w.TileSpread(x, y) >= 3 ? "   too steep" : ""));
             return string.Join("\n", lines);

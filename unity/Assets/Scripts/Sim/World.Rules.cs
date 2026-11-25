@@ -399,8 +399,9 @@ namespace CrownAndHearth.Sim
             {
                 if (b.T == "house")
                 {
-                    // a served home is level 2 until it has been parched (World.Water.cs): it then holds half its people
-                    b.Lvl = b.Served && b.ShortDays < WaterTuning.Grace ? 2 : 1;
+                    // the Unity game: a house is the level it was built as (Tier), whatever the water (water is only needed to survive: a parched
+                    // home holds half its people, World.Water.cs). Classic keeps the browser's rule: level 2 while served and not parched.
+                    b.Lvl = SeasonalFarming ? b.Tier : b.Served && b.ShortDays < WaterTuning.Grace ? 2 : 1;
                     if (b.Served)
                     {
                         civ += b.Housing;

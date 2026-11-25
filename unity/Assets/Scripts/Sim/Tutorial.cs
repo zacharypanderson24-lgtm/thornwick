@@ -78,7 +78,7 @@ namespace CrownAndHearth.Sim
                     if (w.Grid[y, x] != null) continue;
                     switch (w.ZoneMap[y, x])
                     {
-                        case Zone.Res: if (w.BesideConnectedRoad(x, y)) n.ResByRoad++; break;
+                        case Zone.Res: case Zone.Res2: if (w.BesideConnectedRoad(x, y)) n.ResByRoad++; break;
                         case Zone.Farm: n.Farmland++; break;
                         case Zone.Wood: n.Lumber++; break;
                         case Zone.Comm: n.Comm++; break;
@@ -143,7 +143,7 @@ namespace CrownAndHearth.Sim
             new Step { Id = "year", Title = "Finish year one before growing again",
                 Body = "At the year boundary, check that hunting, woodcutting, sawing, quarrying and the iron mine are all connected. Keep at least 100 days of stored food for the next spring. The tested 18-field opening kept the original homes, all-wheat farming and no livestock or recruitment. Expand food and water before adding new homes next year.", Goal = "Reach year 2 with all five industries connected and 100 days of food", Done = (t,w) => w.Day > World.YearLength && IndustryReady(w) && w.EdibleFoodStored >= w.DailyFoodDemand * 100 },
             new Step { Id = "housing", Title = "Year two: expand with a food budget",
-                Tool = "zoneRes", Body = "Only now zone a few Housing tiles beside a connected road. Houses grow when wanted; do not paint a huge suburb. Each villager eats 1 food a day, 360 a year. One farmer can tend nine wheat plots: 3,600 food per full annual harvest, enough for 10 villagers. Scale farmed wheat and storage for the new mouths, and allow for animal feed and soldiers too.", Goal = "Press Next" },
+                Tool = "zoneRes", Body = "Only now zone a few Housing tiles beside a connected road: Level 1 grows cottages (10 wood, 4 people each), Level 2 grows stone houses (12 wood and 6 stone, 6 people each). Houses grow when wanted; do not paint a huge suburb. Each villager eats 1 food a day, 360 a year. One farmer can tend nine wheat plots: 3,600 food per full annual harvest, enough for 10 villagers. Scale farmed wheat and storage for the new mouths, and allow for animal feed and soldiers too.", Goal = "Press Next" },
             new Step { Id = "water", Title = "Before passing 24 people: more drinking water",
                 Tool = "well", Body = "The Town Hall's spring supplies 24 water/day and its cistern stores 150. This covers the opening village; a well is not your first food task. Before the town outgrows that spring, connect a well on a blue groundwater patch and inspect its recharge. Roads join wells and homes to one supply. After sustained shortages, people can die.", Goal = "Press Next" },
             new Step { Id = "defence", Title = "Fund troops before recruiting",

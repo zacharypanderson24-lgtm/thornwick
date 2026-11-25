@@ -10,7 +10,9 @@ namespace CrownAndHearth.Sim
         public int Sz = 1;        // footprint size (1, 2 or 3)
         public double Prog;       // forester planting / barracks training progress
         public bool Served;       // connected to the Town Hall by road
-        public int Lvl = 1;       // house level (2 when watered, World.Water.cs)
+        public int Lvl = 1;       // house level: Tier in the Unity game, the browser rule (served and watered) in Classic
+        /// <summary>The kind of house it was built as (1: cottage from a Level 1 housing zone, 2: stone house from a Level 2 zone). Saved; houses in older saves are tier 2.</summary>
+        public int Tier = 1;
         public int Var;           // hut look 1..8, sticky
         public int Face = -1;     // door direction (-1 = not decided yet)
         public bool Zoned;

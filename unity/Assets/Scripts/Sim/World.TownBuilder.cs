@@ -488,7 +488,7 @@ namespace CrownAndHearth.Sim
                 var b = Raise(plan, "house", FindLot(site, big ? 2 : 1, big ? In2 : In1), big ? 2 : 1);
                 if (b == null && big) { big = false; b = Raise(plan, "house", FindLot(site, 1, In1), 1); }
                 if (b == null) break;
-                b.Lvl = 2; plan.Homes++;
+                b.Lvl = 2; b.Tier = 2; plan.Homes++;
                 housed += (big ? HouseCap2 : HouseCap)[2];
             }
 

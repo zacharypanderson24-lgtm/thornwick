@@ -7,7 +7,7 @@ namespace CrownAndHearth.Sim
     public enum Deco : byte { None, Tree, Rock, Ore, Stump, Sapling }
 
     /// <summary>Painted zones (JS: S.zone[y][x]).</summary>
-    public enum Zone : byte { None, Res, Farm, Comm, Wood, Mine, Pigs, Sheep, Chickens }
+    public enum Zone : byte { None, Res, Farm, Comm, Wood, Mine, Pigs, Sheep, Chickens, Res2 }
 
     /// <summary>Resource keys (JS: S.res).</summary>
     public enum Res { Food, Wood, Logs, Stone, Ore, Gold, Flax, Metal, Charcoal, SmokedMeat, Wool, Eggs }
@@ -41,6 +41,9 @@ namespace CrownAndHearth.Sim
 
         public static readonly int[] HouseCap = { 0, 4, 6 };
         public static readonly int[] HouseCap2 = { 0, 14, 20 };
+
+        /// <summary>What a Level 2 house costs to grow (a Level 1 cottage costs Cost["house"], wood only). Zach's rule: the better house takes stone as well as wood.</summary>
+        public static readonly Dictionary<Res, int> House2Cost = new Dictionary<Res, int> { { Res.Wood, 12 }, { Res.Stone, 6 } };
 
         public static readonly Dictionary<string, Dictionary<Res, int>> Cost = new Dictionary<string, Dictionary<Res, int>>
         {
