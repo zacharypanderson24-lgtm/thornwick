@@ -32,7 +32,8 @@ namespace CrownAndHearth.Sim
             {
                 ["v"] = 1, ["v2"] = true, ["farmFields"] = true, ["unity"] = true, ["seed"] = Seed, ["day"] = Day,
                 ["style"] = SaveKey(Style), ["relief"] = SaveKey(Relief),
-                ["water"] = Waters == null ? JValue.CreateNull() : new JValue(Waters.Encode()),   // surface water (rivers, lakes, seas); absent in every older save
+                ["water"] = Waters == null ? JValue.CreateNull() : new JValue(Waters.Encode()),
+                ["fishStock"] = JObject.FromObject(FishStock.ToDictionary(kv => kv.Key.ToString(), kv => Math.Round(kv.Value, 4))),   // fish left in each water body (absent: untouched)   // surface water (rivers, lakes, seas); absent in every older save
                 // underground mining: what has been surveyed and taken (deposit sizes regenerate from the seed)
                 ["surveyed"] = new JArray(Enumerable.Range(0, N * N).Where(k => Surveyed[k])),
                 ["oreTaken"] = JObject.FromObject(OreTaken), ["minerDeaths"] = MinerDeaths, ["caveIns"] = CaveIns,
@@ -246,6 +247,8 @@ namespace CrownAndHearth.Sim
                 world.Waters = SurfaceWater.Decode(waterSave.Value<string>());
                 if (world.Waters.Size != N) { world.Waters = null; }
             }
+            if (world.Waters != null && save["fishStock"] is JObject fish)
+                foreach (var fp in fish.Properties()) if (int.TryParse(fp.Name, out int fid) && fid > 0 && fid <= world.Waters.Bodies.Count && fp.Value.Type == JTokenType.Float) world.FishStock[fid] = Math.Clamp(fp.Value.Value<double>(), 0.02, 1.0);
             world.GenDeposits(unityTerrain ? (style == TerrainStyle.Classic ? GenHeights(world.Seed) : GenRangeHeights(world.Seed, relief)) : world.Hv, false);
             if (save["surveyed"] is JArray surveyed)
                 foreach (var k in surveyed.Select(t => t.Value<int>()))

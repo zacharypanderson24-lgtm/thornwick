@@ -259,8 +259,9 @@ namespace CrownAndHearth.Sim
                         _sownFields[key] = IsFlaxField(key % N, key / N) ? -Day : Day;
                     else if (YearDay <= 180)
                     {
-                        if (PlantedFlax(key)) flax += FlaxYield;
-                        else wheat += WheatYield;
+                        double soil = MoistureYield(key % N, key / N);   // 1 on a dry-world map; on a water map the field's soil moisture
+                        if (PlantedFlax(key)) flax += FlaxYield * soil;
+                        else wheat += WheatYield * soil;
                         _sownFields[key] = 0;
                     }
                     else
@@ -311,9 +312,10 @@ namespace CrownAndHearth.Sim
                 if (date >= YearStart + 2 * SeasonLength) continue;
                 harvestSlots.TryGetValue((field.Value, date), out int used);
                 harvestSlots[(field.Value, date)] = used + 1;
-                if (cropFlax) flaxYield += FlaxYield;
+                double soilFactor = MoistureYield(field.Key % N, field.Key / N);
+                if (cropFlax) flaxYield += FlaxYield * soilFactor;
                 deliveries.TryGetValue(date, out double food);
-                deliveries[date] = food + (cropFlax ? 0 : WheatYield);
+                deliveries[date] = food + (cropFlax ? 0 : WheatYield * soilFactor);
             }
 
             double eat = DailyFoodDemand, stock = ResAmt[Res.Food], overflow = 0;

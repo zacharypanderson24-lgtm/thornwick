@@ -55,6 +55,7 @@ namespace CrownAndHearth.Sim
             { "wood", new Dictionary<Res, int> { { Res.Wood, 6 } } },
             { "hunter", new Dictionary<Res, int> { { Res.Wood, 8 } } },
             { "fisher", new Dictionary<Res, int> { { Res.Wood, 6 } } },
+            { "dock", new Dictionary<Res, int> { { Res.Wood, 14 }, { Res.Stone, 4 } } },
             { "quarry", new Dictionary<Res, int> { { Res.Wood, 10 } } },
             { "mine", new Dictionary<Res, int> { { Res.Wood, 12 } } },
             { "market", new Dictionary<Res, int> { { Res.Wood, 12 } } },
@@ -86,7 +87,7 @@ namespace CrownAndHearth.Sim
         public static readonly Dictionary<string, string> Names = new Dictionary<string, string>
         {
             { "storehouse", "Storehouse" }, { "smokehouse", "Smokehouse" }, { "charcoal", "Charcoal Clamp" },
-            { "road", "Dirt Road" }, { "tent", "Raider Tent" }, { "chieftent", "Warlord Tent" }, { "campfire", "Campfire" }, { "rack", "Weapon Rack" }, { "supplies", "Supply Pile" }, { "wall", "Palisade" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "fisher", "Fishing Hut" }, { "quarry", "Quarry" },
+            { "road", "Dirt Road" }, { "tent", "Raider Tent" }, { "chieftent", "Warlord Tent" }, { "campfire", "Campfire" }, { "rack", "Weapon Rack" }, { "supplies", "Supply Pile" }, { "wall", "Palisade" }, { "house", "Timber House" }, { "farm", "Farm" }, { "wood", "Woodcutter Lodge" }, { "hunter", "Hunting Lodge" }, { "fisher", "Fishing Hut" }, { "dock", "Fishing Dock" }, { "quarry", "Quarry" },
             { "mine", "Iron Mine" }, { "market", "Market" }, { "sawmill", "Sawmill" }, { "smithery", "Smithery" }, { "forester", "Forester" }, { "well", "Well" },
             { "barracks", "Barracks" }, { "muster", "Muster Ground" }, { "watchtower", "Watchtower" }, { "hall", "Town Hall" }, { "silo", "Silo" }, { "cistern", "Cistern" },
         };
@@ -94,13 +95,13 @@ namespace CrownAndHearth.Sim
         public static readonly Dictionary<string, int> Jobs = new Dictionary<string, int>
         {
             { "storehouse", 2 }, { "smokehouse", 2 }, { "charcoal", 2 },
-            { "farm", 4 }, { "wood", 3 }, { "hunter", 2 }, { "fisher", 2 }, { "quarry", 3 }, { "mine", 3 }, { "sawmill", 3 }, { "smithery", 3 }, { "forester", 2 },
+            { "farm", 4 }, { "wood", 3 }, { "hunter", 2 }, { "fisher", 2 }, { "dock", 3 }, { "quarry", 3 }, { "mine", 3 }, { "sawmill", 3 }, { "smithery", 3 }, { "forester", 2 },
         };
 
         public static readonly Dictionary<string, string> TradeOf = new Dictionary<string, string>
         {
             { "storehouse", "hauling" }, { "smokehouse", "preserving" }, { "charcoal", "charcoal" },
-            { "farm", "farming" }, { "hunter", "hunting" }, { "fisher", "fishing" }, { "wood", "timber" }, { "forester", "timber" }, { "sawmill", "woodwork" }, { "quarry", "quarrying" }, { "mine", "mining" }, { "smithery", "smithing" },
+            { "farm", "farming" }, { "hunter", "hunting" }, { "fisher", "fishing" }, { "dock", "fishing" }, { "wood", "timber" }, { "forester", "timber" }, { "sawmill", "woodwork" }, { "quarry", "quarrying" }, { "mine", "mining" }, { "smithery", "smithing" },
         };
         public static readonly string[] Trades = { "farming", "hunting", "timber", "woodwork", "quarrying", "mining", "smithing", "preserving", "charcoal", "hauling", "fishing" };
         public static readonly Dictionary<string, string> TradeNames = new Dictionary<string, string>

@@ -15,6 +15,7 @@ namespace CrownAndHearth.Game
 
         public Sprite Building(string kind, int view)
         {
+            if (kind == "dock") return Get("dock", view, 33, 30, DrawDock);
             if (kind == "fisher") return Get("fisher", view, 33, 56, c => { DrawShop(c, false, view); DrawFishRack(c); });
             if (kind != "storehouse" && kind != "smokehouse" && kind != "charcoal") return null;
             return Get(kind, view, kind == "storehouse" ? 65 : 33, 56, canvas =>
@@ -114,6 +115,18 @@ namespace CrownAndHearth.Game
             c.Line((2, 1), (2, 12), DarkWood); c.Line((11, 1), (11, 12), DarkWood); c.Line((1, 12), (12, 12), Oak);
             for (int x = 3; x <= 9; x += 3) { c.Line((x, 11), (x, 7), fish); c.Set(x, 6, fishDark); c.Set(x + 1, 9, fish); }
             c.Line((3, 3), (10, 5), Timber);
+        }
+
+        // a fishing dock: a plank pier running to the water on posts, with a barrel and a coil of net (placeholder art)
+        static void DrawDock(Pixels c)
+        {
+            var plank = Color(176, 130, 74); var plankDark = Color(120, 84, 46);
+            c.Quad((2, 10), (16, 2), (30, 10), (16, 18), plankDark);
+            c.Quad((3, 10), (16, 3), (29, 10), (16, 17), plank);
+            for (int i = -3; i <= 3; i++) c.Line((16 + i * 4 - 6, 9 + i * 2 - 3 + 6), (16 + i * 4 + 6, 9 + i * 2 - 3 - 6 + 6), plankDark);
+            foreach (var p in new[] { (3, 10), (16, 3), (29, 10), (16, 17) }) c.Line(p, (p.Item1, p.Item2 - 6), DarkWood);
+            c.Rect(13, 11, 4, 5, Timber); c.Line((13, 13), (16, 13), DarkWood);
+            c.Rect(20, 9, 5, 2, Straw);
         }
 
         static void DrawClamp(Pixels c)
