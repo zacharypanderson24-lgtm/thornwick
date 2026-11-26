@@ -8,6 +8,9 @@ namespace CrownAndHearth.Game.UI
 {
     public enum MenuId { Settlement, Population, Economy, Construction, Agriculture, Technology, Military, Transportation, Trade, Government, Diplomacy, World, Notifications, System }
 
+    /// <summary>The six groups the toolbar shows. Each holds one or more of the twelve menus; every menu stays reachable from its group and from its F-key.</summary>
+    public enum MenuGroup { Settlement, Economy, Government, Military, Technology, World }
+
     public sealed class MenuDef
     {
         public MenuId Id;
@@ -36,6 +39,37 @@ namespace CrownAndHearth.Game.UI
             new MenuDef { Id = MenuId.Diplomacy, Title = "Diplomacy", FunctionKey = 11, Blurb = "Relations with other peoples", LockedReason = w => "Diplomacy: no treaties or relations exist yet." },
             new MenuDef { Id = MenuId.World, Title = "World", FunctionKey = 12, Blurb = "The world map" },
         };
+
+        public static readonly IReadOnlyList<(MenuGroup Group, string Title, string Blurb, MenuId[] Members)> Groups = new List<(MenuGroup, string, string, MenuId[])>
+        {
+            (MenuGroup.Settlement, "Settlement", "People, food, mood, jobs and housing", new[] { MenuId.Settlement, MenuId.Population }),
+            (MenuGroup.Economy, "Economy", "Stockpiles, farming, construction, transport and trade", new[] { MenuId.Economy, MenuId.Agriculture, MenuId.Construction, MenuId.Transportation, MenuId.Trade }),
+            (MenuGroup.Government, "Government", "Your council: recruit, appoint and pay the people who help you rule", new[] { MenuId.Government }),
+            (MenuGroup.Military, "Military", "Troops, companies and orders", new[] { MenuId.Military }),
+            (MenuGroup.Technology, "Technology", "Research", new[] { MenuId.Technology }),
+            (MenuGroup.World, "World", "The world map and your relations with other peoples", new[] { MenuId.World, MenuId.Diplomacy }),
+        };
+
+        public static MenuGroup? GroupOf(MenuId id)
+        {
+            foreach (var g in Groups) if (System.Array.IndexOf(g.Members, id) >= 0) return g.Group;
+            return null;   // Messages and System sit outside the six
+        }
+
+        public static MenuId[] MembersOf(MenuGroup g) => Groups.First(x => x.Group == g).Members;
+        public static string GroupTitle(MenuGroup g) => Groups.First(x => x.Group == g).Title;
+
+        /// <summary>The menu a group button opens: the one used last in the group when it is available, else the first available member. Null when every member is locked.</summary>
+        public static MenuId? EntryOf(MenuGroup g, World w, MenuId? last = null)
+        {
+            var members = MembersOf(g);
+            if (last is MenuId l && System.Array.IndexOf(members, l) >= 0 && WhyLocked(l, w) == null) return l;
+            foreach (var m in members) if (WhyLocked(m, w) == null) return m;
+            return null;
+        }
+
+        /// <summary>Why a whole group cannot open: the reason of its first member when every member is locked, else null.</summary>
+        public static string WhyGroupLocked(MenuGroup g, World w) => EntryOf(g, w) == null ? WhyLocked(MembersOf(g)[0], w) : null;
 
         public static MenuDef Get(MenuId id) => id == MenuId.Notifications
             ? new MenuDef { Id = id, Title = "Messages", Blurb = "Everything that has happened lately" }
