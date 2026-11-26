@@ -61,7 +61,7 @@ Read from the code, not from older notes.
 | 6 | Universal land clearing | done |
 | 7 | Catalogue, overlays, inspectors, warnings | done |
 | 8 | Save migration | done |
-| 9 | Balance and performance | |
+| 9 | Balance and performance | done |
 | 10 | Final verification | |
 
 Each phase's PR adds its row's details below as it lands.
@@ -149,3 +149,13 @@ Behaviour when an older save loads (all covered by `ExtractionMigrationTests`, w
 | Protected woodland, replant list, clearing orders and progress, planned buildings, counters | absent in old saves: start empty; saved from now on |
 
 Limits: the low-ore warning stage is runtime, so a loaded save can warn once more. Old saves that already had a quarry or lodge sitting where the automatic area is now larger will start working that area (that is the intended change).
+
+## 11. Phase 9: balance and performance (measured)
+
+- **First year with no zones** (the existing opening harness, `FirstYearPlan`, with `zones: false`): seeds 7, 42 and 123 all keep food, deliver ore and stone, and have timber above 120 with a lodge, sawmill, quarry and mine that were never zoned. The old zoned opening still passes.
+- **Forestry over years** (`ExtractionEconomyTests`): a sustainable lodge on a 60-tree forest still produces in year 6 and the forest (trees, saplings, stumps) holds; an intensive lodge on the same forest produces at least as much in year 1, has stripped it within 8 years and then produces nothing. A small forest shows the early difference clearly (`ForestryAutoTests`).
+- **Why a big forest is not "faster" in year 1**: output is crew-limited (3 woodcutters, about 1.2 logs a day); the floor only matters once the forest is small.
+- **Finite reserves**: over 15 years a quarry never dug more than lay in its area and never delivered more than it dug; over 10 years mines never took more than the ore in reach.
+- **Growth**: `SaplingGrowthRate` is 0 in winter and between 0.5 and 1 otherwise depending on ground moisture (on water maps).
+- **Performance**: the same working town (43 buildings, a lodge, a quarry, a mine, the opening harness at the end of year one, 200 measured days) ticked in **1.40 ms a day before** this milestone (zones painted, the old code at the phase 1 commit) and **1.50, 1.64 and 1.82 ms a day after** it (no zones, three separate runs on the same machine, the last two inside a full test run): somewhere between 7 and 30 percent slower, which at these sizes is a fraction of a millisecond and well inside the run-to-run noise. It is not a cost that grows with the map: work areas and forest counts are cached per world version. Work areas and forest counts are cached per world version, ore reserve scans run monthly per mine, and the clearing queue touches at most six orders a day.
+- **Balance concerns** (open): sustainable output on a modest forest is small (a forest of 60 trees supports roughly 1 log a day for ever), so a growing town needs several lodges or foresters; the opening harness shows the first year is fine, the third to fifth years have not been played. Costs were not changed.
