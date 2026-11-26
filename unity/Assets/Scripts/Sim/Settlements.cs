@@ -53,6 +53,8 @@ namespace CrownAndHearth.Sim
         public double Capacity;
         /// <summary>Goods it has sold to you and bought from you this month (World.SettlementTrade.cs); reset each month, saved.</summary>
         public int SoldThisMonth, BoughtThisMonth;
+        /// <summary>Extra monthly trade your markets earn this place (each market beyond the first adds half again). Runtime only, set by World.RefreshTradeBoost.</summary>
+        public double TradeBoost;
         /// <summary>The same, good by good (saved).</summary>
         public readonly Dictionary<Res, int> SoldOf = new Dictionary<Res, int>(), BoughtOf = new Dictionary<Res, int>();
         /// <summary>Whether it pays you or is held by you, and which of your soldiers hold it (infantry and archers kept apart). Saved.</summary>

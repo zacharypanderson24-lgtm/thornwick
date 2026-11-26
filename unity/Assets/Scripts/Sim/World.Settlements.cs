@@ -80,6 +80,7 @@ namespace CrownAndHearth.Sim
         /// growing into a new size is news) and their trade with you starts afresh.</summary>
         void StepSettlements()
         {
+            RefreshTradeBoost();
             StepCaravans();
             StepDetachments();   // World.Conquest.cs: reinforcements reaching their garrisons
             StepRealmArmies();   // World.Realms.cs: armies mustering, setting out and arriving

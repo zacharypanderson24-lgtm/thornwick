@@ -177,5 +177,20 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(amt, loaded.SettlementById(p.Id).BoughtOf[p.Needs], "good by good");
             Assert.AreEqual(World.LeftToSell(p), World.LeftToSell(loaded.SettlementById(p.Id)));
         }
+
+        [Test]
+        public void EachMarketBeyondTheFirstRaisesWhatPartnersTradeWithYou()
+        {
+            var w = Town();
+            var p = Partner(w);
+            w.RefreshTradeBoost();
+            Assert.AreEqual(0, p.TradeBoost, 1e-9, "one market: the normal amount");
+            int one = World.MonthlyTrade(p, p.Makes);
+            p.TradeBoost = World.BoostPerMarket;   // two markets
+            Assert.Greater(World.MonthlyTrade(p, p.Makes), one);
+            p.TradeBoost = World.MaxTradeBoost;     // four markets or more: the ceiling, three times
+            Assert.GreaterOrEqual(World.MonthlyTrade(p, p.Makes), one * 3 - World.TradeUnit(p.Makes));
+            Assert.AreEqual(World.MonthlyTrade(p) , World.MonthlyTrade(p), "the tribute base amount ignores the boost");
+        }
     }
 }
