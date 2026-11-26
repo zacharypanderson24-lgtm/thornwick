@@ -229,5 +229,33 @@ namespace CrownAndHearth.Tests
                 foreach (var es in UnityEngine.Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(UnityEngine.FindObjectsSortMode.None)) UnityEngine.Object.DestroyImmediate(es.gameObject);
             }
         }
+
+        // ---------- phase 3: transport and trade windows ----------
+        [Test]
+        public void TransportAndTradeRowsAreTheWorldsOwnNumbers()
+        {
+            var w = new World(3, TerrainStyle.Ranges, Relief.Upland, WaterPreset.Lakeside); w.StartCampaign(); w.Tick();
+            Assert.AreEqual(3, ManagementData.Tabs(MenuId.Transportation).Length);
+            Assert.AreEqual(w.FerryRoutes.Count, ManagementData.Routes(w).Count);
+            Assert.AreEqual(w.Vessels.Count, ManagementData.Boats(w).Count);
+            var orders = ManagementData.Orders(w);
+            Assert.AreEqual(1 + w.VesselOrders.Count, orders.Count); Assert.AreEqual("Boatyards", orders[0].Label);
+            var cap = ManagementData.TradeCapacity(w);
+            Assert.AreEqual(w.Markets.ToString(), Value(cap, "Markets on the road network"));
+            Assert.AreEqual($"{w.ShipsOut} of {w.ShipCapacity}", Value(cap, "Ships out"));
+            Assert.AreEqual(w.Caravans.Count, ManagementData.Caravans(w).Count);
+            Assert.That(ManagementData.EmptyText(MenuId.Transportation, 0), Is.Not.Empty);
+        }
+
+        [Test]
+        public void AFerryRouteAndABoatShowTheirStateAndCondition()
+        {
+            var w = new World(3, TerrainStyle.Ranges, Relief.Upland, WaterPreset.Lakeside); w.StartCampaign();
+            w.Vessels.Add(new Vessel { Id = 77, Type = VesselType.FerryBoat, Condition = 10 });
+            var boats = ManagementData.Boats(w);
+            Assert.AreEqual(1, boats.Count); StringAssert.Contains("out of service", boats[0].Value); Assert.AreEqual(Tone.Bad, boats[0].Tone);
+            Assert.AreEqual(0.1f, boats[0].Bar, 0.001f);
+            Assert.AreEqual("running", ManagementData.FerryStateText(FerryState.Operational));
+        }
     }
 }

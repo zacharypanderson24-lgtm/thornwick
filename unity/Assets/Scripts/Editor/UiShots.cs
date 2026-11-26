@@ -34,7 +34,8 @@ namespace CrownAndHearth.EditorTools
                 Shot(dir, art, w, h, "mining", hud => { hud.ToggleMenu(MenuId.Economy); hud.UI.SetTab(1); });
                 Shot(dir, art, w, h, "history", hud => { hud.ToggleMenu(MenuId.Settlement); hud.UI.SetTab(2); });
                 Shot(dir, art, w, h, "construction", hud => { hud.ToggleMenu(MenuId.Construction); hud.UI.SetTab(2); });
-                Shot(dir, art, w, h, "transport", hud => hud.ToggleMenu(MenuId.Transportation));
+                Shot(dir, art, w, h, "transport", hud => { hud.ToggleMenu(MenuId.Transportation); hud.UI.SetTab(1); });
+                Shot(dir, art, w, h, "trade", hud => hud.ToggleMenu(MenuId.Trade));
             }
             Debug.Log("UI screenshots written to " + dir);
             if (Application.isBatchMode) EditorApplication.Exit(0);

@@ -14,7 +14,8 @@ namespace CrownAndHearth.Game
 
         void BuildVessels(RectTransform root)
         {
-            MakeButton(root, "Vessels", Vector2.one, new Vector2(-82, -275), new Vector2(148, 30), () => { _vesselPanel.gameObject.SetActive(!_vesselPanel.gameObject.activeSelf); _vesselShown = -1; });
+            // the old floating Vessels button is retired: Transport (F8) > Order boats opens this window
+            MakeButton(root, "Vessels", Vector2.one, new Vector2(-82, -275), new Vector2(148, 30), () => { _vesselPanel.gameObject.SetActive(!_vesselPanel.gameObject.activeSelf); _vesselShown = -1; }).gameObject.SetActive(false);
             _vesselPanel = MakePanel(root, "Vessels", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             _vesselPanel.GetComponent<Image>().color = new Color(0.04f, 0.03f, 0.02f, 0.92f);
             var box = MakePanel(_vesselPanel, "Box", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-480, -300), new Vector2(480, 300));
