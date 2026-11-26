@@ -23,6 +23,7 @@ namespace CrownAndHearth.EditorTools
             foreach (var (w, h) in Sizes)
             {
                 Shot(dir, art, w, h, "hud", hud => { });
+                Shot(dir, art, w, h, "inspect", hud => hud.SetInfo("FARMHOUSE\nNot connected: needs a road to the Town Hall\nWorkers 1/1 needed (1 jobs; one farmer for every 8 fields from sowing to harvest)\nWorks 6/8 fields of Farmland within 12 tiles (8 per farmer).\nFish stock: plentiful (80%). Season: Summer (x1.0).\nPort: running\nLogs waiting to be sawn: 12"));
                 Shot(dir, art, w, h, "settlement", hud => hud.ToggleMenu(MenuId.Settlement));
                 Shot(dir, art, w, h, "economy", hud => hud.ToggleMenu(MenuId.Economy));
                 Shot(dir, art, w, h, "messages", hud => hud.ToggleMenu(MenuId.Notifications));
