@@ -40,6 +40,7 @@ namespace CrownAndHearth.Game
         public static Texture2D Texture(Character c, int day, PortraitLibrary lib = null, PortraitCache cache = null)
         {
             lib = lib != null ? lib : PortraitLibrary.Shared;
+            if (lib == null) return null;   // no portrait library loaded: the screen shows no face rather than failing
             return (cache ?? PortraitCache.Shared).Get(lib, Current(c, day, lib));
         }
 

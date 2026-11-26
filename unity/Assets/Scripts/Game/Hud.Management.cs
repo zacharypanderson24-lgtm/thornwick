@@ -13,7 +13,7 @@ namespace CrownAndHearth.Game
 {
     public partial class Hud
     {
-        public const float ToolbarTop = -70, ToolbarH = 38;
+        public const float ToolbarTop = -(TopBarH + 8 + 2), ToolbarH = 38;
 
         readonly UIManager _ui = new UIManager();
         public NotificationManager Notes { get; } = new NotificationManager();

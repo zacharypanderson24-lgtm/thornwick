@@ -31,7 +31,7 @@ namespace CrownAndHearth.Game
             var card = (RectTransform)total.transform.parent;
             var surface = card.GetComponent<Image>();
 
-            const int line = 28, padding = 6;
+            const int line = 28, padding = 6;   // each row: name, stock, and what it changes by each day
             var menu = MakePanel(card, "Breakdown", Vector2.zero, Vector2.right,
                 new Vector2(0, -entries.Length * line - 2 * padding), Vector2.zero);
             menu.GetComponent<Image>().color = new Color(0.16f, 0.12f, 0.09f, 1);
@@ -45,7 +45,7 @@ namespace CrownAndHearth.Game
                 var name = MakeText(entry, "Name", 14, TextAnchor.MiddleLeft);
                 name.text = label;
                 Stretch(name.rectTransform, new Vector2(8, 0), new Vector2(-8, 0));
-                var value = MakeText(entry, "Count", 15, TextAnchor.MiddleRight);
+                var value = MakeText(entry, "Count", 15, TextAnchor.MiddleRight); value.supportRichText = true;
                 Stretch(value.rectTransform, new Vector2(8, 0), new Vector2(-8, 0));
                 counts[i] = (value, resource);
             }
@@ -77,7 +77,7 @@ namespace CrownAndHearth.Game
                 {
                     double count = Math.Floor(resource == Res.Food ? world.WheatStored : world.ResAmt[resource]);
                     sum += count;
-                    if (showBreakdown) value.text = $"{count:0}";
+                    if (showBreakdown) { double r = world.Rate[resource]; value.text = Math.Abs(r) < 0.05 ? $"{count:0}" : $"{count:0}   <color=#{ColorUtility.ToHtmlStringRGB(r < 0 ? UiTheme.Critical : UiTheme.Positive)}>{r:+0.0;-0.0}/day</color>"; }
                 }
                 total.text = $"{sum:0}";
             }
