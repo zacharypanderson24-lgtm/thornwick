@@ -547,7 +547,7 @@ namespace CrownAndHearth.Sim
                 MarkAround(q, Rock, Zone.Mine);
             }
             for (int i = 0; i < CountFor(Res.Ore, 6); i++)
-                Raise(plan, "mine", FindLot(site, 2, (x, y) => Out2(x, y) && MineFaceAt(x, y, 2) >= 0 && MineDoorOnRoad(x, y)));
+                Raise(plan, "mine", FindLot(site, 2, (x, y) => Out2(x, y) && MineFaceAt(x, y, 2) >= 0 && MineDoorOnRoad(x, y) && SurveyMineSite(x, y, 2).Reserve > 0));
 
             // sheep on the open pasture (a herding place more), and now and then pigs or hens on a farming place
             int flocks = s.Produces(Res.Wool) ? CountFor(Res.Wool, 10) + (s.Kind == TownKind.Pastoral ? 1 : 0) : 0;

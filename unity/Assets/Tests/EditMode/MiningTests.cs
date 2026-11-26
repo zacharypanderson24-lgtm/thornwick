@@ -57,7 +57,7 @@ namespace CrownAndHearth.Tests
                                   .OrderBy(t => Math.Abs(t.x - Defs.Start) + Math.Abs(t.y - Defs.Start)).ThenBy(t => t.y * N + t.x);
             foreach (var (x, y) in sites)
             {
-                if (!w.CanPlace("mine", x, y).Ok || w.GenLevel(x, y) >= 1) continue;   // the mine stands at the foot, not on the hill
+                var cp = w.CanPlace("mine", x, y); if ((!cp.Ok && !(cp.Reason ?? "").StartsWith("No ore within")) || w.GenLevel(x, y) >= 1) continue;   // the mine stands at the foot, not on the hill (an ore-free lot is fine for the no-ore case)
                 var reach = Patch(x, y).ToList();
                 if (wantOre)
                 {

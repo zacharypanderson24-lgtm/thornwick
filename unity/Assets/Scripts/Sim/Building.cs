@@ -26,6 +26,7 @@ namespace CrownAndHearth.Sim
         public int DigProg;        // worker-days dug towards the next tunnel tile
         public int Closed;         // days of repairs left after a cave-in
         public int CaveIns;
+        public int ReserveStage;   // mines: 0 fine, 1 low-ore warning given, 2 out-of-ore warning given (runtime; a loaded save may warn once more)
 
 
         public int Jobs => Defs.Jobs.TryGetValue(T, out var j) ? Noise.JsRound(j * (Sz == 2 && T == "farm" ? 2.5 : 1)) : 0;
