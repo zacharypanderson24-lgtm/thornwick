@@ -21,6 +21,18 @@ namespace CrownAndHearth.Game.UI
             "Not connected", "cut off from", "No keeper", "No water it can fish", "Nothing to fell", "No home will grow", "out of service",
             "No cargo barge", "No ferry boat", "none assigned", "is starving", "Without boats", "No flowing river", "not joined to fresh water",
         };
+        /// <summary>For a problem the inspector reports: what to do about it. Only problems whose line does not already say how to fix them are listed, and each fix is a plain
+        /// fact about how the game works (nothing is predicted).</summary>
+        static readonly (string Phrase, string Fix)[] Advice =
+        {
+            ("Not connected", "Lay a road from its door to a road that reaches the Town Hall (Roads, then drag)."),
+            ("cut off from the Town Hall", "A road or bridge tile is missing between here and the Town Hall: build the missing stretch."),
+            ("No home will grow", "Housing zones only fill when they touch a road that reaches the Town Hall: lay a road beside this tile."),
+            ("No water it can fish", "Build it where water is within reach (a dock needs water deep enough for boats)."),
+            ("not joined to fresh water", "Dig the canal on until it touches a river, lake or pond bank."),
+            ("No flowing river", "A watermill needs a flowing river beside it. A frozen river thaws again; otherwise build on a river bank."),
+        };
+
         static readonly Regex Fact = new Regex(@"^([A-Z][A-Za-z' ]{1,22}): (.{1,48})$", RegexOptions.Compiled);
 
         public static Inspection Parse(string text)
@@ -29,8 +41,10 @@ namespace CrownAndHearth.Game.UI
             if (string.IsNullOrWhiteSpace(text)) return ins;
             var lines = text.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
             ins.Title = lines[0];
+            var fixes = new List<string>();
             foreach (var line in lines.Skip(1))
             {
+                foreach (var a in Advice) if (line.IndexOf(a.Phrase, StringComparison.OrdinalIgnoreCase) >= 0 && !fixes.Contains(a.Fix)) fixes.Add(a.Fix);
                 var tone = Problems.Any(p => line.IndexOf(p, StringComparison.OrdinalIgnoreCase) >= 0) ? Tone.Bad
                     : line.StartsWith("Connected to the Town Hall", StringComparison.Ordinal) ? Tone.Good : Tone.Normal;
                 var m = Fact.Match(line);
@@ -39,6 +53,7 @@ namespace CrownAndHearth.Game.UI
                 else
                     ins.Rows.Add(new Row { Label = "", Value = line, Tone = tone, Bar = -1f, Wide = true });
             }
+            foreach (var f in fixes) ins.Rows.Add(new Row { Label = "To fix", Value = f, Tone = Tone.Normal, Bar = -1f, Wide = false });
             return ins;
         }
 

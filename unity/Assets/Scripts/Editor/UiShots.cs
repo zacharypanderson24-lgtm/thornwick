@@ -24,6 +24,7 @@ namespace CrownAndHearth.EditorTools
             {
                 Shot(dir, art, w, h, "hud", hud => { });
                 Shot(dir, art, w, h, "inspect", hud => hud.SetInfo("FARMHOUSE\nNot connected: needs a road to the Town Hall\nWorkers 1/1 needed (1 jobs; one farmer for every 8 fields from sowing to harvest)\nWorks 6/8 fields of Farmland within 12 tiles (8 per farmer).\nFish stock: plentiful (80%). Season: Summer (x1.0).\nPort: running\nLogs waiting to be sawn: 12"));
+                Shot(dir, art, w, h, "inspect_problem", hud => hud.SetInfo("SAWMILL\nNot connected: needs a road to the Town Hall\nWorkers 2/4 needed\nLogs waiting to be sawn: 0"));
                 Shot(dir, art, w, h, "overlays", hud => { hud.ToggleOverlayMenu(); hud.SetOverlayState(OverlayId.Water, "Groundwater"); });
                 Shot(dir, art, w, h, "system", hud => hud.ToggleMenu(MenuId.System));
                 Shot(dir, art, w, h, "small", hud => { hud.Settings.ScaleIndex = 0; hud.ToggleMenu(MenuId.Construction); });
