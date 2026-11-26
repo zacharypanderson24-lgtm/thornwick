@@ -4,6 +4,7 @@
     "references": [
         "CrownAndHearth.Sim",
         "CrownAndHearth.Game",
+        "CrownAndHearth.Portraits",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

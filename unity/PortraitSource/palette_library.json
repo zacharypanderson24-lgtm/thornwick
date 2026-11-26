@@ -1,0 +1,690 @@
+{
+  "palettes": {
+    "textile": {
+      "burgundy": "#873c48",
+      "indigo": "#405d87",
+      "forest": "#476f51",
+      "teal": "#397b78",
+      "plum": "#785481",
+      "ochre": "#ad7844",
+      "slate": "#596779",
+      "charcoal": "#49464c",
+      "ivory": "#c5b596",
+      "rust": "#9c5942"
+    },
+    "leather": {
+      "chestnut": "#815b41",
+      "dark_brown": "#534137",
+      "tan": "#ad8a60",
+      "oxblood": "#78463d",
+      "charcoal": "#544c46"
+    },
+    "fur": {
+      "brown": "#815e47",
+      "grey": "#85827d",
+      "black": "#4b4647",
+      "cream": "#c8b9a0",
+      "red_brown": "#986d50"
+    },
+    "metal": {
+      "steel": "#87929d",
+      "dark_iron": "#535e68",
+      "warm_steel": "#9b998b",
+      "bronze": "#a1845b"
+    },
+    "straw": {
+      "golden": "#ba995b",
+      "pale": "#cbb689",
+      "weathered": "#8e7755",
+      "amber": "#b88a49"
+    },
+    "gem": {
+      "ruby": "#a64451",
+      "emerald": "#3b8466",
+      "sapphire": "#486b9d",
+      "amethyst": "#8961a0",
+      "amber": "#c28b48"
+    },
+    "linen": {
+      "ivory": "#d5c5a4",
+      "sand": "#b8a17b",
+      "grey": "#a5a5a2",
+      "pale_blue": "#9ab1ba",
+      "sage": "#a0ad91"
+    }
+  },
+  "masks": {
+    "clothing": {
+      "civic_fur": {
+        "material": "textile",
+        "colors": [
+          "80383e",
+          "ad5753",
+          "502b35"
+        ]
+      },
+      "civic_doublet": {
+        "material": "textile",
+        "colors": [
+          "485c78",
+          "7188a1",
+          "303d55"
+        ]
+      },
+      "civic_mantle": {
+        "material": "textile",
+        "colors": [
+          "527064",
+          "789888",
+          "304e46"
+        ]
+      },
+      "command_plate": {
+        "material": "textile",
+        "colors": [
+          "813b40",
+          "ae5c55",
+          "562d37"
+        ]
+      },
+      "command_mail": {
+        "material": "textile",
+        "colors": [
+          "813b40",
+          "ae5c55",
+          "562d37"
+        ]
+      },
+      "command_lamellar": {
+        "material": "textile",
+        "colors": [
+          "813b40",
+          "ae5c55",
+          "562d37"
+        ]
+      },
+      "merchant_brocade": {
+        "material": "textile",
+        "colors": [
+          "315777",
+          "638ba6",
+          "243b55"
+        ]
+      },
+      "merchant_sash": {
+        "material": "textile",
+        "colors": [
+          "397c70",
+          "76a797",
+          "27544d"
+        ]
+      },
+      "merchant_velvet": {
+        "material": "textile",
+        "colors": [
+          "784962",
+          "a9718a",
+          "4d3048"
+        ]
+      },
+      "estate_overalls": {
+        "material": "textile",
+        "colors": [
+          "677346",
+          "93a16a",
+          "404b33"
+        ]
+      },
+      "estate_linen": {
+        "material": "textile",
+        "colors": [
+          "b59b73",
+          "dbc8a0",
+          "82694e"
+        ]
+      },
+      "estate_wool": {
+        "material": "textile",
+        "colors": [
+          "756047",
+          "a18b63",
+          "4c3e30"
+        ]
+      },
+      "envoy_silk": {
+        "material": "textile",
+        "colors": [
+          "735178",
+          "a17ca0",
+          "4b3656"
+        ]
+      },
+      "envoy_ivory": {
+        "material": "textile",
+        "colors": [
+          "c5b49b",
+          "e7d8bc",
+          "8d7c6a"
+        ]
+      },
+      "envoy_court": {
+        "material": "textile",
+        "colors": [
+          "355f76",
+          "6e98ab",
+          "243e57"
+        ]
+      },
+      "cleric_habit": {
+        "material": "textile",
+        "colors": [
+          "665747",
+          "96836a",
+          "42372f"
+        ]
+      },
+      "cleric_vestment": {
+        "material": "textile",
+        "colors": [
+          "85454a",
+          "ae6b67",
+          "542f3d"
+        ]
+      },
+      "cleric_ivory": {
+        "material": "textile",
+        "colors": [
+          "c5b697",
+          "e7d8b5",
+          "8f7d62"
+        ]
+      },
+      "frontier_fur": {
+        "material": "textile",
+        "colors": [
+          "556b78",
+          "8195a0",
+          "354753"
+        ]
+      },
+      "frontier_rider": {
+        "material": "textile",
+        "colors": [
+          "93583f",
+          "be865e",
+          "593b31"
+        ]
+      },
+      "frontier_guard": {
+        "material": "leather",
+        "colors": [
+          "63644c",
+          "929177",
+          "414336"
+        ]
+      },
+      "royal_coronation": {
+        "material": "textile",
+        "colors": [
+          "86363e",
+          "b35c59",
+          "542634"
+        ]
+      },
+      "royal_ceremonial": {
+        "material": "textile",
+        "colors": [
+          "4d4778",
+          "817caf",
+          "332c55"
+        ]
+      },
+      "royal_winter": {
+        "material": "textile",
+        "colors": [
+          "315c63",
+          "679398",
+          "203e48"
+        ]
+      },
+      "mediterranean_linen": {
+        "material": "textile",
+        "colors": [
+          "738b83",
+          "9eb2a1",
+          "465e5e"
+        ]
+      },
+      "desert_indigo": {
+        "material": "textile",
+        "colors": [
+          "315b76",
+          "54839a",
+          "203c53"
+        ]
+      },
+      "desert_ochre": {
+        "material": "textile",
+        "colors": [
+          "b47a42",
+          "d5a36a",
+          "754c34"
+        ]
+      },
+      "steppe_riding_coat": {
+        "material": "textile",
+        "colors": [
+          "87483b",
+          "aa6650",
+          "57382f"
+        ]
+      },
+      "steppe_leather": {
+        "material": "leather",
+        "colors": [
+          "78614a",
+          "a48a65",
+          "4d3b31"
+        ]
+      },
+      "northern_fur": {
+        "material": "textile",
+        "colors": [
+          "526273",
+          "798a95",
+          "69594e"
+        ]
+      },
+      "northern_wool": {
+        "material": "textile",
+        "colors": [
+          "6b4d43",
+          "906d59",
+          "473831"
+        ]
+      },
+      "frontier_leather": {
+        "material": "leather",
+        "colors": [
+          "59614a",
+          "7e8868",
+          "3e4436"
+        ]
+      },
+      "field_steward": {
+        "material": "textile",
+        "colors": [
+          "677346",
+          "8b9762",
+          "464d36"
+        ]
+      },
+      "court_scholar": {
+        "material": "textile",
+        "colors": [
+          "3e525e",
+          "627b83",
+          "263944"
+        ]
+      },
+      "ceremonial_ivory": {
+        "material": "textile",
+        "colors": [
+          "c6b79b",
+          "e2d4b8",
+          "93826b"
+        ]
+      },
+      "lamellar_commander": {
+        "material": "textile",
+        "colors": [
+          "8c4c37"
+        ]
+      },
+      "coastal_administrator": {
+        "material": "textile",
+        "colors": [
+          "39736b",
+          "65978a",
+          "264c49"
+        ]
+      },
+      "linen_steward": {
+        "material": "textile",
+        "colors": [
+          "a58b66",
+          "c5b08c",
+          "746047"
+        ]
+      },
+      "civil": {
+        "material": "textile",
+        "colors": [
+          "763039",
+          "9d4548",
+          "522733",
+          "422d31"
+        ]
+      },
+      "green_fur": {
+        "material": "textile",
+        "colors": [
+          "385b4c",
+          "537c64",
+          "263f37",
+          "293d34"
+        ]
+      },
+      "merchant": {
+        "material": "textile",
+        "colors": [
+          "345777",
+          "4e7691",
+          "253b59",
+          "28465a",
+          "302f43"
+        ]
+      },
+      "purple": {
+        "material": "textile",
+        "colors": [
+          "68506e",
+          "927495",
+          "48364e",
+          "45354f",
+          "3c2d43"
+        ]
+      },
+      "arid": {
+        "material": "textile",
+        "colors": [
+          "214b4b",
+          "367372",
+          "80a29a"
+        ]
+      },
+      "military": {
+        "material": "textile",
+        "colors": [
+          "773138",
+          "a34b4b",
+          "522733"
+        ]
+      }
+    },
+    "headwear": {
+      "arid": {
+        "material": "textile",
+        "colors": [
+          "39716e"
+        ]
+      },
+      "civic_bonnet": {
+        "material": "textile",
+        "colors": [
+          "3b526f",
+          "293c53",
+          "7892ac",
+          "a5b6bd"
+        ]
+      },
+      "civic_hood": {
+        "material": "textile",
+        "colors": [
+          "66506c",
+          "9a7f99",
+          "46354d",
+          "b49ab0"
+        ]
+      },
+      "civil": {
+        "material": "textile",
+        "colors": [
+          "87363e",
+          "542732",
+          "b45a55"
+        ]
+      },
+      "cleric_mitre": {
+        "material": "linen",
+        "colors": [
+          "e1d0ac",
+          "b4a080",
+          "fff0d0"
+        ]
+      },
+      "cleric_skullcap": {
+        "material": "textile",
+        "colors": [
+          "8b3543",
+          "c16b69",
+          "592937",
+          "a34b53"
+        ]
+      },
+      "coastal_cap": {
+        "material": "textile",
+        "colors": [
+          "39736b",
+          "26524f",
+          "8eb4a4",
+          "65978a",
+          "224d4a",
+          "79a698",
+          "a3c3ae",
+          "619181",
+          "a1bda9",
+          "51877e"
+        ]
+      },
+      "command_crest": {
+        "material": "textile",
+        "colors": [
+          "9b4244"
+        ]
+      },
+      "envoy_feather": {
+        "material": "textile",
+        "colors": [
+          "5d447a",
+          "382c53",
+          "a083ac"
+        ]
+      },
+      "envoy_turban": {
+        "material": "textile",
+        "colors": [
+          "765480"
+        ]
+      },
+      "estate_cap": {
+        "material": "textile",
+        "colors": [
+          "6d794c",
+          "a0a773",
+          "454d36"
+        ]
+      },
+      "estate_hood": {
+        "material": "linen",
+        "colors": [
+          "8b7353",
+          "c4ab7d",
+          "594936",
+          "d7c29b"
+        ]
+      },
+      "field_straw": {
+        "material": "straw",
+        "colors": [
+          "b79b60",
+          "8d703e",
+          "dfbc7c",
+          "9e7946",
+          "e0c385",
+          "e6c88a",
+          "957544",
+          "f4d9a0",
+          "c4a269",
+          "977444",
+          "e9ce95",
+          "a7834c",
+          "f1d294"
+        ]
+      },
+      "frontier_leather_cap": {
+        "material": "leather",
+        "colors": [
+          "77513b",
+          "ad8058",
+          "51372d"
+        ]
+      },
+      "lamellar_helmet": {
+        "material": "metal",
+        "colors": [
+          "68776f",
+          "4d5c58",
+          "bac6b5",
+          "9ea99b",
+          "dce1cb",
+          "aebcae",
+          "43534f",
+          "c3cbb8",
+          "b6c4b5",
+          "293b39",
+          "b1b9a7",
+          "edf0d8",
+          "eef1d9",
+          "839589"
+        ]
+      },
+      "linen_hood": {
+        "material": "linen",
+        "colors": [
+          "c8b38e",
+          "f1e0bc",
+          "a58b6e",
+          "e7d6b5",
+          "9c846a",
+          "fff0cd",
+          "ab9271",
+          "e3cfa7",
+          "f0deba",
+          "9b8267",
+          "f5e5c3",
+          "c0a37c",
+          "ac9070",
+          "e9d3ad",
+          "f7e6c1",
+          "c2aa85"
+        ]
+      },
+      "merchant": {
+        "material": "textile",
+        "colors": [
+          "345777",
+          "253b59",
+          "527e95"
+        ]
+      },
+      "merchant_tall": {
+        "material": "textile",
+        "colors": [
+          "6b3f55",
+          "a86d82",
+          "482e43"
+        ]
+      },
+      "merchant_wrap": {
+        "material": "textile",
+        "colors": [
+          "27656a",
+          "72a5a1",
+          "19464e",
+          "a1c2b4"
+        ]
+      },
+      "military": {
+        "material": "metal",
+        "colors": [
+          "737f88",
+          "b0b8b3",
+          "a8b3b5",
+          "505d67",
+          "d2d5c9",
+          "626d75",
+          "58636c",
+          "adb6b5"
+        ]
+      },
+      "northern_fur": {
+        "material": "fur",
+        "colors": [
+          "70503c",
+          "a27c56",
+          "c29a70",
+          "bd9167",
+          "513b32",
+          "8c674b",
+          "523d30",
+          "ba8d60",
+          "896346"
+        ]
+      },
+      "royal_cap": {
+        "material": "textile",
+        "colors": [
+          "693e80",
+          "a47bad"
+        ]
+      },
+      "royal_circlet": {
+        "material": "gem",
+        "colors": [
+          "8e3446",
+          "d36661"
+        ]
+      },
+      "royal_crown": {
+        "material": "gem",
+        "colors": [
+          "9c3540",
+          "d65d58",
+          "416b79"
+        ]
+      },
+      "scholar_cap": {
+        "material": "textile",
+        "colors": [
+          "3e5965",
+          "283c45",
+          "1d3039",
+          "69818a",
+          "90a3a0",
+          "536f79",
+          "b2bdb1",
+          "a8b7ae",
+          "73909a"
+        ]
+      },
+      "steppe_felt": {
+        "material": "textile",
+        "colors": [
+          "95543d",
+          "cc9165",
+          "643c32",
+          "53392e",
+          "d39b6b",
+          "75432f",
+          "a36b46",
+          "6b4335"
+        ]
+      },
+      "none": {
+        "material": "textile",
+        "colors": []
+      }
+    }
+  }
+}
