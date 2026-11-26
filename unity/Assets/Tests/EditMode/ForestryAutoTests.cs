@@ -23,14 +23,14 @@ namespace CrownAndHearth.Tests
             return true;
         }
 
-        static void Day(World w)
+        internal static void Day(World w)
         {
             w.ResAmt[Res.Food] = Math.Max(w.ResAmt[Res.Food], 400); w.ResAmt[Res.Wood] = Math.Max(w.ResAmt[Res.Wood], 200); w.ResAmt[Res.Gold] = Math.Max(w.ResAmt[Res.Gold], 100);
             w.Tick();
         }
 
         /// <summary>A lodge on open ground with a road to the town and `trees` trees in a block five tiles away, no zone painted anywhere.</summary>
-        static (World w, Building lodge, List<(int x, int y)> trees) Forest(int trees, int seed = 7, int blockX = 5)
+        internal static (World w, Building lodge, List<(int x, int y)> trees) Forest(int trees, int seed = 7, int blockX = 5)
         {
             var w = new World(seed); w.ClaimAll(); w.Drafting = false;
             var site = AllTiles().Where(t => Math.Abs(t.x - C) + Math.Abs(t.y - C) is > 14 and < 34 && Gentle(w, t.x, t.y, 14)).OrderBy(t => Math.Abs(t.x - C) + Math.Abs(t.y - C)).FirstOrDefault();

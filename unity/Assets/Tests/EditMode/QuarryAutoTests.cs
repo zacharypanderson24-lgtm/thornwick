@@ -21,7 +21,7 @@ namespace CrownAndHearth.Tests
         static double DigSum(World w) => w.Dig.Values.Sum();
 
         /// <summary>The test town with a quarry beside open rock and a road to it.</summary>
-        static (World w, Building q) QuarryTown(int skip = 0)
+        internal static (World w, Building q) QuarryTown(int skip = 0)
         {
             var w = new World(7);
             SimParityTests.Layout(w, 10);

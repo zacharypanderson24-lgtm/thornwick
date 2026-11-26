@@ -60,7 +60,7 @@ Read from the code, not from older notes.
 | 5 | Timber chain (status, warnings, chain list) | done |
 | 6 | Universal land clearing | done |
 | 7 | Catalogue, overlays, inspectors, warnings | done |
-| 8 | Save migration | |
+| 8 | Save migration | done |
 | 9 | Balance and performance | |
 | 10 | Final verification | |
 
@@ -132,3 +132,20 @@ The chain already conserved resources; this phase makes it readable and checks i
 - **Land tools**: drag a rectangle; protected woodland asks first; build and road tools plan their own clearing and ask before touching protected trees.
 - **Not done**: no screenshots of the map overlays (the capture tool renders the HUD over flat ground, not the world); no real-mouse playtest in the editor (see section 12).
 - Tests: `LandManagementUiTests`; the overlay-list test in `ManagementUiTests` now includes Forest on purpose.
+
+## 10. Phase 8: save migration (verified)
+
+Behaviour when an older save loads (all covered by `ExtractionMigrationTests`, which strips every new field out of a real save first):
+
+| Old data | What happens |
+|---|---|
+| Lumber zones | kept; they are now an optional boundary and an explicit felling order for lodges that have them (no floor, no replanting: the old behaviour) |
+| Mining zones | kept; a mine or quarry with painted tiles in reach is confined to them. A mine no longer needs them |
+| Forester buildings | kept; they plant on painted Lumber ground as before, or near themselves with none |
+| Lodges | no saved mode: **Sustainable** |
+| Mine tunnels, shoring, cave-ins | unchanged |
+| Ore taken, rock dug, quarry pits | unchanged: **loading never refills a deposit** (tested) |
+| Trees, saplings, stumps, `SapT` | unchanged; a sapling's timer now runs only on growing days |
+| Protected woodland, replant list, clearing orders and progress, planned buildings, counters | absent in old saves: start empty; saved from now on |
+
+Limits: the low-ore warning stage is runtime, so a loaded save can warn once more. Old saves that already had a quarry or lodge sitting where the automatic area is now larger will start working that area (that is the intended change).
