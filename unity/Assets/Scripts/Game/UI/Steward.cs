@@ -17,7 +17,9 @@ namespace CrownAndHearth.Game.UI
         public int X, Y, Size;                 // where
         public bool Affordable;
         public CatalogueCategory? Show;        // advice only: the catalogue category to open
-        public bool HasSite => Type != null;
+        public bool HasRect;                   // a zone package: paint this rectangle (ZX0..ZX1, ZY0..ZY1) with ZoneKind; X,Y is its centre
+        public Zone ZoneKind; public int ZX0, ZY0, ZX1, ZY1;
+        public bool HasSite => Type != null || HasRect;
     }
 
     /// <summary>The path the player is aiming for. It never hides a survival problem; it changes the ambitious advice and the fixes offered.</summary>
@@ -54,6 +56,45 @@ namespace CrownAndHearth.Game.UI
         {
             var parts = Defs.CostOf(type, Defs.PlacementSize(type)).Select(kv => $"{kv.Value} {kv.Key.ToString().ToLowerInvariant()}").ToList();
             return parts.Count == 0 ? "Free" : string.Join(", ", parts);
+        }
+
+        /// <summary>A farmland package: the nearest rectangle of fertile, free ground (6 x 4 either way) close to a road the Town Hall reaches, so a
+        /// farmhouse beside that road can work it. Null when the claimed land has no such patch.</summary>
+        public static Proposal FieldsPackage(World w, int severity, string why)
+        {
+            if (w.Hall == null) return null;
+            int cx = w.Hall.X + 1, cy = w.Hall.Y + 1, checks = 0;
+            var order = new List<(int d, int x, int y)>();
+            for (int dy = -SearchRadius; dy <= SearchRadius; dy++)
+                for (int dx = -SearchRadius; dx <= SearchRadius; dx++) order.Add((dx * dx + dy * dy, cx + dx, cy + dy));
+            order.Sort((a, b) => a.d.CompareTo(b.d));
+            foreach (var (_, x, y) in order)
+            {
+                if (!World.Inb(x, y) || !w.Claimed(x, y)) continue;
+                if (++checks > 700) break;
+                foreach (var (rw, rh) in new[] { (6, 4), (4, 6) })
+                {
+                    int good = 0;
+                    for (int j = 0; j < rh; j++) for (int i = 0; i < rw; i++)
+                        if (World.Inb(x + i, y + j) && w.Grid[y + j, x + i] == null && w.ZoneMap[y + j, x + i] == Zone.None && w.ZoneCheck(Zone.Farm, x + i, y + j).Ok) good++;
+                    if (good < rw * rh * 0.85) continue;
+                    bool nearRoad = false;   // a free tile within three of the patch that touches a connected road: the farmhouse goes there
+                    for (int j = -3; j < rh + 3 && !nearRoad; j++) for (int i = -3; i < rw + 3 && !nearRoad; i++)
+                    {
+                        int tx = x + i, ty = y + j;
+                        if (World.Inb(tx, ty) && w.Grid[ty, tx] == null && w.BesideConnectedRoad(tx, ty)) nearRoad = true;
+                    }
+                    if (!nearRoad) continue;
+                    return new Proposal
+                    {
+                        Id = "fields", Severity = severity, Title = $"Zone {good} tiles of farmland", Why = why,
+                        Effect = "Fertile ground beside a road. Free. A farmhouse next to it (the next suggestion) will work these fields.",
+                        CostText = "Free", Affordable = true, HasRect = true, ZoneKind = Zone.Farm, X = x + rw / 2, Y = y + rh / 2, Size = 0,
+                        ZX0 = x, ZY0 = y, ZX1 = x + rw - 1, ZY1 = y + rh - 1,
+                    };
+                }
+            }
+            return null;
         }
 
         /// <summary>Valid sites for a building beside a road that reaches the Town Hall, nearest to the Hall first (at most `max`).</summary>
@@ -142,7 +183,7 @@ namespace CrownAndHearth.Game.UI
                     list.Add(Site(w, "food", "fisher", sev, "Build a fishing hut", why, f => f.Warn ? 0 : 1, f => f.Lines.Count > 0 ? f.Lines[0] : "Fish for the town from the shore."));
                 else if (!fields && !w.Blds.Any(b => b.T == "hunter" || b.T == "fisher" || b.T == "dock"))
                     // a farmhouse with no fields grows nothing: the first step is the fields
-                    list.Add(new Proposal { Id = "fields", Severity = sev, Title = "Zone farmland", Show = CatalogueCategory.Food, Why = why,
+                    list.Add(FieldsPackage(w, sev, why) ?? new Proposal { Id = "fields", Severity = sev, Title = "Zone farmland", Show = CatalogueCategory.Food, Why = why,
                         Effect = "Paint Farmland (key 3) on fertile ground (Fertile land lens) beside a road, then I will find the spot for the farmhouse." });
                 else list.Add(Site(w, "food", "farm", sev, "Build a farm", why,
                     f => f.FoodPerDay,

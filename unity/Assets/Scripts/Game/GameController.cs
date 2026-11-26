@@ -205,6 +205,12 @@ namespace CrownAndHearth.Game
             _hud.StewardShow += p => _cam.CenterOn(IsoView.TileCenter(World, p.X + p.Size / 2, p.Y + p.Size / 2, _rot));
             _hud.StewardBuild += p =>
             {
+                if (p.HasRect)
+                {
+                    var (zoned, _, why) = World.ZoneRect(p.ZoneKind, p.ZX0, p.ZY0, p.ZX1, p.ZY1);
+                    _hud.Toast(zoned > 0 ? $"The steward marked {zoned} tiles of farmland. A farmhouse beside the road will work them." : why);
+                    return;
+                }
                 var r = World.Place(p.Type, p.X, p.Y);
                 _hud.Toast(r.Ok ? $"The steward's {Defs.Names[p.Type].ToLowerInvariant()} is going up." : r.Reason);
                 if (r.Ok) _cam.CenterOn(IsoView.TileCenter(World, p.X + p.Size / 2, p.Y + p.Size / 2, _rot));
@@ -959,7 +965,10 @@ namespace CrownAndHearth.Game
                 for (int j = 0; j < burning.Sz; j++) for (int i = 0; i < burning.Sz; i++) _overlay.AddTile(World, burning.X + i, burning.Y + j, _rot, Bad);
             DrawTunnels();
             if (_hud.StewardFocus is CrownAndHearth.Game.UI.Proposal sp && sp.HasSite)   // the steward's proposed building, drawn where it would go
-                for (int j = 0; j < sp.Size; j++) for (int i = 0; i < sp.Size; i++) _overlay.AddTile(World, sp.X + i, sp.Y + j, _rot, sp.Affordable ? Ok : Warn);
+            {
+                if (sp.HasRect) { for (int j = sp.ZY0; j <= sp.ZY1; j++) for (int i = sp.ZX0; i <= sp.ZX1; i++) _overlay.AddTile(World, i, j, _rot, Ok); }
+                else for (int j = 0; j < sp.Size; j++) for (int i = 0; i < sp.Size; i++) _overlay.AddTile(World, sp.X + i, sp.Y + j, _rot, sp.Affordable ? Ok : Warn);
+            }
             if (_ugLevel > 0) DrawUnderground();
             else DrawChosenOverlay();
             // zone tools: shade where the buildings that work this zone can reach, so the player knows where to paint
