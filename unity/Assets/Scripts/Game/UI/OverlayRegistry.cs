@@ -6,7 +6,7 @@ using CrownAndHearth.Sim;
 
 namespace CrownAndHearth.Game.UI
 {
-    public enum OverlayId { None, Underground, Water, Fertility, Sailing, Forest }
+    public enum OverlayId { None, Underground, Water, Fertility, Sailing, Forest, Workers, Food, Trade, Military, Danger }
 
     public sealed class OverlayDef
     {
@@ -25,6 +25,12 @@ namespace CrownAndHearth.Game.UI
             new OverlayDef { Id = OverlayId.Forest, Title = "Forest", Hint = "Mature trees, saplings, protected woodland (blue) and clearing orders (orange)" },
             new OverlayDef { Id = OverlayId.Sailing, Title = "Sailable water", Hint = "Where boats can go (green) and water too shallow for them (grey)",
                 LockedReason = w => w.Waters == null ? "Sailable water: this world has no surface water." : null },
+            new OverlayDef { Id = OverlayId.Workers, Title = "Workers", Hint = "Which work buildings are fully staffed (green), short (amber) or empty (red)" },
+            new OverlayDef { Id = OverlayId.Food, Title = "Food sources", Hint = "Farms, hunting, fishing and stores, and Farmland waiting for a farmhouse" },
+            new OverlayDef { Id = OverlayId.Trade, Title = "Trade", Hint = "Markets, ports and storehouses, and the roads caravans use" },
+            new OverlayDef { Id = OverlayId.Military, Title = "Military reach", Hint = "Barracks, muster grounds and how far watchtowers see" },
+            new OverlayDef { Id = OverlayId.Danger, Title = "Danger", Hint = "The edges raiders come from, and your walls and towers",
+                LockedReason = w => !w.LiveCamps.Any() ? "Danger: no raider camps are known in this world." : null },
         };
 
         /// <summary>The overlay that helps place a tool: fertility for farms, groundwater for wells, ore for mines, sailable water for harbours. None when the tool has no need of one
