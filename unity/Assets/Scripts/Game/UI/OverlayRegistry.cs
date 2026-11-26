@@ -26,6 +26,22 @@ namespace CrownAndHearth.Game.UI
                 LockedReason = w => w.Waters == null ? "Sailable water: this world has no surface water." : null },
         };
 
+        /// <summary>The overlay that helps place a tool: fertility for farms, groundwater for wells, ore for mines, sailable water for harbours. None when the tool has no need of one
+        /// (or the overlay cannot show anything in this world, in which case the tool just works without it).</summary>
+        public static OverlayId ForTool(string toolId, World w)
+        {
+            OverlayId id;
+            switch (toolId)
+            {
+                case "farmhouse": case "zoneFarm": case "canal": id = OverlayId.Fertility; break;
+                case "well": case "cistern": id = OverlayId.Water; break;
+                case "mine": id = OverlayId.Underground; break;
+                case "dock": case "fisher": case "port": case "ferry": case "ferryRoute": case "boatyard": id = OverlayId.Sailing; break;
+                default: return OverlayId.None;
+            }
+            return w != null && WhyLocked(id, w) != null ? OverlayId.None : id;
+        }
+
         public static OverlayDef Get(OverlayId id) => All.FirstOrDefault(o => o.Id == id);
         public static string WhyLocked(OverlayId id, World w) => id == OverlayId.None ? null : Get(id)?.Reason(w);
         public static string TitleOf(OverlayId id) => id == OverlayId.None ? "Off" : Get(id)?.Title ?? "Off";
