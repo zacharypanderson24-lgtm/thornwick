@@ -48,7 +48,7 @@ namespace CrownAndHearth.Sim
         public static int MonthlyTrade(Settlement s) => (int)Math.Round(Math.Clamp((int)Math.Round(s.Population / 8), 10, 400) * (s.Devastated ? WasteFactor : 1));
 
         /// <summary>How much of one good it trades in a month: its share of the whole, a main good more than a side one (at least 5).</summary>
-        public static int MonthlyTrade(Settlement s, Res r) => Math.Max(5, (int)Math.Round(MonthlyTrade(s) * s.ShareOf(r) * 1.6)) * TradeUnit(r);
+        public static int MonthlyTrade(Settlement s, Res r) => Math.Max(5, (int)Math.Round(MonthlyTrade(s) * (1 + s.TradeBoost) * s.ShareOf(r) * 1.6)) * TradeUnit(r);
 
         /// <summary>Grain is counted in food units, 5 for every unit of anything else (one villager eats a food a day), so a "unit" of grain is a fifth
         /// as big and a fifth the price (BasePrice), and caravans and monthly volumes carry five times as many.</summary>
@@ -81,6 +81,7 @@ namespace CrownAndHearth.Sim
         /// <summary>Buy a good it produces (its main good if none is named): pay now, the caravan brings it home after the march.</summary>
         public Result BuyFrom(Settlement s, int amount, Res? good = null)
         {
+            RefreshTradeBoost();
             var ok = CanTrade(s); if (!ok.Ok) return ok;
             var plan = PlanTrade(s);
             var r = good ?? s.Makes;
@@ -98,6 +99,7 @@ namespace CrownAndHearth.Sim
         /// <summary>Sell it a good it needs (its main need if none is named): it leaves now, the gold comes home after the march.</summary>
         public Result SellTo(Settlement s, int amount, Res? good = null)
         {
+            RefreshTradeBoost();
             var ok = CanTrade(s); if (!ok.Ok) return ok;
             var plan = PlanTrade(s);
             var r = good ?? s.Needs;
@@ -124,6 +126,15 @@ namespace CrownAndHearth.Sim
         }
 
         int PendingGiftWarmth(Settlement s) => Caravans.Count(c => c.Kind == CaravanKind.Gift && c.SettlementId == s.Id) * GiftWarmth;
+
+        public const double BoostPerMarket = 0.5, MaxTradeBoost = 2.0;
+
+        /// <summary>Every served market beyond the first adds half again to what each partner will trade with you in a month (up to three times): a town that lives on trade must build trade.</summary>
+        public void RefreshTradeBoost()
+        {
+            double boost = Math.Min(MaxTradeBoost, BoostPerMarket * Math.Max(0, Markets - 1));
+            foreach (var s in _settlements) s.TradeBoost = boost;
+        }
 
         public static string GoodName(Res r) => r switch { Res.Food => "grain", Res.Wood => "timber", Res.Ore => "iron ore", _ => r.ToString().ToLower() };
 
