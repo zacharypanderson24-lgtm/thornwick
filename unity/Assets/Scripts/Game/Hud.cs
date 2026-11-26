@@ -121,6 +121,7 @@ namespace CrownAndHearth.Game
             BuildNeeds(root);
             BuildCampaign(root);
             BuildGuide(root);
+            BuildCharters(root);
             BuildSteward(root);
             BuildNewWorld(root);
             BuildLodgePanel(root);
@@ -497,6 +498,7 @@ namespace CrownAndHearth.Game
             UpdateCampaign(world);
             UpdateSteward(world);
             UpdateGuide(world);
+            UpdateCharters(world);
             UpdateVessels(world);
             UpdateScenario(world);
             UpdateIncident(world);
