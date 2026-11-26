@@ -359,7 +359,8 @@ namespace CrownAndHearth.Sim
                 if (s.Allegiance == Allegiance.Own) continue;
                 bool held = s.Allegiance == Allegiance.Occupied;
                 double waste = s.Devastated ? WasteFactor : 1;
-                int gold = Math.Max(1, (int)Math.Round(s.Population / (held ? 15.0 : 25.0) * waste)), goods = (int)(MonthlyTrade(s) / (held ? 1 : 2) * waste);
+                double tribute = CharterMult("tribute");
+                int gold = Math.Max(1, (int)Math.Round(s.Population / (held ? 15.0 : 25.0) * waste * tribute)), goods = (int)(MonthlyTrade(s) / (held ? 1 : 2) * waste * tribute);
                 ResAmt[Res.Gold] += gold;
                 var sent = new List<(Res res, int n)>();
                 foreach (var (r, n) in SplitGoods(s, goods))

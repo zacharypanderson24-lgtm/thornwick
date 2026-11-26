@@ -85,7 +85,7 @@ namespace CrownAndHearth.Sim
             var plan = PlanTrade(s);
             var r = good ?? s.Makes;
             if (!s.Produces(r)) return Result.No($"{s.Name} does not produce {GoodName(r)}");
-            amount = Math.Min(Math.Min(amount, CaravanLoad * TradeUnit(r)), LeftToBuy(s, r));
+            amount = Math.Min(Math.Min(amount, CaravanLoad * TradeUnit(r)), (int)(LeftToBuy(s, r) * CharterMult("trade")));
             if (amount <= 0) return Result.No($"{s.Name} has no more {GoodName(r)} to sell this month");
             int cost = (int)Math.Ceiling(amount * PriceToBuy(s, r));
             if (ResAmt[Res.Gold] < cost) return Result.No($"That costs {cost} gold; you have {ResAmt[Res.Gold]:0}");
@@ -102,7 +102,7 @@ namespace CrownAndHearth.Sim
             var plan = PlanTrade(s);
             var r = good ?? s.Needs;
             if (!s.Wanting(r)) return Result.No($"{s.Name} does not need {GoodName(r)}");
-            amount = Math.Min(Math.Min(amount, CaravanLoad * TradeUnit(r)), LeftToSell(s, r));
+            amount = Math.Min(Math.Min(amount, CaravanLoad * TradeUnit(r)), (int)(LeftToSell(s, r) * CharterMult("trade")));
             if (amount <= 0) return Result.No($"{s.Name} wants no more {GoodName(r)} this month");
             if (ResAmt[r] < amount) return Result.No($"You have only {ResAmt[r]:0} {GoodName(r)}");
             int gold = (int)Math.Floor(amount * PriceToSell(s, r));

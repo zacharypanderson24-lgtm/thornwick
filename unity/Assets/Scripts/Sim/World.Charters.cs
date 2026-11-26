@@ -14,6 +14,7 @@ namespace CrownAndHearth.Sim
     public sealed class Charter
     {
         public string Id, Title, Path, Blurb, Gain, Price;
+        public Dictionary<string, double> Effects;
         public TownRank Rank;
     }
 
@@ -30,29 +31,49 @@ namespace CrownAndHearth.Sim
 
         public TownRank Rank => RankFor(Peasants + Soldiers);
 
+        static Dictionary<string, double> Fx(params (string key, double mult)[] e) => e.ToDictionary(x => x.key, x => x.mult);
+
+        // Every gain and price is a multiplier that the game really applies (World.CharterMult): silo = grain storage, farm = wheat yield, fish = catches,
+        // industry = sawmill and smithery speed, soldierFood = what soldiers eat, tribute = gold and goods from subdued settlements, trade = what a
+        // partner will buy or sell in one deal.
         public static readonly Charter[] Charters =
         {
             // the Village rung: the first choice of road
             new Charter { Id = "agrarian1", Title = "Agrarian Charter", Path = "Farmer", Rank = TownRank.Village, Blurb = "A village of the plough.",
-                Gain = "Silos hold half again as much grain.", Price = "Markets trade a quarter less with you." },
+                Gain = "Silos hold half again as much grain.", Price = "Sawmills and smitheries work a tenth slower.", Effects = Fx(("silo", 1.5), ("industry", 0.9)) },
             new Charter { Id = "merchant1", Title = "Merchant Charter", Path = "Trader", Rank = TownRank.Village, Blurb = "A village of the market square.",
-                Gain = "Each trading partner trades a quarter more with you.", Price = "Your own farms work a tenth slower: you buy what you could make." },
+                Gain = "Each trade deal with a partner can be a quarter bigger.", Price = "Farms yield a tenth less: you buy what you could grow.", Effects = Fx(("trade", 1.25), ("farm", 0.9)) },
             new Charter { Id = "martial1", Title = "Martial Charter", Path = "Warlord", Rank = TownRank.Village, Blurb = "A village that keeps a sword by the door.",
-                Gain = "Tribute and frontier income are a quarter higher.", Price = "Soldiers eat half as much again." },
+                Gain = "Subdued settlements pay a quarter more tribute.", Price = "Soldiers eat half as much again.", Effects = Fx(("tribute", 1.25), ("soldierFood", 1.5)) },
             new Charter { Id = "maritime1", Title = "Maritime Charter", Path = "Seafarer", Rank = TownRank.Village, Blurb = "A village that looks to the water.",
-                Gain = "Fishing huts and docks catch a quarter more.", Price = "Farms work a tenth slower: the town looks to the sea." },
+                Gain = "Fishing huts and docks catch a quarter more.", Price = "Farms yield a tenth less: the town looks to the sea.", Effects = Fx(("fish", 1.25), ("farm", 0.9)) },
             new Charter { Id = "industrial1", Title = "Guild Charter", Path = "Industrialist", Rank = TownRank.Village, Blurb = "A village of forges and sawpits.",
-                Gain = "Mines, quarries and sawmills work a fifth faster.", Price = "Each trading partner trades a fifth less grain with you." },
+                Gain = "Sawmills and smitheries work a fifth faster.", Price = "Each trade deal with a partner is a tenth smaller.", Effects = Fx(("industry", 1.2), ("trade", 0.9)) },
             new Charter { Id = "warden1", Title = "Warden Charter", Path = "Fortress", Rank = TownRank.Village, Blurb = "A village behind its palisade.",
-                Gain = "Watchtowers collect twice the road toll.", Price = "Each trading partner trades a tenth less with you: the gates are watched." },
+                Gain = "Soldiers eat a quarter less: the garrison is fed from the keep.", Price = "Each trade deal with a partner is a tenth smaller: the gates are watched.", Effects = Fx(("soldierFood", 0.75), ("trade", 0.9)) },
             // the Town rung: deepen the road, or branch into another
-            new Charter { Id = "agrarian2", Title = "Granary Charter", Path = "Farmer", Rank = TownRank.Town, Blurb = "The breadbasket of the district.", Gain = "Wheat yields a tenth more.", Price = "Markets trade a tenth less with you." },
-            new Charter { Id = "merchant2", Title = "Free Market Charter", Path = "Trader", Rank = TownRank.Town, Blurb = "A town where anything can be bought.", Gain = "Each trading partner trades another quarter more.", Price = "Soldiers eat a quarter more: a rich town needs guarding." },
-            new Charter { Id = "martial2", Title = "Warband Charter", Path = "Warlord", Rank = TownRank.Town, Blurb = "A town that lives by the campaign.", Gain = "Frontier income is half again as much.", Price = "Each trading partner trades a fifth less with you." },
-            new Charter { Id = "maritime2", Title = "Harbour Charter", Path = "Seafarer", Rank = TownRank.Town, Blurb = "A town that is a port first.", Gain = "Fishing huts and docks catch another fifth.", Price = "Quarries and mines work a tenth slower." },
-            new Charter { Id = "industrial2", Title = "Foundry Charter", Path = "Industrialist", Rank = TownRank.Town, Blurb = "A town of smoke and hammers.", Gain = "Mines, quarries and sawmills work another tenth faster.", Price = "Farms work a tenth slower." },
-            new Charter { Id = "warden2", Title = "Bulwark Charter", Path = "Fortress", Rank = TownRank.Town, Blurb = "A town that raiders break against.", Gain = "Watchtowers collect another half toll.", Price = "Frontier income is a fifth lower." },
+            new Charter { Id = "agrarian2", Title = "Granary Charter", Path = "Farmer", Rank = TownRank.Town, Blurb = "The breadbasket of the district.",
+                Gain = "Wheat yields a tenth more.", Price = "Fishing huts and docks catch a tenth less.", Effects = Fx(("farm", 1.1), ("fish", 0.9)) },
+            new Charter { Id = "merchant2", Title = "Free Market Charter", Path = "Trader", Rank = TownRank.Town, Blurb = "A town where anything can be bought.",
+                Gain = "Each trade deal with a partner can be another quarter bigger.", Price = "Soldiers eat a quarter more: a rich town needs guarding.", Effects = Fx(("trade", 1.25), ("soldierFood", 1.25)) },
+            new Charter { Id = "martial2", Title = "Warband Charter", Path = "Warlord", Rank = TownRank.Town, Blurb = "A town that lives by the campaign.",
+                Gain = "Subdued settlements pay another quarter more tribute.", Price = "Each trade deal with a partner is a fifth smaller.", Effects = Fx(("tribute", 1.25), ("trade", 0.8)) },
+            new Charter { Id = "maritime2", Title = "Harbour Charter", Path = "Seafarer", Rank = TownRank.Town, Blurb = "A town that is a port first.",
+                Gain = "Fishing huts and docks catch another fifth.", Price = "Sawmills and smitheries work a tenth slower.", Effects = Fx(("fish", 1.2), ("industry", 0.9)) },
+            new Charter { Id = "industrial2", Title = "Foundry Charter", Path = "Industrialist", Rank = TownRank.Town, Blurb = "A town of smoke and hammers.",
+                Gain = "Sawmills and smitheries work another tenth faster.", Price = "Farms yield a tenth less.", Effects = Fx(("industry", 1.1), ("farm", 0.9)) },
+            new Charter { Id = "warden2", Title = "Bulwark Charter", Path = "Fortress", Rank = TownRank.Town, Blurb = "A town that raiders break against.",
+                Gain = "Soldiers eat another quarter less.", Price = "Subdued settlements pay a fifth less tribute.", Effects = Fx(("soldierFood", 0.75), ("tribute", 0.8)) },
         };
+
+        /// <summary>The combined effect of every charter the town holds on one thing (1 when none touches it).</summary>
+        public double CharterMult(string key)
+        {
+            double m = 1;
+            foreach (var id in CharterAt.Values)
+                if (CharterById(id)?.Effects is Dictionary<string, double> fx && fx.TryGetValue(key, out var v)) m *= v;
+            return m;
+        }
 
         public static Charter CharterById(string id) => Charters.FirstOrDefault(c => c.Id == id);
 

@@ -62,7 +62,7 @@ namespace CrownAndHearth.Sim
 
             // sawing: sawmills at full yield, then the Town Hall pit-saw at half yield
             foreach (var b in Blds.Where(b => b.T == "sawmill" && b.Served))
-                if (ResAmt[Res.Logs] > 0) { double c = Math.Min(ResAmt[Res.Logs], SawRate * b.Eff); ResAmt[Res.Logs] -= c; wood += c; }
+                if (ResAmt[Res.Logs] > 0) { double c = Math.Min(ResAmt[Res.Logs], SawRate * b.Eff * CharterMult("industry")); ResAmt[Res.Logs] -= c; wood += c; }
             if (ResAmt[Res.Logs] > 0) { double c = Math.Min(ResAmt[Res.Logs], HallSaw); ResAmt[Res.Logs] -= c; wood += c * HallYield; }
 
             if (!_sawHinted && ResAmt[Res.Logs] >= 30 && !Blds.Any(s => s.T == "sawmill" && s.Served))
@@ -123,7 +123,7 @@ namespace CrownAndHearth.Sim
             {
                 double room = CropStorage(Res.Metal) - ResAmt[Res.Metal];
                 if (room <= 0 || ResAmt[Res.Ore] <= 0) break;
-                double metal = Math.Min(Math.Min(room, SmeltRate * b.Eff), ResAmt[Res.Ore] / OrePerMetal);
+                double metal = Math.Min(Math.Min(room, SmeltRate * b.Eff * CharterMult("industry")), ResAmt[Res.Ore] / OrePerMetal);
                 double boost = Math.Min(Math.Min(room - metal, b.Eff), Math.Min(ResAmt[Res.Charcoal], ResAmt[Res.Ore] / OrePerMetal - metal));
                 ResAmt[Res.Charcoal] -= boost;
                 metal += boost;

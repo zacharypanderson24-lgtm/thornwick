@@ -79,5 +79,41 @@ namespace CrownAndHearth.Tests
             var loaded = World.LoadJson(save.ToString());
             Assert.AreEqual(0, loaded.CharterAt.Count);
         }
+
+        [Test] public void NoCharterIsAFreeLunch()
+        {
+            var known = new[] { "silo", "farm", "fish", "industry", "soldierFood", "tribute", "trade" };
+            foreach (var c in World.Charters)
+            {
+                Assert.IsTrue(c.Effects.Keys.All(k => known.Contains(k)), c.Id);
+                bool gain = c.Effects.Any(e => e.Key == "soldierFood" ? e.Value < 1 : e.Value > 1);
+                bool cost = c.Effects.Any(e => e.Key == "soldierFood" ? e.Value > 1 : e.Value < 1);
+                Assert.IsTrue(gain && cost, c.Id + " must have both a gain and a price");
+            }
+        }
+
+        [Test] public void EffectsMultiplyAndDefaultToOne()
+        {
+            var w = Town(); w.Peasants = 70;
+            Assert.AreEqual(1.0, w.CharterMult("fish"), 1e-9);
+            w.AdoptCharter("maritime1"); w.AdoptCharter("maritime2");
+            Assert.AreEqual(1.25 * 1.2, w.CharterMult("fish"), 1e-9);
+            Assert.AreEqual(0.9, w.CharterMult("industry"), 1e-9);
+            Assert.AreEqual(0.9, w.CharterMult("farm"), 1e-9);
+        }
+
+        [Test] public void TheAgrarianCharterRaisesSiloSpaceAndTheMartialOneRaisesSoldierFood()
+        {
+            var w = Town(); w.Peasants = 30;
+            w.ResAmt[Res.Wood] = 500; w.ResAmt[Res.Stone] = 500; var site = CrownAndHearth.Game.UI.Steward.Sites(w, "silo", 1);
+            if (site.Count == 0 || !w.Place("silo", site[0].x, site[0].y).Ok) Assert.Ignore("no silo spot beside a road");
+            int before = w.CropStorage(Res.Food);
+            w.AdoptCharter("agrarian1");
+            Assert.Greater(w.CropStorage(Res.Food), before);
+            var m = Town(); m.Peasants = 30; m.Soldiers = 10;
+            double demand = m.DailyFoodDemand;
+            m.AdoptCharter("martial1");
+            Assert.Greater(m.DailyFoodDemand, demand);
+        }
     }
 }
