@@ -81,6 +81,18 @@ namespace CrownAndHearth.Portraits
         public List<string> browChoices = new List<string> { "straight", "short" };
     }
 
+    [Serializable] public class GreyStep { public int yearsAfterOnset; public string hairColorId; }
+
+    // How hair changes with age. A person has individual onset ages (greying, receding, baldness); these rules say what the picture does afterwards.
+    [Serializable]
+    public class PortraitAgingRules
+    {
+        public List<GreyStep> greyingSteps = new List<GreyStep> { new GreyStep { yearsAfterOnset = 0, hairColorId = "salt_pepper" }, new GreyStep { yearsAfterOnset = 12, hairColorId = "silver" }, new GreyStep { yearsAfterOnset = 30, hairColorId = "white" } };
+        public string recedingStyleId = "receding";      // hairstyle shown once the hairline starts to recede
+        public string baldStyleId = "bald";              // hairstyle shown once the person is bald
+        public List<string> recedeKeepStyles = new List<string> { "bald", "tonsure", "receding", "buzz_cut" };   // styles that are not replaced when the hairline recedes
+    }
+
     [CreateAssetMenu(menuName = "Thornwick/Portrait Library", fileName = "PortraitLibrary")]
     public class PortraitLibrary : ScriptableObject
     {
@@ -96,6 +108,7 @@ namespace CrownAndHearth.Portraits
         public List<PortraitArchetype> archetypes = new List<PortraitArchetype>();
         public List<PortraitRegion> regions = new List<PortraitRegion>();
         public List<AgeStageDef> ageStages = new List<AgeStageDef>();
+        public PortraitAgingRules aging = new PortraitAgingRules();
 
         Dictionary<(PortraitLayer, string), PortraitAsset> _assetIndex;
         Dictionary<string, PaletteSet> _paletteIndex;

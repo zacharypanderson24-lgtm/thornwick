@@ -145,7 +145,7 @@ namespace CrownAndHearth.Sim
         // ---------- saving ----------
         // Row layout (fixed order, append new fields at the end): id, name, birth, home, here, civ, background, occupation, alive, employment,
         // [5 attributes], loyalty, ambition, health, experience, [traits], post, postSettlement, salary, payLevel,
-        // [look: seed, climate, archetype, outfit, grey, recede, bald], stage, deathDay, retiredDay, [history: [day, text]...]
+        // [look: seed, climate, archetype, outfit, grey, recede, bald, portrait definition json], stage, deathDay, retiredDay, [history: [day, text]...]
 
         public JObject Save()
         {
@@ -154,7 +154,7 @@ namespace CrownAndHearth.Sim
                 rows.Add(new JArray(c.Id, c.Name, c.BirthDay, c.HomeSettlement, c.Settlement, c.Civilization, (int)c.Background, c.Occupation, c.Alive, (int)c.Employment,
                     new JArray(c.Attr), c.Loyalty, c.Ambition, c.Health, c.ExperienceHundredths, new JArray(c.Traits.Select(t => (int)t)),
                     (int)c.Post, c.PostSettlement, c.MonthlySalary, (int)c.Pay,
-                    new JArray(c.Look.Seed, c.Look.Climate, c.Look.Archetype, c.Look.Outfit, c.Look.GreyAge, c.Look.RecedeAge, c.Look.BaldAge),
+                    new JArray(c.Look.Seed, c.Look.Climate, c.Look.Archetype, c.Look.Outfit, c.Look.GreyAge, c.Look.RecedeAge, c.Look.BaldAge, c.Look.Definition ?? ""),
                     (int)c.Stage, c.DeathDay, c.RetiredDay, new JArray(c.History.Select(h => new JArray(h.day, h.text)))));
             return new JObject
             {
@@ -185,7 +185,8 @@ namespace CrownAndHearth.Sim
                 c.Post = (Post)r[16].Value<int>(); c.PostSettlement = r[17].Value<int>(); c.MonthlySalary = r[18].Value<int>(); c.Pay = (PayLevel)r[19].Value<int>();
                 var look = (JArray)r[20];
                 c.Look = new CharAppearance { Seed = look[0].Value<int>(), Climate = look[1].Value<string>(), Archetype = look[2].Value<string>(), Outfit = look[3].Value<string>(),
-                    GreyAge = look[4].Value<int>(), RecedeAge = look[5].Value<int>(), BaldAge = look[6].Value<int>() };
+                    GreyAge = look[4].Value<int>(), RecedeAge = look[5].Value<int>(), BaldAge = look[6].Value<int>(),
+                    Definition = look.Count > 7 ? look[7].Value<string>() ?? "" : "" };   // saves from before the portrait definition have 7 entries
                 c.Stage = (AgeStage)r[21].Value<int>(); c.DeathDay = r[22].Value<int>(); c.RetiredDay = r[23].Value<int>();
                 foreach (JArray h in (JArray)r[24]) c.History.Add((h[0].Value<int>(), h[1].Value<string>()));
                 reg.Add(c);

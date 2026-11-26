@@ -3,6 +3,7 @@
     "rootNamespace": "CrownAndHearth.Game",
     "references": [
         "CrownAndHearth.Sim",
+        "CrownAndHearth.Portraits",
         "Unity.InputSystem",
         "UnityEngine.UI"
     ],

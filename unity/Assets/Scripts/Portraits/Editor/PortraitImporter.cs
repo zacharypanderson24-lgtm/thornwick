@@ -64,7 +64,7 @@ namespace CrownAndHearth.Portraits.EditorTools
             var lib = AssetDatabase.LoadAssetAtPath<PortraitLibrary>(LibraryPath);
             if (lib == null) { lib = ScriptableObject.CreateInstance<PortraitLibrary>(); AssetDatabase.CreateAsset(lib, LibraryPath); }
             lib.version = 19;
-            lib.style = new PortraitStyle();
+            lib.style = new PortraitStyle(); lib.aging = new PortraitAgingRules();
             lib.assets.Clear(); lib.palettes.Clear(); lib.archetypes.Clear(); lib.regions.Clear(); lib.ageStages.Clear();
 
             var masks = (JObject)pal["masks"];
