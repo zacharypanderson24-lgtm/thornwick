@@ -613,7 +613,7 @@ namespace CrownAndHearth.Game
             _ugLevel = id == CrownAndHearth.Game.UI.OverlayId.Underground ? 1 : 0;
             _ov = id == CrownAndHearth.Game.UI.OverlayId.Underground ? CrownAndHearth.Game.UI.OverlayId.None : id;
             var def = CrownAndHearth.Game.UI.OverlayRegistry.Get(id);
-            _hud.Toast(def == null ? "Overlay off." : $"Overlay: {def.Title}. {def.Hint}.", 5);
+            _hud.Toast(def == null ? "Overlay off." : CrownAndHearth.Game.UI.LensData.IsLens(id) ? CrownAndHearth.Game.UI.LensData.Legend(id) : $"Overlay: {def.Title}. {def.Hint}.", 8);
         }
 
         /// <summary>The overlay picked in the selector (Underground has its own drawing, see DrawUnderground).</summary>
@@ -622,6 +622,10 @@ namespace CrownAndHearth.Game
             var w = World;
             switch (_ov)
             {
+                case CrownAndHearth.Game.UI.OverlayId.Workers: case CrownAndHearth.Game.UI.OverlayId.Food: case CrownAndHearth.Game.UI.OverlayId.Trade: case CrownAndHearth.Game.UI.OverlayId.Military: case CrownAndHearth.Game.UI.OverlayId.Danger:
+                    foreach (var (lx, ly, tone) in CrownAndHearth.Game.UI.LensData.Tiles(w, _ov))
+                        _overlay.AddTile(w, lx, ly, _rot, tone == CrownAndHearth.Game.UI.LensTone.Good ? new Color32(110, 230, 110, 150) : tone == CrownAndHearth.Game.UI.LensTone.Warn ? new Color32(255, 200, 70, 150) : tone == CrownAndHearth.Game.UI.LensTone.Bad ? new Color32(255, 90, 80, 140) : tone == CrownAndHearth.Game.UI.LensTone.Info ? new Color32(110, 170, 255, 110) : new Color32(240, 220, 110, 70));
+                    break;
                 case CrownAndHearth.Game.UI.OverlayId.Water: DrawWater(null, null); break;
                 case CrownAndHearth.Game.UI.OverlayId.Forest: DrawForest(); break;
                 case CrownAndHearth.Game.UI.OverlayId.Fertility:
