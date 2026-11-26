@@ -2074,3 +2074,18 @@ MonoBehaviour:
     minYears: 75
     assetId: venerable
     randomWeight: 4
+  aging:
+    greyingSteps:
+    - yearsAfterOnset: 0
+      hairColorId: salt_pepper
+    - yearsAfterOnset: 12
+      hairColorId: silver
+    - yearsAfterOnset: 30
+      hairColorId: white
+    recedingStyleId: receding
+    baldStyleId: bald
+    recedeKeepStyles:
+    - bald
+    - tonsure
+    - receding
+    - buzz_cut
