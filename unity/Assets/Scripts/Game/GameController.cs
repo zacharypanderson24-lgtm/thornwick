@@ -1371,6 +1371,7 @@ namespace CrownAndHearth.Game
                     if (fallow > 0) lines.Add($"{fallow} Farmland tiles in town lie fallow: out of reach of a farm, or more than the farms can work. Build another farm near them.");
                 }
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
+                lines.AddRange(CrownAndHearth.Game.UI.StalledReasons.Lines(w, b));   // why it is idle or short, and several ways to fix it
                 if (b.T == "mine") lines.Add(w.MineStatus(b));
                 if (b.T == "quarry") lines.Add(w.QuarryStatus(b));
                 if (b.T == "wood") lines.Add(w.LodgeStatus(b));
