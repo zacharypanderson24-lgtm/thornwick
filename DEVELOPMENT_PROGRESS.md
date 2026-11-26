@@ -337,6 +337,9 @@ Scope for now (Zach): see a procedurally generated map through a map menu. Nothi
 - **Not done**: parcels are bought, never sold or lost; no fog or border markers beyond the dimming; no per-parcel terrain preview; the
   world map does not yet say how much of a city's 256 x 256 is owned.
 
+### Organic settlement development, phase 1 (`claude/organic-1`, 2026-11-26; `Sim/Districts.cs`, `Sim/World.Districts.cs`, `DistrictTests.cs`)
+Design in `DESIGN_ORGANIC_DEVELOPMENT.md` (it supersedes the extraction-area design where they disagree). Built: three new zone kinds (Quarry, Hunt, Fish) with placement rules, districts derived from the zone map with stable ids, deterministic expand/merge/split, names, priority/mode/limits settings, suitability scores, save/load (additive, old saves derive districts). Not built: the engine, construction queue, district UI, catalogue entries (phases 2 to 10). Nothing is player-visible yet.
+
 ## Not done yet (next candidates)
 
 1. Saves: built by ChatGPT, in `unity-migration` (see Farming above).

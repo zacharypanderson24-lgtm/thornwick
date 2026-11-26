@@ -1,5 +1,7 @@
 # Resource extraction and land management
 
+> **PARTLY SUPERSEDED by `DESIGN_ORGANIC_DEVELOPMENT.md` (Zach, 2026-11-26).** The table below ("no painted zone needed") and the plan to stop teaching zones no longer hold: zones are now the primary way to start ordinary extraction, and districts auto-develop lodges, quarries and mines. Everything geological, forestry, conservation and clearing here (finite reserves, pits, tunnels, modes, replanting, protected woodland, universal clearing, surveys) stays. Painted Lumber/Mining tiles keep working as before until their migration phases (3 and 4).
+
 Status: living design. The permanent rule is **simple controls, complex consequences**: the player decides where to put a building and how hard to work it;
 the simulation works out which trees, rock and ore the building can reach.
 

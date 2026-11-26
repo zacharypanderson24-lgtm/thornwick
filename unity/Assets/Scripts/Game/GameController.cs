@@ -1173,7 +1173,7 @@ namespace CrownAndHearth.Game
 
         static string ZoneName(Zone z, bool flax = false) => z switch
         {
-            Zone.Res => "Housing (level 1)", Zone.Res2 => "Housing (level 2)", Zone.Farm => flax ? "Flax field" : "Wheat field", Zone.Wood => "Lumber", Zone.Mine => "Mining", Zone.Comm => "Commerce",
+            Zone.Res => "Housing (level 1)", Zone.Res2 => "Housing (level 2)", Zone.Farm => flax ? "Flax field" : "Wheat field", Zone.Wood => "Lumber", Zone.Mine => "Mining", Zone.Quarry => "Quarrying", Zone.Hunt => "Hunting", Zone.Fish => "Fishing", Zone.Comm => "Commerce",
             Zone.Pigs => "Pig pen", Zone.Sheep => "Sheep pen", Zone.Chickens => "Chicken pen", _ => "No",
         };
 

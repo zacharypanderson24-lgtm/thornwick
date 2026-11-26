@@ -7,7 +7,7 @@ namespace CrownAndHearth.Sim
     public enum Deco : byte { None, Tree, Rock, Ore, Stump, Sapling }
 
     /// <summary>Painted zones (JS: S.zone[y][x]).</summary>
-    public enum Zone : byte { None, Res, Farm, Comm, Wood, Mine, Pigs, Sheep, Chickens, Res2 }
+    public enum Zone : byte { None, Res, Farm, Comm, Wood, Mine, Pigs, Sheep, Chickens, Res2, Quarry, Hunt, Fish }
 
     /// <summary>Resource keys (JS: S.res).</summary>
     public enum Res { Food, Wood, Logs, Stone, Ore, Gold, Flax, Metal, Charcoal, SmokedMeat, Wool, Eggs }
