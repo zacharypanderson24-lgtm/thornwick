@@ -1,6 +1,6 @@
 # Thornwick / Crown & Hearth: UI architecture (Unity)
 
-Status: Phase 1 (foundation) done (PR 106); Phase 2 done (PR 107); Phase 3 done (PR 109); Phase 4 done (PR 110); Phase 5 done (PR 111); Phase 6 (System menu and settings) in progress. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
+Status: Phase 1 (foundation) done (PR 106); Phase 2 done (PR 107); Phase 3 done (PR 109); Phase 4 done (PR 110); Phase 5 done (PR 111); Phase 6 done (PR 112); Phase 7 (hover tips, interface size) in progress. Military is the one menu still outside the shared window. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
 
 ## 1. Framework assessment
 
@@ -95,4 +95,8 @@ One Overlay button (lower right, next to Map and Military) opens a list: Off, Un
 
 ## 11. Phase 6 notes
 
-A System button at the end of the toolbar (and Esc when nothing else is open) opens the System window: Game (Resume, Save, Load, New world, Banner colour), Controls (every shortcut) and Settings (interface size 85, 100 or 115 percent; pause while the menu is open). Settings are kept in PlayerPrefs. The old floating Banner and New world buttons are retired; Save and Load also stay in the top bar. Esc order is now dialog, placement, open window or panel, then the System menu, which pauses the game while it is open (and gives the speed back on close) unless that setting is off. **Not included:** sound, graphics and key-rebinding options, because the game has none of those systems yet; the interface size was not checked visually at 85 and 115 percent.
+A System button at the end of the toolbar (and Esc when nothing else is open) opens the System window: Game (Resume, Save, Load, New world, Banner colour), Controls (every shortcut) and Settings (interface size 85 or 100 percent; pause while the menu is open). Settings are kept in PlayerPrefs. The old floating Banner and New world buttons are retired; Save and Load also stay in the top bar. Esc order is now dialog, placement, open window or panel, then the System menu, which pauses the game while it is open (and gives the speed back on close) unless that setting is off. **Not included:** sound, graphics and key-rebinding options, because the game has none of those systems yet; 
+
+## 12. Phase 7 notes
+
+Hovering a toolbar button now shows a card under it: name and key, what the menu holds, and why it is locked when it is. **Interface size:** the 115 percent option from Phase 6 is removed. The layout is built for a fixed 1600 x 900 canvas that scales with the screen, so any size above 100 percent shrinks that canvas and overflows (the toolbar was buried at 1280 x 720 and at 1920 x 1080 alike). Sizes are now 85 percent (more room for the map; checked at 1280 x 720) and 100 percent; a bigger interface needs a responsive layout first (anchors and flexible rows instead of the fixed offsets in the old panels). Seen at all three resolutions: 1280 x 720, 1920 x 1080 and 2560 x 1440. **Not done:** Military in the shared window (its window has nested dialogs and text fields tied to its own layout; plan: move it last, panel by panel, after a responsive pass), keyboard focus and tab order through the windows, and a high-contrast option.

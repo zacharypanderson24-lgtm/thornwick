@@ -275,11 +275,12 @@ namespace CrownAndHearth.Tests
         [Test]
         public void SettingsRoundTripAndBrokenTextKeepsDefaults()
         {
-            var s = new UiSettings { ScaleIndex = 2, PauseOnMenu = false };
+            var s = new UiSettings { ScaleIndex = 0, PauseOnMenu = false };
             var back = UiSettings.Parse(s.Serialize());
-            Assert.AreEqual(2, back.ScaleIndex); Assert.IsFalse(back.PauseOnMenu); Assert.AreEqual(115, back.Percent);
+            Assert.AreEqual(0, back.ScaleIndex); Assert.IsFalse(back.PauseOnMenu); Assert.AreEqual(85, back.Percent);
             var bad = UiSettings.Parse("scale=99;pause=x;junk");
             Assert.AreEqual(UiSettings.Scales.Length - 1, bad.ScaleIndex); Assert.IsTrue(bad.PauseOnMenu);
+            Assert.AreEqual(UiSettings.Scales.Length - 1, UiSettings.Parse("scale=2;pause=1").ScaleIndex, "a size from the earlier version that no longer exists is clamped");
             Assert.AreEqual(1, UiSettings.Parse(null).ScaleIndex); Assert.AreEqual(1f, UiSettings.Parse("").Scale);
             var c = new UiSettings(); for (int k = 0; k < UiSettings.Scales.Length; k++) c.CycleScale(); Assert.AreEqual(1, c.ScaleIndex, "cycling comes back round");
         }
@@ -298,6 +299,15 @@ namespace CrownAndHearth.Tests
             var set = ManagementData.SystemSettings(new UiSettings { ScaleIndex = 0, PauseOnMenu = false });
             StringAssert.StartsWith("85%", Value(set, "Interface size")); StringAssert.StartsWith("off", Value(set, "Pause when this menu opens"));
             Assert.AreEqual(set.Count, ManagementData.Rows(MenuId.System, 2, w, new NotificationManager(), 0, new UiSettings { ScaleIndex = 0, PauseOnMenu = false }).Count);
+        }
+
+        // ---------- phase 7: sizes that fit ----------
+        [Test]
+        public void NoInterfaceSizeIsBiggerThanTheLayoutIsBuiltFor()
+        {
+            Assert.IsTrue(UiSettings.Scales.All(x => x <= 1f), "a size above 100 percent overflows the 1600 x 900 layout at every screen size");
+            Assert.IsTrue(UiSettings.Scales.Contains(1f));
+            var s = new UiSettings { ScaleIndex = 99 }; Assert.AreEqual(1f, s.Scale);
         }
     }
 }

@@ -332,7 +332,7 @@ namespace CrownAndHearth.Game
             ShowTip(true, over, t.Label, t.Desc, foot);
         }
 
-        void ShowTip(bool on, RectTransform over, string title, string body, string foot)
+        void ShowTip(bool on, RectTransform over, string title, string body, string foot, bool below = false)
         {
             if (_tip == null) return;   // hiding the trays while the bar is still being built
             _tip.pivot = Vector2.zero;
@@ -342,10 +342,16 @@ namespace CrownAndHearth.Game
             _tipFoot.text = foot; _tipFoot.gameObject.SetActive(foot.Length > 0);
             // just above the hovered element, kept on screen
             var corners = new Vector3[4]; over.GetWorldCorners(corners);
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(_root, corners[1], null, out var topLeft);
+            Vector2 topLeft = _root.InverseTransformPoint(corners[1]);   // world to the canvas, whatever its render mode
             var size = _root.rect.size;
             float x = Mathf.Clamp(topLeft.x + size.x / 2, 8, size.x - 348);
-            _tip.anchoredPosition = new Vector2(x, topLeft.y + size.y / 2 + 6);
+            if (below)   // the toolbar is at the top of the screen: the tip hangs under the button
+            {
+                Vector2 bottomLeft = _root.InverseTransformPoint(corners[0]);
+                _tip.pivot = new Vector2(0, 1);
+                _tip.anchoredPosition = new Vector2(x, bottomLeft.y + size.y / 2 - 6);
+            }
+            else _tip.anchoredPosition = new Vector2(x, topLeft.y + size.y / 2 + 6);
             _tip.SetAsLastSibling(); _cursorTip.SetAsLastSibling();
         }
 
