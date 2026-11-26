@@ -62,7 +62,7 @@ Read from the code, not from older notes.
 | 7 | Catalogue, overlays, inspectors, warnings | done |
 | 8 | Save migration | done |
 | 9 | Balance and performance | done |
-| 10 | Final verification | |
+| 10 | Final verification | done (with the limits below) |
 
 Each phase's PR adds its row's details below as it lands.
 
@@ -159,3 +159,20 @@ Limits: the low-ore warning stage is runtime, so a loaded save can warn once mor
 - **Growth**: `SaplingGrowthRate` is 0 in winter and between 0.5 and 1 otherwise depending on ground moisture (on water maps).
 - **Performance**: the same working town (43 buildings, a lodge, a quarry, a mine, the opening harness at the end of year one, 200 measured days) ticked in **1.40 ms a day before** this milestone (zones painted, the old code at the phase 1 commit) and **1.50, 1.64 and 1.82 ms a day after** it (no zones, three separate runs on the same machine, the last two inside a full test run): somewhere between 7 and 30 percent slower, which at these sizes is a fraction of a millisecond and well inside the run-to-run noise. It is not a cost that grows with the map: work areas and forest counts are cached per world version. Work areas and forest counts are cached per world version, ore reserve scans run monthly per mine, and the clearing queue touches at most six orders a day.
 - **Balance concerns** (open): sustainable output on a modest forest is small (a forest of 60 trees supports roughly 1 log a day for ever), so a growing town needs several lodges or foresters; the opening harness shows the first year is fine, the third to fifth years have not been played. Costs were not changed.
+
+## 12. Phase 10: final verification and report
+
+**Automated**: the whole suite (724 tests) passes with 0 failures (9 skipped and 1 inconclusive, both from before this milestone). New in this milestone: `MiningAutoTests` 9, `QuarryAutoTests` 7, `ForestryAutoTests` 13, `TimberChainTests` 7, `ClearingTests` 12, `LandManagementUiTests` 5, `ExtractionMigrationTests` 4, `ExtractionEconomyTests` 6, and three zone-free first-year scenarios.
+
+**Scenarios from the brief**: A (founding settlement without zones), B (sustainable lodge over years), C (intensive lodge strips its forest), D (protected woodland, confirmation to clear), E (shared deposits), F (low and out-of-ore warnings), G (building through woodland) and H (first year with no zones) each have a test that runs the real simulation.
+
+**Visual**: the capture tool (`UiShots`) renders the real HUD at five resolutions for the Natural Resources and Land Management pages of the Build catalogue, the lodge panel in Sustainable and Intensive mode, and the inspector with its warnings. Looking at them found and fixed a wrapped title in the lodge panel and leftover text that still told players to paint zones.
+
+**Not verified, plainly**:
+- No real-mouse play in the Unity editor. The drag tools, the amber preview, the overlays that draw on the map and the confirmation dialogs are covered by tests of the rules behind them and by one real-click test of the lodge panel, not by playing.
+- The capture tool draws the HUD over a flat field, so there are **no screenshots of the world map** with the Forest overlay, the ore estimate, the quarry area, the clearing preview or a quarry pit. Those need a play session.
+- Only the first year has been played as a whole; years 3 to 5 of a growing town have not.
+
+**Known gaps and decisions**: no firewood or new minerals (nothing consumes them); no depth limits by era, mine suspend or upgrade (nothing in the simulation limits depth); no bushes (not modelled); no tree species inventories; the low-ore warning stage is not saved; sustainable output on a small forest is modest, so a growing town needs several lodges or foresters; governor-facing calls exist as plain `World` methods (`SurveyMineSite`, `SurveyQuarrySite`, `SurveyLodgeSite`, `SetForestMode`, `ProtectWoodland`, `DesignateClearing`, `PlanPlacement`, `PlaceWithClearing`, `BuildingWarnings`) but no governor uses them yet.
+
+**Recommended next**: a play session on the finished build (the places listed above), then balance the third to fifth years, then the heating system that would give firewood a use. Government Phase 3 can resume.

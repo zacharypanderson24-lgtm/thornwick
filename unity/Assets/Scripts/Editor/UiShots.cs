@@ -2,6 +2,7 @@
 // 1280x720, 1920x1080 and 2560x1440 for looking at. The picture is the HUD over a flat green field, not over the map: it checks layout, not the world.
 // Run from the command line (needs a graphics device, so no -nographics): -executeMethod CrownAndHearth.EditorTools.UiShots.Run
 using System.IO;
+using System.Linq;
 using CrownAndHearth.Game;
 using CrownAndHearth.Game.UI;
 using CrownAndHearth.Sim;
@@ -46,6 +47,11 @@ namespace CrownAndHearth.EditorTools
                 Shot(dir, art, w, h, "build_food", hud => { hud.Catalogue.LastCategory = CatalogueCategory.Food; hud.ShowCatalogue(true); });
                 Shot(dir, art, w, h, "build_military", hud => { hud.Catalogue.LastCategory = CatalogueCategory.Military; hud.ShowCatalogue(true); }, null, wd => { wd.ResAmt[Res.Wood] = 4; wd.ResAmt[Res.Stone] = 0; });
                 Shot(dir, art, w, h, "build_search", hud => { hud.ShowCatalogue(true); hud.SearchCatalogue("mill"); });
+                Shot(dir, art, w, h, "build_land", hud => { hud.Catalogue.LastCategory = CatalogueCategory.Land; hud.ShowCatalogue(true); });
+                Shot(dir, art, w, h, "build_resources", hud => { hud.Catalogue.LastCategory = CatalogueCategory.Resources; hud.ShowCatalogue(true); });
+                Shot(dir, art, w, h, "lodge_panel", hud => hud.ShowLodgePanel(_lodge), null, wd => _lodge = Forest(wd, 14, false));
+                Shot(dir, art, w, h, "lodge_panel_intensive", hud => hud.ShowLodgePanel(_lodge), null, wd => { _lodge = Forest(wd, 14, true); });
+                Shot(dir, art, w, h, "inspect_lodge", hud => hud.SetInfo(_info), null, wd => { var b = Forest(wd, 14, false); _info = "WOODCUTTER LODGE\n" + wd.LodgeStatus(b) + "\n" + string.Join("\n", wd.BuildingWarnings(b).Select(x => x.ToString())); });
                 System.Action<World> staff = wd => { wd.Era = 4; for (int i = 0; i < 9; i++) { var ch = CharacterGenerator.Create(wd.Characters.NextId, wd.CharacterPool(), 9000 + i, wd.Day, (Background)(i % 7), 25, 62); wd.Characters.Add(ch); } wd.Appoint(wd.Characters.All[0].Id, Post.Steward); wd.Appoint(wd.Characters.All[1].Id, Post.Chancellor); wd.ResAmt[Res.Gold] = 140; };
                 Shot(dir, art, w, h, "gov_council", hud => hud.OpenGovernment(0, Post.Treasurer), null, staff);
                 Shot(dir, art, w, h, "gov_recruit", hud => hud.OpenGovernment(1, Post.Treasurer), null, staff);
@@ -54,6 +60,20 @@ namespace CrownAndHearth.EditorTools
             }
             Debug.Log("UI screenshots written to " + dir);
             if (Application.isBatchMode) EditorApplication.Exit(0);
+        }
+
+        static Building _lodge; static string _info;
+
+        /// <summary>A lodge on claimed ground with a small forest beside it (for the panel and inspector shots); intensive switches its mode.</summary>
+        static Building Forest(World wd, int trees, bool intensive)
+        {
+            var spot = Enumerable.Range(0, Defs.N * Defs.N).Select(k => (x: k % Defs.N, y: k / Defs.N)).First(t => wd.Claimed(t.x, t.y) && wd.CanPlace("wood", t.x, t.y, true).Ok);
+            var b = wd.AddBld("wood", spot.x, spot.y, 2);
+            int n = 0;
+            for (int j = spot.y - 3; j <= spot.y + 3 && n < trees; j++) for (int i = spot.x + 5; i <= spot.x + 7 && n < trees; i++) if (World.Inb(i, j) && wd.Grid[j, i] == null && !wd.IsSolid(i, j)) { wd.DecoMap[j, i] = Deco.Tree; n++; }
+            if (intensive) wd.SetForestMode(b, ForestMode.Intensive);
+            wd.Touch(); wd.Recalc();
+            return b;
         }
 
         static void Shot(string dir, ArtLibrary art, int width, int height, string name, System.Action<Hud> act, System.Action<Hud> afterLayout = null, System.Action<World> prep = null)
