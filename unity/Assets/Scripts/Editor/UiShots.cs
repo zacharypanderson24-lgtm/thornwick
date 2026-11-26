@@ -29,7 +29,11 @@ namespace CrownAndHearth.EditorTools
                 Shot(dir, art, w, h, "locked", hud => hud.ToggleMenu(MenuId.Technology));
                 Shot(dir, art, w, h, "confirm", hud => { hud.ToggleMenu(MenuId.Notifications); hud.Confirm("Clear the message log?", "All saved messages will be removed. This cannot be undone.", () => { }); });
                 Shot(dir, art, w, h, "population", hud => hud.ToggleMenu(MenuId.Population));
+                Shot(dir, art, w, h, "jobs", hud => { hud.ToggleMenu(MenuId.Population); hud.UI.SetTab(1); });
                 Shot(dir, art, w, h, "agriculture", hud => hud.ToggleMenu(MenuId.Agriculture));
+                Shot(dir, art, w, h, "mining", hud => { hud.ToggleMenu(MenuId.Economy); hud.UI.SetTab(1); });
+                Shot(dir, art, w, h, "history", hud => { hud.ToggleMenu(MenuId.Settlement); hud.UI.SetTab(2); });
+                Shot(dir, art, w, h, "construction", hud => { hud.ToggleMenu(MenuId.Construction); hud.UI.SetTab(2); });
                 Shot(dir, art, w, h, "transport", hud => hud.ToggleMenu(MenuId.Transportation));
             }
             Debug.Log("UI screenshots written to " + dir);
@@ -49,7 +53,7 @@ namespace CrownAndHearth.EditorTools
             hud.Notify("The harvest begins.", 120, 0);
             hud.SetSettlement(world);
             act(hud);
-            hud.SetSettlement(world);
+            hud.SetSettlement(world); hud.RefreshWorkforce(world); hud.RefreshTownMenus(world);   // the game does these every frame
 
             var canvas = go.GetComponentInChildren<Canvas>();
             var camGo = new GameObject("UiShotCam"); var cam = camGo.AddComponent<Camera>();

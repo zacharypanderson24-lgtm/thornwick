@@ -1,6 +1,6 @@
 # Thornwick / Crown & Hearth: UI architecture (Unity)
 
-Status: Phase 1 (foundation) in progress. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
+Status: Phase 1 (foundation) done (PR 106); Phase 2 (Population, Economy, Construction, Agriculture, history moved into the shared window) in progress. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
 
 ## 1. Framework assessment
 
@@ -76,3 +76,7 @@ Unlock rules live in the registry (`MenuDef.Available(World)`): a menu is greyed
 ## 6. Verification
 
 Unit tests for registry, manager and notifications; the full EditMode suite before each PR; screenshots from a batch editor capture at 1280x720, 1920x1080 and 2560x1440. What a PR did not verify is stated in its description.
+
+## 7. Phase 2 notes
+
+The old Workforce, Farming, Mining, Statistics and Livestock screens are not rewritten: the window hosts them (moved inside it, in a scroll area), so their behaviour is unchanged. Their old buttons (Workers, Farming, Mining, Statistics, Livestock) are retired; Military and Map stay in the small bar until their phase. Population gained Jobs and Housing tabs, Settlement a History tab, Economy a Mining tab, Agriculture Farming and Livestock tabs, and Construction is a hub listing every tool by category (click a row to pick the tool).

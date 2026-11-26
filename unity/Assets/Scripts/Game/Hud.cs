@@ -35,6 +35,7 @@ namespace CrownAndHearth.Game
         Text _infoText, _toastText, _workText, _warbandText;
         GameObject _warbandPanel;
         GameObject _infoPanel, _workPanel;
+        Image _workersButton;
         float _toastUntil;
         Text _day, _population, _gold, _infoTitle;
         readonly Dictionary<int, Image> _speedButtons = new Dictionary<int, Image>();
@@ -160,6 +161,7 @@ namespace CrownAndHearth.Game
             Stretch(_workText.rectTransform, new Vector2(10, 8), new Vector2(-10, 34 - workforceHeight));
             _workPanel.SetActive(false);
 
+            AttachHostedPanels();
             BuildCursorTip(root);   // last, so it draws over everything
         }
 
@@ -192,7 +194,7 @@ namespace CrownAndHearth.Game
                 "When the bar is green and full, villagers want new homes and build them on Housing zones beside a road. " +
                 "It drops when houses have room to spare or food runs short.", ""));
 
-            MakeButton(bar, "Workers", new Vector2(1, 0.5f), new Vector2(-62, 0), new Vector2(104, 40), ToggleWorkforce);
+            _workersButton = MakeButton(bar, "Workers", new Vector2(1, 0.5f), new Vector2(-62, 0), new Vector2(104, 40), ToggleWorkforce);
 
             // what the selected tool does and how to use it: in the bar, between the categories and the Homes meter
             float chipLeft = 8 + _cats.Count * (CatW + 4) + 6;

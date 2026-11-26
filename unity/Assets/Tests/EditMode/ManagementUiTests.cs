@@ -1,5 +1,6 @@
 // The management UI layer (Game/UI): the twelve menus, the manager's Escape order, the message log, and the data the windows show.
 using System.Linq;
+using CrownAndHearth.Game;
 using CrownAndHearth.Game.UI;
 using CrownAndHearth.Sim;
 using NUnit.Framework;
@@ -150,6 +151,83 @@ namespace CrownAndHearth.Tests
             foreach (var id in new[] { MenuId.Settlement, MenuId.Economy, MenuId.Notifications })
                 for (int t = 0; t < ManagementData.Tabs(id).Length; t++)
                     Assert.DoesNotThrow(() => ManagementData.Rows(id, t, w, n), id + " tab " + t);
+        }
+
+        // ---------- phase 2: hosted screens, jobs, housing, the construction hub, paging ----------
+        [Test]
+        public void HostedTabsHaveNoRowsOfTheirOwn()
+        {
+            var w = new World(7); var n = new NotificationManager();
+            Assert.AreEqual(Host.Workforce, ManagementData.TabDefs(MenuId.Population)[0].Host);
+            Assert.IsEmpty(ManagementData.Rows(MenuId.Population, 0, w, n));
+            Assert.AreEqual(Host.Mining, ManagementData.TabDefs(MenuId.Economy)[1].Host);
+            Assert.AreEqual(Host.Statistics, ManagementData.TabDefs(MenuId.Settlement)[2].Host);
+            Assert.AreEqual(2, ManagementData.TabDefs(MenuId.Agriculture).Count(t => t.Host != Host.None));
+        }
+
+        [Test]
+        public void JobsAndHousingRowsAreTheWorldsNumbers()
+        {
+            var w = new World(7); w.StartCampaign(); w.Peasants = 20; w.Day = 40; w.Tick();
+            var jobs = ManagementData.Jobs(w);
+            Assert.AreEqual(w.Prio.Length, jobs.Count);
+            foreach (var t in w.Prio) { var (workers, total, _, _) = w.D.Work[t]; StringAssert.StartsWith($"{workers} of {total} jobs", jobs.First(r => r.Label == Defs.TradeNames[t]).Value); }
+            var housing = ManagementData.Housing(w);
+            Assert.AreEqual(w.Peasants.ToString(), Value(housing, "Settlers"));
+            Assert.AreEqual(w.D.Bunks.ToString(), Value(housing, "Barracks bunks"));
+        }
+
+        [Test]
+        public void ConstructionHubListsEveryToolOfACategoryAndMarksWhatTheTownCannotPay()
+        {
+            var w = new World(7); w.ResAmt[Res.Wood] = 0; w.ResAmt[Res.Stone] = 0; w.ResAmt[Res.Gold] = 0;
+            var cats = GameController.Cats.Where(c => c.Cat != GameController.Cat.Inspect).ToArray();
+            Assert.AreEqual(cats.Length, ManagementData.TabDefs(MenuId.Construction).Length);
+            for (int i = 0; i < cats.Length; i++)
+            {
+                var rows = ManagementData.ConstructionTools(w, i);
+                var expected = GameController.Tools.Where(t => t.Cat == cats[i].Cat).Select(t => t.Id).Take(ManagementData.MaxRows).ToArray();
+                CollectionAssert.AreEqual(expected, rows.Select(r => r.Id).ToArray(), cats[i].Label);
+            }
+            var farm = ManagementData.ConstructionTools(w, System.Array.FindIndex(cats, c => c.Cat == GameController.Cat.Farming));
+            Assert.AreEqual(Tone.Bad, farm.First(r => r.Id == "farmhouse").Tone);
+        }
+
+        [Test]
+        public void MessagePagesRunNewestToOldest()
+        {
+            var n = new NotificationManager();
+            for (int i = 0; i < ManagementData.MaxRows + 4; i++) n.Add(i * 10, "message " + i, NoteKind.Info, out _);
+            var p0 = ManagementData.Messages(n, false, 0); var p1 = ManagementData.Messages(n, false, 1);
+            Assert.AreEqual(ManagementData.MaxRows, p0.Count); Assert.AreEqual(4, p1.Count);
+            Assert.AreEqual("message 19", p0[0].Value); Assert.AreEqual("message 3", p1[0].Value);
+            Assert.AreEqual(ManagementData.MaxRows + 4, ManagementData.MessageCount(n, false));
+        }
+
+        [Test]
+        public void TheHudBuildsAndEveryMenuAndTabOpens()
+        {
+            var go = new UnityEngine.GameObject("HudTest"); var hud = go.AddComponent<CrownAndHearth.Game.Hud>();
+            try
+            {
+                var w = new World(3, TerrainStyle.Ranges, Relief.Upland, WaterPreset.Lakeside); w.StartCampaign(); w.Tick();
+                hud.Build(GameController.Tools, GameController.Cats, new ArtLibrary());
+                hud.SetSettlement(w);
+                foreach (var id in MenuRegistry.Primary.Select(m => m.Id).Concat(new[] { MenuId.Notifications }))
+                {
+                    if (MenuRegistry.WhyLocked(id, w) != null) continue;
+                    hud.ToggleMenu(id); hud.SetSettlement(w);
+                    if (hud.UI.Open == id)
+                        for (int t = 0; t < ManagementData.Tabs(id).Length; t++) { hud.UI.SetTab(t); hud.SetSettlement(w); }
+                    hud.ToggleMenu(id);
+                }
+                Assert.IsNull(hud.UI.Open);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+                foreach (var es in UnityEngine.Object.FindObjectsByType<UnityEngine.EventSystems.EventSystem>(UnityEngine.FindObjectsSortMode.None)) UnityEngine.Object.DestroyImmediate(es.gameObject);
+            }
         }
     }
 }

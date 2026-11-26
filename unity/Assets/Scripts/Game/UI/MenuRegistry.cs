@@ -23,10 +23,10 @@ namespace CrownAndHearth.Game.UI
         public static readonly IReadOnlyList<MenuDef> Primary = new List<MenuDef>
         {
             new MenuDef { Id = MenuId.Settlement, Title = "Settlement", FunctionKey = 1, Blurb = "People, food, mood and the state of the town" },
-            new MenuDef { Id = MenuId.Population, Title = "Population", FunctionKey = 2, Blurb = "Who works where: trade priorities and worker counts" },
-            new MenuDef { Id = MenuId.Economy, Title = "Economy", FunctionKey = 3, Blurb = "Stockpiles and how fast each one is changing" },
-            new MenuDef { Id = MenuId.Construction, Title = "Construction", FunctionKey = 4, Blurb = "Open the build bar" },
-            new MenuDef { Id = MenuId.Agriculture, Title = "Agriculture", FunctionKey = 5, Blurb = "Fields, crops and livestock (press again for livestock)" },
+            new MenuDef { Id = MenuId.Population, Title = "Population", FunctionKey = 2, Blurb = "Who works where: trade priorities, jobs and housing" },
+            new MenuDef { Id = MenuId.Economy, Title = "Economy", FunctionKey = 3, Blurb = "Stockpiles, how fast each is changing, and mining" },
+            new MenuDef { Id = MenuId.Construction, Title = "Construction", FunctionKey = 4, Blurb = "Pick a building or zone from the list, then place it on the map" },
+            new MenuDef { Id = MenuId.Agriculture, Title = "Agriculture", FunctionKey = 5, Blurb = "Fields, crops and livestock" },
             new MenuDef { Id = MenuId.Technology, Title = "Technology", FunctionKey = 6, Blurb = "Research", LockedReason = w => "Technology: there is no tech tree yet." },
             new MenuDef { Id = MenuId.Military, Title = "Military", FunctionKey = 7, Blurb = "Troops, companies and orders" },
             new MenuDef { Id = MenuId.Transportation, Title = "Transport", FunctionKey = 8, Blurb = "Boats, ferries and ports",

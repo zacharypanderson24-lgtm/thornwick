@@ -28,6 +28,11 @@ namespace CrownAndHearth.Game
         readonly List<Image> _mgmtFooter = new List<Image>();
         readonly List<Text> _mgmtFooterLabels = new List<Text>();
         readonly List<(RectTransform row, Text label, Text value, Image barBack, RectTransform barFill)> _mgmtRows = new List<(RectTransform, Text, Text, Image, RectTransform)>();
+        readonly List<string> _mgmtRowIds = new List<string>();
+        readonly List<Action> _footerActions = new List<Action>();
+        RectTransform _mgmtHost, _hostDummy;
+        ScrollRect _hostScroll;
+        int _msgPage;
         Action _confirmYes;
         int _mgmtShownStamp = -1;
         string _mgmtShownKey;
@@ -48,16 +53,23 @@ namespace CrownAndHearth.Game
             MakeMenuButton(bar, MenuId.Notifications, "Messages", "N", 4 + i * (bw + gap) + 4, 66);
 
             // ---- the standard window ----
-            _mgmtWin = MakePanel(root, "ManagementWindow", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-440, -240), new Vector2(440, 320));
+            _mgmtWin = MakePanel(root, "ManagementWindow", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-360, -240), new Vector2(360, 320));
             _mgmtTitle = MakeText(_mgmtWin, "Title", 24, TextAnchor.UpperLeft); _mgmtTitle.fontStyle = FontStyle.Bold;
             var tr = _mgmtTitle.rectTransform; tr.anchorMin = new Vector2(0, 1); tr.anchorMax = Vector2.one; tr.offsetMin = new Vector2(18, -46); tr.offsetMax = new Vector2(-60, -8);
             MakeButton(_mgmtWin, "X", Vector2.one, new Vector2(-28, -26), new Vector2(40, 32), () => _ui.Close());
-            for (int t = 0; t < 4; t++)
+            for (int t = 0; t < 12; t++)
             {
                 int tab = t;
                 var img = MakeButton(_mgmtWin, "Tab", new Vector2(0, 1), new Vector2(76 + t * 132, -68), new Vector2(126, 28), () => _ui.SetTab(tab));
-                _mgmtTabs.Add(img); _mgmtTabLabels.Add(img.GetComponentInChildren<Text>());
+                var tl = img.GetComponentInChildren<Text>(); tl.resizeTextForBestFit = true; tl.resizeTextMinSize = 9; tl.resizeTextMaxSize = 14;
+                _mgmtTabs.Add(img); _mgmtTabLabels.Add(tl);
             }
+            _mgmtHost = new GameObject("Host", typeof(RectTransform)).GetComponent<RectTransform>(); _mgmtHost.SetParent(_mgmtWin, false);
+            Stretch(_mgmtHost, new Vector2(18, 50), new Vector2(-18, -96));
+            _mgmtHost.gameObject.AddComponent<RectMask2D>();   // a hosted screen taller than the window (Workforce has a row for every trade) scrolls
+            _hostDummy = new GameObject("None", typeof(RectTransform)).GetComponent<RectTransform>(); _hostDummy.SetParent(_mgmtHost, false);
+            _hostScroll = _mgmtHost.gameObject.AddComponent<ScrollRect>(); _hostScroll.horizontal = false; _hostScroll.vertical = true;
+            _hostScroll.movementType = ScrollRect.MovementType.Clamped; _hostScroll.scrollSensitivity = 30; _hostScroll.viewport = _mgmtHost; _hostScroll.content = _hostDummy;
             for (int r = 0; r < ManagementData.MaxRows; r++)
             {
                 var row = new GameObject("Row", typeof(RectTransform)).GetComponent<RectTransform>(); row.SetParent(_mgmtWin, false);
@@ -65,6 +77,8 @@ namespace CrownAndHearth.Game
                 row.anchorMin = new Vector2(0, 1); row.anchorMax = Vector2.one; row.offsetMin = new Vector2(18, top - 25); row.offsetMax = new Vector2(-18, top);
                 var back = new GameObject("Stripe", typeof(RectTransform), typeof(Image)).GetComponent<Image>(); back.transform.SetParent(row, false);
                 Stretch(back.rectTransform, Vector2.zero, Vector2.zero); back.color = new Color(1, 1, 1, r % 2 == 0 ? 0.05f : 0.0f); back.raycastTarget = false;
+                int rowIdx = r; var rb = back.gameObject.AddComponent<Button>(); rb.transition = UnityEngine.UI.Selectable.Transition.None; rb.onClick.AddListener(() => RowClicked(rowIdx));
+                _mgmtRowIds.Add(null);
                 var label = MakeText(row, "Label", 16, TextAnchor.MiddleLeft); Stretch(label.rectTransform, new Vector2(8, 0), new Vector2(-8, 0));
                 var value = MakeText(row, "Value", 16, TextAnchor.MiddleRight); Stretch(value.rectTransform, new Vector2(8, 0), new Vector2(-8, 0));
                 var barBack = new GameObject("Bar", typeof(RectTransform), typeof(Image)).GetComponent<Image>(); barBack.transform.SetParent(row, false);
@@ -76,10 +90,10 @@ namespace CrownAndHearth.Game
             }
             _mgmtEmpty = MakeText(_mgmtWin, "Empty", 18, TextAnchor.MiddleCenter); _mgmtEmpty.color = Dim; Stretch(_mgmtEmpty.rectTransform, new Vector2(20, 60), new Vector2(-20, -100));
             _mgmtFootnote = MakeText(_mgmtWin, "Footnote", 13, TextAnchor.LowerRight); _mgmtFootnote.color = Dim; Stretch(_mgmtFootnote.rectTransform, new Vector2(16, 8), new Vector2(-16, 40));
-            for (int f = 0; f < 3; f++)
+            for (int f = 0; f < 4; f++)
             {
                 int idx = f;
-                var img = MakeButton(_mgmtWin, "Footer", Vector2.zero, new Vector2(100 + f * 190, 26), new Vector2(180, 32), () => FooterClicked(idx));
+                var img = MakeButton(_mgmtWin, "Footer", Vector2.zero, new Vector2(90 + f * 170, 26), new Vector2(160, 32), () => { if (idx < _footerActions.Count) _footerActions[idx](); });
                 _mgmtFooter.Add(img); _mgmtFooterLabels.Add(img.GetComponentInChildren<Text>());
             }
 
@@ -115,9 +129,6 @@ namespace CrownAndHearth.Game
         // ---------- opening and closing ----------
         bool IsMenuOpen(MenuId id) => id switch
         {
-            MenuId.Population => _workPanel != null && _workPanel.activeSelf,
-            MenuId.Construction => _openCat != null,
-            MenuId.Agriculture => _townMenu == TownMenu.Farming || _townMenu == TownMenu.Livestock,
             MenuId.Military => MilitaryOpen,
             MenuId.Transportation => _vesselPanel != null && _vesselPanel.gameObject.activeSelf,
             MenuId.Trade => _mapOpen,
@@ -144,28 +155,14 @@ namespace CrownAndHearth.Game
             var why = MenuRegistry.WhyLocked(id, _world);
             if (why != null) { Toast(why, 4); return; }
             bool wasOpen = IsMenuOpen(id);
-            if (id == MenuId.Agriculture)
-            {
-                var next = _townMenu == TownMenu.Farming ? TownMenu.Livestock : _townMenu == TownMenu.Livestock ? TownMenu.Closed : TownMenu.Farming;
-                CloseAllMenus(); ShowTownMenu(next); return;
-            }
-            if (id == MenuId.Construction)
-            {
-                if (wasOpen) { CloseTray(); return; }
-                CloseAllMenus();
-                var first = _cats.FirstOrDefault(c => c.Cat != GameController.Cat.Inspect);
-                if (first != null) CategoryKey(first.Cat);
-                return;
-            }
             CloseAllMenus(keepMap: id == MenuId.Trade || id == MenuId.World);
             if (wasOpen) return;
             switch (id)
             {
-                case MenuId.Population: ToggleWorkforce(); break;
                 case MenuId.Military: ToggleMilitary(); break;
                 case MenuId.Transportation: _vesselPanel.gameObject.SetActive(true); _vesselShown = -1; break;
                 case MenuId.Trade: case MenuId.World: OpenMap(); break;
-                default: _ui.Toggle(id, _world, out _); if (id == MenuId.Notifications) Notes.MarkAllRead(); break;
+                default: _ui.Toggle(id, _world, out _); if (id == MenuId.Notifications) { Notes.MarkAllRead(); _msgPage = 0; } break;
             }
         }
 
@@ -198,28 +195,74 @@ namespace CrownAndHearth.Game
             if (_ui.HasModal) _confirmBox.parent.SetAsLastSibling();
             if (_tip != null && _cursorTip != null) { _tip.SetAsLastSibling(); _cursorTip.SetAsLastSibling(); }
             _mgmtShownKey = null;
+            ApplyHostedTab();
         }
 
-        void FooterClicked(int idx)
+        void RowClicked(int idx)
         {
-            switch (_ui.Open)
+            string id = idx < _mgmtRowIds.Count ? _mgmtRowIds[idx] : null;
+            if (id == null) return;
+            CloseAllMenus(); ToolPicked?.Invoke(id);
+        }
+
+        /// <summary>The screen the open tab hosts (Workforce, Farming, Mining, Statistics, Livestock), or None.</summary>
+        Host OpenHost()
+        {
+            if (_ui.Open is MenuId id) { var defs = ManagementData.TabDefs(id); return _ui.Tab >= 0 && _ui.Tab < defs.Length ? defs[_ui.Tab].Host : Host.None; }
+            return Host.None;
+        }
+
+        /// <summary>Show the old screen a tab hosts and hide the others. They live inside the window now, so hiding the window hides them too.</summary>
+        void ApplyHostedTab()
+        {
+            if (_mgmtHost == null || _workPanel == null) return;
+            var want = OpenHost();
+            _mgmtHost.gameObject.SetActive(want != Host.None);
+            bool work = want == Host.Workforce;
+            if (_workPanel.activeSelf != work) { _workPanel.SetActive(work); WorkforceToggled?.Invoke(work); }
+            var town = want == Host.Farming ? TownMenu.Farming : want == Host.Mining ? TownMenu.Mining : want == Host.Statistics ? TownMenu.Statistics : want == Host.Livestock ? TownMenu.Livestock : TownMenu.Closed;
+            bool hosted = _townMenu == TownMenu.Farming || _townMenu == TownMenu.Mining || _townMenu == TownMenu.Statistics || _townMenu == TownMenu.Livestock;
+            var shown = want == Host.Workforce ? (RectTransform)_workPanel.transform : town != TownMenu.Closed ? _townPanels[(int)town - 1] : _hostDummy;
+            if (_hostScroll.content != shown) { _hostScroll.content = shown; shown.anchoredPosition = Vector2.zero; _hostScroll.velocity = Vector2.zero; }
+            if (town != TownMenu.Closed && _townMenu != town) ShowTownMenu(town);
+            else if (town == TownMenu.Closed && hosted) ShowTownMenu(TownMenu.Closed);
+        }
+
+        /// <summary>Called once the Hud is built: move the Workforce, Farming, Mining, Statistics and Livestock screens into the window, retire the buttons that
+        /// opened them, and tidy what is left of the old button bar (Military and Map).</summary>
+        void AttachHostedPanels()
+        {
+            void Host(RectTransform rt)
             {
-                case MenuId.Settlement: if (idx == 0) { CloseAllMenus(); ShowTownMenu(TownMenu.Statistics); } else if (idx == 1) ToggleMenu(MenuId.Population); break;
-                case MenuId.Economy: if (idx == 0) { CloseAllMenus(); ShowTownMenu(TownMenu.Statistics); } break;
+                var size = rt.sizeDelta;
+                rt.SetParent(_mgmtHost, false);
+                rt.anchorMin = rt.anchorMax = new Vector2(0, 1); rt.pivot = new Vector2(0, 1); rt.sizeDelta = size; rt.anchoredPosition = Vector2.zero;
+            }
+            Host((RectTransform)_workPanel.transform);
+            foreach (int i in new[] { 0, 1, 3, 4 }) { Host(_townPanels[i]); _townButtons[i].gameObject.SetActive(false); }
+            ((RectTransform)_townButtons[2].transform).anchoredPosition = new Vector2(-55, 0);
+            ((RectTransform)_mapMenuButton.transform).anchoredPosition = new Vector2(-161, 0);
+            var barRt = (RectTransform)_townButtons[2].transform.parent; barRt.offsetMin = new Vector2(-218, barRt.offsetMin.y);
+            if (_workersButton != null) _workersButton.gameObject.SetActive(false);
+            SyncManagement();
+        }
+
+        List<(string label, Action act)> FooterFor(MenuId id, int tab, World w)
+        {
+            var list = new List<(string, Action)>();
+            switch (id)
+            {
+                case MenuId.Settlement: list.Add(("Population", () => ToggleMenu(MenuId.Population))); list.Add(("Economy", () => ToggleMenu(MenuId.Economy))); break;
+                case MenuId.Population: list.Add(("Settlement", () => ToggleMenu(MenuId.Settlement))); break;
                 case MenuId.Notifications:
-                    if (idx == 0) Notes.MarkAllRead();
-                    else if (idx == 1) Confirm("Clear the message log?", "All saved messages will be removed. This cannot be undone.", () => { Notes.Clear(); _mgmtShownKey = null; });
+                    list.Add(("Mark all read", () => { Notes.MarkAllRead(); _mgmtShownKey = null; }));
+                    list.Add(("Clear log", () => Confirm("Clear the message log?", "All saved messages will be removed. This cannot be undone.", () => { Notes.Clear(); _msgPage = 0; _mgmtShownKey = null; })));
+                    if (_msgPage > 0) list.Add(("Newer", () => { _msgPage--; _mgmtShownKey = null; }));
+                    if ((_msgPage + 1) * ManagementData.MaxRows < ManagementData.MessageCount(Notes, tab == 1)) list.Add(("Older", () => { _msgPage++; _mgmtShownKey = null; }));
                     break;
             }
+            return list;
         }
-
-        static string[] FooterLabels(MenuId id) => id switch
-        {
-            MenuId.Settlement => new[] { "History charts", "Workforce" },
-            MenuId.Economy => new[] { "History charts" },
-            MenuId.Notifications => new[] { "Mark all read", "Clear log" },
-            _ => new string[0],
-        };
 
         // ---------- per-frame refresh (called from SetSettlement) ----------
         void RefreshManagement(World w)
@@ -236,7 +279,7 @@ namespace CrownAndHearth.Game
             if (_ui.Open is MenuId id)
             {
                 // redraw only when the day, the tab or the message list changed (rows are text, so avoid rebuilding every frame)
-                string key = $"{id}|{_ui.Tab}|{w.Day}|{w.Version}|{Notes.History.Count}|{Notes.Unread}";
+                string key = $"{id}|{_ui.Tab}|{_msgPage}|{w.Day}|{w.Version}|{Notes.History.Count}|{Notes.Unread}";
                 if (key != _mgmtShownKey) { _mgmtShownKey = key; DrawManagementWindow(id, w); }
                 if (id == MenuId.Notifications && Notes.Unread > 0 && _ui.Tab >= 0) { /* stays unread until the player marks it, so a new message shows in the toolbar */ }
             }
@@ -248,17 +291,22 @@ namespace CrownAndHearth.Game
             _mgmtTitle.text = def.Title;
             var tabs = ManagementData.Tabs(id);
             int tab = Mathf.Clamp(_ui.Tab, 0, tabs.Length - 1);
+            float tw = Mathf.Clamp((720 - 36 - (tabs.Length - 1) * 6f) / tabs.Length, 54, 126);
             for (int t = 0; t < _mgmtTabs.Count; t++)
             {
                 bool show = tabs.Length > 1 && t < tabs.Length;
                 _mgmtTabs[t].gameObject.SetActive(show);
-                if (show) { _mgmtTabLabels[t].text = tabs[t]; _mgmtTabs[t].color = t == tab ? BtnOn : Btn; }
+                if (!show) continue;
+                _mgmtTabLabels[t].text = tabs[t]; _mgmtTabs[t].color = t == tab ? BtnOn : Btn;
+                var tr = _mgmtTabs[t].rectTransform; tr.sizeDelta = new Vector2(tw, 28); tr.anchoredPosition = new Vector2(18 + t * (tw + 6) + tw / 2, -68);
             }
-            var rows = ManagementData.Rows(id, tab, w, Notes);
+            bool hosted = ManagementData.TabDefs(id)[tab].Host != Host.None;
+            var rows = ManagementData.Rows(id, tab, w, Notes, _msgPage);
             for (int r = 0; r < _mgmtRows.Count; r++)
             {
                 var ui = _mgmtRows[r];
                 bool has = r < rows.Count;
+                _mgmtRowIds[r] = has ? rows[r].Id : null;
                 ui.row.gameObject.SetActive(has);
                 if (!has) continue;
                 var row = rows[r];
@@ -272,15 +320,15 @@ namespace CrownAndHearth.Game
                 var vr = ui.value.rectTransform; vr.offsetMin = new Vector2(wide ? 100 : 8, 0); vr.offsetMax = new Vector2(bar ? -190 : -8, 0);
                 if (bar) { ui.barFill.anchorMin = Vector2.zero; ui.barFill.anchorMax = new Vector2(Mathf.Clamp01(row.Bar), 1); ui.barFill.offsetMin = ui.barFill.offsetMax = Vector2.zero; ui.barFill.GetComponent<Image>().color = col; }
             }
-            _mgmtEmpty.gameObject.SetActive(rows.Count == 0);
+            _mgmtEmpty.gameObject.SetActive(rows.Count == 0 && !hosted);
             _mgmtEmpty.text = ManagementData.EmptyText(id, tab);
-            var foot = FooterLabels(id);
+            var foot = FooterFor(id, tab, w); _footerActions.Clear();
             for (int f = 0; f < _mgmtFooter.Count; f++)
             {
-                _mgmtFooter[f].gameObject.SetActive(f < foot.Length);
-                if (f < foot.Length) _mgmtFooterLabels[f].text = foot[f];
+                _mgmtFooter[f].gameObject.SetActive(f < foot.Count);
+                if (f < foot.Count) { _mgmtFooterLabels[f].text = foot[f].label; _footerActions.Add(foot[f].act); }
             }
-            _mgmtFootnote.text = id == MenuId.Notifications ? $"{Notes.History.Count} saved (latest {ManagementData.MaxRows} shown)" : def.Blurb;
+            _mgmtFootnote.text = id == MenuId.Notifications ? $"{Notes.History.Count} saved, page {_msgPage + 1}" : def.Blurb;
         }
     }
 }
