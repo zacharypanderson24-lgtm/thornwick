@@ -19,7 +19,7 @@ namespace CrownAndHearth.Game.UI
         static readonly string[] Problems =
         {
             "Not connected", "cut off from", "No keeper", "No water it can fish", "Nothing to fell", "No home will grow", "out of service",
-            "No cargo barge", "No ferry boat", "none assigned", "is starving", "Without boats", "No flowing river", "not joined to fresh water",
+            "Stalled:", "No cargo barge", "No ferry boat", "none assigned", "is starving", "Without boats", "No flowing river", "not joined to fresh water",
         };
         /// <summary>For a problem the inspector reports: what to do about it. Only problems whose line does not already say how to fix them are listed, and each fix is a plain
         /// fact about how the game works (nothing is predicted).</summary>
