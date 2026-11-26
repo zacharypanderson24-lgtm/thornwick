@@ -280,6 +280,7 @@ namespace CrownAndHearth.Game
         {
             string id = idx < _mgmtRowIds.Count ? _mgmtRowIds[idx] : null;
             if (id == null) return;
+            if (id.StartsWith("open:") && System.Enum.TryParse(id.Substring(5), out MenuId target)) { if (!IsMenuOpen(target)) ToggleMenu(target); return; }
             if (id.StartsWith("cmd:")) { RunCommand(id.Substring(4)); return; }
             if (id.StartsWith(GovernmentData.Prefix)) { var msg = GovernmentData.Click(_world, _gov, id, out int tab); if (tab >= 0) _ui.SetTab(tab); if (msg != null) Toast(msg); _mgmtShownKey = null; return; }
             CloseAllMenus(); ToolPicked?.Invoke(id);

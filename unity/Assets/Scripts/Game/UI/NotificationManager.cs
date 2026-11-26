@@ -29,6 +29,21 @@ namespace CrownAndHearth.Game.UI
             return NoteKind.Info;
         }
 
+        /// <summary>The three levels the player sees: Critical (Danger), Warning, Info (everything else).</summary>
+        public static string SeverityLabel(NoteKind k) => k == NoteKind.Danger ? "Critical" : k == NoteKind.Warning ? "Warning" : "Info";
+
+        /// <summary>The management menu a message is about, or null when it is not clearly about one. Words only: events are plain sentences.</summary>
+        public static MenuId? LinkFor(string text)
+        {
+            string t = text.ToLowerInvariant();
+            if (t.Contains("raider") || t.Contains("warband") || t.Contains("garrison") || t.Contains("soldier") || t.Contains("attack")) return MenuId.Military;
+            if (t.Contains("starv") || t.Contains("famine") || t.Contains("food") || t.Contains("water") || t.Contains("thirst") || t.Contains("dehydrat")) return MenuId.Settlement;
+            if (t.Contains("boat") || t.Contains("ferry") || t.Contains("vessel")) return MenuId.Transportation;
+            if (t.Contains("caravan") || t.Contains("trade") || t.Contains("ship")) return MenuId.Trade;
+            if (t.Contains("salary") || t.Contains("council") || t.Contains("appoint")) return MenuId.Government;
+            return null;
+        }
+
         /// <summary>Add a message. Returns the entry, and whether it is new (false: folded into an earlier identical one inside the cooldown).</summary>
         public Note Add(int day, string text, NoteKind? kind, out bool isNew)
         {

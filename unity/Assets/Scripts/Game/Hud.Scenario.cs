@@ -15,7 +15,7 @@ namespace CrownAndHearth.Game
         Text _scenarioTitle, _scenarioBody;
         Image _scenarioFill, _scenarioTrack;
 
-        const float ScenarioTop = -232, ScenarioH = 190;
+        const float ScenarioTop = -240, ScenarioH = 190;
 
         void BuildScenario(RectTransform root)
         {
