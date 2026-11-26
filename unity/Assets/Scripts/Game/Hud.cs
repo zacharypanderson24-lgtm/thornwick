@@ -526,8 +526,12 @@ namespace CrownAndHearth.Game
 
         public void Toast(string text, float secs = 3.5f) { _toastText.text = text; _toastText.color = Ink; _toastUntil = Time.unscaledTime + secs; }
 
+        /// <summary>How the canvas scales: by the mean of width and height on ordinary screens, by height alone once the screen is wider than 16:9 (an ultrawide would otherwise blow the interface up and bury the toolbar).</summary>
+        public static float MatchFor(float width, float height) => width / Mathf.Max(1f, height) > 16f / 9f + 0.01f ? 1f : 0.5f;
+
         void Update()
         {
+            if (_scaler != null) { float m = MatchFor(Screen.width, Screen.height); if (!Mathf.Approximately(_scaler.matchWidthOrHeight, m)) _scaler.matchWidthOrHeight = m; }
             UpdateCamp();
             if (_toastText != null && Time.unscaledTime > _toastUntil && _toastText.text.Length > 0) _toastText.text = "";
         }
