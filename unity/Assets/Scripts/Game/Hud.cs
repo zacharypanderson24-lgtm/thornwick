@@ -106,6 +106,11 @@ namespace CrownAndHearth.Game
             {
                 int s = sp;
                 _speedButtons[s] = MakeButton(top, label, new Vector2(1, 0.5f), new Vector2(x, 0), new Vector2(60, 30), () => SpeedPicked?.Invoke(s));
+                var speedButton = _speedButtons[s];
+                string tipTitle = s == 0 ? "Pause" : "Speed " + label;
+                string tipBody = s == 0 ? "Stops the clock. You can still build, zone and look around." : "One day passes every " + (s == 1 ? "second." : s == 2 ? "half second." : "quarter second.");
+                string tipKey = s == 0 ? "Key: Space" : "Keys: + and - change the speed";
+                AddHover(speedButton.gameObject, on => ShowTip(on, speedButton.rectTransform, tipTitle, tipBody, tipKey, true));
                 x += 66;
             }
             MakeButton(top, "Rotate Q", new Vector2(1, 0.5f), new Vector2(x + 6, 0), new Vector2(84, 30), () => RotatePicked?.Invoke(-1));
