@@ -150,6 +150,7 @@ namespace CrownAndHearth.Game
         float _townAcc;     // how far through its day an NPC settlement being looked at is
         Vector3 _savedCamCenter; int _savedZoomIndex;
         int _ugLevel;   // underground view: 0 off, else the level shown (U cycles)
+        CrownAndHearth.Game.UI.OverlayId _ov;   // the other map overlays, chosen from the Overlay selector (Underground keeps _ugLevel)
         float _dayAcc;
         ToolDef _tool = Tools[0];
         Vector2Int? _hover, _roadAnchor, _lastPaint, _zoneAnchor;   // _zoneAnchor: first corner of a zone (or unzone) rectangle
@@ -190,6 +191,7 @@ namespace CrownAndHearth.Game
             _hud.Build(Tools, Cats, _art);
             _hud.BannerPicked += SetBanner;
             _hud.ToolPicked += id => SetTool(Tools.First(t => t.Id == id));
+            _hud.OverlayPicked += SetOverlay;
             _hud.LivestockFocusRequested += (x, y) => _cam.CenterOn(IsoView.TileCenter(World, x, y, _rot));
             _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); };
             _hud.RotatePicked += Rotate;
@@ -528,6 +530,7 @@ namespace CrownAndHearth.Game
             _objects.AnimateLivestock(World.Day, Mathf.Clamp01(_dayAcc), _rot);
             if (_campWorld != null) DrawCampOverlay(); else DrawOverlay();
             _hud.SetSettlement(World);
+            _hud.SetOverlayState(_ugLevel > 0 ? CrownAndHearth.Game.UI.OverlayId.Underground : _ov, _ugLevel > 0 ? $"Underground {_ugLevel}" : CrownAndHearth.Game.UI.OverlayRegistry.TitleOf(_ov));
             _hud.SetDemand(World.Dem[Zone.Res]);
             var tip = CursorTip(); _hud.SetCursorTip(tip.text, tip.bad, Mouse.current?.position.ReadValue() ?? Vector2.zero, _tipWarn);
             _hud.SetInfo(_hover.HasValue ? TileInfo(_hover.Value.x, _hover.Value.y) : "");
@@ -567,9 +570,39 @@ namespace CrownAndHearth.Game
             if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
             if (kb.uKey.wasPressedThisFrame)
             {
-                _ugLevel = (_ugLevel + 1) % (World.Bands + 1);
+                _ugLevel = (_ugLevel + 1) % (World.Bands + 1); if (_ugLevel > 0) _ov = CrownAndHearth.Game.UI.OverlayId.None;
                 _hud.Toast(_ugLevel == 0 ? "Underground view off." : $"Underground view: ore band {_ugLevel} of {World.Bands}" +
                     (_ugLevel == 1 ? " (just under the surface). Ore lies in hills and mountains. Orange = ore a tunnel has revealed, brighter = richer; grey = revealed, nothing here; blue = Mining zone not dug near yet; yellow = tunnel. U for deeper." : _ugLevel < World.Bands ? ". U for deeper." : " (deepest, richest). U to turn off."), 6);
+            }
+        }
+
+        void SetOverlay(CrownAndHearth.Game.UI.OverlayId id)
+        {
+            _ugLevel = id == CrownAndHearth.Game.UI.OverlayId.Underground ? 1 : 0;
+            _ov = id == CrownAndHearth.Game.UI.OverlayId.Underground ? CrownAndHearth.Game.UI.OverlayId.None : id;
+            var def = CrownAndHearth.Game.UI.OverlayRegistry.Get(id);
+            _hud.Toast(def == null ? "Overlay off." : $"Overlay: {def.Title}. {def.Hint}.", 5);
+        }
+
+        /// <summary>The overlay picked in the selector (Underground has its own drawing, see DrawUnderground).</summary>
+        void DrawChosenOverlay()
+        {
+            var w = World;
+            switch (_ov)
+            {
+                case CrownAndHearth.Game.UI.OverlayId.Water: DrawWater(null, null); break;
+                case CrownAndHearth.Game.UI.OverlayId.Fertility:
+                    for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
+                        if (w.Fert[y, x] && w.Grid[y, x] == null && !(w.Waters != null && w.Waters.IsWater(x, y))) _overlay.AddTile(w, x, y, _rot, new Color32(150, 230, 90, 90));
+                    break;
+                case CrownAndHearth.Game.UI.OverlayId.Sailing:
+                    if (w.Waters == null) break;
+                    for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
+                    {
+                        int i = y * N + x; if (!w.Waters.IsWaterAt(i)) continue;
+                        _overlay.AddTile(w, x, y, _rot, w.Waters.NavRegion[i] != 0 ? new Color32(90, 230, 150, 110) : new Color32(150, 150, 150, 110));
+                    }
+                    break;
             }
         }
 
@@ -846,6 +879,7 @@ namespace CrownAndHearth.Game
                 for (int j = 0; j < burning.Sz; j++) for (int i = 0; i < burning.Sz; i++) _overlay.AddTile(World, burning.X + i, burning.Y + j, _rot, Bad);
             DrawTunnels();
             if (_ugLevel > 0) DrawUnderground();
+            else DrawChosenOverlay();
             // zone tools: shade where the buildings that work this zone can reach, so the player knows where to paint
             if (_tool.Zone == Zone.Wood || _tool.Zone == Zone.Mine || (_tool.Zone == Zone.Farm && World.SeasonalFarming))
             {

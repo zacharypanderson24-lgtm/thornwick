@@ -1,6 +1,6 @@
 # Thornwick / Crown & Hearth: UI architecture (Unity)
 
-Status: Phase 1 (foundation) done (PR 106); Phase 2 done (PR 107); Phase 3 done (PR 109); Phase 4 (inspector layout) in progress. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
+Status: Phase 1 (foundation) done (PR 106); Phase 2 done (PR 107); Phase 3 done (PR 109); Phase 4 done (PR 110); Phase 5 (overlay selector) in progress. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
 
 ## 1. Framework assessment
 
@@ -88,3 +88,7 @@ Transport (F8) is a data window: Routes (every ferry route with length, crossing
 ## 9. Phase 4 notes
 
 The tile and building inspector keeps GameController.TileInfo as the one place that gathers facts (one line per fact), and Game/UI/InspectionData turns those lines into the standard layout: heading, short "Label: value" facts as aligned rows, sentences as paragraphs, problems in a warning colour, a good connection in green. This is one template for every kind of tile (building, road, water, forest, field, pen, ground) rather than ten, because the facts already differ per kind in the data. **Not done:** contextual action buttons in the inspector (open Workforce, Order boats...). The inspector only shows while hovering, so a button on it could not be reached; it needs a click-to-select (pinned) inspector first, a separate change to input handling.
+
+## 10. Phase 5 notes
+
+One Overlay button (lower right, next to Map and Military) opens a list: Off, Underground, Groundwater, Fertile land, Sailable water; one overlay at a time, and a locked one says why (Sailable water needs a water world). Only overlays with real data are listed: ore bands under the hills, the groundwater patches with short homes and the roads water travels, the fertile ground flag, and the navigable-water regions. The registry is Game/UI/OverlayRegistry.cs; GameController draws the chosen one (DrawChosenOverlay) and U still cycles the underground depth. **Not included** (no data behind them yet, so no entry): happiness, crime, pollution, traffic, land value, coverage of services. They join the list when the simulation has them. The always-on contextual overlays (reach rings for work buildings, zone and placement previews, claim parcels) stay tied to their tools.
