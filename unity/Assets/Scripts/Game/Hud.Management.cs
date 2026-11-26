@@ -56,14 +56,14 @@ namespace CrownAndHearth.Game
         void BuildManagement(RectTransform root)
         {
             // ---- toolbar ----
-            const float bw = 68, gap = 2;
-            float width = 8 + MenuRegistry.Primary.Count * (bw + gap) + 4 + 64 + 2 + 56 + 6;
+            const float bw = 104, gap = 3;
+            float width = 8 + MenuRegistry.Groups.Count * (bw + gap) + 4 + 64 + 2 + 56 + 6;
             var bar = MakePanel(root, "ManagementBar", Vector2.up, Vector2.up, new Vector2(8, ToolbarTop - ToolbarH), new Vector2(8 + width, ToolbarTop));
             int i = 0;
-            foreach (var def in MenuRegistry.Primary)
+            foreach (var g in MenuRegistry.Groups)
             {
-                var id = def.Id;
-                MakeMenuButton(bar, id, def.Title, "F" + def.FunctionKey, 4 + i * (bw + gap), bw);
+                var lead = g.Members[0];
+                MakeMenuButton(bar, lead, g.Title, "F" + MenuRegistry.Get(lead).FunctionKey + (g.Members.Length > 1 ? " +" + (g.Members.Length - 1) : ""), 4 + i * (bw + gap), bw, g.Group);
                 i++;
             }
             MakeMenuButton(bar, MenuId.Notifications, "Messages", "N", 4 + i * (bw + gap) + 4, 64);
@@ -76,6 +76,17 @@ namespace CrownAndHearth.Game
             _mgmtTitle = MakeText(_mgmtWin, "Title", 24, TextAnchor.UpperLeft); _mgmtTitle.fontStyle = FontStyle.Bold;
             var tr = _mgmtTitle.rectTransform; tr.anchorMin = new Vector2(0, 1); tr.anchorMax = Vector2.one; tr.offsetMin = new Vector2(18, -46); tr.offsetMax = new Vector2(-60, -8);
             MakeButton(_mgmtWin, "X", Vector2.one, new Vector2(-28, -26), new Vector2(40, 32), () => _ui.Close());
+            for (int sIdx = 0; sIdx < 5; sIdx++)   // the group switcher beside the title
+            {
+                int si = sIdx;
+                var sb = MakeButton(_mgmtWin, "Section", new Vector2(0, 1), new Vector2(262 + sIdx * 90 + 42, -26), new Vector2(86, 28), () =>
+                {
+                    var gr = _ui.Open is MenuId cur ? MenuRegistry.GroupOf(cur) : null;
+                    if (gr is MenuGroup gg && si < MenuRegistry.MembersOf(gg).Length) { var target = MenuRegistry.MembersOf(gg)[si]; if (!IsMenuOpen(target)) ToggleMenu(target); }
+                });
+                var sl = sb.GetComponentInChildren<Text>(); sl.resizeTextForBestFit = true; sl.resizeTextMinSize = 9; sl.resizeTextMaxSize = 13;
+                _mgmtSections.Add(sb); _mgmtSectionLabels.Add(sl); sb.gameObject.SetActive(false);
+            }
             for (int t = 0; t < 12; t++)
             {
                 int tab = t;
@@ -133,15 +144,22 @@ namespace CrownAndHearth.Game
             SyncManagement();
         }
 
-        void MakeMenuButton(RectTransform bar, MenuId id, string title, string key, float x, float w)
+        MenuGroup? _hoverGroupFor;
+        readonly Dictionary<MenuId, MenuGroup> _groupButtons = new Dictionary<MenuId, MenuGroup>();
+        readonly Dictionary<MenuGroup, MenuId> _lastInGroup = new Dictionary<MenuGroup, MenuId>();
+        readonly List<Image> _mgmtSections = new List<Image>();
+        readonly List<Text> _mgmtSectionLabels = new List<Text>();
+
+        void MakeMenuButton(RectTransform bar, MenuId id, string title, string key, float x, float w, MenuGroup? group = null)
         {
             var go = new GameObject(title, typeof(RectTransform), typeof(Image), typeof(Button));
             var rt = (RectTransform)go.transform; rt.SetParent(bar, false);
             rt.anchorMin = rt.anchorMax = new Vector2(0, 0.5f); rt.pivot = new Vector2(0, 0.5f); rt.sizeDelta = new Vector2(w, ToolbarH - 6); rt.anchoredPosition = new Vector2(x, 0);
             var img = go.GetComponent<Image>(); img.color = Btn;
-            var b = go.GetComponent<Button>(); b.transition = UnityEngine.UI.Selectable.Transition.None; b.onClick.AddListener(() => ToggleMenu(id));
+            var b = go.GetComponent<Button>(); b.transition = UnityEngine.UI.Selectable.Transition.None; b.onClick.AddListener(() => { if (group is MenuGroup gg) ToggleGroup(gg); else ToggleMenu(id); });
+            if (group is MenuGroup g0) _groupButtons[id] = g0;
             var t = MakeText(rt, "Label", 12, TextAnchor.MiddleCenter); t.text = title;
-            t.resizeTextForBestFit = true; t.resizeTextMinSize = 9; t.resizeTextMaxSize = 12; t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            t.resizeTextForBestFit = true; t.resizeTextMinSize = 9; t.resizeTextMaxSize = 14; t.horizontalOverflow = HorizontalWrapMode.Overflow;
             var tr = t.rectTransform; tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = new Vector2(1, 8); tr.offsetMax = new Vector2(-1, 0);
             var k = MakeText(rt, "Key", 10, TextAnchor.LowerCenter); k.text = key; k.color = Dim;
             Stretch(k.rectTransform, new Vector2(0, 1), Vector2.zero);
@@ -154,6 +172,14 @@ namespace CrownAndHearth.Game
         {
             if (!_menuButtons.TryGetValue(id, out var img)) return;
             if (!on) { ShowTip(false, null, "", "", ""); return; }
+            if (_groupButtons.TryGetValue(id, out var grp))
+            {
+                var info = MenuRegistry.Groups.First(x => x.Group == grp);
+                string keys = string.Join("   ", info.Members.Select(m => $"F{MenuRegistry.Get(m).FunctionKey} {MenuRegistry.Get(m).Title}"));
+                string whyG = _world != null ? MenuRegistry.WhyGroupLocked(grp, _world) : null;
+                ShowTip(true, img.rectTransform, info.Title, info.Blurb, whyG ?? keys, true);
+                return;
+            }
             var def = MenuRegistry.Get(id);
             string key = id == MenuId.Notifications ? "N" : id == MenuId.System ? "Esc" : "F" + def.FunctionKey;
             string why = _world != null ? MenuRegistry.WhyLocked(id, _world) : null;
@@ -179,6 +205,17 @@ namespace CrownAndHearth.Game
         }
 
         /// <summary>Open the menu (or close it if it is open). A locked menu says why instead.</summary>
+        /// <summary>A group button: closes the group when one of its menus is open, otherwise opens the one used last (or the first that can open).</summary>
+        public void ToggleGroup(MenuGroup g)
+        {
+            if (_world == null) return;
+            var open = MenuRegistry.MembersOf(g).FirstOrDefault(m => IsMenuOpen(m));
+            if (IsMenuOpen(open) && MenuRegistry.MembersOf(g).Contains(open)) { ToggleMenu(open); return; }
+            _lastInGroup.TryGetValue(g, out var last);
+            var entry = MenuRegistry.EntryOf(g, _world, _lastInGroup.ContainsKey(g) ? last : (MenuId?)null);
+            if (entry is MenuId m2) ToggleMenu(m2); else Toast(MenuRegistry.WhyGroupLocked(g, _world), 4);
+        }
+
         public void ToggleMenu(MenuId id)
         {
             if (_world == null) return;
@@ -350,8 +387,9 @@ namespace CrownAndHearth.Game
         {
             foreach (var kv in _menuButtons)
             {
-                bool locked = kv.Key != MenuId.Notifications && MenuRegistry.WhyLocked(kv.Key, w) != null;
-                bool on = IsMenuOpen(kv.Key);
+                bool isGroup = _groupButtons.TryGetValue(kv.Key, out var gb);
+                bool locked = isGroup ? MenuRegistry.WhyGroupLocked(gb, w) != null : kv.Key != MenuId.Notifications && MenuRegistry.WhyLocked(kv.Key, w) != null;
+                bool on = isGroup ? MenuRegistry.MembersOf(gb).Any(m => IsMenuOpen(m)) : IsMenuOpen(kv.Key);
                 kv.Value.color = on ? BtnOn : locked ? new Color(Btn.r * 0.6f, Btn.g * 0.6f, Btn.b * 0.6f, 0.85f) : Btn;
                 _menuLabels[kv.Key].color = locked ? new Color(Dim.r, Dim.g, Dim.b, 0.45f) : Ink;
             }
@@ -366,10 +404,29 @@ namespace CrownAndHearth.Game
             }
         }
 
+        /// <summary>Beside the title: the other menus of the same group, one click away (Settlement and Population, the five Economy menus, World and Diplomacy).</summary>
+        void DrawSections(MenuId id, World w)
+        {
+            var group = MenuRegistry.GroupOf(id);
+            if (group is MenuGroup g0) _lastInGroup[g0] = id;
+            var members = group is MenuGroup g ? MenuRegistry.MembersOf(g) : new MenuId[0];
+            for (int i = 0; i < _mgmtSections.Count; i++)
+            {
+                bool show = members.Length > 1 && i < members.Length;
+                _mgmtSections[i].gameObject.SetActive(show);
+                if (!show) continue;
+                var m = members[i]; bool locked = MenuRegistry.WhyLocked(m, w) != null;
+                _mgmtSectionLabels[i].text = MenuRegistry.Get(m).Title;
+                _mgmtSectionLabels[i].color = locked ? new Color(Dim.r, Dim.g, Dim.b, 0.55f) : Ink;
+                _mgmtSections[i].color = m == id ? BtnOn : Btn;
+            }
+        }
+
         void DrawManagementWindow(MenuId id, World w)
         {
             var def = MenuRegistry.Get(id);
             _mgmtTitle.text = def.Title;
+            DrawSections(id, w);
             var tabs = ManagementData.Tabs(id);
             int tab = Mathf.Clamp(_ui.Tab, 0, tabs.Length - 1);
             float tw = Mathf.Clamp((720 - 36 - (tabs.Length - 1) * 6f) / tabs.Length, 54, 126);
