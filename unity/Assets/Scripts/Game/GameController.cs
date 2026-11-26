@@ -150,7 +150,7 @@ namespace CrownAndHearth.Game
         public WaterPreset Water = WaterPreset.None;
 
         public World World { get; private set; }
-        int _rot, _drawnVersion = -1, _drawnRot = -1, _speed = 1;
+        int _rot, _drawnVersion = -1, _drawnRot = -1, _speed = 1, _lastRunSpeed = 1;
         Rect _builtRect;   // the part of the world the renderers last built (in world units)
         WorldMap _worldMap; System.Threading.Tasks.Task<WorldMap> _worldMapTask;   // the conquest map, made on a background thread the first time the Map opens
         World _campWorld;   // while a raider camp is open the game view shows this little world instead of the settlement
@@ -200,7 +200,7 @@ namespace CrownAndHearth.Game
             _hud.ToolPicked += id => SetTool(Tools.First(t => t.Id == id));
             _hud.OverlayPicked += SetOverlay;
             _hud.LivestockFocusRequested += (x, y) => _cam.CenterOn(IsoView.TileCenter(World, x, y, _rot));
-            _hud.SpeedPicked += s => { _speed = s; _hud.SetSpeed(s); };
+            _hud.SpeedPicked += s => { _speed = s; if (s > 0) _lastRunSpeed = s; _hud.SetSpeed(s); };
             _hud.RotatePicked += Rotate;
             _hud.PrioMoved += MovePrio;
             _hud.WorkersAdjusted += (trade, dir) => World.AdjustTradeTarget(trade, dir);
@@ -553,6 +553,20 @@ namespace CrownAndHearth.Game
             }
         }
 
+        /// <summary>Space: pause, and resume at the speed the game was running at (not always 1x).</summary>
+        void TogglePause()
+        {
+            if (_speed > 0) { _lastRunSpeed = _speed; _speed = 0; }
+            else _speed = _lastRunSpeed;
+            _hud.SetSpeed(_speed);
+        }
+
+        /// <summary>+ and - step through 1x, 2x, 4x; either one also resumes a paused game.</summary>
+        void SetSpeedStep(int direction)
+        {
+            _speed = CrownAndHearth.Game.UI.SpeedSteps.Next(_speed, direction); _lastRunSpeed = _speed; _hud.SetSpeed(_speed);
+        }
+
         void HandleKeys()
         {
             var kb = Keyboard.current; if (kb == null || _hud.EditingBanner) return;
@@ -567,15 +581,17 @@ namespace CrownAndHearth.Game
             {
                 // the map is modal: Esc closes it, Space still pauses, nothing else reaches the town
                 if (kb.escapeKey.wasPressedThisFrame) _hud.EscapePanels();
-                if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
+                if (kb.spaceKey.wasPressedThisFrame) TogglePause();
                 return;
             }
             if (kb.escapeKey.wasPressedThisFrame) Cancel();
             foreach (var c in Cats)
                 if (c.Cat != Cat.Inspect && (kb[c.Hotkey].wasPressedThisFrame || (c.Alt != Key.None && kb[c.Alt].wasPressedThisFrame))) _hud.CategoryKey(c.Cat);
+            if (kb.equalsKey.wasPressedThisFrame || kb.numpadPlusKey.wasPressedThisFrame) SetSpeedStep(1);
+            if (kb.minusKey.wasPressedThisFrame || kb.numpadMinusKey.wasPressedThisFrame) SetSpeedStep(-1);
             if (kb.qKey.wasPressedThisFrame) Rotate(-1);
             if (kb.eKey.wasPressedThisFrame) Rotate(1);
-            if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
+            if (kb.spaceKey.wasPressedThisFrame) TogglePause();
             if (kb.uKey.wasPressedThisFrame)
             {
                 _autoOv = false; _ugLevel = (_ugLevel + 1) % (World.Bands + 1); if (_ugLevel > 0) _ov = CrownAndHearth.Game.UI.OverlayId.None;
