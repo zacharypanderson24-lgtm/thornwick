@@ -132,6 +132,11 @@ namespace CrownAndHearth.Sim
         /// <summary>Move the day on for caravans and ships (the daily tick does this; exposed so tests can arrive a shipment on its day).</summary>
         public void StepCaravansNow() => StepCaravans();
 
+        public const double TollPerTower = 0.04; public const int TollTowers = 4;
+        /// <summary>Watchtowers on your land keep the trade roads safe: merchants pay a toll of 4% of each trade per tower (up to four towers). A fortress town earns by guarding.</summary>
+        public int RoadTowers => Math.Min(TollTowers, Blds.Count(b => b.T == "watchtower"));
+        public double TollRate => TollPerTower * RoadTowers;
+
         void StepCaravans()
         {
             for (int i = Caravans.Count - 1; i >= 0; i--)
@@ -159,6 +164,11 @@ namespace CrownAndHearth.Sim
                         if (s != null) s.Attitude = Math.Min(100, Math.Max(s.Attitude, Math.Min(GiftCap, s.Attitude + GiftWarmth)));
                         Events.Add(s != null ? $"{name} received your gift. It now feels {SettlementRules.AttitudeName(s.Attitude)} towards you." : "Your gift was delivered.");
                         continue;
+                }
+                if (c.Kind != CaravanKind.Gift && TollRate > 0 && c.Gold > 0)
+                {
+                    int toll = (int)Math.Floor(c.Gold * TollRate);
+                    if (toll > 0) { ResAmt[Res.Gold] += toll; Events.Add($"Your watchtowers collected {toll} gold in road tolls from the {(c.Mode == TradeMode.Overland ? "caravan" : "ship")} to {name}."); }
                 }
                 if (s != null && s.Attitude < TradeWarmthCap)
                     s.Attitude = Math.Min(TradeWarmthCap, s.Attitude + (s.Personality == Personality.Mercantile ? 2 : 1));
