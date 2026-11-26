@@ -79,7 +79,7 @@ namespace CrownAndHearth.Sim
             if (!Claimed(x, y)) return false;
             if (hunting) return HuntFoodRemaining(x, y) > 0;
             var dc = DecoMap[y, x];
-            if (kind == Deco.Tree) return dc == Deco.Tree && InWorkArea(b, Zone.Wood, x, y);   // World.Extraction.cs: the lodge's automatic area (or its painted boundary)
+            if (kind == Deco.Tree) return dc == Deco.Tree && TreeWorkable(b, x, y);   // World.Extraction.cs: the lodge's automatic area (or its painted boundary)
             if (kind == Deco.Rock) return dc == Deco.Rock && InWorkArea(b, Zone.Mine, x, y) && RockWorkable(x, y);
             return dc == Deco.Ore;
         }
@@ -123,6 +123,7 @@ namespace CrownAndHearth.Sim
             for (int j = b.Y - range; j <= b.Y + b.Sz - 1 + range; j++)
                 for (int i = b.X - range; i <= b.X + b.Sz - 1 + range; i++)
                 {
+                    if (kind == Deco.Tree && !hunting && _reservedTrees.Contains(Tk(i, j))) continue;   // another worker already has this tree (any lodge)
                     if (!Inb(i, j) || !(survey ? ZoneMap[j, i] == Zone.Mine && !Surveyed[Tk(i, j)] && Claimed(i, j) : CrewMatch(b, kind, i, j, hunting))) continue;
                     for (int k = 0; k < 4; k++)
                     {
@@ -146,9 +147,9 @@ namespace CrownAndHearth.Sim
             int tx = a.Tx, ty = a.Ty;
             if (kind == Deco.Tree)
             {
-                if (!CrewMatch(b, kind, tx, ty)) return 0;
+                if (!CrewMatch(b, kind, tx, ty) || !MayHarvest(b)) return 0;   // the floor is checked again at the last chop
                 int k = Tk(tx, ty); Chop[k] = (Chop.TryGetValue(k, out var c) ? c : 0) + 1;
-                if (Chop[k] >= ChopsPerTree) FellAt(tx, ty);
+                if (Chop[k] >= ChopsPerTree) FellAt(tx, ty, b);
                 return Load["wood"];
             }
             return MineRock(tx, ty, 0, Load["quarry"]);   // mines work underground (World.Mining.cs)
@@ -157,8 +158,12 @@ namespace CrownAndHearth.Sim
         readonly List<int> _used = new List<int>(8);
 
         /// <summary>Advance every crew one day (JS stepCrews). `got` collects what was delivered today.</summary>
+        readonly HashSet<int> _reservedTrees = new HashSet<int>();   // trees a woodcutter is walking to or chopping: no other lodge targets them (runtime)
+
         void StepCrews(Dictionary<Res, double> got)
         {
+            _reservedTrees.Clear();
+            foreach (var lodge in Blds) if (lodge.T == "wood") foreach (var w in lodge.Crew) if (w.St != CrewState.Home && w.Stand >= 0) _reservedTrees.Add(Tk(w.Tx, w.Ty));
             for (int bi = 0; bi < Blds.Count; bi++)
             {
                 var b = Blds[bi]; var kind = CrewKind(b.T); if (kind == Deco.None) continue;
@@ -174,11 +179,13 @@ namespace CrownAndHearth.Sim
                     if (a.St == CrewState.Home)
                     {
                         if (!b.Served) continue;
+                        if (b.T == "wood" && !MayHarvest(b)) continue;   // World.Forestry.cs: a sustainable lodge leaves its standing trees
                         if (hunting && CropStorage(res) - ResAmt[res] - got[res] < 1) continue;
                         if (kind != Deco.Tree && ResAmt[res] + got[res] >= Storage) continue;   // full stockpile: stay home, keep the reserve in the ground
                         _used.Clear();
                         foreach (var o in crew) if (o != a && o.St != CrewState.Home && o.Stand >= 0) _used.Add(o.Stand);
                         if (!CrewTarget(b, kind, ai * 7 + Day, _used, a.Path, out a.Tx, out a.Ty)) continue;
+                        if (kind == Deco.Tree && !hunting) _reservedTrees.Add(Tk(a.Tx, a.Ty));
                         a.Stand = a.Path[a.Path.Count - 1]; a.I = 0; a.Carry = 0;
                         if (a.Path.Count > 1) { a.I = 1; SetPos(a, a.Path[1]); }
                         a.St = a.I == a.Path.Count - 1 ? CrewState.Work : CrewState.Out; if (a.St == CrewState.Work) a.T = WorkT;

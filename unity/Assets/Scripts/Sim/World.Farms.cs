@@ -236,6 +236,7 @@ namespace CrownAndHearth.Sim
                         if (!Inb(i, j)) continue;
                         if (CrewMatch(b, kind, i, j)) n++;   // what a crew can fell or cut
                     }
+                if (b.T == "wood" && !MayHarvest(b)) n = 0;   // nothing it may cut right now (World.Forestry.cs)
                 _workTiles[b] = n;
             }
         }

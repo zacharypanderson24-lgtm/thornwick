@@ -56,7 +56,7 @@ Read from the code, not from older notes.
 | 1 | Audit and this document | done |
 | 2 | Mining without zones, site survey, depletion warnings | done |
 | 3 | Quarry auto area and optional boundary (also: lodges match trees without a zone) | done |
-| 4 | Forestry modes, replanting, protected woodland | |
+| 4 | Forestry modes, replanting, protected woodland | done |
 | 5 | Timber chain | |
 | 6 | Universal land clearing | |
 | 7 | Catalogue, overlays, inspectors, warnings | |
@@ -86,3 +86,18 @@ Each phase's PR adds its row's details below as it lands.
 - **Lodges** now match trees through the same `InWorkArea` (no Lumber zone needed); modes, replanting and protection are phase 4.
 - **Tests changed on purpose** (they asserted the old "no zone, no work" rule): `QuarryTests.NoZoneSaysWhatToDo` (now `NoRockInTheAreaSaysWhatToDo`), `WorkReachTests` quarry and lodge job tests, the lodge forecast message ("forest" instead of "Lumber zone").
 - Tests: `QuarryAutoTests` (7).
+
+## 6. Phase 4: forestry (built)
+
+- **No Lumber zone needed.** A lodge works every claimed tree within `WorkR` (16) that is not protected. A painted Lumber boundary still restricts it, and counts as an explicit order to fell those trees (no floor, no replanting: the old behaviour, so old saves and AI towns are unchanged).
+- **Modes** (`ForestMode`, saved per lodge, default Sustainable; old saves load as Sustainable):
+  - *Sustainable*: fells mature trees, **replants** each felled tile once its stump has rotted (8 days; `Replant` set, saved), and **leaves `SustainFloor` (10) mature trees standing** in its area (checked again at the last chop, so a crew cannot overshoot). Below the floor it idles and the inspector says why and what to do.
+  - *Intensive*: no floor, no replanting. The inspector gives the years until the area is bare.
+  - *Land clearing*: works only tiles in `ClearOrders` (saved), keeps the logs, does not replant, removes each order when the tree falls. The universal clearing tool, other obstacles and construction-site clearing are phase 6.
+- **Growth**: a sapling takes `SaplingDays` growing days. Growth stops in winter (the last quarter of the 360-day year) and is slower on dry ground (`MoistureYield`; 1 on a dry-world map). A forester's care adds a quarter more. So a replanted tree is back in roughly four calendar years, which is what keeps sustainable output modest: `SustainableLogsPerDay(trees)` is the number the inspector and forecast quote.
+- **Forester**: no longer needs a Lumber zone. With none painted it plants within 6 tiles of itself on open ground that is not beside a road or building and not in another land-use zone. It is now an optional improvement, not part of the basic chain.
+- **Protected woodland** (`ProtectedWood`, saved): never cut by any crew; only cleared by `DesignateClearing(x, y, confirmProtected: true)`, which lifts the protection.
+- **One crew per tree**: `_reservedTrees` stops a second lodge targeting a tree a woodcutter is walking to or chopping. Overlapping areas are fine; overlapping reservations are not.
+- **Survey and inspector**: `SurveyLodgeSite` (mature trees, saplings, protected, overlapping lodges, open land, short-term and sustainable output, notes) feeds the placement forecast; `LodgeStatus` is the inspector text with the mode, forest condition, bottlenecks and recommended actions. Both use real counts.
+- Tests: `ForestryAutoTests` (12): no zone, floor, replanting, intensive, clearing mode, protection and confirmation, winter growth, one crew per tree, save/load, old-rules boundary, site survey.
+- Limits: the mode cannot be changed from the UI yet (phase 7); firewood is not a separate resource (see decisions).

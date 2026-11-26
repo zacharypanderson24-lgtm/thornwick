@@ -72,9 +72,26 @@ namespace CrownAndHearth.Sim
 
             // nature: stumps rot, saplings grow
             foreach (var k in StumpT.Keys.ToList())
-                if (--StumpT[k] <= 0) { StumpT.Remove(k); int y = k / N, x = k % N; if (DecoMap[y, x] == Deco.Stump) { DecoMap[y, x] = Deco.None; Touch(); } }
+                if (--StumpT[k] <= 0)
+                {
+                    StumpT.Remove(k); int y = k / N, x = k % N;
+                    if (DecoMap[y, x] == Deco.Stump)
+                    {
+                        DecoMap[y, x] = Deco.None;
+                        if (Replant.Remove(k) && Replantable(x, y)) { DecoMap[y, x] = Deco.Sapling; SapT[k] = SaplingDays; }   // a sustainable lodge's felled tile grows back (World.Forestry.cs)
+                        Touch();
+                    }
+                    else Replant.Remove(k);
+                }
+            bool foresters = Blds.Any(f => f.T == "forester");
             foreach (var k in SapT.Keys.ToList())
-                if (--SapT[k] <= 0) { SapT.Remove(k); int y = k / N, x = k % N; if (DecoMap[y, x] == Deco.Sapling) { DecoMap[y, x] = Deco.Tree; Touch(); } }
+            {
+                int y = k / N, x = k % N;
+                double rate = SaplingGrowthRate(x, y);   // none in winter, slower on dry ground
+                int dec = Noise.Hash2(k, Day, 311) < rate ? 1 : 0;
+                if (foresters && ForesterCovers(x, y) && Noise.Hash2(k, Day, 313) < 0.25 * rate) dec++;   // a forester's care: a quarter faster
+                if (dec > 0 && (SapT[k] -= dec) <= 0) { SapT.Remove(k); if (DecoMap[y, x] == Deco.Sapling) { DecoMap[y, x] = Deco.Tree; Touch(); } }
+            }
 
             // drinking water (World.Water.cs): wells pump, cisterns fill or cover shortfalls, homes count days without enough
             var water = StepWater();
@@ -179,23 +196,33 @@ namespace CrownAndHearth.Sim
         bool ForesterCovers(int x, int y) => Blds.Any(b => b.T == "forester" && x >= b.X - ForesterR && x < b.X + b.Sz + ForesterR &&
             y >= b.Y - ForesterR && y < b.Y + b.Sz + ForesterR);
 
-        void FellAt(int x, int y)
+        void FellAt(int x, int y, Building by = null)
         {
             int k = Tk(x, y);
+            bool lodge = by != null && by.T == "wood", legacy = lodge && UsesZone(by, Zone.Wood);   // a painted boundary keeps the old rules: no replanting
             DecoMap[y, x] = Deco.Stump;
             if (!ForesterCovers(x, y)) ZoneMap[y, x] = Zone.None;
             StumpT[k] = StumpDays; Chop.Remove(k);
+            if (lodge && by.Mode == ForestMode.Clearing) ClearOrders.Remove(k);          // cleared for good
+            else if (lodge && by.Mode == ForestMode.Sustainable && !legacy) Replant.Add(k);   // replanted once the stump has rotted
             Touch();
+        }
+
+        bool BuiltBeside(int x, int y)
+        {
+            for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) if (Inb(x + dx, y + dy) && Grid[y + dy, x + dx] != null) return true;
+            return false;
         }
 
         bool PlantSapling(Building b)
         {
-            int x = b.X, y = b.Y, r = ForesterR;
+            int x = b.X, y = b.Y, r = ForesterR; bool bounded = UsesZone(b, Zone.Wood);
             (int x, int y)? best = null; int bd = int.MaxValue;
             for (int j = y - r; j < y + b.Sz + r; j++) for (int i = x - r; i < x + b.Sz + r; i++)
             {
-                if (!Inb(i, j) || ZoneMap[j, i] != Zone.Wood || Grid[j, i] != null || DecoMap[j, i] != Deco.None) continue;
-                if (IsSolid(i, j) || TileSpread(i, j) >= 2) continue;
+                if (!Inb(i, j) || Grid[j, i] != null || DecoMap[j, i] != Deco.None) continue;
+                if (bounded ? ZoneMap[j, i] != Zone.Wood : (ZoneMap[j, i] != Zone.None || RectDist(b, i, j) > ForesterAutoR || BuiltBeside(i, j))) continue;   // no zone: near the forester, never against a road or building
+                if (IsSolid(i, j) || TileSpread(i, j) >= 2 || ClearOrders.Contains(Tk(i, j))) continue;
                 int dd = (i - x) * (i - x) + (j - y) * (j - y); if (dd < bd) { bd = dd; best = (i, j); }
             }
             if (best == null) return false;
