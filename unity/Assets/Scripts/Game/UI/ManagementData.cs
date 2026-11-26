@@ -9,12 +9,18 @@ namespace CrownAndHearth.Game.UI
 {
     public enum Tone { Normal, Good, Warn, Bad, Dim }
 
+    /// <summary>An existing screen that a tab hosts (the Hud moves it inside the window), or None for a tab made of rows.</summary>
+    public enum Host { None, Workforce, Farming, Mining, Statistics, Livestock }
+
+    public struct TabDef { public string Title; public Host Host; }
+
     public struct Row
     {
         public string Label, Value;
         public float Bar;       // 0..1, or -1 for none
         public Tone Tone;
         public bool Wide;       // a sentence: left-aligned value, narrow label column
+        public string Id;       // a tool id: clicking the row picks that tool (Construction)
         public static Row Of(string label, string value, Tone tone = Tone.Normal, float bar = -1f) => new Row { Label = label, Value = value, Tone = tone, Bar = bar };
     }
 
@@ -22,23 +28,34 @@ namespace CrownAndHearth.Game.UI
     {
         public const int MaxRows = 16;
 
-        public static string[] Tabs(MenuId id) => id switch
+        static TabDef T(string title, Host host = Host.None) => new TabDef { Title = title, Host = host };
+
+        public static TabDef[] TabDefs(MenuId id) => id switch
         {
-            MenuId.Settlement => new[] { "Overview", "Defence" },
-            MenuId.Economy => new[] { "Stockpiles" },
-            MenuId.Notifications => new[] { "All", "Warnings" },
-            _ => new[] { "Overview" },
+            MenuId.Settlement => new[] { T("Overview"), T("Defence"), T("History", Host.Statistics) },
+            MenuId.Population => new[] { T("Workforce", Host.Workforce), T("Jobs"), T("Housing") },
+            MenuId.Economy => new[] { T("Stockpiles"), T("Mining", Host.Mining) },
+            MenuId.Agriculture => new[] { T("Farming", Host.Farming), T("Livestock", Host.Livestock) },
+            MenuId.Construction => GameController.Cats.Where(c => c.Cat != GameController.Cat.Inspect).Select(c => T(c.Label)).ToArray(),
+            MenuId.Notifications => new[] { T("All"), T("Warnings") },
+            _ => new[] { T("Overview") },
         };
+
+        public static string[] Tabs(MenuId id) => TabDefs(id).Select(t => t.Title).ToArray();
 
         public static string ResName(Res r) => r switch { Res.Food => "Wheat", Res.SmokedMeat => "Smoked meat", Res.Ore => "Iron ore", _ => r.ToString() };
 
-        public static List<Row> Rows(MenuId id, int tab, World w, NotificationManager notes)
+        public static List<Row> Rows(MenuId id, int tab, World w, NotificationManager notes, int page = 0)
         {
+            var defs = TabDefs(id);
+            if (tab < 0 || tab >= defs.Length || defs[tab].Host != Host.None) return new List<Row>();
             switch (id)
             {
                 case MenuId.Settlement: return tab == 0 ? SettlementOverview(w) : SettlementDefence(w);
+                case MenuId.Population: return tab == 1 ? Jobs(w) : Housing(w);
                 case MenuId.Economy: return Stockpiles(w);
-                case MenuId.Notifications: return Messages(notes, tab == 1);
+                case MenuId.Construction: return ConstructionTools(w, tab);
+                case MenuId.Notifications: return Messages(notes, tab == 1, page);
                 default: return new List<Row>();
             }
         }
@@ -78,6 +95,50 @@ namespace CrownAndHearth.Game.UI
             return rows;
         }
 
+        /// <summary>One row per trade, in priority order: how many work it against the jobs it offers.</summary>
+        public static List<Row> Jobs(World w)
+        {
+            var rows = new List<Row>();
+            foreach (var t in w.Prio)
+            {
+                var (workers, jobs, blds, shortCount) = w.D.Work.TryGetValue(t, out var r) ? r : (0, 0, 0, 0);
+                string name = Defs.TradeNames.TryGetValue(t, out var n) ? n : t;
+                string text = $"{workers} of {jobs} jobs" + (blds > 0 ? $", {blds} building{(blds == 1 ? "" : "s")}" : "") + (shortCount > 0 ? $", {shortCount} short" : "");
+                rows.Add(Row.Of(name, text, shortCount > 0 ? Tone.Warn : Tone.Normal, jobs > 0 ? (float)Math.Min(1.0, (double)workers / jobs) : -1f));
+            }
+            return rows;
+        }
+
+        public static List<Row> Housing(World w)
+        {
+            var rows = new List<Row>();
+            rows.Add(Row.Of("Settlers", w.Peasants.ToString()));
+            rows.Add(Row.Of("Homes hold", $"{w.D.Civ} people"));
+            int free = w.D.Civ - w.Peasants;
+            rows.Add(Row.Of(free >= 0 ? "Room to spare" : "Over capacity", Math.Abs(free).ToString(), free < 0 ? Tone.Bad : Tone.Normal));
+            rows.Add(Row.Of("Barracks bunks", w.D.Bunks.ToString()));
+            rows.Add(Row.Of("Soldiers", w.Soldiers.ToString()));
+            return rows;
+        }
+
+        public static string CostOf(string type) =>
+            string.Join(", ", Defs.CostOf(type, Defs.PlacementSize(type)).Select(kv => $"{kv.Value} {kv.Key.ToString().ToLower()}"));
+
+        /// <summary>The tools of one build category (the tab index counts the categories without Inspect). A building shows its cost, red when the town cannot pay it.</summary>
+        public static List<Row> ConstructionTools(World w, int tab)
+        {
+            var rows = new List<Row>();
+            var cats = GameController.Cats.Where(c => c.Cat != GameController.Cat.Inspect).ToArray();
+            if (tab < 0 || tab >= cats.Length) return rows;
+            foreach (var t in GameController.Tools.Where(t => t.Cat == cats[tab].Cat))
+            {
+                if (rows.Count >= MaxRows) break;
+                bool pays = t.Build == null || w.CanAfford(t.Build).Ok;
+                rows.Add(new Row { Label = t.Label, Value = t.Build != null ? CostOf(t.Build) : "drag over the land", Tone = pays ? Tone.Normal : Tone.Bad, Bar = -1f, Id = t.Id });
+            }
+            return rows;
+        }
+
         public static List<Row> Stockpiles(World w)
         {
             var rows = new List<Row>();
@@ -91,13 +152,20 @@ namespace CrownAndHearth.Game.UI
             return rows;
         }
 
-        public static List<Row> Messages(NotificationManager notes, bool warningsOnly)
+        static bool Matches(Note n, bool warningsOnly) => !warningsOnly || n.Kind == NoteKind.Warning || n.Kind == NoteKind.Danger;
+
+        public static int MessageCount(NotificationManager notes, bool warningsOnly) => notes.History.Count(n => Matches(n, warningsOnly));
+
+        /// <summary>Messages newest first; page 0 is the latest MaxRows, page 1 the ones before them, and so on.</summary>
+        public static List<Row> Messages(NotificationManager notes, bool warningsOnly, int page = 0)
         {
             var rows = new List<Row>();
+            int skip = Math.Max(0, page) * MaxRows;
             for (int i = notes.History.Count - 1; i >= 0 && rows.Count < MaxRows; i--)
             {
                 var n = notes.History[i];
-                if (warningsOnly && n.Kind != NoteKind.Warning && n.Kind != NoteKind.Danger) continue;
+                if (!Matches(n, warningsOnly)) continue;
+                if (skip > 0) { skip--; continue; }
                 var tone = n.Kind == NoteKind.Danger ? Tone.Bad : n.Kind == NoteKind.Warning ? Tone.Warn : n.Kind == NoteKind.Success ? Tone.Good : Tone.Normal;
                 rows.Add(new Row { Label = $"Day {n.Day}", Value = n.Count > 1 ? $"{n.Text} (x{n.Count})" : n.Text, Tone = tone, Bar = -1f, Wide = true });
             }
