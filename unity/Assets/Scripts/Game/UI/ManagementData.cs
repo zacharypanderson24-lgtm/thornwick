@@ -36,6 +36,8 @@ namespace CrownAndHearth.Game.UI
             MenuId.Population => new[] { T("Workforce", Host.Workforce), T("Jobs"), T("Housing") },
             MenuId.Economy => new[] { T("Stockpiles"), T("Mining", Host.Mining) },
             MenuId.Agriculture => new[] { T("Farming", Host.Farming), T("Livestock", Host.Livestock) },
+            MenuId.Transportation => new[] { T("Routes"), T("Boats"), T("Orders") },
+            MenuId.Trade => new[] { T("On the road"), T("Capacity") },
             MenuId.Construction => GameController.Cats.Where(c => c.Cat != GameController.Cat.Inspect).Select(c => T(c.Label)).ToArray(),
             MenuId.Notifications => new[] { T("All"), T("Warnings") },
             _ => new[] { T("Overview") },
@@ -55,13 +57,94 @@ namespace CrownAndHearth.Game.UI
                 case MenuId.Population: return tab == 1 ? Jobs(w) : Housing(w);
                 case MenuId.Economy: return Stockpiles(w);
                 case MenuId.Construction: return ConstructionTools(w, tab);
+                case MenuId.Transportation: return tab == 0 ? Routes(w) : tab == 1 ? Boats(w) : Orders(w);
+                case MenuId.Trade: return tab == 0 ? Caravans(w) : TradeCapacity(w);
                 case MenuId.Notifications: return Messages(notes, tab == 1, page);
                 default: return new List<Row>();
             }
         }
 
-        public static string EmptyText(MenuId id, int tab) => id == MenuId.Notifications
-            ? (tab == 1 ? "No warnings. Nothing needs your attention." : "Nothing has happened yet.") : "Nothing to show.";
+        public static string EmptyText(MenuId id, int tab) => id switch
+        {
+            MenuId.Notifications => tab == 1 ? "No warnings. Nothing needs your attention." : "Nothing has happened yet.",
+            MenuId.Transportation => tab == 0 ? "No ferry routes. Build two landings and link them with the Ferry Route tool." : tab == 1 ? "No boats yet. Order some at a Boatyard." : "No orders waiting.",
+            MenuId.Trade => "No caravans or ships on the road. Markets send caravans to the settlements on the world map.",
+            _ => "Nothing to show.",
+        };
+
+        public static string FerryStateText(FerryState s) => s switch
+        {
+            FerryState.Operational => "running",
+            FerryState.WaitingForCrew => "waiting for a crew",
+            FerryState.SuspendedByPlayer => "suspended by you",
+            FerryState.FrozenRoute => "frozen",
+            FerryState.MissingLanding => "a landing is missing",
+            FerryState.NoRoute => "no sailing route",
+            FerryState.MissingVessel => "no ferry boat",
+            _ => "boat under repair",
+        };
+
+        /// <summary>Every ferry route: how long, how often it sails, whether it runs, and who may use it.</summary>
+        public static List<Row> Routes(World w)
+        {
+            var rows = new List<Row>();
+            foreach (var r in w.FerryRoutes.Take(MaxRows))
+            {
+                var state = w.StateOf(r); var (ea, eb) = w.Ends(r); var sail = ea != null && eb != null ? w.SailingRoute(ea, eb) : null; int len = sail == null ? 0 : sail.Count - 1;
+                string text = $"{len} tiles, {World.TripsPerDay(Math.Max(1, len))} crossings a day, {FerryStateText(state)}";
+                rows.Add(Row.Of($"Landing {r.AX},{r.AY} to {r.BX},{r.BY}", text, state == FerryState.Operational ? Tone.Good : Tone.Warn));
+            }
+            return rows;
+        }
+
+        /// <summary>Every vessel the town owns, with its condition and where it works.</summary>
+        public static List<Row> Boats(World w)
+        {
+            var rows = new List<Row>();
+            foreach (var v in w.Vessels.Take(MaxRows))
+            {
+                bool ok = w.InService(v);
+                rows.Add(Row.Of($"#{v.Id} {World.Spec(v.Type).Name}", $"{v.Condition:0}%{(ok ? "" : " (out of service)")}, {w.AssignmentText(v)}", ok ? Tone.Normal : Tone.Bad, (float)Math.Clamp(v.Condition / 100.0, 0, 1)));
+            }
+            return rows;
+        }
+
+        /// <summary>The boatyard's state and the orders waiting, in build order.</summary>
+        public static List<Row> Orders(World w)
+        {
+            var rows = new List<Row>();
+            rows.Add(Row.Of("Boatyards", $"{w.Boatyards} on the road network, {w.YardCapacity:0.#} crews at work", w.Boatyards == 0 ? Tone.Warn : Tone.Normal));
+            for (int i = 0; i < w.VesselOrders.Count && rows.Count < MaxRows; i++)
+                rows.Add(Row.Of($"{i + 1}. {World.Spec(w.VesselOrders[i].Type).Name}", w.OrderStatus(w.VesselOrders[i])));
+            return rows;
+        }
+
+        /// <summary>Caravans and ships on the road, soonest arrival first.</summary>
+        public static List<Row> Caravans(World w)
+        {
+            var rows = new List<Row>();
+            foreach (var c in w.Caravans.OrderBy(c => c.ArriveDay).Take(MaxRows))
+            {
+                var to = w.SettlementById(c.SettlementId); string where = to?.Name ?? "?"; int days = Math.Max(0, c.ArriveDay - w.Day);
+                string text = c.Kind switch
+                {
+                    CaravanKind.Buy => $"{c.Amount} {World.GoodName(c.Res)} coming from {where} {World.ModeName(c.Mode)}",
+                    CaravanKind.Sell => $"{c.Amount} {World.GoodName(c.Res)} going to {where} {World.ModeName(c.Mode)} for {c.Gold} gold",
+                    _ => $"A gift of {c.Gold} gold going to {where}",
+                };
+                rows.Add(new Row { Label = $"{days} day{(days == 1 ? "" : "s")}", Value = text, Bar = -1f, Wide = true });
+            }
+            return rows;
+        }
+
+        public static List<Row> TradeCapacity(World w)
+        {
+            var rows = new List<Row>();
+            rows.Add(Row.Of("Markets on the road network", w.Markets.ToString(), w.Markets == 0 ? Tone.Warn : Tone.Normal));
+            rows.Add(Row.Of("Land caravans out", $"{w.LandCaravansOut} of {w.Markets}"));
+            rows.Add(Row.Of("Ships out", $"{w.ShipsOut} of {w.ShipCapacity}"));
+            return rows;
+        }
 
         public static List<Row> SettlementOverview(World w)
         {

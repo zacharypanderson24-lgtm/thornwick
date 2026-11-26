@@ -1,6 +1,6 @@
 # Thornwick / Crown & Hearth: UI architecture (Unity)
 
-Status: Phase 1 (foundation) done (PR 106); Phase 2 (Population, Economy, Construction, Agriculture, history moved into the shared window) in progress. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
+Status: Phase 1 (foundation) done (PR 106); Phase 2 done (PR 107); Phase 3 (Transport and Trade windows) in progress. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
 
 ## 1. Framework assessment
 
@@ -80,3 +80,7 @@ Unit tests for registry, manager and notifications; the full EditMode suite befo
 ## 7. Phase 2 notes
 
 The old Workforce, Farming, Mining, Statistics and Livestock screens are not rewritten: the window hosts them (moved inside it, in a scroll area), so their behaviour is unchanged. Their old buttons (Workers, Farming, Mining, Statistics, Livestock) are retired; Military and Map stay in the small bar until their phase. Population gained Jobs and Housing tabs, Settlement a History tab, Economy a Mining tab, Agriculture Farming and Livestock tabs, and Construction is a hub listing every tool by category (click a row to pick the tool).
+
+## 8. Phase 3 notes
+
+Transport (F8) is a data window: Routes (every ferry route with length, crossings a day and state), Boats (every vessel with condition and where it works) and Orders (boatyard state and queue); its Order boats button opens the existing Vessels window, so the floating Vessels button is retired. Trade (F9) is a data window too: On the road (caravans and ships, soonest first) and Capacity (markets, caravans and ships out), with a World map button; World (F12) still opens the map itself. **Military is not moved**: its window has nested dialogs and text fields that depend on its own layout, so it keeps its own window (F7 or T) until a dedicated pass. The Banner and New world buttons wait for the System menu phase.

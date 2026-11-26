@@ -130,8 +130,6 @@ namespace CrownAndHearth.Game
         bool IsMenuOpen(MenuId id) => id switch
         {
             MenuId.Military => MilitaryOpen,
-            MenuId.Transportation => _vesselPanel != null && _vesselPanel.gameObject.activeSelf,
-            MenuId.Trade => _mapOpen,
             MenuId.World => _mapOpen,
             _ => _ui.Open == id,
         };
@@ -155,13 +153,12 @@ namespace CrownAndHearth.Game
             var why = MenuRegistry.WhyLocked(id, _world);
             if (why != null) { Toast(why, 4); return; }
             bool wasOpen = IsMenuOpen(id);
-            CloseAllMenus(keepMap: id == MenuId.Trade || id == MenuId.World);
+            CloseAllMenus(keepMap: id == MenuId.World);
             if (wasOpen) return;
             switch (id)
             {
                 case MenuId.Military: ToggleMilitary(); break;
-                case MenuId.Transportation: _vesselPanel.gameObject.SetActive(true); _vesselShown = -1; break;
-                case MenuId.Trade: case MenuId.World: OpenMap(); break;
+                case MenuId.World: OpenMap(); break;
                 default: _ui.Toggle(id, _world, out _); if (id == MenuId.Notifications) { Notes.MarkAllRead(); _msgPage = 0; } break;
             }
         }
@@ -254,6 +251,8 @@ namespace CrownAndHearth.Game
             {
                 case MenuId.Settlement: list.Add(("Population", () => ToggleMenu(MenuId.Population))); list.Add(("Economy", () => ToggleMenu(MenuId.Economy))); break;
                 case MenuId.Population: list.Add(("Settlement", () => ToggleMenu(MenuId.Settlement))); break;
+                case MenuId.Transportation: list.Add(("Order boats", () => { CloseAllMenus(); _vesselPanel.gameObject.SetActive(true); _vesselShown = -1; })); break;
+                case MenuId.Trade: list.Add(("World map", () => { CloseAllMenus(); OpenMap(); })); break;
                 case MenuId.Notifications:
                     list.Add(("Mark all read", () => { Notes.MarkAllRead(); _mgmtShownKey = null; }));
                     list.Add(("Clear log", () => Confirm("Clear the message log?", "All saved messages will be removed. This cannot be undone.", () => { Notes.Clear(); _msgPage = 0; _mgmtShownKey = null; })));
