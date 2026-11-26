@@ -30,8 +30,8 @@ internal static class FirstYearPlan {
  public static void Fields(World w,int count){var farm=w.Blds.Single(b=>b.T=="farm");w.SetFlaxPercent(0);for(int r=1;r<=World.FarmReach&&w.FarmFields().Count<count;r++)for(int y=farm.Y-r;y<=farm.Y+farm.Sz-1+r&&w.FarmFields().Count<count;y++)for(int x=farm.X-r;x<=farm.X+farm.Sz-1+r&&w.FarmFields().Count<count;x++){if(w.Grid[y,x]!=null||!w.Fert[y,x])continue;w.ZoneRect(Zone.Farm,x,y,x,y);}if(w.FarmFields().Count<count)throw new Exception("Not enough usable fields");}
  public static void Lumber(World w,Building lodge){var hunter=w.Blds.First(b=>b.T=="hunter");int marked=0;for(int r=1;r<=Defs.WorkR&&marked<18;r++)for(int y=lodge.Y-r;y<=lodge.Y+lodge.Sz-1+r&&marked<18;y++)for(int x=lodge.X-r;x<=lodge.X+lodge.Sz-1+r&&marked<18;x++)if(w.HasTree(x,y)&&Dist(x,y,hunter.X,hunter.Y)>7&&w.SetZone(Zone.Wood,x,y).Ok)marked++;w.Recalc();Actions.Add("lumber tiles="+marked);}
  public static void Mining(World w,Building b){for(int y=b.Y-8;y<=b.Y+b.Sz+8;y++)for(int x=b.X-8;x<=b.X+b.Sz+8;x++)if(w.ZoneMap[y,x]==Zone.None)w.SetZone(Zone.Mine,x,y);w.Recalc();}
- public static World Run(int seed,int plots,int mineDay){Actions.Clear();var w=new World(seed);Fields(w,plots);Build(w,"silo");Build(w,"hunter");double min=99999;int firstStarve=0;double firstOre=0;int firstOreDay=0;double logs=0,stone=0;int firstHarvest=0;double before;for(int i=1;i<=360;i++){
-  if(i==30)Lumber(w,Build(w,"wood"));if(i==60)Build(w,"sawmill");if(i==120)Mining(w,Build(w,"quarry"));if(i==mineDay){w.SetMineSupportsRequired(true);Mining(w,Build(w,"mine"));}
+ public static World Run(int seed,int plots,int mineDay,bool zones=true){Actions.Clear();var w=new World(seed);Fields(w,plots);Build(w,"silo");Build(w,"hunter");double min=99999;int firstStarve=0;double firstOre=0;int firstOreDay=0;double logs=0,stone=0;int firstHarvest=0;double before;for(int i=1;i<=360;i++){
+  if(i==30){var lodge=Build(w,"wood");if(zones)Lumber(w,lodge);}if(i==60)Build(w,"sawmill");if(i==120){var quarry=Build(w,"quarry");if(zones)Mining(w,quarry);}if(i==mineDay){w.SetMineSupportsRequired(true);var mine=Build(w,"mine");if(zones)Mining(w,mine);}
   before=w.ResAmt[Res.Food];double oldOre=w.ResAmt[Res.Ore],oldLogs=w.ResAmt[Res.Logs],oldStone=w.ResAmt[Res.Stone];w.Tick();if(firstHarvest==0&&w.ResAmt[Res.Food]>before+50)firstHarvest=i;if(firstOreDay==0&&w.ResAmt[Res.Ore]>oldOre+.01)firstOreDay=i;firstOre+=Math.Max(0,w.ResAmt[Res.Ore]-oldOre);logs+=Math.Max(0,w.ResAmt[Res.Logs]-oldLogs);stone+=Math.Max(0,w.ResAmt[Res.Stone]-oldStone);min=Math.Min(min,w.EdibleFoodStored);if(w.Starving)throw new Exception("Starvation on day "+i);if(w.WaterShortDays>0)throw new Exception("Thirst on "+i);
   if(i==180)Console.WriteLine("summer food="+Math.Round(w.EdibleFoodStored)+" pop="+w.Peasants);
  }Console.WriteLine("SEED="+seed+" plots="+plots+" mineDay="+mineDay+" starve="+firstStarve+" minFood="+Math.Round(min,1)+" finalFood="+Math.Round(w.EdibleFoodStored,1)+" pop="+w.Peasants+" wood="+Math.Round(w.ResAmt[Res.Wood])+" logsDeliveredNet="+logs+" stone="+stone+" ore="+Math.Round(firstOre,1)+" oreFirst="+firstOreDay+" harvest="+firstHarvest+" deaths="+w.MinerDeaths+" actions="+string.Join(";",Actions));
@@ -50,6 +50,18 @@ namespace CrownAndHearth.Tests {
    NUnit.Framework.Assert.That(w.ResAmt[Res.Stone],NUnit.Framework.Is.GreaterThan(30));
    NUnit.Framework.Assert.That(w.ResAmt[Res.Wood],NUnit.Framework.Is.GreaterThan(120));
    NUnit.Framework.Assert.That(w.MinerDeaths,NUnit.Framework.Is.Zero);
+   foreach(string type in new[]{"hunter","wood","sawmill","quarry","mine"})NUnit.Framework.Assert.That(w.Blds.Any(b=>b.T==type&&b.Served),NUnit.Framework.Is.True,type);
+  }
+
+  // Scenario H of the extraction milestone: the same first year with no zone painted for the lodge, the quarry or the mine.
+  [NUnit.Framework.TestCase(7)] [NUnit.Framework.TestCase(42)] [NUnit.Framework.TestCase(123)]
+  public void TheFirstYearWorksWithNoLumberOrMiningZones(int seed) {
+   var w=FirstYearPlan.Run(seed,18,120,zones:false);
+   NUnit.Framework.Assert.That(w.Day,NUnit.Framework.Is.EqualTo(361));
+   NUnit.Framework.Assert.That(w.EdibleFoodStored,NUnit.Framework.Is.GreaterThanOrEqualTo(w.DailyFoodDemand*100));
+   NUnit.Framework.Assert.That(w.ResAmt[Res.Ore],NUnit.Framework.Is.GreaterThan(10),"ore must be delivered with no mining zone");
+   NUnit.Framework.Assert.That(w.ResAmt[Res.Stone],NUnit.Framework.Is.GreaterThan(30),"stone must be delivered with no mining zone");
+   NUnit.Framework.Assert.That(w.ResAmt[Res.Wood],NUnit.Framework.Is.GreaterThan(120),"timber must flow with no lumber zone");
    foreach(string type in new[]{"hunter","wood","sawmill","quarry","mine"})NUnit.Framework.Assert.That(w.Blds.Any(b=>b.T==type&&b.Served),NUnit.Framework.Is.True,type);
   }
  }
