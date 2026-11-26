@@ -571,7 +571,7 @@ namespace CrownAndHearth.Game
             if (kb.spaceKey.wasPressedThisFrame) { _speed = _speed == 0 ? 1 : 0; _hud.SetSpeed(_speed); }
             if (kb.uKey.wasPressedThisFrame)
             {
-                _ugLevel = (_ugLevel + 1) % (World.Bands + 1); if (_ugLevel > 0) _ov = CrownAndHearth.Game.UI.OverlayId.None;
+                _autoOv = false; _ugLevel = (_ugLevel + 1) % (World.Bands + 1); if (_ugLevel > 0) _ov = CrownAndHearth.Game.UI.OverlayId.None;
                 _hud.Toast(_ugLevel == 0 ? "Underground view off." : $"Underground view: ore band {_ugLevel} of {World.Bands}" +
                     (_ugLevel == 1 ? " (just under the surface). Ore lies in hills and mountains. Orange = ore a tunnel has revealed, brighter = richer; grey = revealed, nothing here; blue = Mining zone not dug near yet; yellow = tunnel. U for deeper." : _ugLevel < World.Bands ? ". U for deeper." : " (deepest, richest). U to turn off."), 6);
             }
@@ -579,6 +579,7 @@ namespace CrownAndHearth.Game
 
         void SetOverlay(CrownAndHearth.Game.UI.OverlayId id)
         {
+            _autoOv = false;   // the player chose: a tool no longer changes or restores it
             _ugLevel = id == CrownAndHearth.Game.UI.OverlayId.Underground ? 1 : 0;
             _ov = id == CrownAndHearth.Game.UI.OverlayId.Underground ? CrownAndHearth.Game.UI.OverlayId.None : id;
             var def = CrownAndHearth.Game.UI.OverlayRegistry.Get(id);
@@ -607,8 +608,22 @@ namespace CrownAndHearth.Game
             }
         }
 
+        bool _autoOv;   // the overlay on screen was switched on by the chosen tool, not by the player
+
+        /// <summary>A tool that needs to see something (fertility, groundwater, ore, water) turns that overlay on while it is the tool, and puts things back after. An overlay the player chose is left alone.</summary>
+        void ApplyToolOverlay(ToolDef t)
+        {
+            var want = CrownAndHearth.Game.UI.OverlayRegistry.ForTool(t.Id, World);
+            var none = CrownAndHearth.Game.UI.OverlayId.None;
+            if (want == none) { if (_autoOv) { _autoOv = false; _ov = none; _ugLevel = 0; } return; }
+            if (!_autoOv && (_ov != none || _ugLevel > 0)) return;   // the player already chose one
+            _autoOv = true;
+            if (want == CrownAndHearth.Game.UI.OverlayId.Underground) { _ov = none; _ugLevel = 1; } else { _ugLevel = 0; _ov = want; }
+        }
+
         void SetTool(ToolDef t)
         {
+            ApplyToolOverlay(t);
             const string stop = "   ·   Right-click or Esc to stop";
             string hint = t.Build == "well" ? $"Well ({Hud.CostText(t.Build)}): click a blue groundwater patch. Light roads show the network its water travels.{stop}"
                 : t.Build == "cistern" ? $"Cistern ({Hud.CostText(t.Build)}): click beside a road. Light roads show the network its water travels.{stop}"
@@ -622,7 +637,7 @@ namespace CrownAndHearth.Game
                 : t.Zone != Zone.None ? $"{t.Label}: drag over the land, or click two corners. Green tiles will be zoned, red ones cannot be.{stop}"
                 : t.Unzone ? $"Remove Zones: drag over zoned land. Buildings stay.{stop}"
                 : t.Clear ? $"Demolish: click or drag over what you want removed.{stop}"
-                : "Inspect: hover or click a tile. Pick a category along the bottom to build.";
+                : "Inspect: hover or click a tile. Press B to open the Build menu.";
             _tool = t; _roadAnchor = null; _zoneAnchor = null; _ferryFrom = null; _zoneDragging = false; _hud.SetTool(t, hint);
         }
 
