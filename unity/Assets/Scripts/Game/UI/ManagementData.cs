@@ -22,6 +22,7 @@ namespace CrownAndHearth.Game.UI
         public bool Wide;       // a sentence: left-aligned value, narrow label column
         public string Id;       // a tool id: clicking the row picks that tool (Construction)
         public float RightPad;  // keep the value this far from the right edge (room for a portrait)
+        public int PortraitId;  // a character id: show that person's portrait as a thumbnail at the left of the row
         public static Row Of(string label, string value, Tone tone = Tone.Normal, float bar = -1f) => new Row { Label = label, Value = value, Tone = tone, Bar = bar };
     }
 
