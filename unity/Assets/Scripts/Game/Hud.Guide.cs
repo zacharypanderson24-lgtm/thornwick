@@ -34,7 +34,7 @@ namespace CrownAndHearth.Game
         void UpdateGuide(World world)
         {
             _guideStep = world.Defeated || !world.CampaignOn ? null : FirstYearGuide.Next(world);
-            bool show = _guideStep != null && !_guideHidden;
+            bool show = _guideStep != null && !_guideHidden && !StewardOn;
             if (_guideCard.gameObject.activeSelf != show) _guideCard.gameObject.SetActive(show);
             if (!show) return;
             _guideTitle.text = "Next: " + _guideStep.Title;
