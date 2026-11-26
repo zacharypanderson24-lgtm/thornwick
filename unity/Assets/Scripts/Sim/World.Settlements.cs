@@ -88,6 +88,7 @@ namespace CrownAndHearth.Sim
             foreach (var s in _settlements) { s.SoldThisMonth = 0; s.BoughtThisMonth = 0; s.SoldOf.Clear(); s.BoughtOf.Clear(); }
             RecoverSettlements();   // World.Conquest.cs: fallen defenders replaced, sacked places recovering
             StepConquered();   // World.Conquest.cs: tribute and occupied settlements
+            StepFrontier();
             foreach (var s in SettlementRules.Grow(_settlements))
                 if (s.Tier >= SettlementTier.Town && SettlementKm(s) <= RaidFarKm)
                     Events.Add($"{s.Name} has grown into a {SettlementRules.TierName(s.Tier).ToLower()} ({SettlementKm(s)} km away).");
