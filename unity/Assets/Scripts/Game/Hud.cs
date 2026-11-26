@@ -122,9 +122,10 @@ namespace CrownAndHearth.Game
             BuildTownMenus(root, townMenuBar);
             BuildMap(root, townMenuBar);
             BuildCamp(root);
+            BuildManagement(root);
 
             // left info panel
-            _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -417), new Vector2(330, -68)).gameObject;
+            _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -457), new Vector2(330, -110)).gameObject;
             _infoTitle = MakeText((RectTransform)_infoPanel.transform, "InspectionTitle", 19, TextAnchor.UpperLeft);
             // one line at the top: long headings shrink to fit instead of wrapping over the text below
             var itr = _infoTitle.rectTransform; itr.anchorMin = new Vector2(0, 1); itr.anchorMax = Vector2.one;
@@ -140,7 +141,7 @@ namespace CrownAndHearth.Game
             _toastText.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
 
             // a spotted warband on its way: stays under the top bar until it arrives
-            var wbp = MakePanel(root, "Warband", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-340, -108), new Vector2(180, -70));
+            var wbp = MakePanel(root, "Warband", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-340, -150), new Vector2(180, -112));
             _warbandPanel = wbp.gameObject;
             _warbandText = MakeText(wbp, "WarbandText", 15, TextAnchor.MiddleCenter);
             Stretch(_warbandText.rectTransform, new Vector2(8, 2), new Vector2(-8, -2));
@@ -469,6 +470,7 @@ namespace CrownAndHearth.Game
             UpdateIncident(world);
             UpdateWarband(world);
             RefreshSettlementPanel();
+            RefreshManagement(world);
             // prices turn red on the cards the town cannot afford yet
             foreach (var t in _tools)
                 if (t.Build != null && _cardCost.TryGetValue(t.Id, out var cost)) cost.color = world.CanAfford(t.Build).Ok ? Ink : BadInk;
@@ -485,6 +487,13 @@ namespace CrownAndHearth.Game
             int left = wb.ArriveDay - world.Day;
             string when = left <= 0 ? "arriving now" : left == 1 ? "1 day away" : $"{left} days away";
             _warbandText.text = $"<b>Warband</b> from the {camp.Name}: {wb.Band} raiders, {when}, coming from the {world.CampSideName(camp)}";
+        }
+
+        /// <summary>A message from the game: it goes into the message log (repeats are folded) and, when new, shows as a toast.</summary>
+        public void Notify(string text, int day, float secs = 6f)
+        {
+            Notes.Add(day, text, null, out bool isNew);
+            if (isNew) Toast(text, secs);
         }
 
         public void Toast(string text, float secs = 3.5f) { _toastText.text = text; _toastUntil = Time.unscaledTime + secs; }
