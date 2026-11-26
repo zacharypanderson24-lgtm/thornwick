@@ -18,14 +18,15 @@ namespace CrownAndHearth.Game
 {
     public partial class Hud : MonoBehaviour
     {
-        static readonly Color Panel = new Color(0.11f, 0.09f, 0.07f, 0.92f);
-        static readonly Color Btn = new Color(0.29f, 0.22f, 0.15f, 1f);
-        static readonly Color BtnHover = new Color(0.40f, 0.30f, 0.19f, 1f);
-        static readonly Color BtnOn = new Color(0.66f, 0.50f, 0.18f, 1f);
-        static readonly Color Ink = new Color(0.96f, 0.91f, 0.78f, 1f);
-        static readonly Color Dim = new Color(0.78f, 0.72f, 0.60f, 1f);
-        static readonly Color BadInk = new Color(1f, 0.55f, 0.45f, 1f);
-        static readonly Color Pulse = new Color(0.95f, 0.72f, 0.2f, 1f);
+        // every colour comes from UiTheme (the palette lives in one place)
+        static Color Panel => UiTheme.OverlayFill;
+        static Color Btn => UiTheme.ButtonRest;
+        static Color BtnHover => UiTheme.ButtonHover;
+        static Color BtnOn => UiTheme.ButtonOn;
+        static Color Ink => UiTheme.Text;
+        static Color Dim => UiTheme.TextDim;
+        static Color BadInk => UiTheme.Critical;
+        static Color Pulse => UiTheme.Warning;
 
         const float BarH = 84, NeedsH = 54, BottomH = BarH + NeedsH, CatW = 76, CardW = 172, CardH = 84;
 
@@ -640,6 +641,7 @@ namespace CrownAndHearth.Game
             var rt = (RectTransform)go.transform; rt.SetParent(parent, false);
             rt.anchorMin = aMin; rt.anchorMax = aMax; rt.offsetMin = offMin; rt.offsetMax = offMax;
             go.GetComponent<Image>().color = Panel;
+            var edge = go.AddComponent<Outline>(); edge.effectColor = UiTheme.Border; edge.effectDistance = new Vector2(1, -1); edge.useGraphicAlpha = false;   // a hairline, not a frame
             return rt;
         }
 
