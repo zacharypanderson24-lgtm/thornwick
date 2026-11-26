@@ -132,7 +132,7 @@ namespace CrownAndHearth.Game
                 thumb.raycastTarget = false; thumb.gameObject.SetActive(false); _mgmtThumbs.Add(thumb);
                 _mgmtRows.Add((row, label, value, barBack, fill.rectTransform));
             }
-            _portraitFrame = MakePanel(_mgmtWin, "PortraitFrame", Vector2.one, Vector2.one, new Vector2(-130, -204), new Vector2(-22, -98));
+            _portraitFrame = MakePanel(_mgmtWin, "PortraitFrame", Vector2.one, Vector2.one, new Vector2(-126, -202), new Vector2(-22, -98));   // 104 square: the 48 px portrait inside is 96 (exactly twice its size)
             _portrait = new GameObject("Portrait", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>(); _portrait.transform.SetParent(_portraitFrame, false);
             Stretch(_portrait.rectTransform, new Vector2(4, 4), new Vector2(-4, -4)); _portrait.raycastTarget = false; _portraitFrame.gameObject.SetActive(false);
             _mgmtEmpty = MakeText(_mgmtWin, "Empty", 18, TextAnchor.MiddleCenter); _mgmtEmpty.color = Dim; Stretch(_mgmtEmpty.rectTransform, new Vector2(20, 60), new Vector2(-20, -100));
@@ -465,7 +465,7 @@ namespace CrownAndHearth.Game
                 var row = rows[r];
                 ui.label.text = row.Label; ui.value.text = row.Value;
                 var who = row.PortraitId != 0 ? w.Characters.Get(row.PortraitId) : null;   // portrait thumbnail (cached textures, drawn on first use)
-                var thumbTex = who != null ? CharacterPortraits.Texture(who, w.Day) : null;
+                var thumbTex = who != null ? CharacterPortraits.Display(who, w.Day) : null;
                 _mgmtThumbs[r].gameObject.SetActive(thumbTex != null); if (thumbTex != null) _mgmtThumbs[r].texture = thumbTex;
                 ui.label.rectTransform.offsetMin = new Vector2(thumbTex != null ? 34 : 8, 0);
                 var col = row.Tone == Tone.Bad ? BadInk : row.Tone == Tone.Warn ? Pulse : row.Tone == Tone.Good ? new Color(0.62f, 0.9f, 0.55f) : row.Tone == Tone.Dim ? Dim : Ink;
@@ -478,7 +478,7 @@ namespace CrownAndHearth.Game
                 if (bar) { ui.barFill.anchorMin = Vector2.zero; ui.barFill.anchorMax = new Vector2(Mathf.Clamp01(row.Bar), 1); ui.barFill.offsetMin = ui.barFill.offsetMax = Vector2.zero; ui.barFill.GetComponent<Image>().color = col; }
             }
             { var shown = id == MenuId.Government && tab == 2 && _gov.Selected != 0 ? w.Characters.Get(_gov.Selected) : null;   // the selected person's portrait
-              var tex = shown != null ? CharacterPortraits.Texture(shown, w.Day) : null;
+              var tex = shown != null ? CharacterPortraits.Display(shown, w.Day) : null;
               _portraitFrame.gameObject.SetActive(tex != null); if (tex != null) _portrait.texture = tex; }
             _mgmtEmpty.gameObject.SetActive(rows.Count == 0 && !hosted);
             _mgmtEmpty.text = ManagementData.EmptyText(id, tab);
