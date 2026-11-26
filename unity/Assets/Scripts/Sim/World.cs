@@ -119,6 +119,7 @@ namespace CrownAndHearth.Sim
             AddStarterFarmFields();
             Recalc();
             ComputeDemand();
+            InitCharacters();   // World.Characters.cs: the 3 to 5 founders
         }
 
         void GenTerrain((int min, int max)? avoid = null)

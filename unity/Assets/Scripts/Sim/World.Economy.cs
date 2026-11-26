@@ -54,6 +54,7 @@ namespace CrownAndHearth.Sim
             StepRaid();
             StepCampRaids();
             StepSettlements();
+            StepCharacters();   // World.Characters.cs: notable citizens age once a month
             StepExpeditions();
             ResAmt[Res.Logs] += got[Res.Logs];
             BurnCharcoal();
