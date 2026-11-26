@@ -44,6 +44,27 @@ namespace CrownAndHearth.Game
             return (cache ?? PortraitCache.Shared).Get(lib, Current(c, day, lib));
         }
 
+        // The texture for the screen. The portrait itself is 48 x 48; shown at a size that is not a whole multiple (the interface scale is free, and a
+        // list thumbnail is smaller than 48) point sampling drops or doubles pixels unevenly and the face looks broken. So the screen gets a 4x
+        // nearest-neighbour copy (every source pixel stays a hard square) sampled smoothly with mipmaps: crisp at any size, no new detail invented.
+        const int Up = 4;
+        static readonly System.Collections.Generic.Dictionary<Texture2D, Texture2D> _display = new System.Collections.Generic.Dictionary<Texture2D, Texture2D>();
+        public static Texture2D Display(Character c, int day)
+        {
+            var src = Texture(c, day); if (src == null) return null;
+            if (_display.TryGetValue(src, out var have) && have != null) return have;
+            if (_display.Count > 300) { foreach (var t in _display.Values) if (t != null) Object.Destroy(t); _display.Clear(); }   // sources the LRU cache dropped
+            var d = Upscale(src); _display[src] = d; return d;
+        }
+
+        public static Texture2D Upscale(Texture2D src)
+        {
+            int w = src.width, h = src.height; var px = src.GetPixels32(); var outPx = new Color32[w * Up * h * Up];
+            for (int y = 0; y < h * Up; y++) for (int x = 0; x < w * Up; x++) outPx[y * w * Up + x] = px[(y / Up) * w + x / Up];
+            var t = new Texture2D(w * Up, h * Up, TextureFormat.RGBA32, true, false) { name = "portrait-display", filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            t.SetPixels32(outPx); t.Apply(true); return t;
+        }
+
         // Put on an outfit; keep the current hat if it goes with it, otherwise pick one that does (deterministic from the seed).
         static void Dress(PortraitLibrary lib, PortraitAppearance a, string outfit, int seed)
         {
