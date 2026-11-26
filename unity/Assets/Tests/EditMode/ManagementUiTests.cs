@@ -257,5 +257,18 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(0.1f, boats[0].Bar, 0.001f);
             Assert.AreEqual("running", ManagementData.FerryStateText(FerryState.Operational));
         }
+
+        // ---------- phase 5: overlays ----------
+        [Test]
+        public void OverlaysListOnlyThingsWithDataAndSailingNeedsWater()
+        {
+            CollectionAssert.AreEqual(new[] { OverlayId.Underground, OverlayId.Water, OverlayId.Fertility, OverlayId.Sailing }, OverlayRegistry.All.Select(o => o.Id).ToArray());
+            var dry = new World(7); var wet = new World(3, TerrainStyle.Ranges, Relief.Upland, WaterPreset.Lakeside);
+            Assert.That(OverlayRegistry.WhyLocked(OverlayId.Sailing, dry), Is.Not.Null.And.Not.Empty);
+            Assert.That(OverlayRegistry.WhyLocked(OverlayId.Sailing, wet), Is.Null);
+            foreach (var id in new[] { OverlayId.None, OverlayId.Underground, OverlayId.Water, OverlayId.Fertility }) Assert.That(OverlayRegistry.WhyLocked(id, dry), Is.Null, id.ToString());
+            Assert.AreEqual("Off", OverlayRegistry.TitleOf(OverlayId.None));
+            foreach (var o in OverlayRegistry.All) { Assert.That(o.Title, Is.Not.Empty); Assert.That(o.Hint, Is.Not.Empty); }
+        }
     }
 }

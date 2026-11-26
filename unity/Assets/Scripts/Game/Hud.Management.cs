@@ -166,6 +166,7 @@ namespace CrownAndHearth.Game
         /// <summary>Escape for the management layer: a dialog, then an open window or panel. Placement comes first when one is active (the caller cancels it).</summary>
         public bool EscapeManagement(bool placementActive)
         {
+            if (OverlayMenuOpen) { CloseOverlayMenu(); return true; }
             var r = _ui.Escape(placementActive);
             if (r == EscapeResult.ClosedModal || r == EscapeResult.ClosedMenu) return true;
             if (r == EscapeResult.CancelledPlacement) return false;
@@ -239,7 +240,8 @@ namespace CrownAndHearth.Game
             foreach (int i in new[] { 0, 1, 3, 4 }) { Host(_townPanels[i]); _townButtons[i].gameObject.SetActive(false); }
             ((RectTransform)_townButtons[2].transform).anchoredPosition = new Vector2(-55, 0);
             ((RectTransform)_mapMenuButton.transform).anchoredPosition = new Vector2(-161, 0);
-            var barRt = (RectTransform)_townButtons[2].transform.parent; barRt.offsetMin = new Vector2(-218, barRt.offsetMin.y);
+            var barRt = (RectTransform)_townButtons[2].transform.parent; barRt.offsetMin = new Vector2(-396, barRt.offsetMin.y);
+            BuildOverlayMenu(_root, -55 - 106 * 2 - 25);
             if (_workersButton != null) _workersButton.gameObject.SetActive(false);
             SyncManagement();
         }
