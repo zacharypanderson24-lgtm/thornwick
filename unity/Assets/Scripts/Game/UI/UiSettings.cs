@@ -7,8 +7,9 @@ namespace CrownAndHearth.Game.UI
 {
     public sealed class UiSettings
     {
-        /// <summary>The interface sizes offered. Bigger than this overflows the 1280 x 720 layout.</summary>
-        public static readonly float[] Scales = { 0.85f, 1f, 1.15f };
+        /// <summary>The interface sizes offered. The layout is built for a 1600 x 900 canvas, so anything bigger than 100 percent overflows at every screen size (it buried the toolbar);
+        /// a bigger interface needs a responsive layout first. Smaller gives more room for the map.</summary>
+        public static readonly float[] Scales = { 0.85f, 1f };
 
         public int ScaleIndex = 1;
         public bool PauseOnMenu = true;
@@ -16,7 +17,7 @@ namespace CrownAndHearth.Game.UI
         public float Scale => Scales[Math.Clamp(ScaleIndex, 0, Scales.Length - 1)];
         public int Percent => (int)Math.Round(Scale * 100);
 
-        public void CycleScale() => ScaleIndex = (ScaleIndex + 1) % Scales.Length;
+        public void CycleScale() => ScaleIndex = (Math.Clamp(ScaleIndex, 0, Scales.Length - 1) + 1) % Scales.Length;
 
         public string Serialize() => $"scale={ScaleIndex};pause={(PauseOnMenu ? 1 : 0)}";
 

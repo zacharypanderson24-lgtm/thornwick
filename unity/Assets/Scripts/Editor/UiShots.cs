@@ -26,6 +26,8 @@ namespace CrownAndHearth.EditorTools
                 Shot(dir, art, w, h, "inspect", hud => hud.SetInfo("FARMHOUSE\nNot connected: needs a road to the Town Hall\nWorkers 1/1 needed (1 jobs; one farmer for every 8 fields from sowing to harvest)\nWorks 6/8 fields of Farmland within 12 tiles (8 per farmer).\nFish stock: plentiful (80%). Season: Summer (x1.0).\nPort: running\nLogs waiting to be sawn: 12"));
                 Shot(dir, art, w, h, "overlays", hud => { hud.ToggleOverlayMenu(); hud.SetOverlayState(OverlayId.Water, "Groundwater"); });
                 Shot(dir, art, w, h, "system", hud => hud.ToggleMenu(MenuId.System));
+                Shot(dir, art, w, h, "small", hud => { hud.Settings.ScaleIndex = 0; hud.ToggleMenu(MenuId.Construction); });
+                Shot(dir, art, w, h, "tip", hud => { }, hud => hud.ShowMenuTip(MenuId.Technology, true));
                 Shot(dir, art, w, h, "settlement", hud => hud.ToggleMenu(MenuId.Settlement));
                 Shot(dir, art, w, h, "economy", hud => hud.ToggleMenu(MenuId.Economy));
                 Shot(dir, art, w, h, "messages", hud => hud.ToggleMenu(MenuId.Notifications));
@@ -44,7 +46,7 @@ namespace CrownAndHearth.EditorTools
             if (Application.isBatchMode) EditorApplication.Exit(0);
         }
 
-        static void Shot(string dir, ArtLibrary art, int width, int height, string name, System.Action<Hud> act)
+        static void Shot(string dir, ArtLibrary art, int width, int height, string name, System.Action<Hud> act, System.Action<Hud> afterLayout = null)
         {
             var world = new World(3, TerrainStyle.Ranges, Relief.Upland, WaterPreset.Lakeside);
             world.StartCampaign(); world.Peasants = 38; world.Day = 120; world.ResAmt[Res.Food] = 900; world.ResAmt[Res.Wood] = 240; world.ResAmt[Res.Stone] = 85; world.ResAmt[Res.Gold] = 60;
@@ -66,8 +68,9 @@ namespace CrownAndHearth.EditorTools
             canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = cam; canvas.planeDistance = 1;
             var scaler = canvas.GetComponent<CanvasScaler>();   // the game's scaler reads the screen size; here the picture size is what matters
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-            scaler.scaleFactor = Mathf.Pow(2f, Mathf.Lerp(Mathf.Log(width / 1600f, 2f), Mathf.Log(height / 900f, 2f), 0.5f));
+            scaler.scaleFactor = Mathf.Pow(2f, Mathf.Lerp(Mathf.Log(width / 1600f, 2f), Mathf.Log(height / 900f, 2f), 0.5f)) * hud.Settings.Scale;   // the interface-size setting
             Canvas.ForceUpdateCanvases(); LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)canvas.transform); Canvas.ForceUpdateCanvases();
+            if (afterLayout != null) { afterLayout(hud); Canvas.ForceUpdateCanvases(); }   // things placed from where a button is (tooltips) need the final layout
             cam.Render();
             var prev = RenderTexture.active; RenderTexture.active = rt;
             var tex = new Texture2D(width, height, TextureFormat.RGB24, false); tex.ReadPixels(new Rect(0, 0, width, height), 0, 0); tex.Apply();

@@ -133,6 +133,18 @@ namespace CrownAndHearth.Game
             var k = MakeText(rt, "Key", 10, TextAnchor.LowerCenter); k.text = key; k.color = Dim;
             Stretch(k.rectTransform, new Vector2(0, 1), Vector2.zero);
             _menuButtons[id] = img; _menuLabels[id] = t;
+            AddHover(go, on => ShowMenuTip(id, on));
+        }
+
+        /// <summary>The hover card under a toolbar button: its name and key, what it holds, and why it is locked when it is.</summary>
+        public void ShowMenuTip(MenuId id, bool on)
+        {
+            if (!_menuButtons.TryGetValue(id, out var img)) return;
+            if (!on) { ShowTip(false, null, "", "", ""); return; }
+            var def = MenuRegistry.Get(id);
+            string key = id == MenuId.Notifications ? "N" : id == MenuId.System ? "Esc" : "F" + def.FunctionKey;
+            string why = _world != null ? MenuRegistry.WhyLocked(id, _world) : null;
+            ShowTip(true, img.rectTransform, $"{def.Title}  ({key})", def.Blurb, why ?? "", true);
         }
 
         // ---------- opening and closing ----------
