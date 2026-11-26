@@ -32,7 +32,7 @@ namespace CrownAndHearth.Game.UI
             new MenuDef { Id = MenuId.Transportation, Title = "Transport", FunctionKey = 8, Blurb = "Ferry routes, boats and what the boatyard is building",
                 LockedReason = w => w.Waters == null || w.WaterKind == WaterPreset.None ? "Transport: this world has no water to sail on." : null },
             new MenuDef { Id = MenuId.Trade, Title = "Trade", FunctionKey = 9, Blurb = "Caravans and ships on the road, and what carries them" },
-            new MenuDef { Id = MenuId.Government, Title = "Government", FunctionKey = 10, Blurb = "Laws and taxes", LockedReason = w => "Government: no laws or taxes exist yet." },
+            new MenuDef { Id = MenuId.Government, Title = "Government", FunctionKey = 10, Blurb = "Your council: recruit, appoint and pay the people who help you rule", LockedReason = GovernmentData.WhyLocked },
             new MenuDef { Id = MenuId.Diplomacy, Title = "Diplomacy", FunctionKey = 11, Blurb = "Relations with other peoples", LockedReason = w => "Diplomacy: no treaties or relations exist yet." },
             new MenuDef { Id = MenuId.World, Title = "World", FunctionKey = 12, Blurb = "The world map" },
         };

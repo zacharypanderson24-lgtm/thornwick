@@ -50,8 +50,12 @@ namespace CrownAndHearth.Sim
         /// <summary>Once a month, from Tick.</summary>
         void StepCharacters()
         {
+            StepGovernment();   // World.Government.cs: recruiters coming home
             if (Day % CharacterBalance.Month != 0) return;
+            PayOfficials();   // payday first, so someone who dies this month is not paid
             Characters.StepMonth(Day, new[] { CharacterPool() });
+            foreach (var e in Characters.Recent)   // an official retiring or dying is news: the post is vacant
+                if ((e.Kind == CharEventKind.Retired || e.Kind == CharEventKind.Died) && e.Post != Post.None) Events.Add(e.Text);
         }
 
         JObject SaveCharacters() => Characters.Save();

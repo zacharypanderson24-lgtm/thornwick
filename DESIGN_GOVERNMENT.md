@@ -1,6 +1,6 @@
 # Thornwick / Crown & Hearth: government, governors and several settlements (Unity)
 
-Status: audit and design written; **Phase 1 (characters) is implemented** (this PR). Phases 2 to 10 are planned, nothing in them exists yet. This file says what is real at the top of every phase; update it as phases land.
+Status: **Phase 1 (characters) and Phase 2 (appointments, recruitment, salaries, Government menu) are implemented.** Phases 3 to 10 are planned, nothing in them exists yet. This file says what is real at the top of every phase; update it as phases land.
 
 Design rule: simple controls, complex consequences. Everything here lives in `CrownAndHearth.Sim` (no UnityEngine), is deterministic, saved, and drives the same validated operations the player uses.
 
@@ -72,3 +72,16 @@ Every phase: tests, docs updated to what is true, screenshots for UI, honest rep
 
 ## 5. Out of scope
 Dynasties, marriage, inheritance, estates, private wealth, factions, espionage, ministerial politics, extra currencies, banking, department budgets, individual citizen simulation, playable underground mines.
+
+## 6. Phase 2 as built (appointments, recruitment, salaries)
+
+Code: `Sim/Characters/Positions.cs` (post definitions, suitability, reasons, `Pay`), `Sim/World.Government.cs` (operations, candidates, recruiting abroad, payday, saves), `Game/UI/GovernmentData.cs` + `Game/CharacterPortraits.cs` + Hud wiring (Government menu, F10). Screenshots: `docs/government/`.
+
+- **Posts and era:** Chancellor and Steward from Era II, Treasurer and Marshal Era III, Diplomat Era IV (the game starts in Era 2). Governor is implemented but refused until a second managed settlement exists (phase 3: `GovernableSettlements()` returns none today). One holder per post, one post per person; Appoint, Dismiss, Replace (checked first, all or nothing), Promote (move to a vacant post), SetPay. Dismissed people stay Available in the world.
+- **Suitability:** weighted from the five effective attributes (traits included) plus up to +8 for experience, per post, with plain reasons (strong/weak skills, traits, experience, loyalty, age, health). Ratings: Poor, Fair, Good, Excellent, Exceptional.
+- **Candidates:** `FindCandidates(post, filter, sort)` reads the persistent pool and never generates anything (no rerolls). Sources: Local (capital), Other settlements, International. Filters and sorts: source, settlement, age, loyalty, experience, salary, attributes, occupation; sort by suitability, age, loyalty, experience, salary or any attribute.
+- **International:** `SearchAbroad(post, settlement)`: needs a settlement that will trade with you, 60 gold, 30 days plus twice the march days; brings back the best of three generated people for that post (deterministic from seed and search number); one search per post at a time and a 180 day cooldown per post; saved mid-journey. The returned person is Available, listed as International, and becomes yours on appointment.
+- **Salaries:** `Pay.Monthly` = post base x skill x experience x settlement size x traits x pay level (Low 0.8, Standard 1, Generous 1.35). Paid in gold on day % 30 before aging, from the one treasury (`TreasuryFor`; per-settlement treasuries come in phase 3). Unpaid: no money is created, the official loses 6 loyalty and a month is counted; three unpaid months in a row, or loyalty 0, means resignation. Low pay costs 1 loyalty a month, Generous gives 1. Retirement and death of an official tell the player the post is vacant.
+- **UI:** one Government menu: Council (posts, who holds them, duties), Recruit (candidates with portrait-ready details, sort, source, appoint/replace, search abroad with a cost confirmation), Details (portrait, attributes with trait effects, standing, suitability and reasons, appoint/dismiss), Payroll (monthly total against the treasury, last payday, click to change pay level). The menu opens once the era has a post or someone holds one.
+- **Portraits:** the face always comes from `Look.Seed` alone; archetype/outfit and age stage come on top; greying, receding hair and baldness follow the saved tendencies (`grey` hair colour, `receding` and `bald` hair styles).
+- **Not done:** governors and settlement transfer need phase 3; council reports and automation are phase 9; no per-settlement treasury; the pay formula is untuned (about 7 to 15 gold a month per official at the starting size).

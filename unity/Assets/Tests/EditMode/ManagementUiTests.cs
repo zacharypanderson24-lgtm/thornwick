@@ -23,9 +23,9 @@ namespace CrownAndHearth.Tests
         public void MenusWithNothingBehindThemAreLockedWithAReason()
         {
             var w = new World(7);
-            foreach (var id in new[] { MenuId.Technology, MenuId.Government, MenuId.Diplomacy })
+            foreach (var id in new[] { MenuId.Technology, MenuId.Diplomacy })
                 Assert.That(MenuRegistry.WhyLocked(id, w), Is.Not.Null.And.Not.Empty, id.ToString());
-            foreach (var id in new[] { MenuId.Settlement, MenuId.Population, MenuId.Economy, MenuId.Construction, MenuId.Agriculture, MenuId.Military, MenuId.Trade, MenuId.World, MenuId.Notifications })
+            foreach (var id in new[] { MenuId.Settlement, MenuId.Population, MenuId.Economy, MenuId.Construction, MenuId.Agriculture, MenuId.Military, MenuId.Trade, MenuId.World, MenuId.Notifications, MenuId.Government })   // Government opens once an era has council posts
                 Assert.That(MenuRegistry.WhyLocked(id, w), Is.Null, id.ToString());
         }
 

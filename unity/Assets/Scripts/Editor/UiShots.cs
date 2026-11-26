@@ -41,16 +41,22 @@ namespace CrownAndHearth.EditorTools
                 Shot(dir, art, w, h, "construction", hud => { hud.ToggleMenu(MenuId.Construction); hud.UI.SetTab(2); });
                 Shot(dir, art, w, h, "transport", hud => { hud.ToggleMenu(MenuId.Transportation); hud.UI.SetTab(1); });
                 Shot(dir, art, w, h, "trade", hud => hud.ToggleMenu(MenuId.Trade));
+                System.Action<World> staff = wd => { wd.Era = 4; for (int i = 0; i < 9; i++) { var ch = CharacterGenerator.Create(wd.Characters.NextId, wd.CharacterPool(), 9000 + i, wd.Day, (Background)(i % 7), 25, 62); wd.Characters.Add(ch); } wd.Appoint(wd.Characters.All[0].Id, Post.Steward); wd.Appoint(wd.Characters.All[1].Id, Post.Chancellor); wd.ResAmt[Res.Gold] = 140; };
+                Shot(dir, art, w, h, "gov_council", hud => hud.OpenGovernment(0, Post.Treasurer), null, staff);
+                Shot(dir, art, w, h, "gov_recruit", hud => hud.OpenGovernment(1, Post.Treasurer), null, staff);
+                Shot(dir, art, w, h, "gov_details", hud => hud.OpenGovernment(2, Post.Treasurer, 4), null, staff);
+                Shot(dir, art, w, h, "gov_payroll", hud => hud.OpenGovernment(3, Post.Treasurer), null, staff);
             }
             Debug.Log("UI screenshots written to " + dir);
             if (Application.isBatchMode) EditorApplication.Exit(0);
         }
 
-        static void Shot(string dir, ArtLibrary art, int width, int height, string name, System.Action<Hud> act, System.Action<Hud> afterLayout = null)
+        static void Shot(string dir, ArtLibrary art, int width, int height, string name, System.Action<Hud> act, System.Action<Hud> afterLayout = null, System.Action<World> prep = null)
         {
             var world = new World(3, TerrainStyle.Ranges, Relief.Upland, WaterPreset.Lakeside);
             world.StartCampaign(); world.Peasants = 38; world.Day = 120; world.ResAmt[Res.Food] = 900; world.ResAmt[Res.Wood] = 240; world.ResAmt[Res.Stone] = 85; world.ResAmt[Res.Gold] = 60;
             world.Tick();
+            prep?.Invoke(world);
 
             var go = new GameObject("UiShotHud"); var hud = go.AddComponent<Hud>();
             hud.Build(GameController.Tools, GameController.Cats, art);

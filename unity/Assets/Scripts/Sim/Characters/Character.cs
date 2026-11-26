@@ -32,7 +32,8 @@ namespace CrownAndHearth.Sim
         public int ExperienceHundredths;                  // 0-10000 (Experience is this / 100)
         public readonly List<Trait> Traits = new List<Trait>();   // 1 to 3
         public Post Post; public int PostSettlement;       // Phase 2
-        public int MonthlySalary; public PayLevel Pay = PayLevel.Standard;   // Phase 2
+        public int MonthlySalary; public PayLevel Pay = PayLevel.Standard;
+        public int MissedPayments, AppointedDay;   // unpaid months in a row; the day of the current appointment
         public CharAppearance Look = new CharAppearance();
         public AgeStage Stage;            // last stage recorded (so a change is noticed once)
         public int DeathDay, RetiredDay;
@@ -68,6 +69,6 @@ namespace CrownAndHearth.Sim
     }
 
     /// <summary>A person who has just changed state; the registry keeps the recent ones for the UI to list and for Phase 2 to turn into notices.</summary>
-    public enum CharEventKind { Born, StageChanged, Retired, Died, Arrived }
+    public enum CharEventKind { Born, StageChanged, Retired, Died, Arrived, Resigned }
     public struct CharEvent { public int Day, Id; public CharEventKind Kind; public Post Post; public string Text; }
 }

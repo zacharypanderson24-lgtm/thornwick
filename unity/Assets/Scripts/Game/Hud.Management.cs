@@ -31,6 +31,16 @@ namespace CrownAndHearth.Game
         readonly List<string> _mgmtRowIds = new List<string>();
         readonly List<Action> _footerActions = new List<Action>();
         RectTransform _bannerPanel;
+        readonly GovernmentUiState _gov = new GovernmentUiState();   // the Government menu's selection (GovernmentData.cs)
+        RawImage _portrait; RectTransform _portraitFrame;
+
+        /// <summary>Open the Government menu on a tab with a post and a person selected (links from reports and notices use this).</summary>
+        public void OpenGovernment(int tab, Post post, int selected = 0)
+        {
+            _gov.Post = post; _gov.Selected = selected; _gov.Changed();
+            if (_ui.Open != MenuId.Government) ToggleMenu(MenuId.Government);
+            _ui.SetTab(tab); _mgmtShownKey = null;
+        }
         CanvasScaler _scaler;
         int _speedNow = 1, _resumeSpeed = 1;
         bool _pausedBySystem, _wasSystem;
@@ -97,6 +107,9 @@ namespace CrownAndHearth.Game
                 fill.color = Pulse; fill.raycastTarget = false;
                 _mgmtRows.Add((row, label, value, barBack, fill.rectTransform));
             }
+            _portraitFrame = MakePanel(_mgmtWin, "PortraitFrame", Vector2.one, Vector2.one, new Vector2(-130, -204), new Vector2(-22, -98));
+            _portrait = new GameObject("Portrait", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>(); _portrait.transform.SetParent(_portraitFrame, false);
+            Stretch(_portrait.rectTransform, new Vector2(4, 4), new Vector2(-4, -4)); _portrait.raycastTarget = false; _portraitFrame.gameObject.SetActive(false);
             _mgmtEmpty = MakeText(_mgmtWin, "Empty", 18, TextAnchor.MiddleCenter); _mgmtEmpty.color = Dim; Stretch(_mgmtEmpty.rectTransform, new Vector2(20, 60), new Vector2(-20, -100));
             _mgmtFootnote = MakeText(_mgmtWin, "Footnote", 13, TextAnchor.LowerRight); _mgmtFootnote.color = Dim; Stretch(_mgmtFootnote.rectTransform, new Vector2(16, 8), new Vector2(-16, 40));
             for (int f = 0; f < 4; f++)
@@ -230,6 +243,7 @@ namespace CrownAndHearth.Game
             string id = idx < _mgmtRowIds.Count ? _mgmtRowIds[idx] : null;
             if (id == null) return;
             if (id.StartsWith("cmd:")) { RunCommand(id.Substring(4)); return; }
+            if (id.StartsWith(GovernmentData.Prefix)) { var msg = GovernmentData.Click(_world, _gov, id, out int tab); if (tab >= 0) _ui.SetTab(tab); if (msg != null) Toast(msg); _mgmtShownKey = null; return; }
             CloseAllMenus(); ToolPicked?.Invoke(id);
         }
 
@@ -301,6 +315,25 @@ namespace CrownAndHearth.Game
                 case MenuId.Population: list.Add(("Settlement", () => ToggleMenu(MenuId.Settlement))); break;
                 case MenuId.Transportation: list.Add(("Order boats", () => { CloseAllMenus(); _vesselPanel.gameObject.SetActive(true); _vesselShown = -1; })); break;
                 case MenuId.Trade: list.Add(("World map", () => { CloseAllMenus(); OpenMap(); })); break;
+                case MenuId.Government:
+                    void Say(Result r, string ok) { Toast(r.Ok ? ok : r.Reason); _gov.Changed(); _mgmtShownKey = null; }
+                    if (tab == 0) { list.Add(("Recruit", () => _ui.SetTab(1))); list.Add(("Payroll", () => _ui.SetTab(3))); }
+                    else if (tab == 1)
+                    {
+                        list.Add(("Appoint", () => { var r = GovernmentData.AppointSelected(_world, _gov); Say(r, "Appointed."); if (r.Ok) _ui.SetTab(0); }));
+                        list.Add(("Sort: " + _gov.SortName, () => _gov.CycleSort()));
+                        list.Add(("Show: " + _gov.SourceName, () => _gov.CycleSource()));
+                        var target = GovernmentData.RecruitingTarget(w);
+                        list.Add(("Search abroad", () => { if (target == null) Say(Result.No("No settlement will receive your recruiter."), ""); else
+                            Confirm("Search for a " + _gov.Post + "?", $"A recruiter goes to {target.Name} ({w.SearchDays(target.Id)} days, {World.ForeignSearchGold} gold). You get one person back, and cannot search for this post again for {World.ForeignSearchCooldown} days.",
+                                () => Say(GovernmentData.SearchAbroad(_world, _gov), "The recruiter has left.")); }));
+                    }
+                    else if (tab == 2)
+                    {
+                        list.Add(("Appoint", () => { var r = GovernmentData.AppointSelected(_world, _gov); Say(r, "Appointed."); if (r.Ok) _ui.SetTab(0); }));
+                        list.Add(("Dismiss", () => Confirm("Dismiss this person?", "They lose their post but stay in the settlement, and can be hired again.", () => Say(GovernmentData.DismissSelected(_world, _gov), "Dismissed."))));
+                    }
+                    break;
                 case MenuId.Notifications:
                     list.Add(("Mark all read", () => { Notes.MarkAllRead(); _mgmtShownKey = null; }));
                     list.Add(("Clear log", () => Confirm("Clear the message log?", "All saved messages will be removed. This cannot be undone.", () => { Notes.Clear(); _msgPage = 0; _mgmtShownKey = null; })));
@@ -326,7 +359,7 @@ namespace CrownAndHearth.Game
             if (_ui.Open is MenuId id)
             {
                 // redraw only when the day, the tab or the message list changed (rows are text, so avoid rebuilding every frame)
-                string key = $"{id}|{_ui.Tab}|{_msgPage}|{Settings.Serialize()}|{w.Day}|{w.Version}|{Notes.History.Count}|{Notes.Unread}";
+                string key = $"{id}|{_ui.Tab}|{_msgPage}|{_gov.Stamp}|{Settings.Serialize()}|{w.Day}|{w.Version}|{Notes.History.Count}|{Notes.Unread}";
                 if (key != _mgmtShownKey) { _mgmtShownKey = key; DrawManagementWindow(id, w); }
                 if (id == MenuId.Notifications && Notes.Unread > 0 && _ui.Tab >= 0) { /* stays unread until the player marks it, so a new message shows in the toolbar */ }
             }
@@ -348,7 +381,7 @@ namespace CrownAndHearth.Game
                 var tr = _mgmtTabs[t].rectTransform; tr.sizeDelta = new Vector2(tw, 28); tr.anchoredPosition = new Vector2(18 + t * (tw + 6) + tw / 2, -68);
             }
             bool hosted = ManagementData.TabDefs(id)[tab].Host != Host.None;
-            var rows = ManagementData.Rows(id, tab, w, Notes, _msgPage, Settings);
+            var rows = ManagementData.Rows(id, tab, w, Notes, _msgPage, Settings, _gov);
             for (int r = 0; r < _mgmtRows.Count; r++)
             {
                 var ui = _mgmtRows[r];
@@ -364,9 +397,12 @@ namespace CrownAndHearth.Game
                 ui.value.alignment = wide ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight;
                 bool bar = row.Bar >= 0;
                 ui.barBack.gameObject.SetActive(bar);
-                var vr = ui.value.rectTransform; vr.offsetMin = new Vector2(wide ? 100 : 8, 0); vr.offsetMax = new Vector2(bar ? -190 : -8, 0);
+                var vr = ui.value.rectTransform; vr.offsetMin = new Vector2(wide ? 100 : 8, 0); vr.offsetMax = new Vector2((bar ? -190 : -8) - row.RightPad, 0);
                 if (bar) { ui.barFill.anchorMin = Vector2.zero; ui.barFill.anchorMax = new Vector2(Mathf.Clamp01(row.Bar), 1); ui.barFill.offsetMin = ui.barFill.offsetMax = Vector2.zero; ui.barFill.GetComponent<Image>().color = col; }
             }
+            { var shown = id == MenuId.Government && tab == 2 && _gov.Selected != 0 ? w.Characters.Get(_gov.Selected) : null;   // the selected person's portrait
+              var tex = shown != null ? CharacterPortraits.Texture(shown, w.Day) : null;
+              _portraitFrame.gameObject.SetActive(tex != null); if (tex != null) _portrait.texture = tex; }
             _mgmtEmpty.gameObject.SetActive(rows.Count == 0 && !hosted);
             _mgmtEmpty.text = ManagementData.EmptyText(id, tab);
             var foot = FooterFor(id, tab, w); _footerActions.Clear();
@@ -375,7 +411,7 @@ namespace CrownAndHearth.Game
                 _mgmtFooter[f].gameObject.SetActive(f < foot.Count);
                 if (f < foot.Count) { _mgmtFooterLabels[f].text = foot[f].label; _footerActions.Add(foot[f].act); }
             }
-            _mgmtFootnote.text = id == MenuId.Notifications ? $"{Notes.History.Count} saved, page {_msgPage + 1}" : def.Blurb;
+            _mgmtFootnote.text = id == MenuId.Government ? "" : id == MenuId.Notifications ? $"{Notes.History.Count} saved, page {_msgPage + 1}" : def.Blurb;
         }
     }
 }
