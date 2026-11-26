@@ -30,6 +30,12 @@ namespace CrownAndHearth.Game
         readonly List<(RectTransform row, Text label, Text value, Image barBack, RectTransform barFill)> _mgmtRows = new List<(RectTransform, Text, Text, Image, RectTransform)>();
         readonly List<string> _mgmtRowIds = new List<string>();
         readonly List<Action> _footerActions = new List<Action>();
+        RectTransform _bannerPanel;
+        CanvasScaler _scaler;
+        int _speedNow = 1, _resumeSpeed = 1;
+        bool _pausedBySystem, _wasSystem;
+        public UiSettings Settings { get; private set; } = new UiSettings();
+        const string SettingsKey = "crownandhearth.ui";
         RectTransform _mgmtHost, _hostDummy;
         ScrollRect _hostScroll;
         int _msgPage;
@@ -40,8 +46,8 @@ namespace CrownAndHearth.Game
         void BuildManagement(RectTransform root)
         {
             // ---- toolbar ----
-            const float bw = 70, gap = 3;
-            float width = 8 + MenuRegistry.Primary.Count * (bw + gap) + 70;
+            const float bw = 68, gap = 2;
+            float width = 8 + MenuRegistry.Primary.Count * (bw + gap) + 4 + 64 + 2 + 56 + 6;
             var bar = MakePanel(root, "ManagementBar", Vector2.up, Vector2.up, new Vector2(8, ToolbarTop - ToolbarH), new Vector2(8 + width, ToolbarTop));
             int i = 0;
             foreach (var def in MenuRegistry.Primary)
@@ -50,7 +56,10 @@ namespace CrownAndHearth.Game
                 MakeMenuButton(bar, id, def.Title, "F" + def.FunctionKey, 4 + i * (bw + gap), bw);
                 i++;
             }
-            MakeMenuButton(bar, MenuId.Notifications, "Messages", "N", 4 + i * (bw + gap) + 4, 66);
+            MakeMenuButton(bar, MenuId.Notifications, "Messages", "N", 4 + i * (bw + gap) + 4, 64);
+            MakeMenuButton(bar, MenuId.System, "System", "Esc", 4 + i * (bw + gap) + 4 + 66, 56);
+            Settings = UiSettings.Parse(PlayerPrefs.GetString(SettingsKey, ""));
+            ApplyScale();
 
             // ---- the standard window ----
             _mgmtWin = MakePanel(root, "ManagementWindow", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-360, -240), new Vector2(360, 320));
@@ -173,6 +182,8 @@ namespace CrownAndHearth.Game
             if (_workPanel != null && _workPanel.activeSelf) { ToggleWorkforce(); return true; }
             if (_vesselPanel != null && _vesselPanel.gameObject.activeSelf) { _vesselPanel.gameObject.SetActive(false); return true; }
             if (_townMenu != TownMenu.Closed && _townMenu != TownMenu.Troops) { ShowTownMenu(TownMenu.Closed); return true; }
+            // nothing to close and nothing being placed: Escape opens the System menu (the last step of the order: dialog, placement, menu, system)
+            if (!placementActive && _openCat == null && !MapOpen && !_newWorldPanel.gameObject.activeSelf && !_bannerPanel.gameObject.activeSelf) { ToggleMenu(MenuId.System); return true; }
             return false;
         }
 
@@ -183,9 +194,15 @@ namespace CrownAndHearth.Game
             _ui.PushModal("confirm");
         }
 
+        void ApplyScale() { if (_scaler != null) _scaler.referenceResolution = new Vector2(1600 / Settings.Scale, 900 / Settings.Scale); }
+
         void SyncManagement()
         {
             if (_mgmtWin == null) return;
+            bool sys = _ui.Open == MenuId.System;   // the System menu pauses the game while it is open (a setting), and gives the speed back when it closes
+            if (sys && !_wasSystem && Settings.PauseOnMenu && _speedNow > 0) { _resumeSpeed = _speedNow; _pausedBySystem = true; SpeedPicked?.Invoke(0); }
+            if (!sys && _wasSystem && _pausedBySystem) { _pausedBySystem = false; SpeedPicked?.Invoke(_resumeSpeed); }
+            _wasSystem = sys;
             bool open = _ui.Open != null;
             _mgmtWin.gameObject.SetActive(open);
             if (open) { _mgmtWin.SetAsLastSibling(); }
@@ -200,8 +217,25 @@ namespace CrownAndHearth.Game
         {
             string id = idx < _mgmtRowIds.Count ? _mgmtRowIds[idx] : null;
             if (id == null) return;
+            if (id.StartsWith("cmd:")) { RunCommand(id.Substring(4)); return; }
             CloseAllMenus(); ToolPicked?.Invoke(id);
         }
+
+        void RunCommand(string cmd)
+        {
+            switch (cmd)
+            {
+                case "resume": _ui.Close(); break;
+                case "save": SavePicked?.Invoke(); break;
+                case "load": LoadPicked?.Invoke(); break;
+                case "newworld": CloseAllMenus(); _newWorldPanel.gameObject.SetActive(true); break;
+                case "banner": CloseAllMenus(); _bannerPanel.gameObject.SetActive(true); break;
+                case "scale": Settings.CycleScale(); ApplyScale(); StoreSettings(); _mgmtShownKey = null; break;
+                case "pause": Settings.PauseOnMenu = !Settings.PauseOnMenu; StoreSettings(); _mgmtShownKey = null; break;
+            }
+        }
+
+        void StoreSettings() { PlayerPrefs.SetString(SettingsKey, Settings.Serialize()); PlayerPrefs.Save(); }
 
         /// <summary>The screen the open tab hosts (Workforce, Farming, Mining, Statistics, Livestock), or None.</summary>
         Host OpenHost()
@@ -280,7 +314,7 @@ namespace CrownAndHearth.Game
             if (_ui.Open is MenuId id)
             {
                 // redraw only when the day, the tab or the message list changed (rows are text, so avoid rebuilding every frame)
-                string key = $"{id}|{_ui.Tab}|{_msgPage}|{w.Day}|{w.Version}|{Notes.History.Count}|{Notes.Unread}";
+                string key = $"{id}|{_ui.Tab}|{_msgPage}|{Settings.Serialize()}|{w.Day}|{w.Version}|{Notes.History.Count}|{Notes.Unread}";
                 if (key != _mgmtShownKey) { _mgmtShownKey = key; DrawManagementWindow(id, w); }
                 if (id == MenuId.Notifications && Notes.Unread > 0 && _ui.Tab >= 0) { /* stays unread until the player marks it, so a new message shows in the toolbar */ }
             }
@@ -302,7 +336,7 @@ namespace CrownAndHearth.Game
                 var tr = _mgmtTabs[t].rectTransform; tr.sizeDelta = new Vector2(tw, 28); tr.anchoredPosition = new Vector2(18 + t * (tw + 6) + tw / 2, -68);
             }
             bool hosted = ManagementData.TabDefs(id)[tab].Host != Host.None;
-            var rows = ManagementData.Rows(id, tab, w, Notes, _msgPage);
+            var rows = ManagementData.Rows(id, tab, w, Notes, _msgPage, Settings);
             for (int r = 0; r < _mgmtRows.Count; r++)
             {
                 var ui = _mgmtRows[r];

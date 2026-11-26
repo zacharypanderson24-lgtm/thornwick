@@ -40,6 +40,7 @@ namespace CrownAndHearth.Game.UI
             MenuId.Trade => new[] { T("On the road"), T("Capacity") },
             MenuId.Construction => GameController.Cats.Where(c => c.Cat != GameController.Cat.Inspect).Select(c => T(c.Label)).ToArray(),
             MenuId.Notifications => new[] { T("All"), T("Warnings") },
+            MenuId.System => new[] { T("Game"), T("Controls"), T("Settings") },
             _ => new[] { T("Overview") },
         };
 
@@ -47,7 +48,7 @@ namespace CrownAndHearth.Game.UI
 
         public static string ResName(Res r) => r switch { Res.Food => "Wheat", Res.SmokedMeat => "Smoked meat", Res.Ore => "Iron ore", _ => r.ToString() };
 
-        public static List<Row> Rows(MenuId id, int tab, World w, NotificationManager notes, int page = 0)
+        public static List<Row> Rows(MenuId id, int tab, World w, NotificationManager notes, int page = 0, UiSettings settings = null)
         {
             var defs = TabDefs(id);
             if (tab < 0 || tab >= defs.Length || defs[tab].Host != Host.None) return new List<Row>();
@@ -60,6 +61,7 @@ namespace CrownAndHearth.Game.UI
                 case MenuId.Transportation: return tab == 0 ? Routes(w) : tab == 1 ? Boats(w) : Orders(w);
                 case MenuId.Trade: return tab == 0 ? Caravans(w) : TradeCapacity(w);
                 case MenuId.Notifications: return Messages(notes, tab == 1, page);
+                case MenuId.System: return tab == 0 ? SystemGame() : tab == 1 ? SystemControls() : SystemSettings(settings ?? new UiSettings());
                 default: return new List<Row>();
             }
         }
@@ -136,6 +138,37 @@ namespace CrownAndHearth.Game.UI
             }
             return rows;
         }
+
+        /// <summary>The game commands of the System menu. A row with an Id starting "cmd:" is a button; the Hud runs it.</summary>
+        public static List<Row> SystemGame() => new List<Row>
+        {
+            new Row { Label = "Resume", Value = "close this menu", Bar = -1f, Id = "cmd:resume" },
+            new Row { Label = "Save game", Value = "save to this computer", Bar = -1f, Id = "cmd:save" },
+            new Row { Label = "Load game", Value = "load the saved game", Bar = -1f, Id = "cmd:load" },
+            new Row { Label = "New world", Value = "start again on a new map", Bar = -1f, Id = "cmd:newworld" },
+            new Row { Label = "Banner colour", Value = "choose your banner", Bar = -1f, Id = "cmd:banner" },
+        };
+
+        /// <summary>Every shortcut the game answers to.</summary>
+        public static List<Row> SystemControls() => new List<Row>
+        {
+            Row.Of("F1 to F12", "open the twelve management menus"),
+            Row.Of("1 to 9, L, 0", "build categories (press again to cycle the tools)"),
+            Row.Of("Q and E", "turn the view"),
+            Row.Of("Space", "pause or resume"),
+            Row.Of("U", "underground view, press again for deeper"),
+            Row.Of("M", "the world map"),
+            Row.Of("T", "the military window"),
+            Row.Of("N", "messages"),
+            Row.Of("Right-click", "stop placing"),
+            Row.Of("Esc", "close a dialog, stop placing, close a menu; with nothing open it opens this menu"),
+        };
+
+        public static List<Row> SystemSettings(UiSettings s) => new List<Row>
+        {
+            new Row { Label = "Interface size", Value = $"{s.Percent}%   (click to change)", Bar = -1f, Id = "cmd:scale" },
+            new Row { Label = "Pause when this menu opens", Value = (s.PauseOnMenu ? "on" : "off") + "   (click to change)", Bar = -1f, Id = "cmd:pause" },
+        };
 
         public static List<Row> TradeCapacity(World w)
         {
