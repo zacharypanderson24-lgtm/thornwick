@@ -69,6 +69,7 @@ namespace CrownAndHearth.Sim
                 // land ownership (World.Claims.cs): the parcels you own, by index
                 ["claimed"] = new JArray(Enumerable.Range(0, _claimed.Length).Where(i => _claimed[i])),
                 // raider camps (World.Camps.cs): which you have destroyed, and the armies still on the road home
+                ["characters"] = SaveCharacters(),   // notable citizens (Sim/Characters, DESIGN_GOVERNMENT.md)
                 ["settlements"] = SaveSettlements(),   // NPC settlements (World.Settlements.cs): id, people, attitude, sold and bought this month
                 ["caravans"] = SaveCaravans(),         // trade caravans and gifts on the road (World.SettlementTrade.cs)
                 ["conquest"] = SaveConquest(),         // pending decision, reinforcements on the road, an army mid-fight (World.Settlements.cs)
@@ -334,6 +335,7 @@ namespace CrownAndHearth.Sim
             world.Mil.Load(save["military"] as JObject);   // Military/MilitarySystem.Save.cs; saves without it get garrison companies made from their soldiers
             world.Recalc();   // mobilised militia are off the job: the workforce must be worked out again
             world.LoadSettlements(save["settlements"] as JArray, save["caravans"] as JArray);
+            world.LoadCharacters(save["characters"] as JObject);
             world.LoadConquest(save["conquest"] as JObject);
             foreach (var p in (save["barrierDamage"] as JObject)?.Properties() ?? Enumerable.Empty<JProperty>())   // World.Walls.cs; older saves have none
                 if (int.TryParse(p.Name, out int key)) world.BarrierDamage[key] = (double)p.Value;
