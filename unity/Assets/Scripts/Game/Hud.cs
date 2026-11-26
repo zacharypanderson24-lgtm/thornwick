@@ -117,6 +117,7 @@ namespace CrownAndHearth.Game
             BuildCampaign(root);
             BuildGuide(root);
             BuildNewWorld(root);
+            BuildLodgePanel(root);
             BuildVessels(root);
             BuildScenario(root);
             BuildIncident(root);
@@ -496,6 +497,7 @@ namespace CrownAndHearth.Game
             RefreshSettlementPanel();
             RefreshManagement(world);
             RefreshCatalogue();
+            RefreshLodgePanel();
             // prices turn red on the cards the town cannot afford yet
             foreach (var t in _tools)
                 if (t.Build != null && _cardCost.TryGetValue(t.Id, out var cost)) cost.color = world.CanAfford(t.Build).Ok ? Ink : BadInk;

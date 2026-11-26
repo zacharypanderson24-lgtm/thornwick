@@ -262,11 +262,11 @@ namespace CrownAndHearth.Tests
         [Test]
         public void OverlaysListOnlyThingsWithDataAndSailingNeedsWater()
         {
-            CollectionAssert.AreEqual(new[] { OverlayId.Underground, OverlayId.Water, OverlayId.Fertility, OverlayId.Sailing }, OverlayRegistry.All.Select(o => o.Id).ToArray());
+            CollectionAssert.AreEqual(new[] { OverlayId.Underground, OverlayId.Water, OverlayId.Fertility, OverlayId.Forest, OverlayId.Sailing }, OverlayRegistry.All.Select(o => o.Id).ToArray());
             var dry = new World(7); var wet = new World(3, TerrainStyle.Ranges, Relief.Upland, WaterPreset.Lakeside);
             Assert.That(OverlayRegistry.WhyLocked(OverlayId.Sailing, dry), Is.Not.Null.And.Not.Empty);
             Assert.That(OverlayRegistry.WhyLocked(OverlayId.Sailing, wet), Is.Null);
-            foreach (var id in new[] { OverlayId.None, OverlayId.Underground, OverlayId.Water, OverlayId.Fertility }) Assert.That(OverlayRegistry.WhyLocked(id, dry), Is.Null, id.ToString());
+            foreach (var id in new[] { OverlayId.None, OverlayId.Underground, OverlayId.Water, OverlayId.Fertility, OverlayId.Forest }) Assert.That(OverlayRegistry.WhyLocked(id, dry), Is.Null, id.ToString());
             Assert.AreEqual("Off", OverlayRegistry.TitleOf(OverlayId.None));
             foreach (var o in OverlayRegistry.All) { Assert.That(o.Title, Is.Not.Empty); Assert.That(o.Hint, Is.Not.Empty); }
         }

@@ -6,7 +6,7 @@ using CrownAndHearth.Sim;
 
 namespace CrownAndHearth.Game.UI
 {
-    public enum OverlayId { None, Underground, Water, Fertility, Sailing }
+    public enum OverlayId { None, Underground, Water, Fertility, Sailing, Forest }
 
     public sealed class OverlayDef
     {
@@ -22,6 +22,7 @@ namespace CrownAndHearth.Game.UI
             new OverlayDef { Id = OverlayId.Underground, Title = "Underground", Hint = "Ore under the hills (U also cycles the depth)" },
             new OverlayDef { Id = OverlayId.Water, Title = "Groundwater", Hint = "Groundwater patches, homes short of water and the roads water travels" },
             new OverlayDef { Id = OverlayId.Fertility, Title = "Fertile land", Hint = "Ground good for farming" },
+            new OverlayDef { Id = OverlayId.Forest, Title = "Forest", Hint = "Mature trees, saplings, protected woodland (blue) and clearing orders (orange)" },
             new OverlayDef { Id = OverlayId.Sailing, Title = "Sailable water", Hint = "Where boats can go (green) and water too shallow for them (grey)",
                 LockedReason = w => w.Waters == null ? "Sailable water: this world has no surface water." : null },
         };
@@ -36,6 +37,7 @@ namespace CrownAndHearth.Game.UI
                 case "farmhouse": case "zoneFarm": case "canal": id = OverlayId.Fertility; break;
                 case "well": case "cistern": id = OverlayId.Water; break;
                 case "mine": id = OverlayId.Underground; break;
+                case "lodge": case "forester": case "clearLand": case "protectWood": case "unprotectWood": id = OverlayId.Forest; break;
                 case "dock": case "fisher": case "port": case "ferry": case "ferryRoute": case "boatyard": id = OverlayId.Sailing; break;
                 default: return OverlayId.None;
             }
