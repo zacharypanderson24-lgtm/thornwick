@@ -136,7 +136,7 @@ namespace CrownAndHearth.Game
                 string cost = p.HasSite ? $"\n<color=#{ColorUtility.ToHtmlStringRGB(p.Affordable ? UiTheme.TextDim : UiTheme.Critical)}>Cost: {p.CostText}{(p.Affordable || p.Blocked == null ? "" : ". " + p.Blocked)}</color>" : (p.Blocked != null ? "\n" + p.Blocked : "");
                 _stewardBody[i].text = p.Why + (string.IsNullOrEmpty(p.Effect) ? "" : "\n" + p.Effect) + cost;
                 _stewardLook[i].gameObject.SetActive(p.HasSite);
-                _stewardGoLabel[i].text = p.HasSite ? "Build it here" : p.Show.HasValue ? "Open menu" : "";
+                _stewardGoLabel[i].text = p.HasRect ? "Zone it here" : p.HasSite ? "Build it here" : p.Show.HasValue ? "Open menu" : "";
                 _stewardGo[i].gameObject.SetActive(p.HasSite || p.Show.HasValue);
                 _stewardGo[i].color = p.HasSite && !p.Affordable ? new Color(0.35f, 0.3f, 0.28f) : Btn;
             }

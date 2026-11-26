@@ -12,7 +12,7 @@ namespace CrownAndHearth.Tests
         [Test] public void EveryProposalWithASiteIsReallyPlaceable()
         {
             var w = Town();
-            foreach (var p in Steward.Advise(w, 6).Where(p => p.HasSite))
+            foreach (var p in Steward.Advise(w, 6).Where(p => p.Type != null))
             {
                 var r = w.CanPlace(p.Type, p.X, p.Y);
                 Assert.IsTrue(r.Ok || r.Reason.StartsWith("Not enough"), $"{p.Id} at {p.X},{p.Y}: {r.Reason}");
@@ -41,7 +41,7 @@ namespace CrownAndHearth.Tests
         [Test] public void BuildingTheProposalPlacesIt()
         {
             var w = Town();
-            var p = Steward.Advise(w, 6).FirstOrDefault(x => x.HasSite && x.Affordable);
+            var p = Steward.Advise(w, 6).FirstOrDefault(x => x.Type != null && x.Affordable);
             if (p == null) Assert.Ignore("nothing affordable to propose in this seed");
             int before = w.Blds.Count(b => b.T == p.Type);
             Assert.IsTrue(w.Place(p.Type, p.X, p.Y).Ok);
@@ -54,7 +54,7 @@ namespace CrownAndHearth.Tests
             {
                 var list = Steward.Advise(Town(), 3, f);
                 for (int i = 1; i < list.Count; i++) Assert.GreaterOrEqual(list[i - 1].Severity, list[i].Severity, f.ToString());
-                foreach (var p in list.Where(p => p.HasSite)) Assert.IsTrue(Defs.PlacementSize(p.Type) == p.Size && Town().CanPlace(p.Type, p.X, p.Y).Reason != "Outside the map");
+                foreach (var p in list.Where(p => p.Type != null)) Assert.IsTrue(Defs.PlacementSize(p.Type) == p.Size && Town().CanPlace(p.Type, p.X, p.Y).Reason != "Outside the map");
             }
         }
 
@@ -67,5 +67,17 @@ namespace CrownAndHearth.Tests
         }
 
         [Test] public void CostTextNamesTheMaterials() => StringAssert.Contains("wood", Steward.CostText("farm"));
+
+        [Test] public void TheFieldsPackageZonesRealFertileFarmland()
+        {
+            var w = Town();
+            foreach (var b in w.Blds.Where(b => b.T == "farm" || b.T == "hunter" || b.T == "fisher" || b.T == "dock").ToList()) w.Remove(b.X, b.Y);
+            var p = Steward.FieldsPackage(w, 3, "test");
+            if (p == null) Assert.Ignore("no fertile patch beside a road in this seed");
+            Assert.IsTrue(p.HasRect && p.HasSite);
+            var (zoned, skipped, _) = w.ZoneRect(p.ZoneKind, p.ZX0, p.ZY0, p.ZX1, p.ZY1);
+            Assert.GreaterOrEqual(zoned, (p.ZX1 - p.ZX0 + 1) * (p.ZY1 - p.ZY0 + 1) * 0.85);
+            Assert.AreEqual(Zone.Farm, w.ZoneMap[p.ZY0, p.ZX0] == Zone.Farm ? Zone.Farm : w.ZoneMap[p.ZY1, p.ZX1]);
+        }
     }
 }
