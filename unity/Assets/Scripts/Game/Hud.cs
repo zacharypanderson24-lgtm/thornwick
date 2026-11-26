@@ -115,6 +115,7 @@ namespace CrownAndHearth.Game
 
             BuildNeeds(root);
             BuildCampaign(root);
+            BuildGuide(root);
             BuildNewWorld(root);
             BuildVessels(root);
             BuildScenario(root);
@@ -487,6 +488,7 @@ namespace CrownAndHearth.Game
             UpdateStockpiles(world);
             UpdateNeeds(world);
             UpdateCampaign(world);
+            UpdateGuide(world);
             UpdateVessels(world);
             UpdateScenario(world);
             UpdateIncident(world);
@@ -515,11 +517,14 @@ namespace CrownAndHearth.Game
         /// <summary>A message from the game: it goes into the message log (repeats are folded) and, when new, shows as a toast.</summary>
         public void Notify(string text, int day, float secs = 6f)
         {
-            Notes.Add(day, text, null, out bool isNew);
-            if (isNew) Toast(text, secs);
+            var note = Notes.Add(day, text, null, out bool isNew);
+            if (!isNew) return;
+            bool critical = note.Kind == CrownAndHearth.Game.UI.NoteKind.Danger;
+            Toast(critical ? "Critical: " + text : text, critical ? Mathf.Max(secs, 9f) : secs);   // a critical message stays longer, in the critical colour
+            _toastText.color = critical ? UiTheme.Critical : note.Kind == CrownAndHearth.Game.UI.NoteKind.Warning ? UiTheme.Warning : Ink;
         }
 
-        public void Toast(string text, float secs = 3.5f) { _toastText.text = text; _toastUntil = Time.unscaledTime + secs; }
+        public void Toast(string text, float secs = 3.5f) { _toastText.text = text; _toastText.color = Ink; _toastUntil = Time.unscaledTime + secs; }
 
         void Update()
         {

@@ -287,7 +287,9 @@ namespace CrownAndHearth.Game.UI
                 if (!Matches(n, warningsOnly)) continue;
                 if (skip > 0) { skip--; continue; }
                 var tone = n.Kind == NoteKind.Danger ? Tone.Bad : n.Kind == NoteKind.Warning ? Tone.Warn : n.Kind == NoteKind.Success ? Tone.Good : Tone.Normal;
-                rows.Add(new Row { Label = $"Day {n.Day}", Value = n.Count > 1 ? $"{n.Text} (x{n.Count})" : n.Text, Tone = tone, Bar = -1f, Wide = true });
+                var link = NotificationManager.LinkFor(n.Text);
+                string text = (n.Kind == NoteKind.Danger ? "Critical: " : "") + (n.Count > 1 ? $"{n.Text} (x{n.Count})" : n.Text) + (link != null ? "  >" : "");   // the word, not just the colour
+                rows.Add(new Row { Label = $"Day {n.Day}", Value = text, Tone = tone, Bar = -1f, Wide = true, Id = link != null ? "open:" + link : null });
             }
             return rows;
         }
