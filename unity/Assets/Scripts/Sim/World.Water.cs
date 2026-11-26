@@ -129,11 +129,16 @@ namespace CrownAndHearth.Sim
             var wet = new bool[N * N];
             for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
+                {
+                    double edge = double.NaN;   // the ragged-edge noise belongs to the tile, not the patch: work it out once, and only when a patch is near enough to matter
                     foreach (var p in patches)
                     {
-                        double d = Noise.Hypot(x - p.x, y - p.y) / p.r + (Noise.VNoise(x * 0.3, y * 0.3, Seed + 954) - 0.5) * WaterTuning.Ragged;
-                        if (d < 1) { wet[Tk(x, y)] = true; break; }
+                        double near = Noise.Hypot(x - p.x, y - p.y) / p.r;
+                        if (near - WaterTuning.Ragged >= 1) continue;   // too far for any noise (it is between 0 and 1) to pull the tile inside
+                        if (double.IsNaN(edge)) edge = (Noise.VNoise(x * 0.3, y * 0.3, Seed + 954) - 0.5) * WaterTuning.Ragged;
+                        if (near + edge < 1) { wet[Tk(x, y)] = true; break; }
                     }
+                }
             Array.Fill(AquiferMap, -1);
             Aquifers.Clear();
             var stack = new Stack<int>(); var tiles = new List<int>();

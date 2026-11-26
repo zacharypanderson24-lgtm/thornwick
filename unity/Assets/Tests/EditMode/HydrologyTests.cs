@@ -70,7 +70,7 @@ namespace CrownAndHearth.Tests
             }
         }
 
-        [Test]
+        [Test, Category("Slow")]
         public void DifferentSeedsGiveDifferentWater()
         {
             foreach (var p in Presets)
@@ -260,7 +260,7 @@ namespace CrownAndHearth.Tests
         }
 
         // ---------- depth, shores, navigation ----------
-        [Test]
+        [Test, Category("Slow")]
         public void EveryOpenWaterTileHasADepthAndTheSeaShelvesFromTheShore()
         {
             var seen = new HashSet<WaterDepth>();
@@ -292,7 +292,7 @@ namespace CrownAndHearth.Tests
             }
         }
 
-        [Test]
+        [Test, Category("Slow")]
         public void OnlyWaterCarriesWaterData()
         {
             foreach (var (p, s) in All())

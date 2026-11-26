@@ -24,7 +24,7 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(Relief.Upland, w.Relief);
         }
 
-        [Test]
+        [Test, Category("Slow")]
         public void MoreMountainousRegionsHaveMoreMountains()
         {
             var avg = Enum.GetValues(typeof(Relief)).Cast<Relief>().ToDictionary(r => r, r => Seeds.Average(s => Get(s, r).MountainShare()));

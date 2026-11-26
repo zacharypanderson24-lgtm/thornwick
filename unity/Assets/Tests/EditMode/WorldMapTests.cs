@@ -198,7 +198,7 @@ namespace CrownAndHearth.Tests
             Assert.GreaterOrEqual(seen.Count, 3);
         }
 
-        [Test]
+        [Test, Category("Slow")]
         public void TheCampaignSettingComesFromTheSeedAndCanBeChosen()
         {
             var settings = Enumerable.Range(1, 40).Select(s => WorldMap.Generate(s).Setting).Distinct().ToList();
