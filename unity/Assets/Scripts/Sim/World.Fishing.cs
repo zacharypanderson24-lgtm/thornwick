@@ -84,7 +84,7 @@ namespace CrownAndHearth.Sim
         {
             if (Waters == null || !(b.T == "fisher" || b.T == "dock") || !b.Served || b.Workers <= 0) return 0;
             var g = FishingGrounds(b);
-            return b.Workers * g.perWorker * FishSeason(g.kind) * StockOf(g.body) * DockBoatFactor(b);
+            return b.Workers * g.perWorker * FishSeason(g.kind) * StockOf(g.body) * DockBoatFactor(b) * CharterMult("fish");
         }
 
         /// <summary>The day's catch from every staffed, road-connected hut and dock. Fishing draws the water's stock down and the fish breed back.</summary>
@@ -96,7 +96,7 @@ namespace CrownAndHearth.Sim
             foreach (var b in Blds)
             {
                 if (!(b.T == "fisher" || b.T == "dock") || !b.Served || b.Workers <= 0) continue;
-                var g = FishingGrounds(b); double c = b.Workers * g.perWorker * FishSeason(g.kind) * StockOf(g.body) * DockBoatFactor(b);
+                var g = FishingGrounds(b); double c = b.Workers * g.perWorker * FishSeason(g.kind) * StockOf(g.body) * DockBoatFactor(b) * CharterMult("fish");
                 fish += c; taken[g.body] = taken.GetValueOrDefault(g.body) + c;
             }
             foreach (var id in new List<int>(FishStock.Keys)) if (!taken.ContainsKey(id)) taken[id] = 0;   // waters that recover with nobody fishing them

@@ -122,7 +122,7 @@ namespace CrownAndHearth.Sim
             }
             int tended = Math.Min(fields, canTend);
             double wheatTended = fields == 0 ? 0 : wheat * Math.Min(1.0, tended / (double)fields);
-            double perDay = wheatTended * WheatYield / YearLength;
+            double perDay = wheatTended * WheatYield * CharterMult("farm") / YearLength;
             f.FoodPerDay = perDay;
             f.Lines.Add($"Farmhouse here: {wheat} wheat" + (flax > 0 ? $" and {flax} flax" : "") + $" fields in reach (it can tend {canTend}): about {perDay:0.#} food a day = feeds {Villagers(perDay)}");
             f.Lines.Add($"Each wheat field gives {WheatYield} food a year at harvest (day 100 to 180); a farmer tends {FieldsPerFarmer} fields = feeds {Villagers(FieldsPerFarmer * WheatYield / (double)YearLength)}");

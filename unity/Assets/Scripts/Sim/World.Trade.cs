@@ -15,7 +15,7 @@ namespace CrownAndHearth.Sim
             foreach (var b in Blds)
                 if (b.T == "silo" && b.Served) silos++;
             if (resource == Res.Flax) return TownFlax + silos * SiloFlax;
-            return SeasonalFarming ? SeasonalTownFood + silos * SiloFood : TownFood + silos * 180;
+            return SeasonalFarming ? SeasonalTownFood + (int)(silos * SiloFood * CharterMult("silo")) : TownFood + (int)(silos * 180 * CharterMult("silo"));
         }
 
     }

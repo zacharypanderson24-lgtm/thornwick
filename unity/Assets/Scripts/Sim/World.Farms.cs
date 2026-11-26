@@ -137,7 +137,7 @@ namespace CrownAndHearth.Sim
         public const double FoodPerPerson = 1.0, ClassicFoodPerPerson = 0.2, SoldierFoodFactor = 1.5;
         /// <summary>How many of today's food units one old (0.2 a head) unit became: for thresholds that were written in old units.</summary>
         public double FoodScale => SeasonalFarming ? FoodPerPerson / ClassicFoodPerPerson : 1.0;
-        public double DailyFoodDemand => (Peasants + Soldiers * SoldierFoodFactor) * (SeasonalFarming ? FoodPerPerson : ClassicFoodPerPerson);
+        public double DailyFoodDemand => (Peasants + Soldiers * SoldierFoodFactor * CharterMult("soldierFood")) * (SeasonalFarming ? FoodPerPerson : ClassicFoodPerPerson);
         int YearStart => Day - YearDay + 1;
 
         // Signed planting day (negative for flax). Zero marks harvested soil awaiting preparation.
@@ -262,7 +262,7 @@ namespace CrownAndHearth.Sim
                     {
                         double soil = MoistureYield(key % N, key / N);   // 1 on a dry-world map; on a water map the field's soil moisture
                         if (PlantedFlax(key)) flax += FlaxYield * soil;
-                        else wheat += WheatYield * soil;
+                        else wheat += WheatYield * soil * CharterMult("farm");
                         _sownFields[key] = 0;
                     }
                     else
@@ -316,7 +316,7 @@ namespace CrownAndHearth.Sim
                 double soilFactor = MoistureYield(field.Key % N, field.Key / N);
                 if (cropFlax) flaxYield += FlaxYield * soilFactor;
                 deliveries.TryGetValue(date, out double food);
-                deliveries[date] = food + (cropFlax ? 0 : WheatYield * soilFactor);
+                deliveries[date] = food + (cropFlax ? 0 : WheatYield * soilFactor * CharterMult("farm"));
             }
 
             double eat = DailyFoodDemand, stock = ResAmt[Res.Food], overflow = 0;
@@ -346,7 +346,7 @@ namespace CrownAndHearth.Sim
                 var mine = FarmFields().Where(f => f.Value == farm).Select(f => f.Key).ToList();
                 int wheat = mine.Count(k => !IsFlaxField(k % N, k / N));
                 double tended = Math.Min(1.0, farm.Workers * FieldsPerFarmer / (double)Math.Max(1, mine.Count));
-                food += wheat * tended * WheatYield / (double)YearLength;
+                food += wheat * tended * WheatYield * CharterMult("farm") / (double)YearLength;
             }
             return food;
         }
