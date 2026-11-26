@@ -438,9 +438,10 @@ namespace CrownAndHearth.Game
         public void SetInfo(string text)
         {
             _infoPanel.SetActive(!string.IsNullOrEmpty(text));
-            int firstLine = text.IndexOf('\n');
-            _infoTitle.text = firstLine < 0 ? text : text.Substring(0, firstLine);
-            _infoText.text = firstLine < 0 ? "" : text.Substring(firstLine + 1);
+            var ins = CrownAndHearth.Game.UI.InspectionData.Parse(text);   // heading, facts as rows, problems marked (Game/UI/InspectionData.cs)
+            _infoTitle.text = ins.Title;
+            _infoText.supportRichText = true;
+            _infoText.text = CrownAndHearth.Game.UI.InspectionData.Body(ins);
             // fit the panel to its text, so it does not hide a big piece of the map
             var pr = (RectTransform)_infoPanel.transform;
             pr.offsetMin = new Vector2(pr.offsetMin.x, pr.offsetMax.y - Mathf.Min(349, 56 + _infoText.preferredHeight));
