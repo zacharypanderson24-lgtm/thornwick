@@ -202,6 +202,13 @@ namespace CrownAndHearth.Game
             _hud.LivestockFocusRequested += (x, y) => _cam.CenterOn(IsoView.TileCenter(World, x, y, _rot));
             _hud.SpeedPicked += s => { _speed = s; if (s > 0) _lastRunSpeed = s; _hud.SetSpeed(s); };
             _hud.RotatePicked += Rotate;
+            _hud.StewardShow += p => _cam.CenterOn(IsoView.TileCenter(World, p.X + p.Size / 2, p.Y + p.Size / 2, _rot));
+            _hud.StewardBuild += p =>
+            {
+                var r = World.Place(p.Type, p.X, p.Y);
+                _hud.Toast(r.Ok ? $"The steward's {Defs.Names[p.Type].ToLowerInvariant()} is going up." : r.Reason);
+                if (r.Ok) _cam.CenterOn(IsoView.TileCenter(World, p.X + p.Size / 2, p.Y + p.Size / 2, _rot));
+            };
             _hud.PrioMoved += MovePrio;
             _hud.WorkersAdjusted += (trade, dir) => World.AdjustTradeTarget(trade, dir);
             _hud.SavePicked += SaveSettlement;
@@ -951,6 +958,8 @@ namespace CrownAndHearth.Game
             foreach (var burning in World.Burning)   // a scenario fire: every tile of a burning building glows red
                 for (int j = 0; j < burning.Sz; j++) for (int i = 0; i < burning.Sz; i++) _overlay.AddTile(World, burning.X + i, burning.Y + j, _rot, Bad);
             DrawTunnels();
+            if (_hud.StewardFocus is CrownAndHearth.Game.UI.Proposal sp && sp.HasSite)   // the steward's proposed building, drawn where it would go
+                for (int j = 0; j < sp.Size; j++) for (int i = 0; i < sp.Size; i++) _overlay.AddTile(World, sp.X + i, sp.Y + j, _rot, sp.Affordable ? Ok : Warn);
             if (_ugLevel > 0) DrawUnderground();
             else DrawChosenOverlay();
             // zone tools: shade where the buildings that work this zone can reach, so the player knows where to paint
