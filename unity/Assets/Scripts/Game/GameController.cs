@@ -551,6 +551,7 @@ namespace CrownAndHearth.Game
             var kb = Keyboard.current; if (kb == null || _hud.EditingBanner) return;
             for (int f = 1; f <= 12; f++)   // F1..F12: the twelve management menus (digits belong to the build bar)
                 if (kb[Key.F1 + f - 1].wasPressedThisFrame) { var m = CrownAndHearth.Game.UI.MenuRegistry.ByFunctionKey(f); if (m != null) { _hud.ToggleMenu(m.Id); return; } }
+            if (kb.bKey.wasPressedThisFrame) { _hud.ToggleCatalogue(); return; }
             if (kb.nKey.wasPressedThisFrame) { _hud.ToggleMenu(CrownAndHearth.Game.UI.MenuId.Notifications); return; }
             if (kb.escapeKey.wasPressedThisFrame && _hud.EscapeManagement(_tool != Tools[0] || _roadAnchor.HasValue || _zoneAnchor.HasValue || _ferryFrom != null)) return;
             if (kb.mKey.wasPressedThisFrame) { _hud.ToggleMap(); return; }
