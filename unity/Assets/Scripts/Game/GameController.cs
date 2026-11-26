@@ -1260,8 +1260,10 @@ namespace CrownAndHearth.Game
                 if (World.CrewKind(b.T) != Deco.None) lines.Add(CrewLine(b));
                 if (b.T == "mine") lines.Add(w.MineStatus(b));
                 if (b.T == "quarry") lines.Add(w.QuarryStatus(b));
-                if (b.T == "wood" && b.Served && w.ActiveJobs(b) == 0)
-                    lines.Add($"Nothing to fell: drag a Lumber Zone over trees within {WorkR} tiles (Wood, 4)");
+                if (b.T == "wood") lines.Add(w.LodgeStatus(b));
+                if (b.T == "sawmill") lines.Add(w.SawmillStatus(b));
+                if (b.T == "charcoal") lines.Add(w.CharcoalStatus(b));
+                foreach (var warn in w.BuildingWarnings(b)) lines.Add(warn.ToString());   // what is wrong, why, and what to do (World.Warnings.cs)
                 if (b.T == "wood" || b.T == "sawmill" || b.T == "hall")
                 {
                     bool saw = w.Blds.Any(s => s.T == "sawmill" && s.Served);

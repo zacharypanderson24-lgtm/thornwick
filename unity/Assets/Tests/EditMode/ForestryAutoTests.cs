@@ -209,6 +209,19 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
+        public void AStarvedLodgeExplainsWhatWhyAndWhatToDo()
+        {
+            var (w, lodge, trees) = Forest(14);
+            for (int d = 0; d < 500; d++) Day(w);
+            var warn = w.BuildingWarnings(lodge).FirstOrDefault(x => x.Title.Contains("Limited sustainable production"));
+            Assert.IsNotNull(warn.Title, "the lodge at its floor says so");
+            StringAssert.Contains("harvested faster than they regrow", warn.Why);
+            StringAssert.Contains("another lodge", warn.Fix);
+            w.SetForestMode(lodge, ForestMode.Intensive);
+            Assert.IsFalse(w.BuildingWarnings(lodge).Any(x => x.Title.Contains("Limited sustainable")), "the warning belongs to Sustainable mode");
+        }
+
+        [Test]
         public void ASiteSurveyCountsTreesProtectionAndNeighbours()
         {
             var (w, lodge, trees) = Forest(30);
