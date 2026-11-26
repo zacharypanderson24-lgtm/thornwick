@@ -580,7 +580,7 @@ namespace CrownAndHearth.Game
             {
                 _autoOv = false; _ugLevel = (_ugLevel + 1) % (World.Bands + 1); if (_ugLevel > 0) _ov = CrownAndHearth.Game.UI.OverlayId.None;
                 _hud.Toast(_ugLevel == 0 ? "Underground view off." : $"Underground view: ore band {_ugLevel} of {World.Bands}" +
-                    (_ugLevel == 1 ? " (just under the surface). Ore lies in hills and mountains. Orange = ore a tunnel has revealed, brighter = richer; grey = revealed, nothing here; blue = Mining zone not dug near yet; yellow = tunnel. U for deeper." : _ugLevel < World.Bands ? ". U for deeper." : " (deepest, richest). U to turn off."), 6);
+                    (_ugLevel == 1 ? " (just under the surface). Ore lies in hills and mountains. Orange = ore a tunnel has revealed, brighter = richer; grey = revealed, nothing here; pale orange = an estimate of ore not dug near yet; blue = your painted Mining boundary; yellow = tunnel. U for deeper." : _ugLevel < World.Bands ? ". U for deeper." : " (deepest, richest). U to turn off."), 6);
             }
         }
 
@@ -841,7 +841,7 @@ namespace CrownAndHearth.Game
         }
 
         /// <summary>Underground view of ore band _ugLevel (1 = just under each tile's surface, 3 = deepest): surveyed ore (orange, brighter =
-        /// richer), surveyed nothing (grey), Mining zone not yet surveyed (blue), mines with an adit or shaft (yellow).</summary>
+        /// richer), surveyed nothing (grey), estimated ore not yet dug near (pale orange), painted Mining boundary not yet surveyed (blue), mines with an adit or shaft (yellow).</summary>
         void DrawUnderground()
         {
             var w = World; int L = _ugLevel; double cap = World.LevelCapMax[L];

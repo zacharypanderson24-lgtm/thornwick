@@ -17,18 +17,18 @@ namespace CrownAndHearth.Game
 
         void BuildLodgePanel(RectTransform root)
         {
-            _lodgePanel = MakePanel(root, "LodgePanel", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-300, -250), new Vector2(300, 250));
+            _lodgePanel = MakePanel(root, "LodgePanel", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-300, -210), new Vector2(300, 210));
             _lodgeTitle = MakeText(_lodgePanel, "Title", 22, TextAnchor.UpperLeft); _lodgeTitle.fontStyle = FontStyle.Bold;
-            Stretch(_lodgeTitle.rectTransform, new Vector2(18, 440), new Vector2(-18, -12));
+            Stretch(_lodgeTitle.rectTransform, new Vector2(18, 370), new Vector2(-18, -12));
             for (int i = 0; i < 3; i++)
             {
                 var mode = LodgeModeOrder[i];
                 _lodgeModes[i] = MakeButton(_lodgePanel, World.ModeName(mode), new Vector2(0, 1), new Vector2(112 + i * 188, -66), new Vector2(176, 34), () => PickForestMode(mode));
             }
             _lodgeModeNote = MakeText(_lodgePanel, "ModeNote", UiTheme.SmallSize, TextAnchor.UpperLeft); _lodgeModeNote.color = Dim;
-            Stretch(_lodgeModeNote.rectTransform, new Vector2(18, 370), new Vector2(-18, -92));
+            Stretch(_lodgeModeNote.rectTransform, new Vector2(18, 300), new Vector2(-18, -92));
             _lodgeBody = MakeText(_lodgePanel, "Body", 15, TextAnchor.UpperLeft);
-            Stretch(_lodgeBody.rectTransform, new Vector2(18, 56), new Vector2(-18, -128));
+            Stretch(_lodgeBody.rectTransform, new Vector2(18, 56), new Vector2(-18, -110));
             MakeButton(_lodgePanel, "Close", new Vector2(0.5f, 0), new Vector2(0, 28), new Vector2(150, 34), () => ShowLodgePanel(null));
             _lodgePanel.gameObject.SetActive(false);
         }
@@ -59,10 +59,10 @@ namespace CrownAndHearth.Game
             if (!LodgePanelOpen) return;
             if (_lodge == null || _world == null || !_world.Blds.Contains(_lodge)) { _lodgePanel.gameObject.SetActive(false); return; }
             var w = _world;
-            _lodgeTitle.text = $"{_lodge.Name} at {_lodge.X},{_lodge.Y}   ·   workers {_lodge.Workers}/{w.ActiveJobs(_lodge)} needed ({_lodge.Jobs} jobs)";
+            _lodgeTitle.text = $"{_lodge.Name} at {_lodge.X},{_lodge.Y}";
             for (int i = 0; i < 3; i++) _lodgeModes[i].color = _lodge.Mode == LodgeModeOrder[i] ? BtnOn : Btn;
-            _lodgeModeNote.text = World.ModeName(_lodge.Mode) + ": " + World.ModeBlurb(_lodge.Mode) + ".";
-            var lines = new System.Collections.Generic.List<string> { w.LodgeStatus(_lodge) };
+            _lodgeModeNote.text = $"Workers {_lodge.Workers}/{w.ActiveJobs(_lodge)} needed ({_lodge.Jobs} jobs)";
+            var lines = new System.Collections.Generic.List<string> { w.LodgeStatus(_lodge) };   // its first line names the mode and what the mode does
             lines.AddRange(w.BuildingWarnings(_lodge).Select(x => x.ToString()));
             _lodgeBody.text = string.Join("\n\n", lines);
         }

@@ -127,7 +127,7 @@ namespace CrownAndHearth.Sim
         public const int OrePerMetal = 2, SmeltRate = 2;
 
         public const int HutVariants = 8;
-        public const string TreeMsg = "Trees are in the way. Paint a Lumber zone over them and let woodcutters clear the land first";
+        public const string TreeMsg = "Trees are in the way. Clear them first with Clear Land (Wood menu, key 4)";
 
         /// <summary>Door directions: 0 = +y, 1 = -x, 2 = -y, 3 = +x.</summary>
         public static readonly int[,] FaceDirs = { { 0, 1 }, { -1, 0 }, { 0, -1 }, { 1, 0 } };
