@@ -101,12 +101,47 @@ A System button at the end of the toolbar (and Esc when nothing else is open) op
 
 Hovering a toolbar button now shows a card under it: name and key, what the menu holds, and why it is locked when it is. **Interface size:** the 115 percent option from Phase 6 is removed. The layout is built for a fixed 1600 x 900 canvas that scales with the screen, so any size above 100 percent shrinks that canvas and overflows (the toolbar was buried at 1280 x 720 and at 1920 x 1080 alike). Sizes are now 85 percent (more room for the map; checked at 1280 x 720) and 100 percent; a bigger interface needs a responsive layout first (anchors and flexible rows instead of the fixed offsets in the old panels). Seen at all three resolutions: 1280 x 720, 1920 x 1080 and 2560 x 1440. **Not done:** Military in the shared window (its window has nested dialogs and text fields tied to its own layout; plan: move it last, panel by panel, after a responsive pass), keyboard focus and tab order through the windows, and a high-contrast option.
 
-## 13. Refinement milestone: permanent UI standards (Phase 1 of 11 built)
+## 13. Refinement milestone: permanent UI standards (phases 1 to 7 built)
 
-Status: Phase 1 (visual foundation) is built. Phases 2 to 11 (compact HUD, Build catalogue, placement workflow, six-category navigation, inspector, notifications and tutorial, window styling, government readiness, resolution testing, terrain blending) are planned, not built.
+Status: phases 1 to 7 of the refinement milestone are built (see section 14); phases 8 to 10 are covered by the same PRs plus the screenshots, and phase 11 (terrain blending) is not started.
 
 - **One theme.** `UiTheme.cs` holds the palette (#211F1B background, #332D24 panels, #494033 selected, #B89B60 gold accent, #E6DCC5 text, #A79C87 secondary text, #829961 / #D2A45F / #B96554 status), text sizes (title 22, heading 17, body 15, stat 17, small 13, tip 14 reference pixels), spacing and a contrast helper. HUD files read colours from it (`Hud.cs` aliases `Panel`, `Btn`, `Ink`, `Dim`...) and never hardcode new ones. `UiThemeTests` checks the hex values and that primary and secondary text stay at 4.5:1 contrast on every fill.
 - **Panels** get a one pixel border from `Hud.MakePanel`; no gold frames or ornament.
 - **Status is never colour alone**: pair the colour with words or a shape (`UiTheme.Tone`).
 - **Text engine.** Stays on uGUI `Text` with the built-in font: it already renders at native screen resolution. TextMeshPro would mean rewriting every label for no visible gain, so it was not adopted. The blur seen in one screenshot came from the Game view's Scale slider set to 1.5x (it upscales the whole picture); keep it at 1x when judging sharpness.
 - **Scaling.** The canvas is 1600 x 900 reference with match 0.5; interface size options are 85 and 100 percent (bigger needs a responsive layout).
+
+## 14. Refinement milestone: what was built (phases 1 to 7), and what was not
+
+Status of the 11-phase UI refinement (Zach's brief). Each phase is its own PR, stacked in order.
+
+| Phase | What it is | Built |
+|---|---|---|
+| 1 | Central theme (`UiTheme.cs`): palette, text sizes, spacing, contrast checks, panel borders | yes |
+| 2 | Compact top bar, per-day rates in the resource hover lists, Save/Load moved to the System menu | yes (conditions strip at the bottom unchanged) |
+| 3 | Build catalogue: Build button (B), nine categories, cards, search, favourites, recents | yes |
+| 4 | Tools switch on the overlay that helps place them, and restore it after | yes |
+| 5 | Six management categories with a group switcher inside the window | yes |
+| 6 | Inspector: "To fix" line under problems; panel fits its text | partly: no tabs and no bottleneck forecasts (see below) |
+| 7 | Critical messages in words and colour, messages link to their menu, first-year guide card | yes |
+| 8 | Consistent management windows | mostly through phases 1 and 5 (one shared window, one theme); Military and the camp/battle screens keep their own windows |
+| 9 | Government readiness | the Government menu (from the government milestone) already uses the shared window, portraits and rows; no extra components were needed |
+| 10 | Resolution and visual testing | capture-tool screenshots at 1280x720, 1366x768, 1920x1080, 2560x1440 and 3440x1440; not played in the running game |
+| 11 | Terrain edge blending | not started (optional) |
+
+### Standards that future UI must follow
+
+- **Colours and sizes** come from `UiTheme` only. No new hardcoded colours in HUD files.
+- **Status is never colour alone**: critical messages say "Critical", problems have words, locked things say why.
+- **Construction is data-driven.** A building appears in the Build catalogue because it is in `GameController.Tools`; `BuildCatalogue.CategoryOf` places it (unknown tools fall back to their old category). Add a building: add the tool, optionally map its category and its overlay (`OverlayRegistry.ForTool`).
+- **Menus** live in `MenuRegistry` (twelve menus, six groups). A new menu joins a group in `MenuRegistry.Groups`; every menu keeps its F-key.
+- **Messages** link to a menu through `NotificationManager.LinkFor`; add words there for new event types.
+- **Guide steps** come from the real state of the town (`FirstYearGuide.Steps`), never a script; no invented thresholds beyond facts the sim exposes (a winter is 90 days).
+- **Reusable pieces** in the Hud today: panel with hairline border (`MakePanel`), button, tab, row list with bars (`ManagementData.Row`), tooltip (`ShowTip`), confirmation dialog (`Confirm`), hosted legacy panels, catalogue card. Portraits in rows use `CharacterPortraits`.
+
+### Known gaps (not claimed as done)
+
+- Inspector tabs (Overview, Workforce, Resources, Upgrades, Advanced) and per-building bottleneck explanations: the inspector text is free-form lines built in `GameController.TileInfo`; structured building status has to come from the sim first.
+- No amber "valid but ineffective" placement state; no resource icons in the top bar (no approved icon art); the bottom condition strip (food, water, work, safety, mood) is the old design; the empty strip in the middle of the bottom bar.
+- Bigger-than-100 percent interface size, keyboard focus order, high-contrast option.
+- No real-mouse playtest of any of this.

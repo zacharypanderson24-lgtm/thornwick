@@ -36,5 +36,14 @@ namespace CrownAndHearth.Tests
             Assert.Greater(UiTheme.HeadingSize, UiTheme.BodySize - 1);
             Assert.Greater(UiTheme.BodySize, UiTheme.SmallSize);
         }
+
+        [Test] public void UltrawideScreensScaleByHeightOthersByTheMean()
+        {
+            Assert.AreEqual(0.5f, Hud.MatchFor(1920, 1080));
+            Assert.AreEqual(0.5f, Hud.MatchFor(1366, 768));
+            Assert.AreEqual(0.5f, Hud.MatchFor(1280, 1024));
+            Assert.AreEqual(1f, Hud.MatchFor(3440, 1440));
+            Assert.AreEqual(1f, Hud.MatchFor(2560, 1080));
+        }
     }
 }

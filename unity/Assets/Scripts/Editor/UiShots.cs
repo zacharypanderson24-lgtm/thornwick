@@ -13,7 +13,7 @@ namespace CrownAndHearth.EditorTools
 {
     public static class UiShots
     {
-        static readonly (int w, int h)[] Sizes = { (1280, 720), (1920, 1080), (2560, 1440) };
+        static readonly (int w, int h)[] Sizes = { (1280, 720), (1366, 768), (1920, 1080), (2560, 1440), (3440, 1440) };
 
         [MenuItem("Crown & Hearth/UI Screenshots")]
         public static void Run()
@@ -79,7 +79,7 @@ namespace CrownAndHearth.EditorTools
             canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = cam; canvas.planeDistance = 1;
             var scaler = canvas.GetComponent<CanvasScaler>();   // the game's scaler reads the screen size; here the picture size is what matters
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-            scaler.scaleFactor = Mathf.Pow(2f, Mathf.Lerp(Mathf.Log(width / 1600f, 2f), Mathf.Log(height / 900f, 2f), 0.5f)) * hud.Settings.Scale;   // the interface-size setting
+            scaler.scaleFactor = Mathf.Pow(2f, Mathf.Lerp(Mathf.Log(width / 1600f, 2f), Mathf.Log(height / 900f, 2f), Hud.MatchFor(width, height))) * hud.Settings.Scale;   // the interface-size setting
             Canvas.ForceUpdateCanvases(); LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)canvas.transform); Canvas.ForceUpdateCanvases();
             if (afterLayout != null) { afterLayout(hud); Canvas.ForceUpdateCanvases(); }   // things placed from where a button is (tooltips) need the final layout
             cam.Render();
