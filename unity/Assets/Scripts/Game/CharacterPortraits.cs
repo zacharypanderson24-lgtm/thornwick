@@ -1,6 +1,9 @@
-// Turns a character's saved appearance definition (a seed, a climate, an archetype and hair-ageing tendencies) into a portrait recipe and a cached texture.
-// The face comes only from Look.Seed, so changing job or clothes (Look.Outfit, Look.Archetype) never changes who the person is; age picks the portrait's
-// age stage, and the saved tendencies decide when the hair greys, recedes or goes.
+// The bridge between a Sim character (ids, seed, age tendencies) and the portrait system. Sim knows nothing of images; this maps a Character to a
+// PortraitAppearance for a given calendar day and hands out cached textures.
+//  - The permanent definition (face, skin, hair, original hair colour, original outfit) is made once from the seed, stored in Look.Definition and saved:
+//    later changes to the portrait library never alter an existing person.
+//  - Occupation / outfit changes (Look.Archetype, Look.Outfit) change only clothing and headwear, never the face.
+//  - Age comes from the calendar (Character.AgeYears) and is applied by PortraitAging: overlay stage, graying, receding hairline, baldness.
 using CrownAndHearth.Portraits;
 using CrownAndHearth.Sim;
 using UnityEngine;
@@ -9,25 +12,53 @@ namespace CrownAndHearth.Game
 {
     public static class CharacterPortraits
     {
-        public static PortraitAppearance Appearance(PortraitLibrary lib, Character c, int day)
+        // The saved definition; created and stored on first use. Always the person's young self (age "young", original hair).
+        public static PortraitAppearance Definition(Character c, PortraitLibrary lib)
         {
-            // the physical identity: generated from the seed alone, whatever the archetype (so the outfit may change, the face does not)
-            var face = PortraitGenerator.Generate(lib, c.Look.Seed, c.Look.Climate, null);
-            var a = PortraitGenerator.Generate(lib, c.Look.Seed, c.Look.Climate, c.Look.Archetype);
-            a.skin = face.skin; a.hair = face.hair; a.hair_color = face.hair_color; a.brows = face.brows; a.beard = face.beard; a.face = face.face; a.eyes = face.eyes;
-            if (!string.IsNullOrEmpty(c.Look.Outfit) && lib.Find(PortraitLayer.Clothing, c.Look.Outfit) != null) a.clothing = c.Look.Outfit;
-            int years = c.AgeYears(day);
-            a.age = CharacterBalance.StageIds[(int)c.StageAt(day)];
-            if (c.Look.GreyAge > 0 && years >= c.Look.GreyAge && lib.FindEntry(lib.hairSetId, "grey") != null) a.hair_color = "grey";
-            if (c.Look.BaldAge > 0 && years >= c.Look.BaldAge && lib.Find(PortraitLayer.Hair, "bald") != null) a.hair = "bald";
-            else if (c.Look.RecedeAge > 0 && years >= c.Look.RecedeAge && lib.Find(PortraitLayer.Hair, "receding") != null) a.hair = "receding";
-            return a;
+            if (!string.IsNullOrEmpty(c.Look.Definition))
+            {
+                var saved = PortraitAppearance.FromJson(c.Look.Definition);
+                if (saved != null) return saved;
+            }
+            var def = PortraitGenerator.Generate(lib, c.Look.Seed, c.Look.Climate, c.Look.Archetype);
+            def.age = "young";
+            if (!string.IsNullOrEmpty(c.Look.Outfit)) Dress(lib, def, c.Look.Outfit, c.Look.Seed);
+            c.Look.Definition = def.ToJson();
+            return def;
         }
 
-        public static Texture2D Texture(Character c, int day)
+        // What this person looks like on `day`.
+        public static PortraitAppearance Current(Character c, int day, PortraitLibrary lib)
         {
-            var lib = PortraitLibrary.Shared;
-            return lib == null ? null : PortraitCache.Shared.Get(lib, Appearance(lib, c, day));
+            var def = Definition(c, lib);
+            var worn = def.Clone();
+            if (!string.IsNullOrEmpty(c.Look.Outfit)) { if (c.Look.Outfit != def.clothing) Dress(lib, worn, c.Look.Outfit, c.Look.Seed); }
+            else if (!string.IsNullOrEmpty(c.Look.Archetype) && c.Look.Archetype != def.archetype) DressForArchetype(lib, worn, c.Look.Archetype, c.Look.Seed);
+            return PortraitAging.Apply(lib, worn, c.AgeYears(day), c.Look.GreyAge, c.Look.RecedeAge, c.Look.BaldAge);
+        }
+
+        public static Texture2D Texture(Character c, int day, PortraitLibrary lib = null, PortraitCache cache = null)
+        {
+            lib = lib != null ? lib : PortraitLibrary.Shared;
+            return (cache ?? PortraitCache.Shared).Get(lib, Current(c, day, lib));
+        }
+
+        // Put on an outfit; keep the current hat if it goes with it, otherwise pick one that does (deterministic from the seed).
+        static void Dress(PortraitLibrary lib, PortraitAppearance a, string outfit, int seed)
+        {
+            var cl = lib.Find(PortraitLayer.Clothing, outfit); if (cl == null) return;
+            a.clothing = outfit; a.clothing_color = "original";
+            if (!cl.compatibleHeadwear.Contains(a.headwear) && cl.compatibleHeadwear.Count > 0)
+            {
+                var rng = new PortraitRng(seed * 31L + 7); a.headwear = rng.Pick(cl.compatibleHeadwear); a.headwear_color = "original";
+            }
+        }
+
+        static void DressForArchetype(PortraitLibrary lib, PortraitAppearance a, string archetype, int seed)
+        {
+            var arch = lib.FindArchetype(archetype); if (arch == null || arch.outfits.Count == 0) return;
+            var rng = new PortraitRng(seed * 17L + 3);
+            Dress(lib, a, rng.Pick(arch.outfits), seed);
         }
     }
 }

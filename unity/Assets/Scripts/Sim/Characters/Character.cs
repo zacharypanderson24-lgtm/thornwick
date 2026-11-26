@@ -13,6 +13,9 @@ namespace CrownAndHearth.Sim
         public int Seed;
         public string Climate = "temperate", Archetype = "civil", Outfit = "";
         public int GreyAge, RecedeAge, BaldAge;
+        /// <summary>The complete portrait recipe (JSON, opaque to Sim) of this person as a young adult: face, skin, hair, hair colour, brows, eyes, beard, original outfit.
+        /// Filled by the Game layer the first time the portrait is needed, then saved, so adding or changing portrait assets never changes an existing person. Empty = not made yet.</summary>
+        public string Definition = "";
         public CharAppearance Clone() => (CharAppearance)MemberwiseClone();
     }
 
