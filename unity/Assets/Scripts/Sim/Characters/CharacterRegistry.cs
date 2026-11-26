@@ -15,6 +15,8 @@ namespace CrownAndHearth.Sim
         readonly List<Character> _all = new List<Character>();                  // in id order (ids only ever grow)
         readonly Dictionary<int, int> _serial = new Dictionary<int, int>();    // settlement id -> people generated so far (the generator's stream position)
         public readonly List<CharEvent> Journal = new List<CharEvent>();       // the newest events, capped
+        /// <summary>Events made by the latest StepMonth (the world turns the ones about officials into notices).</summary>
+        public readonly List<CharEvent> Recent = new List<CharEvent>();
 
         public IReadOnlyList<Character> All => _all;
         public int Count => _all.Count;
@@ -34,7 +36,8 @@ namespace CrownAndHearth.Sim
 
         void Note(int day, Character c, CharEventKind kind, string text)
         {
-            Journal.Add(new CharEvent { Day = day, Id = c.Id, Kind = kind, Post = c.Post, Text = text });
+            var e = new CharEvent { Day = day, Id = c.Id, Kind = kind, Post = c.Post, Text = text };
+            Journal.Add(e); Recent.Add(e);
             if (Journal.Count > JournalMax) Journal.RemoveRange(0, Journal.Count - JournalMax);
         }
 
@@ -66,6 +69,7 @@ namespace CrownAndHearth.Sim
         /// <summary>Once a month: everyone ages (stage changes, health, experience, retirement, death), then each pool below its target gains people.</summary>
         public void StepMonth(int day, IEnumerable<PoolContext> pools)
         {
+            Recent.Clear();
             foreach (var c in _all.ToList())   // (a copy: the list does not change here, but Journal callers may)
                 if (c.Alive) AgeOne(c, day);
             foreach (var ctx in pools) Grow(ctx, day);
@@ -119,6 +123,16 @@ namespace CrownAndHearth.Sim
             c.Post = Post.None; c.PostSettlement = 0;
         }
 
+        /// <summary>The person leaves their post of their own accord (unpaid, or lost faith) and becomes Available again.</summary>
+        public void Resign(Character c, int day, string why)
+        {
+            if (!c.Alive || c.Post == Post.None) return;
+            var post = c.Post;
+            c.Employment = Employment.Available; c.Post = Post.None; c.PostSettlement = 0; c.MissedPayments = 0;
+            c.Log(day, $"Resigned as {post}: {why}");
+            Note(day, c, CharEventKind.Resigned, $"{c.Name} has resigned as {post} ({why}). The post is vacant.");
+        }
+
         public void Die(Character c, int day)
         {
             if (!c.Alive) return;
@@ -155,7 +169,8 @@ namespace CrownAndHearth.Sim
                     new JArray(c.Attr), c.Loyalty, c.Ambition, c.Health, c.ExperienceHundredths, new JArray(c.Traits.Select(t => (int)t)),
                     (int)c.Post, c.PostSettlement, c.MonthlySalary, (int)c.Pay,
                     new JArray(c.Look.Seed, c.Look.Climate, c.Look.Archetype, c.Look.Outfit, c.Look.GreyAge, c.Look.RecedeAge, c.Look.BaldAge, c.Look.Definition ?? ""),
-                    (int)c.Stage, c.DeathDay, c.RetiredDay, new JArray(c.History.Select(h => new JArray(h.day, h.text)))));
+                    (int)c.Stage, c.DeathDay, c.RetiredDay, new JArray(c.History.Select(h => new JArray(h.day, h.text))),
+                    c.MissedPayments, c.AppointedDay));
             return new JObject
             {
                 ["v"] = SaveVersion, ["next"] = NextId,
@@ -189,6 +204,7 @@ namespace CrownAndHearth.Sim
                     Definition = look.Count > 7 ? look[7].Value<string>() ?? "" : "" };   // saves from before the portrait definition have 7 entries
                 c.Stage = (AgeStage)r[21].Value<int>(); c.DeathDay = r[22].Value<int>(); c.RetiredDay = r[23].Value<int>();
                 foreach (JArray h in (JArray)r[24]) c.History.Add((h[0].Value<int>(), h[1].Value<string>()));
+                if (r.Count > 26) { c.MissedPayments = r[25].Value<int>(); c.AppointedDay = r[26].Value<int>(); }   // added in phase 2
                 reg.Add(c);
             }
             foreach (JArray e in (o["journal"] as JArray) ?? new JArray())

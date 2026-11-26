@@ -21,6 +21,7 @@ namespace CrownAndHearth.Game.UI
         public Tone Tone;
         public bool Wide;       // a sentence: left-aligned value, narrow label column
         public string Id;       // a tool id: clicking the row picks that tool (Construction)
+        public float RightPad;  // keep the value this far from the right edge (room for a portrait)
         public static Row Of(string label, string value, Tone tone = Tone.Normal, float bar = -1f) => new Row { Label = label, Value = value, Tone = tone, Bar = bar };
     }
 
@@ -39,6 +40,7 @@ namespace CrownAndHearth.Game.UI
             MenuId.Transportation => new[] { T("Routes"), T("Boats"), T("Orders") },
             MenuId.Trade => new[] { T("On the road"), T("Capacity") },
             MenuId.Construction => GameController.Cats.Where(c => c.Cat != GameController.Cat.Inspect).Select(c => T(c.Label)).ToArray(),
+            MenuId.Government => GovernmentData.Tabs.Select(t => T(t)).ToArray(),
             MenuId.Notifications => new[] { T("All"), T("Warnings") },
             MenuId.System => new[] { T("Game"), T("Controls"), T("Settings") },
             _ => new[] { T("Overview") },
@@ -48,7 +50,7 @@ namespace CrownAndHearth.Game.UI
 
         public static string ResName(Res r) => r switch { Res.Food => "Wheat", Res.SmokedMeat => "Smoked meat", Res.Ore => "Iron ore", _ => r.ToString() };
 
-        public static List<Row> Rows(MenuId id, int tab, World w, NotificationManager notes, int page = 0, UiSettings settings = null)
+        public static List<Row> Rows(MenuId id, int tab, World w, NotificationManager notes, int page = 0, UiSettings settings = null, GovernmentUiState gov = null)
         {
             var defs = TabDefs(id);
             if (tab < 0 || tab >= defs.Length || defs[tab].Host != Host.None) return new List<Row>();
@@ -60,6 +62,7 @@ namespace CrownAndHearth.Game.UI
                 case MenuId.Construction: return ConstructionTools(w, tab);
                 case MenuId.Transportation: return tab == 0 ? Routes(w) : tab == 1 ? Boats(w) : Orders(w);
                 case MenuId.Trade: return tab == 0 ? Caravans(w) : TradeCapacity(w);
+                case MenuId.Government: return GovernmentData.Rows(w, tab, gov ?? new GovernmentUiState());
                 case MenuId.Notifications: return Messages(notes, tab == 1, page);
                 case MenuId.System: return tab == 0 ? SystemGame() : tab == 1 ? SystemControls() : SystemSettings(settings ?? new UiSettings());
                 default: return new List<Row>();
@@ -68,6 +71,7 @@ namespace CrownAndHearth.Game.UI
 
         public static string EmptyText(MenuId id, int tab) => id switch
         {
+            MenuId.Government => tab == 2 ? "Nobody selected. Click a post on the Council tab or a candidate on the Recruit tab." : GovernmentData.EmptyText(tab),
             MenuId.Notifications => tab == 1 ? "No warnings. Nothing needs your attention." : "Nothing has happened yet.",
             MenuId.Transportation => tab == 0 ? "No ferry routes. Build two landings and link them with the Ferry Route tool." : tab == 1 ? "No boats yet. Order some at a Boatyard." : "No orders waiting.",
             MenuId.Trade => "No caravans or ships on the road. Markets send caravans to the settlements on the world map.",
