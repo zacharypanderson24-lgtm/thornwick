@@ -461,7 +461,9 @@ namespace CrownAndHearth.Game
             _infoText.text = CrownAndHearth.Game.UI.InspectionData.Body(ins);
             // fit the panel to its text, so it does not hide a big piece of the map
             var pr = (RectTransform)_infoPanel.transform;
-            pr.offsetMin = new Vector2(pr.offsetMin.x, pr.offsetMax.y - Mathf.Min(349, 56 + _infoText.preferredHeight));
+            // measured at the panel's text width (the panel may have just been switched on, before its layout ran)
+            float textH = _infoText.cachedTextGeneratorForLayout.GetPreferredHeight(_infoText.text, _infoText.GetGenerationSettings(new Vector2(298, 0))) / _infoText.pixelsPerUnit;
+            pr.offsetMin = new Vector2(pr.offsetMin.x, pr.offsetMax.y - Mathf.Min(430, 84 + textH));
         }
 
         Text MakeStat(RectTransform row, string label, string caption = null)
