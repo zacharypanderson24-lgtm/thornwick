@@ -4,6 +4,7 @@
 // A world has water only when it is created with a WaterPreset; every older world and every save without a "water" entry stays dry,
 // with exactly the terrain it always had. The layer is generated once (Hydrology.Generate), saved as it is, and never recomputed.
 using System;
+using System.Collections.Generic;
 using static CrownAndHearth.Sim.Defs;
 
 namespace CrownAndHearth.Sim
@@ -76,10 +77,19 @@ namespace CrownAndHearth.Sim
         }
 
         /// <summary>Cut the water into the terrain: returns the new vertex heights.</summary>
+        // Generating the water takes about 0.4 s and depends only on (seed, preset, relief) (the dry heights come from the seed and relief), so the last results are
+        // kept in the same compact form a save uses and a world made again from the same settings decodes its own copy: exactly what loading a save does.
+        static readonly Dictionary<(int seed, WaterPreset preset, Relief relief), (string water, int[] hv)> WaterCache = new Dictionary<(int, WaterPreset, Relief), (string, int[])>();
+        const int WaterCacheMax = 12;
+
         int[] GenSurfaceWater(int[] dry)
         {
+            var key = (Seed, _waterPreset, Relief);
+            lock (WaterCache)
+                if (WaterCache.TryGetValue(key, out var cached)) { Waters = SurfaceWater.Decode(cached.water); return (int[])cached.hv.Clone(); }
             var result = Hydrology.Generate(Seed, _waterPreset, dry, N, Start);
             Waters = result.Water;
+            lock (WaterCache) { if (WaterCache.Count >= WaterCacheMax) WaterCache.Clear(); WaterCache[key] = (result.Water.Encode(), (int[])result.Hv.Clone()); }
             return result.Hv;
         }
 

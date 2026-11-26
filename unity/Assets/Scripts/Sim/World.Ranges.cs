@@ -153,7 +153,21 @@ namespace CrownAndHearth.Sim
         }
 
         /// <summary>Vertex heights for the Ranges style: the browser's rolling hills and basins, with the ranges and massifs on top.</summary>
+        // The heights depend only on (seed, relief), and building them is the slowest part of making a world (about 0.4 s: every vertex is tested against
+        // every ridge). Worlds made again from the same seed (tests, a reloaded game, New world with the same seed) reuse the last results; callers always get
+        // their own copy, so nothing can change what the next world sees.
+        static readonly Dictionary<(int seed, Relief relief), int[]> HeightCache = new Dictionary<(int, Relief), int[]>();
+        const int HeightCacheMax = 24;
+
         public static int[] GenRangeHeights(int seed, Relief relief)
+        {
+            lock (HeightCache) { if (HeightCache.TryGetValue((seed, relief), out var cached)) return (int[])cached.Clone(); }
+            var hv = GenRangeHeightsUncached(seed, relief);
+            lock (HeightCache) { if (HeightCache.Count >= HeightCacheMax) HeightCache.Clear(); HeightCache[(seed, relief)] = (int[])hv.Clone(); }
+            return hv;
+        }
+
+        static int[] GenRangeHeightsUncached(int seed, Relief relief)
         {
             int M = N + 1; var hv = new int[M * M]; var L = RangeLayout(seed, relief);
             for (int b = 0; b < M; b++)

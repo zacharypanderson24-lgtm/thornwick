@@ -50,7 +50,7 @@ namespace CrownAndHearth.Tests
             Assert.IsTrue(w.Waters.IsWater(water[0].x, water[0].y), "the water layer itself is unchanged");
         }
 
-        [Test]
+        [Test, Category("Slow")]
         public void ABridgeJoinsTheRoadNetworkAcrossTheWater()
         {
             for (int tries = 0, built = 0; tries < 40 && built == 0; tries++)
