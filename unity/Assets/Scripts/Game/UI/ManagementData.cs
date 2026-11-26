@@ -166,6 +166,7 @@ namespace CrownAndHearth.Game.UI
             Row.Of("M", "the world map"),
             Row.Of("T", "the military window"),
             Row.Of("N", "messages"),
+            Row.Of("C", "charters: choose how the settlement grows"),
             Row.Of("Right-click", "stop placing"),
             Row.Of("Esc", "close a dialog, stop placing, close a menu; with nothing open it opens this menu"),
         };

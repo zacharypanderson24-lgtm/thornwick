@@ -202,6 +202,7 @@ namespace CrownAndHearth.Game
             _hud.LivestockFocusRequested += (x, y) => _cam.CenterOn(IsoView.TileCenter(World, x, y, _rot));
             _hud.SpeedPicked += s => { _speed = s; if (s > 0) _lastRunSpeed = s; _hud.SetSpeed(s); };
             _hud.RotatePicked += Rotate;
+            _hud.CharterPicked += id => { var r = World.AdoptCharter(id); _hud.Toast(r.Ok ? "Charter signed: " + World.CharterById(id).Title : r.Reason, 6); };
             _hud.StewardShow += p => _cam.CenterOn(IsoView.TileCenter(World, p.X + p.Size / 2, p.Y + p.Size / 2, _rot));
             _hud.StewardBuild += p =>
             {
@@ -587,6 +588,8 @@ namespace CrownAndHearth.Game
                 if (kb[Key.F1 + f - 1].wasPressedThisFrame) { var m = CrownAndHearth.Game.UI.MenuRegistry.ByFunctionKey(f); if (m != null) { _hud.ToggleMenu(m.Id); return; } }
             if (kb.bKey.wasPressedThisFrame) { _hud.ToggleCatalogue(); return; }
             if (kb.nKey.wasPressedThisFrame) { _hud.ToggleMenu(CrownAndHearth.Game.UI.MenuId.Notifications); return; }
+            if (kb.cKey.wasPressedThisFrame) { _hud.ToggleCharters(); return; }
+            if (kb.escapeKey.wasPressedThisFrame && _hud.CharterOpen) { _hud.ToggleCharters(); return; }
             if (kb.escapeKey.wasPressedThisFrame && _hud.EscapeManagement(_tool != Tools[0] || _roadAnchor.HasValue || _zoneAnchor.HasValue || _ferryFrom != null)) return;
             if (kb.mKey.wasPressedThisFrame) { _hud.ToggleMap(); return; }
             if (kb.tKey.wasPressedThisFrame) { _hud.ToggleMilitary(); return; }
