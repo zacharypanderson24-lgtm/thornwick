@@ -58,7 +58,7 @@ namespace CrownAndHearth.Game.UI
             {
                 var row = new Row { Label = d.Title, Id = Prefix + "post:" + d.Id, Bar = -1 };
                 var holder = w.PostHolder(d.Id);
-                if (holder != null) { row.Value = $"{holder.Name}, {holder.AgeYears(w.Day)}  ({Sal(holder.MonthlySalary)})"; row.Tone = Tone.Normal; }
+                if (holder != null) { row.Value = $"{holder.Name}, {holder.AgeYears(w.Day)}  ({Sal(holder.MonthlySalary)})"; row.Tone = Tone.Normal; row.PortraitId = holder.Id; }
                 else if (Positions.LockedReason(d.Id, w.Era) is string why) { row.Value = why; row.Tone = Tone.Dim; }
                 else if (d.Id == Post.Governor) { row.Value = "No other settlement of yours yet"; row.Tone = Tone.Dim; }
                 else { row.Value = "Vacant: click to recruit"; row.Tone = Tone.Warn; }
@@ -95,7 +95,7 @@ namespace CrownAndHearth.Game.UI
                 {
                     Label = (c.C.Id == s.Selected ? "> " : "") + c.C.Name,
                     Value = $"{src}{c.C.AgeYears(w.Day)}y {c.C.Occupation.ToLower()}  {c.Rating} {c.Suitability}  {Sal(c.Salary)}",
-                    Id = Prefix + "cand:" + c.C.Id, Bar = c.Suitability / 100f,
+                    Id = Prefix + "cand:" + c.C.Id, Bar = c.Suitability / 100f, PortraitId = c.C.Id,
                     Tone = c.Suitability >= 65 ? Tone.Good : c.Suitability < 35 ? Tone.Dim : Tone.Normal,
                 });
             }
@@ -143,7 +143,7 @@ namespace CrownAndHearth.Game.UI
                 {
                     Label = $"{c.Post}: {c.Name}",
                     Value = $"{Sal(c.MonthlySalary)} | {c.Pay} pay | loyalty {c.Loyalty}" + (c.MissedPayments > 0 ? $" | {c.MissedPayments} unpaid" : ""),
-                    Id = Prefix + "pay:" + c.Id, Bar = -1, Tone = c.MissedPayments > 0 ? Tone.Bad : c.Loyalty <= 30 ? Tone.Warn : Tone.Normal,
+                    Id = Prefix + "pay:" + c.Id, Bar = -1, PortraitId = c.Id, Tone = c.MissedPayments > 0 ? Tone.Bad : c.Loyalty <= 30 ? Tone.Warn : Tone.Normal,
                 });
             if (rows.Count > 2) rows.Add(new Row { Label = "", Value = "Click a row to change that person's pay: Low (cheaper, loyalty falls), Standard, Generous (dearer, loyalty rises).", Wide = true, Tone = Tone.Dim, Bar = -1 });
             return rows;

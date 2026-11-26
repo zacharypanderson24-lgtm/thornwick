@@ -29,10 +29,21 @@ namespace CrownAndHearth.Game
         readonly List<Text> _mgmtFooterLabels = new List<Text>();
         readonly List<(RectTransform row, Text label, Text value, Image barBack, RectTransform barFill)> _mgmtRows = new List<(RectTransform, Text, Text, Image, RectTransform)>();
         readonly List<string> _mgmtRowIds = new List<string>();
+        readonly List<RawImage> _mgmtThumbs = new List<RawImage>();   // a small portrait at the left of a row that names a person
         readonly List<Action> _footerActions = new List<Action>();
         RectTransform _bannerPanel;
         readonly GovernmentUiState _gov = new GovernmentUiState();   // the Government menu's selection (GovernmentData.cs)
         RawImage _portrait; RectTransform _portraitFrame;
+
+        // test and tool access to the standard window (UiHarness)
+        public int GovernmentSelected => _gov.Selected;
+        public int ManagementRowCount => _mgmtRows.Count;
+        public RectTransform ManagementRow(int i) => _mgmtRows[i].row;
+        public string ManagementRowId(int i) => _mgmtRowIds[i];
+        public bool ManagementRowShown(int i) => _mgmtRows[i].row.gameObject.activeInHierarchy;
+        public Canvas HudCanvas => GetComponentInChildren<Canvas>();
+        public bool PortraitShown => _portraitFrame != null && _portraitFrame.gameObject.activeSelf;
+        public bool ManagementRowThumbShown(int i) => _mgmtThumbs[i].gameObject.activeSelf;
 
         /// <summary>Open the Government menu on a tab with a post and a person selected (links from reports and notices use this).</summary>
         public void OpenGovernment(int tab, Post post, int selected = 0)
@@ -106,7 +117,7 @@ namespace CrownAndHearth.Game
                 float top = -92 - r * 27;
                 row.anchorMin = new Vector2(0, 1); row.anchorMax = Vector2.one; row.offsetMin = new Vector2(18, top - 25); row.offsetMax = new Vector2(-18, top);
                 var back = new GameObject("Stripe", typeof(RectTransform), typeof(Image)).GetComponent<Image>(); back.transform.SetParent(row, false);
-                Stretch(back.rectTransform, Vector2.zero, Vector2.zero); back.color = new Color(1, 1, 1, r % 2 == 0 ? 0.05f : 0.0f); back.raycastTarget = false;
+                Stretch(back.rectTransform, Vector2.zero, Vector2.zero); back.color = new Color(1, 1, 1, r % 2 == 0 ? 0.05f : 0.0f); back.raycastTarget = true;   // the row's Button needs a graphic that takes clicks (it was false, so no row could ever be clicked)
                 int rowIdx = r; var rb = back.gameObject.AddComponent<Button>(); rb.transition = UnityEngine.UI.Selectable.Transition.None; rb.onClick.AddListener(() => RowClicked(rowIdx));
                 _mgmtRowIds.Add(null);
                 var label = MakeText(row, "Label", 16, TextAnchor.MiddleLeft); Stretch(label.rectTransform, new Vector2(8, 0), new Vector2(-8, 0));
@@ -116,6 +127,9 @@ namespace CrownAndHearth.Game
                 barBack.color = new Color(0, 0, 0, 0.5f); barBack.raycastTarget = false;
                 var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image)).GetComponent<Image>(); fill.transform.SetParent(br, false);
                 fill.color = Pulse; fill.raycastTarget = false;
+                var thumb = new GameObject("Thumb", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>(); thumb.transform.SetParent(row, false);
+                var thr = thumb.rectTransform; thr.anchorMin = thr.anchorMax = new Vector2(0, 0.5f); thr.pivot = new Vector2(0, 0.5f); thr.sizeDelta = new Vector2(23, 23); thr.anchoredPosition = new Vector2(5, 0);
+                thumb.raycastTarget = false; thumb.gameObject.SetActive(false); _mgmtThumbs.Add(thumb);
                 _mgmtRows.Add((row, label, value, barBack, fill.rectTransform));
             }
             _portraitFrame = MakePanel(_mgmtWin, "PortraitFrame", Vector2.one, Vector2.one, new Vector2(-130, -204), new Vector2(-22, -98));
@@ -450,6 +464,10 @@ namespace CrownAndHearth.Game
                 if (!has) continue;
                 var row = rows[r];
                 ui.label.text = row.Label; ui.value.text = row.Value;
+                var who = row.PortraitId != 0 ? w.Characters.Get(row.PortraitId) : null;   // portrait thumbnail (cached textures, drawn on first use)
+                var thumbTex = who != null ? CharacterPortraits.Texture(who, w.Day) : null;
+                _mgmtThumbs[r].gameObject.SetActive(thumbTex != null); if (thumbTex != null) _mgmtThumbs[r].texture = thumbTex;
+                ui.label.rectTransform.offsetMin = new Vector2(thumbTex != null ? 34 : 8, 0);
                 var col = row.Tone == Tone.Bad ? BadInk : row.Tone == Tone.Warn ? Pulse : row.Tone == Tone.Good ? new Color(0.62f, 0.9f, 0.55f) : row.Tone == Tone.Dim ? Dim : Ink;
                 ui.value.color = col;
                 bool wide = row.Wide;
