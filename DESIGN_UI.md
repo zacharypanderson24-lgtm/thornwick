@@ -100,3 +100,13 @@ A System button at the end of the toolbar (and Esc when nothing else is open) op
 ## 12. Phase 7 notes
 
 Hovering a toolbar button now shows a card under it: name and key, what the menu holds, and why it is locked when it is. **Interface size:** the 115 percent option from Phase 6 is removed. The layout is built for a fixed 1600 x 900 canvas that scales with the screen, so any size above 100 percent shrinks that canvas and overflows (the toolbar was buried at 1280 x 720 and at 1920 x 1080 alike). Sizes are now 85 percent (more room for the map; checked at 1280 x 720) and 100 percent; a bigger interface needs a responsive layout first (anchors and flexible rows instead of the fixed offsets in the old panels). Seen at all three resolutions: 1280 x 720, 1920 x 1080 and 2560 x 1440. **Not done:** Military in the shared window (its window has nested dialogs and text fields tied to its own layout; plan: move it last, panel by panel, after a responsive pass), keyboard focus and tab order through the windows, and a high-contrast option.
+
+## 13. Refinement milestone: permanent UI standards (Phase 1 of 11 built)
+
+Status: Phase 1 (visual foundation) is built. Phases 2 to 11 (compact HUD, Build catalogue, placement workflow, six-category navigation, inspector, notifications and tutorial, window styling, government readiness, resolution testing, terrain blending) are planned, not built.
+
+- **One theme.** `UiTheme.cs` holds the palette (#211F1B background, #332D24 panels, #494033 selected, #B89B60 gold accent, #E6DCC5 text, #A79C87 secondary text, #829961 / #D2A45F / #B96554 status), text sizes (title 22, heading 17, body 15, stat 17, small 13, tip 14 reference pixels), spacing and a contrast helper. HUD files read colours from it (`Hud.cs` aliases `Panel`, `Btn`, `Ink`, `Dim`...) and never hardcode new ones. `UiThemeTests` checks the hex values and that primary and secondary text stay at 4.5:1 contrast on every fill.
+- **Panels** get a one pixel border from `Hud.MakePanel`; no gold frames or ornament.
+- **Status is never colour alone**: pair the colour with words or a shape (`UiTheme.Tone`).
+- **Text engine.** Stays on uGUI `Text` with the built-in font: it already renders at native screen resolution. TextMeshPro would mean rewriting every label for no visible gain, so it was not adopted. The blur seen in one screenshot came from the Game view's Scale slider set to 1.5x (it upscales the whole picture); keep it at 1x when judging sharpness.
+- **Scaling.** The canvas is 1600 x 900 reference with match 0.5; interface size options are 85 and 100 percent (bigger needs a responsive layout).
