@@ -59,7 +59,7 @@ Read from the code, not from older notes.
 | 4 | Forestry modes, replanting, protected woodland | done |
 | 5 | Timber chain (status, warnings, chain list) | done |
 | 6 | Universal land clearing | done |
-| 7 | Catalogue, overlays, inspectors, warnings | |
+| 7 | Catalogue, overlays, inspectors, warnings | done |
 | 8 | Save migration | |
 | 9 | Balance and performance | |
 | 10 | Final verification | |
@@ -121,3 +121,14 @@ The chain already conserved resources; this phase makes it readable and checks i
 - **Building through woodland** (`PlanPlacement`, `PlaceWithClearing`, `PlaceRoadWithClearing`): three states, Valid now, Valid after clearing (amber in the preview), Invalid. The clearing is queued as orders and the building or road (`Pending`, saved) is placed when the ground is clear; the cost is paid at placement, and it waits if the town cannot pay. A second plan on the same ground is refused. Protected trees need explicit confirmation (the game asks).
 - **Not modelled**: bushes (the game has no bush objects). Listed as a gap rather than invented.
 - Tests: `ClearingTests` (12).
+
+## 9. Phase 7: interface (built)
+
+- **Build catalogue**: lodge, forester, quarry and mine are under Natural Resources; sawmill and charcoal under Industry; a new **Land Management** category holds Clear Land, Protect Woodland, Open Woodland and the two optional boundary tools (Lumber Boundary, Mining Boundary, both labelled optional). No description tells the player to paint a zone first (a test checks it).
+- **Overlays**: a Forest overlay (mature trees, saplings, protected woodland blue, clearing orders orange, the lodges' reach) opens automatically for the lodge, forester and the three land tools and restores the previous overlay afterwards (the existing `ForTool` mechanism). Placing a mine opens the Underground view with an **estimate** of the ore in reach (nothing is guaranteed). Placing a quarry draws the area it would dig.
+- **Placement preview**: green valid, amber valid after clearing or poor (the existing warning text explains it), red invalid. The forecast tip shows the survey numbers (ore, stone, trees, sustainable output, warnings) from real data.
+- **Lodge panel** (`Hud.Lodge.cs`): click a lodge with Inspect to read its mode, forest, output and warnings and to switch Sustainable / Intensive / Land clearing (tested with a real click through the harness). Escape closes it.
+- **Inspectors**: mines, quarries, lodges, sawmills and clamps print their status and every warning as "what, why, recommended action".
+- **Land tools**: drag a rectangle; protected woodland asks first; build and road tools plan their own clearing and ask before touching protected trees.
+- **Not done**: no screenshots of the map overlays (the capture tool renders the HUD over flat ground, not the world); no real-mouse playtest in the editor (see section 12).
+- Tests: `LandManagementUiTests`; the overlay-list test in `ManagementUiTests` now includes Forest on purpose.

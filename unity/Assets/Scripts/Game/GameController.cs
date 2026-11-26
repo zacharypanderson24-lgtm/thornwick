@@ -27,6 +27,7 @@ namespace CrownAndHearth.Game
         {
             public string Id, Label, Desc; public Cat Cat;
             public string Build; public Zone Zone; public bool Road, Clear, Unzone, Claim, Wall, Bridge, Canal, Moat, FerryRoute;
+            public string LandOp;   // "clear" / "protect" / "unprotect": drag a rectangle (World.Clearing.cs, World.Forestry.cs)
         }
 
         public static readonly CatDef[] Cats =
@@ -67,11 +68,11 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "chickenPen", Cat = Cat.Farming, Label = "Chicken Pen", Zone = Zone.Chickens,
                 Desc = "Drag a fenced pen on level ground beside a connected road. Chickens need 1 tile each and eat wheat." },
             new ToolDef { Id = "lodge", Cat = Cat.Forestry, Label = "Woodcutter Lodge", Build = "wood",
-                Desc = $"Woodcutters walk out to trees in Lumber zones within {WorkR} tiles, nearest first, fell them and carry the logs home. The lodge sets how many woodcutters you can have; the zoned trees set how many are needed. Farther trees mean longer walks. Needs a road to the Town Hall." },
-            new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Lumber Zone", Zone = Zone.Wood,
-                Desc = "Drag over forest to have it felled by a nearby lodge, or over open ground for a forester to replant. The shaded area shows how far lodges and foresters work." },
+                Desc = $"Woodcutters fell the mature trees within {WorkR} tiles by themselves: no zone to paint. Click a lodge with Inspect to set its mode: Sustainable (the default) replants and always leaves {World.SustainFloor} trees standing, Intensive fells fast and strips the area, Land clearing works only land you mark. Protected woodland is never cut. Needs a road to the Town Hall." },
+            new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Lumber Boundary (optional)", Zone = Zone.Wood,
+                Desc = "Optional. Paint trees to have exactly those felled by a nearby lodge (no standing floor, no replanting). With none painted, a lodge works all the forest in reach, so most players never need this." },
             new ToolDef { Id = "forester", Cat = Cat.Forestry, Label = "Forester", Build = "forester",
-                Desc = $"Plants saplings on Lumber-zoned open ground within {ForesterR} tiles, so the forest grows back." },
+                Desc = $"An optional improvement: plants saplings on open ground within {World.ForesterAutoR} tiles (or on painted Lumber ground within {ForesterR}), and its care makes nearby trees grow a quarter faster. A sustainable lodge already replants what it fells." },
             new ToolDef { Id = "sawmill", Cat = Cat.Forestry, Label = "Sawmill", Build = "sawmill",
                 Desc = "Saws 4 logs a day into wood at full yield (the Town Hall saws 1 at half yield). Needs a road." },
             new ToolDef { Id = "charcoal", Cat = Cat.Forestry, Label = "Charcoal Clamp", Build = "charcoal",
@@ -81,13 +82,19 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "smokehouse", Cat = Cat.Hunting, Label = "Smokehouse", Build = "smokehouse",
                 Desc = "Uses logs to preserve fresh meat from hunting and livestock. The town eats smoked meat when fresh food is short." },
             new ToolDef { Id = "quarry", Cat = Cat.Mining, Label = "Quarry", Build = "quarry",
-                Desc = $"Quarrymen dig stone from Mining zones within {WorkR} tiles, nearest first: rock outcrops, hills, and mountains from their edge inward. The quarry sets how many you can have; the zoned rock sets how many are needed. Needs a road." },
+                Desc = $"Quarrymen dig the rock within {QuarryAutoR} tiles by themselves: no zone to paint. Hills and outcrops are dug down into pits, mountains are cut in from an open edge. A Mining Boundary widens its reach to {WorkR} tiles or confines it. The stone is finite. Needs a road." },
             new ToolDef { Id = "mine", Cat = Cat.Mining, Label = "Iron Mine", Build = "mine",
-                Desc = $"Miners dig a tunnel tile by tile through the Mining zone you paint beside the mine (within {WorkR} tiles), and take iron from its walls. The tunnel shows as dark tiles; timber props make it safer. Place it at the foot of high ground; its entrance faces away from the hill and needs a road there. Zone a strip from its walls into the hill." },
+                Desc = "Miners dig a tunnel into the hill by themselves and take iron from its walls: no zone to paint. The Underground view opens while you place it and shows the ore in reach. Put it at the foot of high ground with a road in front. Timber props make it safer. The ore is finite and shared by every mine that reaches it." },
             new ToolDef { Id = "smithery", Cat = Cat.Mining, Label = "Smithery", Build = "smithery",
                 Desc = $"Smelts {OrePerMetal} iron ore into 1 metal. Makes up to {SmeltRate} metal a day with a full crew." },
-            new ToolDef { Id = "zoneMine", Cat = Cat.Mining, Label = "Mining Zone", Zone = Zone.Mine,
-                Desc = "Drag over rock, hills and mountains for a nearby quarry or mine to work. The shaded area shows how far they work." },
+            new ToolDef { Id = "zoneMine", Cat = Cat.Mining, Label = "Mining Boundary (optional)", Zone = Zone.Mine,
+                Desc = $"Optional. Paint rock or hills to widen a quarry's reach to the full {WorkR} tiles, or to confine a quarry or mine to exactly those tiles. With none painted, they work what is in their automatic area." },
+            new ToolDef { Id = "clearLand", Cat = Cat.Forestry, Label = "Clear Land", LandOp = "clear",
+                Desc = "Drag over trees, saplings, stumps and small rocks to have idle villagers clear them for good; they keep the logs and stone. Buildings, mountains and quarry pits are never touched, and protected woodland asks first. Build on woodland directly and the clearing is arranged for you." },
+            new ToolDef { Id = "protectWood", Cat = Cat.Forestry, Label = "Protect Woodland", LandOp = "protect",
+                Desc = "Drag over woodland to protect it: lodges and clearing crews skip it, and it can only be cleared after you confirm." },
+            new ToolDef { Id = "unprotectWood", Cat = Cat.Forestry, Label = "Open Woodland", LandOp = "unprotect",
+                Desc = "Drag over protected woodland to open it to lodges again." },
             new ToolDef { Id = "market", Cat = Cat.Trade, Label = "Market", Build = "market",
                 Desc = "Must touch a road. Sends one trade caravan at a time to settlements willing to deal with you: open the world map (M) and click a settlement." },
             new ToolDef { Id = "storehouse", Cat = Cat.Trade, Label = "Storehouse", Build = "storehouse",
@@ -593,6 +600,7 @@ namespace CrownAndHearth.Game
             switch (_ov)
             {
                 case CrownAndHearth.Game.UI.OverlayId.Water: DrawWater(null, null); break;
+                case CrownAndHearth.Game.UI.OverlayId.Forest: DrawForest(); break;
                 case CrownAndHearth.Game.UI.OverlayId.Fertility:
                     for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
                         if (w.Fert[y, x] && w.Grid[y, x] == null && !(w.Waters != null && w.Waters.IsWater(x, y))) _overlay.AddTile(w, x, y, _rot, new Color32(150, 230, 90, 90));
@@ -634,6 +642,9 @@ namespace CrownAndHearth.Game
                 : t.Canal ? $"Irrigation canal ({World.CanalWood} wood a tile): press on a bank and drag away from the water in a straight line.{stop}"
                 : t.Bridge ? $"Wooden bridge ({World.BridgeWood} wood a tile over water): press on one bank and drag in a straight line to the far bank.{stop}"
                 : t.Wall ? $"Palisade (2 wood a tile): press and drag a line. Raiders and people walk around it; a road through the line is a gate.{stop}"
+                : t.LandOp == "clear" ? $"Clear Land: drag over trees and small rocks (orange = will be cleared, blue = protected, asks first).{stop}"
+                : t.LandOp == "protect" ? $"Protect Woodland: drag over woodland to keep lodges and crews out.{stop}"
+                : t.LandOp == "unprotect" ? $"Open Woodland: drag over protected woodland.{stop}"
                 : t.Zone != Zone.None ? $"{t.Label}: drag over the land, or click two corners. Green tiles will be zoned, red ones cannot be.{stop}"
                 : t.Unzone ? $"Remove Zones: drag over zoned land. Buildings stay.{stop}"
                 : t.Clear ? $"Demolish: click or drag over what you want removed.{stop}"
@@ -689,7 +700,7 @@ namespace CrownAndHearth.Game
                 }
                 return;
             }
-            if (_tool.Zone != Zone.None || _tool.Unzone)
+            if (_tool.Zone != Zone.None || _tool.Unzone || _tool.LandOp != null)
             {
                 // zoning: press, drag and let go to zone the rectangle; or click one corner, then click the opposite corner
                 if (mouse.leftButton.wasPressedThisFrame && _hover.HasValue && !overUi)
@@ -713,8 +724,14 @@ namespace CrownAndHearth.Game
                 {
                     var end = _hover ?? _roadAnchor.Value;
                     var line = ToolPath(_roadAnchor.Value, end);
-                    var r = _tool.Moat ? World.PlaceMoatPath(line) : _tool.Canal ? World.PlaceCanalPath(line) : _tool.Bridge ? World.PlaceBridgePath(line) : _tool.Wall ? World.PlaceWallPath(line) : World.PlaceRoadPath(line);
-                    if (!r.Ok) _hud.Toast(r.Reason);
+                    var r = _tool.Moat ? World.PlaceMoatPath(line) : _tool.Canal ? World.PlaceCanalPath(line) : _tool.Bridge ? World.PlaceBridgePath(line) : _tool.Wall ? World.PlaceWallPath(line) : World.PlaceRoadWithClearing(line);
+                    if (!r.Ok && _tool.Road && r.Reason != null && r.Reason.StartsWith("Some of these trees are protected"))
+                    {
+                        var roadLine = line;
+                        _hud.Confirm("Clear protected woodland?", "The road crosses protected woodland. Clearing it lifts the protection for good.", () => { var r2 = World.PlaceRoadWithClearing(roadLine, true); _hud.Toast(r2.Ok ? "Road planned: the trees are cleared first." : r2.Reason, 6); });
+                    }
+                    else if (!r.Ok) _hud.Toast(r.Reason);
+                    else if (_tool.Road && line.Any(t => World.HasTree(t.x, t.y))) _hud.Toast($"Road planned: {line.Count(t => World.HasTree(t.x, t.y))} tiles of trees will be cleared first.", 6);
                     else if (_tool.Id == "wall2")
                     {
                         foreach (var (x, y) in line) if (World.Grid[y, x]?.T == "wall") World.Grid[y, x].Lvl = 2;
@@ -724,6 +741,7 @@ namespace CrownAndHearth.Game
                 }
                 return;
             }
+            if (_tool.Id == "look" && mouse.leftButton.wasPressedThisFrame && _hover.HasValue && !overUi && World.Grid[_hover.Value.y, _hover.Value.x]?.T == "wood") { _hud.ShowLodgePanel(World.Grid[_hover.Value.y, _hover.Value.x]); return; }
             if (!mouse.leftButton.isPressed || !_hover.HasValue || overUi) { _lastPaint = null; return; }
             var h = _hover.Value;
             if (_tool.FerryRoute) { if (mouse.leftButton.wasPressedThisFrame) FerryRouteClick(h); return; }
@@ -731,8 +749,16 @@ namespace CrownAndHearth.Game
             {
                 if (!mouse.leftButton.wasPressedThisFrame) return;
                 var warn = PlaceWarning(_tool.Build, h.x, h.y);
-                var r = World.Place(_tool.Build, h.x, h.y);
-                _hud.Toast(r.Ok ? $"Built a {Defs.Names[_tool.Build]}." + (warn != null && !World.Grid[h.y, h.x].Served ? " It needs a road to the Town Hall before it can work." : "") : r.Reason, 6);
+                var plan = World.PlanPlacement(_tool.Build, h.x, h.y);
+                if (plan.State == PlaceState.ValidAfterClearing && plan.ProtectedTiles.Count > 0)
+                {
+                    string type = _tool.Build; int px = h.x, py = h.y;
+                    _hud.Confirm("Clear protected woodland?", $"{plan.ProtectedTiles.Count} protected tree tile{(plan.ProtectedTiles.Count == 1 ? "" : "s")} stand where you want to build. Clearing them lifts their protection for good.", () =>
+                    { var r2 = World.PlaceWithClearing(type, px, py, true); _hud.Toast(r2.Ok ? $"Planned a {Defs.Names[type]}: {r2.Count} tile{(r2.Count == 1 ? "" : "s")} of trees will be cleared first." : r2.Reason, 6); });
+                    return;
+                }
+                var r = World.PlaceWithClearing(_tool.Build, h.x, h.y);
+                _hud.Toast(!r.Ok ? r.Reason : plan.State == PlaceState.ValidAfterClearing ? $"Planned a {Defs.Names[_tool.Build]}: {plan.ToClear.Count} tile{(plan.ToClear.Count == 1 ? "" : "s")} of trees will be cleared first, then it is built and paid for." : $"Built a {Defs.Names[_tool.Build]}." + (warn != null && !World.Grid[h.y, h.x].Served ? " It needs a road to the Town Hall before it can work." : ""), 6);
             }
             else if (_tool.Clear)
             {
@@ -743,9 +769,30 @@ namespace CrownAndHearth.Game
             }
         }
 
+        /// <summary>Clear Land, Protect Woodland and Open Woodland over a dragged rectangle.</summary>
+        void LandRect(Vector2Int a, Vector2Int b)
+        {
+            var w = World; int x0 = Mathf.Min(a.x, b.x), y0 = Mathf.Min(a.y, b.y), x1 = Mathf.Max(a.x, b.x), y1 = Mathf.Max(a.y, b.y);
+            if (_tool.LandOp == "protect") { int n = w.ProtectRect(x0, y0, x1, y1); _hud.Toast(n == 0 ? "No woodland or open ground there to protect." : $"Protected {n} tile{(n == 1 ? "" : "s")}."); return; }
+            if (_tool.LandOp == "unprotect") { int n = w.ProtectRect(x0, y0, x1, y1, false); _hud.Toast(n == 0 ? "Nothing protected there." : $"Opened {n} tile{(n == 1 ? "" : "s")} of woodland."); return; }
+            var r = w.ClearRect(x0, y0, x1, y1);
+            if (r.protectedSkipped > 0)
+            {
+                int pn = r.protectedSkipped;
+                _hud.Confirm("Clear protected woodland?", $"{pn} protected tree tile{(pn == 1 ? "" : "s")} lie in this area. Clearing them lifts their protection for good.", () =>
+                {
+                    var r2 = World.ClearRect(x0, y0, x1, y1, true);
+                    _hud.Toast($"Clearing {r.ordered + r2.ordered} tile{(r.ordered + r2.ordered == 1 ? "" : "s")}. Idle villagers do the work; they keep the logs and stone.");
+                });
+                return;
+            }
+            _hud.Toast(r.ordered == 0 ? (r.skipped > 0 ? r.why : "Nothing to clear there.") : $"Clearing {r.ordered} tile{(r.ordered == 1 ? "" : "s")}. Idle villagers do the work ({w.D.Idle} idle now); they keep the logs and stone." + (r.skipped > 0 ? $" {r.skipped} skipped: {r.why.TrimEnd('.')}." : ""));
+        }
+
         void ApplyRect(Vector2Int a, Vector2Int b)
         {
             _zoneAnchor = null; _zoneDragging = false;
+            if (_tool.LandOp != null) { LandRect(a, b); return; }
             if (_tool.Unzone)
             {
                 int n = World.ClearZoneRect(a.x, a.y, b.x, b.y);
@@ -798,6 +845,7 @@ namespace CrownAndHearth.Game
         void DrawUnderground()
         {
             var w = World; int L = _ugLevel; double cap = World.LevelCapMax[L];
+            bool estimate = _tool.Build == "mine";   // placing a mine: show the ore in reach as an estimate, before anything has been dug
             for (int y = 0; y < N; y++)
                 for (int x = 0; x < N; x++)
                 {
@@ -812,6 +860,7 @@ namespace CrownAndHearth.Game
                         _overlay.AddTile(w, x, y, _rot, new Color32(255, (byte)(150 - 70 * t), (byte)(40 - 30 * t), (byte)(110 + 120 * t)));
                     }
                     else if (w.ZoneMap[y, x] == Zone.Mine) _overlay.AddTile(w, x, y, _rot, UgUnknown);
+                    else if (estimate && w.OreAt(x, y, L) > 1e-9) _overlay.AddTile(w, x, y, _rot, new Color32(255, 190, 80, (byte)(55 + 90 * Mathf.Clamp01((float)(w.OreAt(x, y, L) / cap)))));   // an estimate of what lies under it (nothing is guaranteed)
                 }
         }
 
@@ -907,8 +956,8 @@ namespace CrownAndHearth.Game
                 {
                     var from = _roadAnchor ?? h;
                     var path = ToolPath(from, h);
-                    bool ok = (_tool.Moat ? World.MoatPathCheck(path) : _tool.Canal ? World.CanalPathCheck(path) : _tool.Bridge ? World.BridgePathCheck(path) : _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path)).Ok;
-                    foreach (var (x, y) in path) _overlay.AddTile(World, x, y, _rot, ok ? Ok : Bad);
+                    bool ok = (_tool.Moat ? World.MoatPathCheck(path) : _tool.Canal ? World.CanalPathCheck(path) : _tool.Bridge ? World.BridgePathCheck(path) : _tool.Wall ? World.WallPathCheck(path) : World.RoadPathCheck(path, true)).Ok;   // a road may cross woodland: the trees are cleared first
+                    foreach (var (x, y) in path) _overlay.AddTile(World, x, y, _rot, !ok ? Bad : (_tool.Road && World.HasTree(x, y)) ? Warn : Ok);
                 }
                 else if (_tool.FerryRoute) DrawFerryOverlay(h);
                 else if (_tool.Claim)
@@ -920,11 +969,22 @@ namespace CrownAndHearth.Game
                 }
                 else if (_tool.Build != null)
                 {
-                    bool ok = World.CanPlace(_tool.Build, h.x, h.y).Ok;
+                    var plan = World.PlanPlacement(_tool.Build, h.x, h.y);
+                    bool ok = plan.State != PlaceState.Invalid, later = plan.State == PlaceState.ValidAfterClearing;
                     int sz = PlacementSize(_tool.Build);
+                    if (_tool.Build == "quarry") foreach (var (qx, qy, qs) in World.QuarryArea(new Building { T = "quarry", X = h.x, Y = h.y, Sz = sz })) _overlay.AddTile(World, qx, qy, _rot, qs == World.QuarryTile.Dig ? new Color32(255, 160, 50, 110) : QuarryLocked);   // what it would dig
                     AddReach(_tool.Build, h.x, h.y, sz, ReachNew, null);
                     if (_tool.Build == "watchtower") AddWatchtowerRange(h.x, h.y, ok ? ReachNew : Bad);
-                    for (int j = 0; j < sz; j++) for (int i = 0; i < sz; i++) _overlay.AddTile(World, h.x + i, h.y + j, _rot, !ok ? Bad : PlaceWarning(_tool.Build, h.x, h.y) != null ? Warn : Ok);
+                    for (int j = 0; j < sz; j++) for (int i = 0; i < sz; i++) _overlay.AddTile(World, h.x + i, h.y + j, _rot, !ok ? Bad : later || PlaceWarning(_tool.Build, h.x, h.y) != null ? Warn : Ok);   // amber: valid after clearing, or valid but poor
+                }
+                else if (_tool.LandOp != null)
+                {
+                    var (x0, y0, x1, y1) = RectTo(h);
+                    for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++)
+                    {
+                        bool prot = World.IsProtected(x, y);
+                        _overlay.AddTile(World, x, y, _rot, _tool.LandOp == "clear" ? (World.ObstacleAt(x, y) == Obstacle.None ? Hover : prot ? Protected : Clearing) : _tool.LandOp == "protect" ? (World.HasTree(x, y) || World.DecoMap[y, x] == Deco.Stump ? Ok : Hover) : (prot ? Ok : Hover));
+                    }
                 }
                 else if (_tool.Zone != Zone.None)
                 {
@@ -953,6 +1013,21 @@ namespace CrownAndHearth.Game
                 }
             }
             _overlay.Apply();
+        }
+
+        static readonly Color32 Protected = new Color32(80, 140, 255, 170), Clearing = new Color32(255, 140, 40, 170);
+
+        /// <summary>The forest overlay: mature trees (green), saplings (light), protected woodland (blue), clearing orders (orange), and the lodges' work.</summary>
+        void DrawForest()
+        {
+            var w = World;
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    var d = w.DecoMap[y, x]; if (d != Deco.Tree && d != Deco.Sapling && d != Deco.Stump) { if (w.IsProtected(x, y)) _overlay.AddTile(w, x, y, _rot, new Color32(80, 140, 255, 70)); continue; }
+                    _overlay.AddTile(w, x, y, _rot, w.IsClearing(x, y) ? Clearing : w.IsProtected(x, y) ? Protected : d == Deco.Tree ? new Color32(60, 170, 70, 105) : d == Deco.Sapling ? new Color32(170, 230, 120, 120) : new Color32(150, 110, 70, 100));
+                }
+            foreach (var b in w.Blds) if (b.T == "wood") AddReach("wood", b.X, b.Y, b.Sz, Reach, null);
         }
 
         static readonly Color32 NetRoad = new Color32(210, 245, 255, 110), HomeShort = new Color32(255, 80, 70, 130);

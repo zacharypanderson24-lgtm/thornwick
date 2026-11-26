@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace CrownAndHearth.Game.UI
 {
-    public enum CatalogueCategory { Housing, Food, Resources, Industry, Services, Transport, Military, Government, Decorations }
+    public enum CatalogueCategory { Housing, Food, Resources, Land, Industry, Services, Transport, Military, Government, Decorations }
 
     public sealed class CatalogueEntry
     {
@@ -26,6 +26,7 @@ namespace CrownAndHearth.Game.UI
             CatalogueCategory.Housing => "Housing",
             CatalogueCategory.Food => "Food and Agriculture",
             CatalogueCategory.Resources => "Natural Resources",
+            CatalogueCategory.Land => "Land Management",
             CatalogueCategory.Industry => "Industry",
             CatalogueCategory.Services => "Public Services and Utilities",
             CatalogueCategory.Transport => "Trade and Transportation",
@@ -42,7 +43,8 @@ namespace CrownAndHearth.Game.UI
                 case "zoneRes": case "zoneRes2": return CatalogueCategory.Housing;
                 case "farmhouse": case "zoneFarm": case "silo": case "pigPen": case "sheepPen": case "chickenPen":
                 case "hunter": case "smokehouse": case "fisher": case "dock": case "watermill": return CatalogueCategory.Food;
-                case "lodge": case "zoneWood": case "forester": case "quarry": case "mine": case "zoneMine": return CatalogueCategory.Resources;
+                case "lodge": case "forester": case "quarry": case "mine": return CatalogueCategory.Resources;
+                case "zoneWood": case "zoneMine": case "clearLand": case "protectWood": case "unprotectWood": return CatalogueCategory.Land;
                 case "sawmill": case "charcoal": case "smithery": return CatalogueCategory.Industry;
                 case "well": case "cistern": case "canal": return CatalogueCategory.Services;
                 case "road": case "bridge": case "ferry": case "ferryRoute": case "port": case "boatyard": case "market": case "storehouse": return CatalogueCategory.Transport;

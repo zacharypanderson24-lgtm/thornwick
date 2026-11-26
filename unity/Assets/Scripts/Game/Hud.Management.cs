@@ -253,6 +253,7 @@ namespace CrownAndHearth.Game
         {
             if (OverlayMenuOpen) { CloseOverlayMenu(); return true; }
             if (CatalogueOpen) { ShowCatalogue(false); return true; }
+            if (LodgePanelOpen) { ShowLodgePanel(null); return true; }
             var r = _ui.Escape(placementActive);
             if (r == EscapeResult.ClosedModal || r == EscapeResult.ClosedMenu) return true;
             if (r == EscapeResult.CancelledPlacement) return false;
