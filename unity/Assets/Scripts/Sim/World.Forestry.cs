@@ -73,8 +73,7 @@ namespace CrownAndHearth.Sim
             if (!Inb(x, y)) return Result.No("Outside the map");
             if (!Claimed(x, y)) return Result.No(NotYours);
             if (Grid[y, x] != null) return Result.No("That tile is built on");
-            var d = DecoMap[y, x];
-            if (d != Deco.Tree && d != Deco.Sapling && d != Deco.Stump) return Result.No("Nothing to clear here");
+            if (WhyNotClearable(x, y) is string why) return Result.No(why);
             if (ProtectedWood.Contains(Tk(x, y)))
             {
                 if (!confirmProtected) return Result.No("This woodland is protected. Confirm to lift the protection and clear it for good");
@@ -144,7 +143,7 @@ namespace CrownAndHearth.Sim
         public double SaplingGrowthRate(int x, int y)
         {
             if (YearDay > 3 * SeasonLength) return 0;
-            return 0.5 + 0.5 * MoistureYield(x, y);
+            return Math.Clamp(0.5 + 0.5 * MoistureYield(x, y), 0.5, 1.0);
         }
 
         bool Replantable(int x, int y) =>

@@ -45,6 +45,7 @@ namespace CrownAndHearth.Sim
             // crews, then deliver logs
             got[Res.Food] = food;
             StepCrews(got);
+            StepClearing(got);   // World.Clearing.cs: idle villagers work the clearing orders, and planned buildings are placed once their ground is clear
             food = got[Res.Food] + StepFishing();   // World.Fishing.cs: fish joins the food stock as fresh meat
             StepVessels();   // World.Vessels.cs: boatyard work, wear, repair, assignment
             StepBoats();   // World.Boats.cs: fishing boats sail from the docks
