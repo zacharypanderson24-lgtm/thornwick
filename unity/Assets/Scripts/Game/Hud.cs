@@ -28,6 +28,8 @@ namespace CrownAndHearth.Game
         static Color BadInk => UiTheme.Critical;
         static Color Pulse => UiTheme.Warning;
 
+        /// <summary>The compact resource bar along the top.</summary>
+        public const float TopBarH = 46;
         const float BarH = 84, NeedsH = 54, BottomH = BarH + NeedsH, CatW = 76, CardW = 172, CardH = 84;
 
         Font _font;
@@ -84,10 +86,10 @@ namespace CrownAndHearth.Game
             _root = root;
             BuildBannerPicker(root);
 
-            var stats = MakePanel(root, "Stockpiles", Vector2.up, Vector2.one, new Vector2(8, -62), new Vector2(-8, -8));
+            var stats = MakePanel(root, "Stockpiles", Vector2.up, Vector2.one, new Vector2(8, -TopBarH), new Vector2(-8, -8));
             var statRow = stats.gameObject.AddComponent<HorizontalLayoutGroup>();
-            statRow.padding = new RectOffset(6, 6, 6, 6);
-            statRow.spacing = 6;
+            statRow.padding = new RectOffset(4, 4, 4, 4);
+            statRow.spacing = 4;
             statRow.childControlWidth = statRow.childControlHeight = true;
             statRow.childForceExpandWidth = statRow.childForceExpandHeight = true;
             _day = MakeStat(stats, "Day");
@@ -98,8 +100,8 @@ namespace CrownAndHearth.Game
             _gold = MakeStat(stats, "Gold");
 
             var top = MakePanel(root, "TimeAndSession", Vector2.one, Vector2.one,
-                new Vector2(-604, -110), new Vector2(-8, -68));
-            float x = -560;
+                new Vector2(-480, -TopBarH - 8 - 38), new Vector2(-8, -TopBarH - 8));
+            float x = -440;
             foreach (var (label, sp) in new[] { ("Pause", 0), ("1x", 1), ("2x", 2), ("4x", 4) })
             {
                 int s = sp;
@@ -109,8 +111,7 @@ namespace CrownAndHearth.Game
             MakeButton(top, "Rotate Q", new Vector2(1, 0.5f), new Vector2(x + 6, 0), new Vector2(84, 30), () => RotatePicked?.Invoke(-1));
             MakeButton(top, "E Rotate", new Vector2(1, 0.5f), new Vector2(x + 96, 0), new Vector2(84, 30), () => RotatePicked?.Invoke(1));
 
-            MakeButton(top, "Save", new Vector2(1, 0.5f), new Vector2(-73, 0), new Vector2(48, 30), () => SavePicked?.Invoke());
-            MakeButton(top, "Load", new Vector2(1, 0.5f), new Vector2(-23, 0), new Vector2(44, 30), () => LoadPicked?.Invoke());
+            // Save and Load live in the System menu (Esc), not on the HUD
 
             BuildNeeds(root);
             BuildCampaign(root);
@@ -127,7 +128,7 @@ namespace CrownAndHearth.Game
             BuildManagement(root);
 
             // left info panel
-            _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -457), new Vector2(330, -110)).gameObject;
+            _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -TopBarH - 8 - 349), new Vector2(330, -TopBarH - 8 - 42)).gameObject;
             _infoTitle = MakeText((RectTransform)_infoPanel.transform, "InspectionTitle", 19, TextAnchor.UpperLeft);
             // one line at the top: long headings shrink to fit instead of wrapping over the text below
             var itr = _infoTitle.rectTransform; itr.anchorMin = new Vector2(0, 1); itr.anchorMax = Vector2.one;
@@ -143,7 +144,7 @@ namespace CrownAndHearth.Game
             _toastText.gameObject.AddComponent<Outline>().effectColor = new Color(0, 0, 0, 0.8f);
 
             // a spotted warband on its way: stays under the top bar until it arrives
-            var wbp = MakePanel(root, "Warband", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-340, -150), new Vector2(180, -112));
+            var wbp = MakePanel(root, "Warband", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-340, -TopBarH - 8 - 80), new Vector2(180, -TopBarH - 8 - 42));
             _warbandPanel = wbp.gameObject;
             _warbandText = MakeText(wbp, "WarbandText", 15, TextAnchor.MiddleCenter);
             Stretch(_warbandText.rectTransform, new Vector2(8, 2), new Vector2(-8, -2));
@@ -460,11 +461,11 @@ namespace CrownAndHearth.Game
         {
             var card = MakePanel(row, label + "Card", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             card.GetComponent<Image>().color = Btn;
-            var title = MakeText(card, label, 12, TextAnchor.UpperCenter);
-            title.text = caption ?? label;
-            Stretch(title.rectTransform, Vector2.zero, new Vector2(0, -3));
-            var value = MakeText(card, label + "Value", 17, TextAnchor.LowerCenter);
-            Stretch(value.rectTransform, new Vector2(0, 3), Vector2.zero);
+            var title = MakeText(card, label, UiTheme.SmallSize, TextAnchor.MiddleLeft);
+            title.text = caption ?? label; title.color = Dim;
+            Stretch(title.rectTransform, new Vector2(8, 0), Vector2.zero);
+            var value = MakeText(card, label + "Value", UiTheme.StatSize, TextAnchor.MiddleRight);
+            Stretch(value.rectTransform, new Vector2(0, 0), new Vector2(-8, 0));
             return value;
         }
 
