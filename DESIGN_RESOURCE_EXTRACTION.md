@@ -57,7 +57,7 @@ Read from the code, not from older notes.
 | 2 | Mining without zones, site survey, depletion warnings | done |
 | 3 | Quarry auto area and optional boundary (also: lodges match trees without a zone) | done |
 | 4 | Forestry modes, replanting, protected woodland | done |
-| 5 | Timber chain | |
+| 5 | Timber chain (status, warnings, chain list) | done |
 | 6 | Universal land clearing | |
 | 7 | Catalogue, overlays, inspectors, warnings | |
 | 8 | Save migration | |
@@ -101,3 +101,13 @@ Each phase's PR adds its row's details below as it lands.
 - **Survey and inspector**: `SurveyLodgeSite` (mature trees, saplings, protected, overlapping lodges, open land, short-term and sustainable output, notes) feeds the placement forecast; `LodgeStatus` is the inspector text with the mode, forest condition, bottlenecks and recommended actions. Both use real counts.
 - Tests: `ForestryAutoTests` (12): no zone, floor, replanting, intensive, clearing mode, protection and confirmation, winter growth, one crew per tree, save/load, old-rules boundary, site survey.
 - Limits: the mode cannot be changed from the UI yet (phase 7); firewood is not a separate resource (see decisions).
+
+## 7. Phase 5: timber chain (built)
+
+The chain already conserved resources; this phase makes it readable and checks it.
+
+- **What the chain is** (`TimberChain()`): forest -> woodcutter lodge -> raw logs (`Res.Logs`); logs -> sawmill -> planks (`Res.Wood`, the building material; the Town Hall saws 1 log a day at half yield); logs -> charcoal clamp -> charcoal (2 logs each; smithies burn it for extra metal). **There is no firewood step**: nothing in the game burns firewood, so adding it would be a resource without a use. It is the first thing to add with a heating system.
+- **Status text**: `SawmillStatus`, `CharcoalStatus` (log use, output, staffing, what is missing) next to `LodgeStatus`, shown in the inspector.
+- **Warnings** (`BuildingWarnings`, `ProductionWarning`): for lodges, quarries, mines, sawmills and clamps. Each has a title, what is happening, why, and the recommended action, from real state (not connected, no logs, limited sustainable production, out of ore, restricted extraction, store full, and so on). The inspector prints them.
+- **Tests** (`TimberChainTests`): a sawmill and the Town Hall consume exactly what they saw and give one plank per log / half a plank per log; no logs, no planks; charcoal costs exactly 2 logs; an unconnected building says to build a road; the chain lists only what exists.
+- Not done: a build-catalogue link from a warning (phase 7).
