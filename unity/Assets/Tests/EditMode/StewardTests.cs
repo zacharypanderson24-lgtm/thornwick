@@ -48,6 +48,24 @@ namespace CrownAndHearth.Tests
             Assert.AreEqual(before + 1, w.Blds.Count(b => b.T == p.Type));
         }
 
+        [Test] public void EveryPathGivesAdviceAndSurvivalStaysFirst()
+        {
+            foreach (Focus f in System.Enum.GetValues(typeof(Focus)))
+            {
+                var list = Steward.Advise(Town(), 3, f);
+                for (int i = 1; i < list.Count; i++) Assert.GreaterOrEqual(list[i - 1].Severity, list[i].Severity, f.ToString());
+                foreach (var p in list.Where(p => p.HasSite)) Assert.IsTrue(Defs.PlacementSize(p.Type) == p.Size && Town().CanPlace(p.Type, p.X, p.Y).Reason != "Outside the map");
+            }
+        }
+
+        [Test] public void FoodAdviceNamesOtherWaysForEachPath()
+        {
+            var w = Town();
+            StringAssert.Contains("buy grain", Steward.FoodAlternatives(Focus.Trader, w));
+            StringAssert.Contains("raider camp", Steward.FoodAlternatives(Focus.Warlord, w));
+            StringAssert.Contains("fishing", Steward.FoodAlternatives(Focus.Seafarer, w));
+        }
+
         [Test] public void CostTextNamesTheMaterials() => StringAssert.Contains("wood", Steward.CostText("farm"));
     }
 }
