@@ -34,7 +34,7 @@ namespace CrownAndHearth.Sim
             {
                 case "hunter": ForecastHunter(f, b); break;
                 case "farm": ForecastFarm(f, b); break;
-                case "wood": ForecastCrew(f, b, Deco.Tree, "logs", "woodcutters", "Trees in reach", Defs.Load["wood"]); break;
+                case "wood": ForecastCrew(f, b, Deco.Tree, "logs", "woodcutters", "Trees in reach", Defs.Load["wood"]); ForecastLodgeForest(f, x, y, sz); break;
                 case "quarry": ForecastCrew(f, b, Deco.Rock, "stone", "quarrymen", "Workable rock in its area", Defs.Load["quarry"]); break;
                 case "mine": ForecastMine(f, x, y, sz); break;
                 case "silo": ForecastSilo(f); break;
@@ -161,6 +161,14 @@ namespace CrownAndHearth.Sim
             f.Lines.Add($"Work is {string.Join(" and ", steps.Select(s => s + (s == 1 ? " step" : " steps")))} away: each trip is {2 * steps.Min() + WorkT + 1} days for {load} {goods}");
             if (steps.Count < jobs) f.Lines.Add($"Only {steps.Count} of its {jobs} {who} would find work");
             f.Lines.Add(WorkersLine(b, jobs));
+        }
+
+        void ForecastLodgeForest(Forecast f, int x, int y, int sz)
+        {
+            var s = SurveyLodgeSite(x, y, sz);
+            f.Lines.Add($"Forest in reach: {s.Mature} mature trees ({s.StockLogs:0} logs), {s.Saplings} saplings. Sustainable output about {s.SustainablePerDay:0.#} logs a day for ever; the first years cut faster");
+            foreach (var n in s.Notes) f.Lines.Add(n);
+            if (s.Level == SiteLevel.Warning) f.Warn = true;
         }
 
         void ForecastMine(Forecast f, int x, int y, int sz)

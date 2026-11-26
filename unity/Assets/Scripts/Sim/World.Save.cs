@@ -65,6 +65,7 @@ namespace CrownAndHearth.Sim
                 ["sownFields"] = JObject.FromObject(_sownFields), ["flaxFields"] = JObject.FromObject(FlaxFields), ["rockAmt"] = JObject.FromObject(RockAmtMap), ["elev"] = JObject.FromObject(Elev),
                 ["stumpT"] = JObject.FromObject(StumpT), ["sapT"] = JObject.FromObject(SapT),
                 ["chop"] = JObject.FromObject(Chop), ["dig"] = JObject.FromObject(Dig),
+                ["protectedWood"] = new JArray(ProtectedWood.OrderBy(k => k)), ["replant"] = new JArray(Replant.OrderBy(k => k)), ["clearOrders"] = new JArray(ClearOrders.OrderBy(k => k)),   // World.Forestry.cs
                 ["oreLeft"] = JObject.FromObject(OreLeftMap),
                 // land ownership (World.Claims.cs): the parcels you own, by index
                 ["claimed"] = new JArray(Enumerable.Range(0, _claimed.Length).Where(i => _claimed[i])),
@@ -110,6 +111,7 @@ namespace CrownAndHearth.Sim
                 ["var"] = b.Var, ["face"] = b.Face, ["zoned"] = b.Zoned,
             };
             if (b.T == "house") o["tier"] = b.Tier;
+            if (b.T == "wood" && b.Mode != ForestMode.Sustainable) o["mode"] = (int)b.Mode;
             if (b.T == "mine")
             {
                 o["tunnel"] = new JArray(b.Tunnel); o["shoredTiles"] = new JArray(b.Shored.OrderBy(k => k));
@@ -173,6 +175,9 @@ namespace CrownAndHearth.Sim
             ReadTiles(save["chop"], world.Chop, size, offset);
             ReadTiles(save["dig"], world.Dig, size, offset);
             ReadTiles(save["oreLeft"], world.OreLeftMap, size, offset);
+            ReadSet(save["protectedWood"], world.ProtectedWood, size, offset);
+            ReadSet(save["replant"], world.Replant, size, offset);
+            ReadSet(save["clearOrders"], world.ClearOrders, size, offset);
             ReadTiles(save["gameRecoveryDay"], world._gameRecoveryDay, size, offset);
             if (save["gameRecoveryDay"] == null && save["gameTaken"] != null)
             {
@@ -197,6 +202,7 @@ namespace CrownAndHearth.Sim
                     Sz = entry.Value<int?>("sz") ?? 1, Prog = entry.Value<double?>("prog") ?? 0,
                     Var = entry.Value<int?>("var") ?? 0, Face = entry.Value<int?>("face") ?? -1,
                     Zoned = entry.Value<bool?>("zoned") ?? false,
+                    Mode = (ForestMode)Math.Clamp(entry.Value<int?>("mode") ?? 0, 0, 2),   // saves from before forestry modes: Sustainable
                     DigProg = Math.Max(0, entry.Value<int?>("digProg") ?? 0),   // old saves had adits and shafts: those are dropped, the mine starts a tunnel
                     Closed = entry.Value<int?>("closed") ?? 0, CaveIns = entry.Value<int?>("caveIns") ?? 0,
                     ShortDays = entry.Value<int?>("dry") ?? 0,
@@ -381,6 +387,18 @@ namespace CrownAndHearth.Sim
             {
                 if (!(rows[y] is JArray row) || row.Count != size) throw new InvalidDataException("Invalid map row in settlement save.");
                 for (int x = 0; x < size; x++) grid[y + offset, x + offset] = decode(row[x]);
+            }
+        }
+
+        static void ReadSet(JToken token, HashSet<int> set, int size, int offset)
+        {
+            set.Clear();
+            if (token is not JArray list) return;
+            foreach (var t in list)
+            {
+                int k = t.Value<int>();
+                if (k < 0 || k >= size * size) throw new InvalidDataException("Invalid tile index in settlement save.");
+                set.Add(Tk(k % size + offset, k / size + offset));
             }
         }
 
