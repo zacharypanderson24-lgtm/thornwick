@@ -29,6 +29,9 @@ namespace CrownAndHearth.Game
         readonly RectTransform[] _stewardRow = new RectTransform[StewardRows];
         List<Proposal> _stewardList = new List<Proposal>();
         bool _stewardHidden, _stewardCollapsed, _stewardOn;
+        const string StewardFocusKey = "thornwick.steward.focus";
+        Focus _focus;
+        Text _focusLabel;
         World _stewardWorld; int _stewardDay = -1, _stewardBlds = -1, _stewardPinned = -1;
         Proposal _stewardPin;
 
@@ -41,7 +44,11 @@ namespace CrownAndHearth.Game
             float h = StewardHeadH + StewardRows * StewardRowH + 6;
             _stewardPanel = MakePanel(root, "Steward", Vector2.one, Vector2.one, new Vector2(-440, -236 - h), new Vector2(-8, -236));
             _stewardHead = MakeText(_stewardPanel, "Head", UiTheme.BodySize, TextAnchor.MiddleLeft); _stewardHead.fontStyle = FontStyle.Bold; _stewardHead.color = UiTheme.Gold;
-            var hr = _stewardHead.rectTransform; hr.anchorMin = new Vector2(0, 1); hr.anchorMax = Vector2.one; hr.offsetMin = new Vector2(10, -StewardHeadH); hr.offsetMax = new Vector2(-96, -2);
+            var hr = _stewardHead.rectTransform; hr.anchorMin = new Vector2(0, 1); hr.anchorMax = Vector2.one; hr.offsetMin = new Vector2(10, -StewardHeadH); hr.offsetMax = new Vector2(-232, -2);
+            _focus = (Focus)Mathf.Clamp(PlayerPrefs.GetInt(StewardFocusKey, 0), 0, (int)Focus.Fortress);
+            var focusButton = MakeButton(_stewardPanel, "Path", Vector2.one, new Vector2(-160, -15), new Vector2(130, 24), () => { _focus = (Focus)(((int)_focus + 1) % (int)(Focus.Fortress + 1)); PlayerPrefs.SetInt(StewardFocusKey, (int)_focus); PlayerPrefs.Save(); _stewardDay = -1; StewardFocus = null; _stewardPin = null; });
+            _focusLabel = focusButton.GetComponentInChildren<Text>();
+            AddHover(focusButton.gameObject, on => ShowTip(on, focusButton.rectTransform, "Your path: " + _focus, FocusBlurb(_focus), "Click to change the path. Survival problems are always shown first.", true));
             MakeButton(_stewardPanel, "Fold", Vector2.one, new Vector2(-62, -15), new Vector2(40, 24), () => { _stewardCollapsed = !_stewardCollapsed; ApplyStewardLayout(); });
             MakeButton(_stewardPanel, "Hide", Vector2.one, new Vector2(-20, -15), new Vector2(40, 24), () => { _stewardHidden = true; PlayerPrefs.SetInt(StewardHiddenKey, 1); PlayerPrefs.Save(); StewardFocus = null; _stewardPin = null; });
             for (int i = 0; i < StewardRows; i++)
@@ -92,6 +99,17 @@ namespace CrownAndHearth.Game
             for (int i = 0; i < StewardRows; i++) _stewardRow[i].gameObject.SetActive(!_stewardCollapsed && i < _stewardList.Count);
         }
 
+        static string FocusBlurb(Focus f) => f switch
+        {
+            Focus.Farmer => "Fields, silos and a steady harvest. Grain is your wealth.",
+            Focus.Trader => "Markets and caravans. Buy what you lack, sell what you make: you need not farm if you can buy food.",
+            Focus.Warlord => "Barracks and soldiers. Raid camps and neighbours for supplies and tribute.",
+            Focus.Industrialist => "Sawmills, mines and smitheries. Turn raw materials into metal and goods.",
+            Focus.Seafarer => "Fishing huts, docks and boats. Live off the water and trade by sea.",
+            Focus.Fortress => "Walls, towers and a trained garrison. Let raiders break against you.",
+            _ => "No special path: the Steward offers a bit of everything.",
+        };
+
         static string SeverityTag(int s) => s >= 3 ? "<color=#E8745F>URGENT</color>  " : s == 2 ? "<color=#E8B85F>Soon</color>  " : "";
 
         void UpdateSteward(World world)
@@ -103,10 +121,11 @@ namespace CrownAndHearth.Game
             if (_stewardWorld != world || _stewardDay != world.Day || _stewardBlds != world.Blds.Count)
             {
                 _stewardWorld = world; _stewardDay = world.Day; _stewardBlds = world.Blds.Count;
-                _stewardList = Steward.Advise(world, StewardRows);
+                _stewardList = Steward.Advise(world, StewardRows, _focus);
                 if (_stewardPin != null && !_stewardList.Exists(p => p.Id == _stewardPin.Id && p.X == _stewardPin.X && p.Y == _stewardPin.Y)) { _stewardPin = null; StewardFocus = null; }
                 ApplyStewardLayout();
             }
+            _focusLabel.text = "Path: " + _focus;
             _stewardHead.text = _stewardList.Count == 0 ? "Steward: the town is in good order" : $"Steward: {_stewardList.Count} thing{(_stewardList.Count == 1 ? "" : "s")} to look at";
             if (_stewardCollapsed) return;
             for (int i = 0; i < StewardRows; i++)
