@@ -77,7 +77,7 @@ namespace CrownAndHearth.Game
             var canvasGo = new GameObject("HUD", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasGo.transform.SetParent(transform, false);
             var canvas = canvasGo.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 10;
-            var scaler = canvasGo.GetComponent<CanvasScaler>();
+            var scaler = canvasGo.GetComponent<CanvasScaler>(); _scaler = scaler;
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(1600, 900); scaler.matchWidthOrHeight = 0.5f;
             var root = (RectTransform)canvasGo.transform;
             _root = root;
@@ -384,8 +384,10 @@ namespace CrownAndHearth.Game
         {
             var anchor = Vector2.one;
             var panel = MakePanel(root, "BannerColors", anchor, anchor, new Vector2(-292, -372), new Vector2(-8, -222));
+            _bannerPanel = panel;
+            // the old floating Banner button is retired: System (Esc) > Banner colour opens this
             MakeButton(root, "Banner", anchor, new Vector2(-82, -203), new Vector2(148, 30),
-                () => panel.gameObject.SetActive(!panel.gameObject.activeSelf));
+                () => panel.gameObject.SetActive(!panel.gameObject.activeSelf)).gameObject.SetActive(false);
 
             var palette = new[]
             {
@@ -423,7 +425,7 @@ namespace CrownAndHearth.Game
 
         public bool PointerOverUi => EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
 
-        public void SetSpeed(int s) { foreach (var kv in _speedButtons) kv.Value.color = kv.Key == s ? BtnOn : Btn; }
+        public void SetSpeed(int s) { _speedNow = s; foreach (var kv in _speedButtons) kv.Value.color = kv.Key == s ? BtnOn : Btn; }
 
         /// <summary>Demand for homes, -1..1: a centred meter, green when homes are wanted.</summary>
         public void SetDemand(double v)

@@ -1,6 +1,6 @@
 # Thornwick / Crown & Hearth: UI architecture (Unity)
 
-Status: Phase 1 (foundation) done (PR 106); Phase 2 done (PR 107); Phase 3 done (PR 109); Phase 4 done (PR 110); Phase 5 (overlay selector) in progress. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
+Status: Phase 1 (foundation) done (PR 106); Phase 2 done (PR 107); Phase 3 done (PR 109); Phase 4 done (PR 110); Phase 5 done (PR 111); Phase 6 (System menu and settings) in progress. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
 
 ## 1. Framework assessment
 
@@ -92,3 +92,7 @@ The tile and building inspector keeps GameController.TileInfo as the one place t
 ## 10. Phase 5 notes
 
 One Overlay button (lower right, next to Map and Military) opens a list: Off, Underground, Groundwater, Fertile land, Sailable water; one overlay at a time, and a locked one says why (Sailable water needs a water world). Only overlays with real data are listed: ore bands under the hills, the groundwater patches with short homes and the roads water travels, the fertile ground flag, and the navigable-water regions. The registry is Game/UI/OverlayRegistry.cs; GameController draws the chosen one (DrawChosenOverlay) and U still cycles the underground depth. **Not included** (no data behind them yet, so no entry): happiness, crime, pollution, traffic, land value, coverage of services. They join the list when the simulation has them. The always-on contextual overlays (reach rings for work buildings, zone and placement previews, claim parcels) stay tied to their tools.
+
+## 11. Phase 6 notes
+
+A System button at the end of the toolbar (and Esc when nothing else is open) opens the System window: Game (Resume, Save, Load, New world, Banner colour), Controls (every shortcut) and Settings (interface size 85, 100 or 115 percent; pause while the menu is open). Settings are kept in PlayerPrefs. The old floating Banner and New world buttons are retired; Save and Load also stay in the top bar. Esc order is now dialog, placement, open window or panel, then the System menu, which pauses the game while it is open (and gives the speed back on close) unless that setting is off. **Not included:** sound, graphics and key-rebinding options, because the game has none of those systems yet; the interface size was not checked visually at 85 and 115 percent.

@@ -29,7 +29,8 @@ namespace CrownAndHearth.Game
 
         void BuildNewWorld(RectTransform root)
         {
-            MakeButton(root, "New world", Vector2.one, new Vector2(-82, -239), new Vector2(148, 30), () => { _newWorldPanel.gameObject.SetActive(true); });
+            // the old floating New world button is retired: System (Esc) > New world opens this
+            MakeButton(root, "New world", Vector2.one, new Vector2(-82, -239), new Vector2(148, 30), () => { _newWorldPanel.gameObject.SetActive(true); }).gameObject.SetActive(false);
             _newWorldPanel = MakePanel(root, "NewWorld", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             _newWorldPanel.GetComponent<Image>().color = new Color(0.04f, 0.03f, 0.02f, 0.92f);
             var box = MakePanel(_newWorldPanel, "Box", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-420, -270), new Vector2(420, 270));

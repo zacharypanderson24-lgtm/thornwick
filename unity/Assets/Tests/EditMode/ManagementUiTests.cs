@@ -213,7 +213,7 @@ namespace CrownAndHearth.Tests
                 var w = new World(3, TerrainStyle.Ranges, Relief.Upland, WaterPreset.Lakeside); w.StartCampaign(); w.Tick();
                 hud.Build(GameController.Tools, GameController.Cats, new ArtLibrary());
                 hud.SetSettlement(w);
-                foreach (var id in MenuRegistry.Primary.Select(m => m.Id).Concat(new[] { MenuId.Notifications }))
+                foreach (var id in MenuRegistry.Primary.Select(m => m.Id).Concat(new[] { MenuId.Notifications, MenuId.System }))
                 {
                     if (MenuRegistry.WhyLocked(id, w) != null) continue;
                     hud.ToggleMenu(id); hud.SetSettlement(w);
@@ -269,6 +269,35 @@ namespace CrownAndHearth.Tests
             foreach (var id in new[] { OverlayId.None, OverlayId.Underground, OverlayId.Water, OverlayId.Fertility }) Assert.That(OverlayRegistry.WhyLocked(id, dry), Is.Null, id.ToString());
             Assert.AreEqual("Off", OverlayRegistry.TitleOf(OverlayId.None));
             foreach (var o in OverlayRegistry.All) { Assert.That(o.Title, Is.Not.Empty); Assert.That(o.Hint, Is.Not.Empty); }
+        }
+
+        // ---------- phase 6: the System menu and settings ----------
+        [Test]
+        public void SettingsRoundTripAndBrokenTextKeepsDefaults()
+        {
+            var s = new UiSettings { ScaleIndex = 2, PauseOnMenu = false };
+            var back = UiSettings.Parse(s.Serialize());
+            Assert.AreEqual(2, back.ScaleIndex); Assert.IsFalse(back.PauseOnMenu); Assert.AreEqual(115, back.Percent);
+            var bad = UiSettings.Parse("scale=99;pause=x;junk");
+            Assert.AreEqual(UiSettings.Scales.Length - 1, bad.ScaleIndex); Assert.IsTrue(bad.PauseOnMenu);
+            Assert.AreEqual(1, UiSettings.Parse(null).ScaleIndex); Assert.AreEqual(1f, UiSettings.Parse("").Scale);
+            var c = new UiSettings(); for (int k = 0; k < UiSettings.Scales.Length; k++) c.CycleScale(); Assert.AreEqual(1, c.ScaleIndex, "cycling comes back round");
+        }
+
+        [Test]
+        public void TheSystemMenuHasGameControlsAndSettingsAndIsAlwaysOpenable()
+        {
+            var w = new World(7);
+            Assert.AreEqual(3, ManagementData.Tabs(MenuId.System).Length);
+            Assert.IsNull(MenuRegistry.WhyLocked(MenuId.System, w));
+            Assert.IsFalse(MenuRegistry.Primary.Any(m => m.Id == MenuId.System), "it is not one of the twelve");
+            var game = ManagementData.SystemGame();
+            CollectionAssert.AreEqual(new[] { "cmd:resume", "cmd:save", "cmd:load", "cmd:newworld", "cmd:banner" }, game.Select(r => r.Id).ToArray());
+            Assert.IsTrue(ManagementData.SystemControls().All(r => r.Id == null && r.Value.Length > 0));
+            Assert.IsTrue(ManagementData.SystemControls().Any(r => r.Label.StartsWith("F1")) && ManagementData.SystemControls().Any(r => r.Label == "Esc"));
+            var set = ManagementData.SystemSettings(new UiSettings { ScaleIndex = 0, PauseOnMenu = false });
+            StringAssert.StartsWith("85%", Value(set, "Interface size")); StringAssert.StartsWith("off", Value(set, "Pause when this menu opens"));
+            Assert.AreEqual(set.Count, ManagementData.Rows(MenuId.System, 2, w, new NotificationManager(), 0, new UiSettings { ScaleIndex = 0, PauseOnMenu = false }).Count);
         }
     }
 }

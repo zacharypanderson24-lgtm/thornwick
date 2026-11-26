@@ -6,7 +6,7 @@ using CrownAndHearth.Sim;
 
 namespace CrownAndHearth.Game.UI
 {
-    public enum MenuId { Settlement, Population, Economy, Construction, Agriculture, Technology, Military, Transportation, Trade, Government, Diplomacy, World, Notifications }
+    public enum MenuId { Settlement, Population, Economy, Construction, Agriculture, Technology, Military, Transportation, Trade, Government, Diplomacy, World, Notifications, System }
 
     public sealed class MenuDef
     {
@@ -39,11 +39,12 @@ namespace CrownAndHearth.Game.UI
 
         public static MenuDef Get(MenuId id) => id == MenuId.Notifications
             ? new MenuDef { Id = id, Title = "Messages", Blurb = "Everything that has happened lately" }
+            : id == MenuId.System ? new MenuDef { Id = id, Title = "System", Blurb = "Save, load, a new world, your banner, the controls and settings" }
             : Primary.First(m => m.Id == id);
 
         public static MenuDef ByFunctionKey(int n) => Primary.FirstOrDefault(m => m.FunctionKey == n);
 
         /// <summary>Why this menu cannot be opened right now, or null when it can.</summary>
-        public static string WhyLocked(MenuId id, World w) => id == MenuId.Notifications ? null : Get(id).Reason(w);
+        public static string WhyLocked(MenuId id, World w) => id == MenuId.Notifications || id == MenuId.System ? null : Get(id).Reason(w);
     }
 }
