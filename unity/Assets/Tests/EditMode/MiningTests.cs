@@ -26,7 +26,7 @@ namespace CrownAndHearth.Tests
 
         /// <summary>Lay a road along World.LPath from the start settlement's street to (x, y), clearing trees on the way, never over
         /// (avoidX, avoidY). False when the path is blocked by a building, solid ground or the avoided tile.</summary>
-        static bool RoadTo(World w, int x, int y, int avoidX, int avoidY)
+        internal static bool RoadTo(World w, int x, int y, int avoidX, int avoidY)
         {
             var path = World.LPath(Defs.Start, Defs.Start + 2, x, y);
             foreach (var (i, j) in path)

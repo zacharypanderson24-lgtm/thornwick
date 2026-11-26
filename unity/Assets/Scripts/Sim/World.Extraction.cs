@@ -11,7 +11,7 @@ namespace CrownAndHearth.Sim
     public partial class World
     {
         // ---------- The working area ----------
-        readonly Dictionary<(Building, Zone), bool> _usesZone = new Dictionary<(Building, Zone), bool>();
+        readonly Dictionary<(int, int, int, Zone), bool> _usesZone = new Dictionary<(int, int, int, Zone), bool>();   // keyed by footprint, so a planned (not placed) building can ask too
         int _usesZoneVersion = -1;
 
         /// <summary>Is the tile inside the square reach of the building (WorkR tiles around its footprint)?</summary>
@@ -23,12 +23,12 @@ namespace CrownAndHearth.Sim
         public bool UsesZone(Building b, Zone zone)
         {
             if (_usesZoneVersion != Version) { _usesZone.Clear(); _usesZoneVersion = Version; }
-            if (_usesZone.TryGetValue((b, zone), out bool known)) return known;
+            if (_usesZone.TryGetValue((b.X, b.Y, b.Sz, zone), out bool known)) return known;
             bool any = false;
             for (int j = Math.Max(0, b.Y - WorkR); j <= Math.Min(N - 1, b.Y + b.Sz - 1 + WorkR) && !any; j++)
                 for (int i = Math.Max(0, b.X - WorkR); i <= Math.Min(N - 1, b.X + b.Sz - 1 + WorkR); i++)
                     if (ZoneMap[j, i] == zone) { any = true; break; }
-            _usesZone[(b, zone)] = any;
+            _usesZone[(b.X, b.Y, b.Sz, zone)] = any;
             return any;
         }
 
@@ -38,8 +38,12 @@ namespace CrownAndHearth.Sim
         {
             if (!Inb(x, y) || !InReach(b, x, y)) return false;
             if (UsesZone(b, zone)) return ZoneMap[y, x] == zone;
-            return ZoneMap[y, x] == Zone.None;
+            return ZoneMap[y, x] == Zone.None && RectDist(b, x, y) <= AutoRadius(b);
         }
+
+        /// <summary>How far the automatic area reaches. A lodge and a mine use their whole reach; a quarry starts with a smaller area (QuarryAutoR) so it does not
+        /// slowly dig out every hill in reach: painting a Mining boundary widens it to the full reach.</summary>
+        public static int AutoRadius(Building b) => b.T == "quarry" ? QuarryAutoR : WorkR;
 
         // ---------- Mine site survey ----------
         public enum SiteLevel { Valid, Warning, Invalid }

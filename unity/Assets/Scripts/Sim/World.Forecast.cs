@@ -34,8 +34,9 @@ namespace CrownAndHearth.Sim
             {
                 case "hunter": ForecastHunter(f, b); break;
                 case "farm": ForecastFarm(f, b); break;
-                case "wood": ForecastCrew(f, b, Deco.Tree, "logs", "woodcutters", "Marked trees (Lumber zone) in reach", Defs.Load["wood"]); break;
-                case "quarry": ForecastCrew(f, b, Deco.Rock, "stone", "quarrymen", "Zoned rock (Mining zone) in reach", Defs.Load["quarry"]); break;
+                case "wood": ForecastCrew(f, b, Deco.Tree, "logs", "woodcutters", "Trees in reach", Defs.Load["wood"]); break;
+                case "quarry": ForecastCrew(f, b, Deco.Rock, "stone", "quarrymen", "Workable rock in its area", Defs.Load["quarry"]); break;
+                case "mine": ForecastMine(f, x, y, sz); break;
                 case "silo": ForecastSilo(f); break;
             }
             if (f.FoodPerDay > 0) AddFoodBalance(f);
@@ -152,7 +153,7 @@ namespace CrownAndHearth.Sim
             string name = Names.GetValueOrDefault(b.T, b.T);
             if (steps.Count == 0)
             {
-                f.Lines.Add($"{name} here: {what.ToLower()}: none. {(kind == Deco.Tree ? "Paint a Lumber zone (4) over trees in reach" : "Paint a Mining zone (6) over rock in reach")}.");
+                f.Lines.Add($"{name} here: {what.ToLower()}: none. {(kind == Deco.Tree ? $"Woodcutters need forest on your land within {WorkR} tiles" : $"A quarry works rock within {QuarryAutoR} tiles of it (a painted Mining boundary widens that to {WorkR})")}.");
                 f.Warn = true;
                 return;
             }
@@ -160,6 +161,17 @@ namespace CrownAndHearth.Sim
             f.Lines.Add($"Work is {string.Join(" and ", steps.Select(s => s + (s == 1 ? " step" : " steps")))} away: each trip is {2 * steps.Min() + WorkT + 1} days for {load} {goods}");
             if (steps.Count < jobs) f.Lines.Add($"Only {steps.Count} of its {jobs} {who} would find work");
             f.Lines.Add(WorkersLine(b, jobs));
+        }
+
+        void ForecastMine(Forecast f, int x, int y, int sz)
+        {
+            var s = SurveyMineSite(x, y, sz);
+            if (s.Level == SiteLevel.Invalid) { f.Lines.Add("Mine here: " + s.Notes[0]); f.Warn = true; return; }
+            f.Lines.Add($"Iron Mine here: about {s.Reserve:0} ore in reach (an estimate), richest band {s.RichestBand:0}");
+            f.Lines.Add($"With {Defs.Jobs["mine"]} miners about {s.DailyEstimate:0.#} ore a day (not guaranteed: the tunnel has to be dug first), so roughly {s.LifetimeYears:0.#} years of ore");
+            foreach (var n in s.Notes) f.Lines.Add(n);
+            if (s.Level == SiteLevel.Warning) f.Warn = true;
+            f.Lines.Add(WorkersLine(new Building { T = "mine", X = x, Y = y, Sz = sz }, Defs.Jobs["mine"]));
         }
 
         // ---------- silos ----------

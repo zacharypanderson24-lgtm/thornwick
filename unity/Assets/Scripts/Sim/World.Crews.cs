@@ -74,13 +74,13 @@ namespace CrownAndHearth.Sim
             return d >= 1.75 ? double.PositiveInfinity : 1 + d * 1.5;
         }
 
-        bool CrewMatch(Deco kind, int x, int y, bool hunting = false)
+        bool CrewMatch(Building b, Deco kind, int x, int y, bool hunting = false)
         {
             if (!Claimed(x, y)) return false;
             if (hunting) return HuntFoodRemaining(x, y) > 0;
             var dc = DecoMap[y, x];
-            if (kind == Deco.Tree) return dc == Deco.Tree && ZoneMap[y, x] == Zone.Wood;
-            if (kind == Deco.Rock) return dc == Deco.Rock && ZoneMap[y, x] == Zone.Mine && RockWorkable(x, y);
+            if (kind == Deco.Tree) return dc == Deco.Tree && InWorkArea(b, Zone.Wood, x, y);   // World.Extraction.cs: the lodge's automatic area (or its painted boundary)
+            if (kind == Deco.Rock) return dc == Deco.Rock && InWorkArea(b, Zone.Mine, x, y) && RockWorkable(x, y);
             return dc == Deco.Ore;
         }
 
@@ -123,7 +123,7 @@ namespace CrownAndHearth.Sim
             for (int j = b.Y - range; j <= b.Y + b.Sz - 1 + range; j++)
                 for (int i = b.X - range; i <= b.X + b.Sz - 1 + range; i++)
                 {
-                    if (!Inb(i, j) || !(survey ? ZoneMap[j, i] == Zone.Mine && !Surveyed[Tk(i, j)] && Claimed(i, j) : CrewMatch(kind, i, j, hunting))) continue;
+                    if (!Inb(i, j) || !(survey ? ZoneMap[j, i] == Zone.Mine && !Surveyed[Tk(i, j)] && Claimed(i, j) : CrewMatch(b, kind, i, j, hunting))) continue;
                     for (int k = 0; k < 4; k++)
                     {
                         int nx = i + Nb[k, 0], ny = j + Nb[k, 1]; if (!Inb(nx, ny)) continue;
@@ -141,12 +141,12 @@ namespace CrownAndHearth.Sim
             return true;
         }
 
-        double CrewAct(Deco kind, Worker a)
+        double CrewAct(Building b, Deco kind, Worker a)
         {
             int tx = a.Tx, ty = a.Ty;
             if (kind == Deco.Tree)
             {
-                if (!CrewMatch(kind, tx, ty)) return 0;
+                if (!CrewMatch(b, kind, tx, ty)) return 0;
                 int k = Tk(tx, ty); Chop[k] = (Chop.TryGetValue(k, out var c) ? c : 0) + 1;
                 if (Chop[k] >= ChopsPerTree) FellAt(tx, ty);
                 return Load["wood"];
@@ -190,7 +190,7 @@ namespace CrownAndHearth.Sim
                     }
                     else if (a.St == CrewState.Work)
                     {
-                        if (--a.T <= 0) { a.Carry = hunting ? Math.Min(HuntingLoad, HuntFoodRemaining(a.Tx, a.Ty)) : CrewAct(kind, a); a.Path.Reverse(); a.I = 0; a.St = CrewState.Back; }
+                        if (--a.T <= 0) { a.Carry = hunting ? Math.Min(HuntingLoad, HuntFoodRemaining(a.Tx, a.Ty)) : CrewAct(b, kind, a); a.Path.Reverse(); a.I = 0; a.St = CrewState.Back; }
                     }
                     else if (a.I < a.Path.Count - 1) { a.I++; SetPos(a, a.Path[a.I]); }
                     if (a.St == CrewState.Back && a.I >= a.Path.Count - 1)

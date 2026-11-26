@@ -30,6 +30,7 @@ namespace CrownAndHearth.Sim
         public const int HallCap = 6, Bunks = 16, WorkR = 16, LegacyZoneR = 3, FaceR = 3, Storage = 400;   // water tuning: WaterTuning in World.Water.cs
         public const double SawRate = 4, HallSaw = 1, HallYield = 0.5;
         public const int StumpDays = 8;
+        public const int QuarryAutoR = 8;   // a quarry's automatic working area (tiles around it); WorkR is its reach with a painted boundary
         public const int PlantEvery = 4, SaplingDays = 3 * 365, ForesterR = WorkR;
 
         // Stone and ore are finite

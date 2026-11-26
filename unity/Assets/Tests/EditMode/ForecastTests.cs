@@ -139,7 +139,7 @@ namespace CrownAndHearth.Tests
             Assert.IsTrue(f.Lines.Any(l => l.Contains("logs a day")), f.Text);
             var none = Clearing().ForecastPlacement("wood", x, y);
             Assert.IsTrue(none.Warn);
-            StringAssert.Contains("Lumber zone", none.Text);
+            StringAssert.Contains("forest", none.Text);
         }
 
         [Test]

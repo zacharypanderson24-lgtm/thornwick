@@ -210,12 +210,12 @@ namespace CrownAndHearth.Sim
             {
                 (int x, int y)? best = null; int bd = int.MaxValue;
                 for (int j = y - r; j <= y + r; j++) for (int i = x - r; i <= x + r; i++)
-                    if (Inb(i, j) && ZoneMap[j, i] == Zone.Mine && RockWorkable(i, j)) { int dd = (i - x) * (i - x) + (j - y) * (j - y); if (dd < bd) { bd = dd; best = (i, j); } }
+                    if (Inb(i, j) && RockWorkable(i, j)) { int dd = (i - x) * (i - x) + (j - y) * (j - y); if (dd < bd) { bd = dd; best = (i, j); } }
                 if (best == null) break;
                 var (bx, by) = best.Value; int k = Tk(bx, by);
                 double e = Math.Min(amount, RockLeft(bx, by));
                 Dig[k] = DigDone(bx, by) + e; got += e; amount -= e;
-                if (RockLeft(bx, by) <= 1e-9) { Dig[k] = RockCap(bx, by); ZoneMap[by, bx] = Zone.None; }
+                if (RockLeft(bx, by) <= 1e-9) { Dig[k] = RockCap(bx, by); if (ZoneMap[by, bx] == Zone.Mine) ZoneMap[by, bx] = Zone.None; }
                 Touch();
             }
             return got;

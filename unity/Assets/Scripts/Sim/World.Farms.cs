@@ -234,7 +234,7 @@ namespace CrownAndHearth.Sim
                     for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
                     {
                         if (!Inb(i, j)) continue;
-                        if (CrewMatch(kind, i, j)) n++;   // what a crew can fell or cut
+                        if (CrewMatch(b, kind, i, j)) n++;   // what a crew can fell or cut
                     }
                 _workTiles[b] = n;
             }

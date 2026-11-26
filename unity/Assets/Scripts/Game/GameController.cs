@@ -842,17 +842,9 @@ namespace CrownAndHearth.Game
         void DrawQuarryRock(Building q)
         {
             var w = World;
-            for (int y = q.Y - WorkR; y <= q.Y + q.Sz - 1 + WorkR; y++)
-                for (int x = q.X - WorkR; x <= q.X + q.Sz - 1 + WorkR; x++)
-                    switch (w.QuarryTileState(x, y))
-                    {
-                        case World.QuarryTile.Dig:
-                            _overlay.AddTile(w, x, y, _rot, new Color32(255, 160, 50, (byte)(90 + 110 * w.StoneFraction(x, y))));
-                            break;
-                        case World.QuarryTile.Locked:
-                            _overlay.AddTile(w, x, y, _rot, QuarryLocked);
-                            break;
-                    }
+            foreach (var (x, y, state) in w.QuarryArea(q))   // the quarry's automatic area, or its painted boundary
+                if (state == World.QuarryTile.Dig) _overlay.AddTile(w, x, y, _rot, new Color32(255, 160, 50, (byte)(90 + 110 * w.StoneFraction(x, y))));
+                else _overlay.AddTile(w, x, y, _rot, QuarryLocked);
         }
 
         void AddWatchtowerRange(int centerX, int centerY, Color32 color)

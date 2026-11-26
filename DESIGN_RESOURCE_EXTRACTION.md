@@ -55,7 +55,7 @@ Read from the code, not from older notes.
 |---|---|---|
 | 1 | Audit and this document | done |
 | 2 | Mining without zones, site survey, depletion warnings | done |
-| 3 | Quarry auto area and optional boundary | |
+| 3 | Quarry auto area and optional boundary (also: lodges match trees without a zone) | done |
 | 4 | Forestry modes, replanting, protected woodland | |
 | 5 | Timber chain | |
 | 6 | Universal land clearing | |
@@ -75,3 +75,14 @@ Each phase's PR adds its row's details below as it lands.
 - **Inspector**: `MineStatus` adds the ore left in reach and the years it should last (an estimate).
 - **Not built, on purpose**: depth limits by era (nothing in the simulation limits depth today; the three ore bands are all reachable), suspending a mine without demolishing it, mine upgrades. Listed as gaps.
 - Tests: `MiningAutoTests` (9). `MiningTests.MineTown` now accepts an ore-free lot for its no-ore case.
+
+## 5. Phase 3: quarrying (built)
+
+- **Automatic area**: rock within `Defs.QuarryAutoR` (8) tiles of the quarry that is claimed and has no other land-use zone. This is deliberately smaller than the reach (`WorkR` 16) so a quarry cannot slowly dig out every hill nearby; **painting Mining tiles in reach is the optional boundary** and then widens the reach to 16 and restricts the quarry to those tiles.
+- **Terrain excavation is unchanged**: hills and outcrops dig down into pits, a mountain is cut inward from an open edge and never flattened; pits persist in the save (`Dig`). Tested through save and load.
+- **Site survey** (`SurveyQuarrySite`): workable stone, stone locked in mountain interior, estimated daily output and lifetime, other quarries on the same rock, rock beyond the area. Invalid when there is no rock in the area (`CanPlace` refuses, with the reason); warnings for little stone, mountain-only rock, shared rock and no road.
+- **Shared finite stone**: per-tile `Dig`, so two quarries cannot duplicate stone (test).
+- **Overlay**: `QuarryArea(b)` feeds the map overlay (orange = workable, blue-grey = locked).
+- **Lodges** now match trees through the same `InWorkArea` (no Lumber zone needed); modes, replanting and protection are phase 4.
+- **Tests changed on purpose** (they asserted the old "no zone, no work" rule): `QuarryTests.NoZoneSaysWhatToDo` (now `NoRockInTheAreaSaysWhatToDo`), `WorkReachTests` quarry and lodge job tests, the lodge forecast message ("forest" instead of "Lumber zone").
+- Tests: `QuarryAutoTests` (7).
