@@ -126,6 +126,7 @@ namespace CrownAndHearth.Game
             BuildMap(root, townMenuBar);
             BuildCamp(root);
             BuildManagement(root);
+            BuildCatalogueWindow(root);
 
             // left info panel
             _infoPanel = MakePanel(root, "Info", new Vector2(0, 1), new Vector2(0, 1), new Vector2(8, -TopBarH - 8 - 349), new Vector2(330, -TopBarH - 8 - 42)).gameObject;
@@ -171,16 +172,19 @@ namespace CrownAndHearth.Game
         void BuildBar(RectTransform root)
         {
             var bar = MakePanel(root, "BuildBar", Vector2.zero, Vector2.right, new Vector2(0, NeedsH), new Vector2(0, BottomH));
+            int slot = 0;
             for (int i = 0; i < _cats.Count; i++)
             {
                 var cat = _cats[i];
+                if (!QuickCategory(cat.Cat)) continue;   // the other categories live in the Build catalogue (their hotkeys still pick tools)
                 var c = cat.Cat;
                 var tools = ToolsIn(c);
                 var btn = MakeIconButton(bar, cat.Label, cat.Key, CatIcon(cat, tools),
-                    new Vector2(0, 0), new Vector2(8 + i * (CatW + 4), 5), new Vector2(CatW, BarH - 10), () => ClickCategory(c));
+                    new Vector2(0, 0), new Vector2(8 + slot * (CatW + 4), 5), new Vector2(CatW, BarH - 10), () => ClickCategory(c));
                 AddHover(btn.gameObject, on => { if (_catButtons[c].color != BtnOn) _catButtons[c].color = on ? BtnHover : Btn; ShowCatTip(on ? cat : null, btn.rectTransform); });
                 _catButtons[c] = btn;
-                if (tools.Count > 1) _trays[c] = BuildTray(root, c, tools, 8 + i * (CatW + 4));
+                if (tools.Count > 1) _trays[c] = BuildTray(root, c, tools, 8 + slot * (CatW + 4));
+                slot++;
             }
 
             // demand meter
@@ -199,7 +203,7 @@ namespace CrownAndHearth.Game
             _workersButton = MakeButton(bar, "Workers", new Vector2(1, 0.5f), new Vector2(-62, 0), new Vector2(104, 40), ToggleWorkforce);
 
             // what the selected tool does and how to use it: in the bar, between the categories and the Homes meter
-            float chipLeft = 8 + _cats.Count * (CatW + 4) + 6;
+            float chipLeft = 8 + slot * (CatW + 4) + 6;
             _chip = MakePanel(bar, "ActiveTool", Vector2.zero, Vector2.right, new Vector2(chipLeft, 8), new Vector2(-480, BarH - 8));
             _chip.GetComponent<Image>().color = new Color(0, 0, 0, 0.25f);
             _chipText = MakeText(_chip, "ToolInstructions", 14, TextAnchor.MiddleLeft);
@@ -260,6 +264,9 @@ namespace CrownAndHearth.Game
             t.resizeTextForBestFit = true; t.resizeTextMinSize = min; t.resizeTextMaxSize = max;
             t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Truncate;
         }
+
+        /// <summary>The tools that stay on the bar: Inspect, Roads, Land and Bulldoze. Everything else is picked from the Build catalogue.</summary>
+        static bool QuickCategory(GameController.Cat c) => c == GameController.Cat.Inspect || c == GameController.Cat.Roads || c == GameController.Cat.Land || c == GameController.Cat.Bulldoze;
 
         List<GameController.ToolDef> ToolsIn(GameController.Cat c) => _tools.Where(t => t.Cat == c).ToList();
 
@@ -427,7 +434,7 @@ namespace CrownAndHearth.Game
             panel.gameObject.SetActive(false);
         }
 
-        public bool EditingBanner => (_bannerInput != null && _bannerInput.isFocused) || EditingMilitaryName;
+        public bool EditingBanner => (_bannerInput != null && _bannerInput.isFocused) || EditingMilitaryName || EditingCatalogueSearch;
 
         public void ShowBannerColor(string hex) => _bannerInput.SetTextWithoutNotify(hex ?? "#B3202A");
 
@@ -484,6 +491,7 @@ namespace CrownAndHearth.Game
             UpdateWarband(world);
             RefreshSettlementPanel();
             RefreshManagement(world);
+            RefreshCatalogue();
             // prices turn red on the cards the town cannot afford yet
             foreach (var t in _tools)
                 if (t.Build != null && _cardCost.TryGetValue(t.Id, out var cost)) cost.color = world.CanAfford(t.Build).Ok ? Ink : BadInk;

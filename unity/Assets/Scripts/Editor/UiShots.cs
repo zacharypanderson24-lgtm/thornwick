@@ -41,6 +41,10 @@ namespace CrownAndHearth.EditorTools
                 Shot(dir, art, w, h, "construction", hud => { hud.ToggleMenu(MenuId.Construction); hud.UI.SetTab(2); });
                 Shot(dir, art, w, h, "transport", hud => { hud.ToggleMenu(MenuId.Transportation); hud.UI.SetTab(1); });
                 Shot(dir, art, w, h, "trade", hud => hud.ToggleMenu(MenuId.Trade));
+                Shot(dir, art, w, h, "build_housing", hud => { hud.Catalogue.LastCategory = CatalogueCategory.Housing; hud.ShowCatalogue(true); });
+                Shot(dir, art, w, h, "build_food", hud => { hud.Catalogue.LastCategory = CatalogueCategory.Food; hud.ShowCatalogue(true); });
+                Shot(dir, art, w, h, "build_military", hud => { hud.Catalogue.LastCategory = CatalogueCategory.Military; hud.ShowCatalogue(true); }, null, wd => { wd.ResAmt[Res.Wood] = 4; wd.ResAmt[Res.Stone] = 0; });
+                Shot(dir, art, w, h, "build_search", hud => { hud.ShowCatalogue(true); hud.SearchCatalogue("mill"); });
                 System.Action<World> staff = wd => { wd.Era = 4; for (int i = 0; i < 9; i++) { var ch = CharacterGenerator.Create(wd.Characters.NextId, wd.CharacterPool(), 9000 + i, wd.Day, (Background)(i % 7), 25, 62); wd.Characters.Add(ch); } wd.Appoint(wd.Characters.All[0].Id, Post.Steward); wd.Appoint(wd.Characters.All[1].Id, Post.Chancellor); wd.ResAmt[Res.Gold] = 140; };
                 Shot(dir, art, w, h, "gov_council", hud => hud.OpenGovernment(0, Post.Treasurer), null, staff);
                 Shot(dir, art, w, h, "gov_recruit", hud => hud.OpenGovernment(1, Post.Treasurer), null, staff);
