@@ -534,18 +534,22 @@ namespace CrownAndHearth.Game
             _hud.RefreshWorkforce(World);
             _hud.RefreshTownMenus(World);
             PollWorldMap();
-            if (World.Events.Count > 0) { _hud.Toast(World.Events[World.Events.Count - 1], 8); World.Events.Clear(); }   // cave-ins, new levels, empty surveys
+            if (World.Events.Count > 0) { foreach (var e in World.Events) _hud.Notify(e, World.Day, 8); World.Events.Clear(); }   // cave-ins, new levels, empty surveys
             var raid = World.Raid;
             if (raid != null)
             {
-                if (!raid.StartAnnounced) { raid.StartAnnounced = true; _hud.Toast($"Raiders! A band of {raid.Band} is coming in from the {raid.From}.", 6); }
-                if (raid.Over && !raid.EndAnnounced) { raid.EndAnnounced = true; _hud.Toast($"The raid is over: {raid.Killed} raiders cut down, {raid.Escaped} got away with {raid.Stolen.Values.Sum()} goods.", 8); }
+                if (!raid.StartAnnounced) { raid.StartAnnounced = true; _hud.Notify($"Raiders! A band of {raid.Band} is coming in from the {raid.From}.", World.Day, 6); }
+                if (raid.Over && !raid.EndAnnounced) { raid.EndAnnounced = true; _hud.Notify($"The raid is over: {raid.Killed} raiders cut down, {raid.Escaped} got away with {raid.Stolen.Values.Sum()} goods.", World.Day, 8); }
             }
         }
 
         void HandleKeys()
         {
             var kb = Keyboard.current; if (kb == null || _hud.EditingBanner) return;
+            for (int f = 1; f <= 12; f++)   // F1..F12: the twelve management menus (digits belong to the build bar)
+                if (kb[Key.F1 + f - 1].wasPressedThisFrame) { var m = CrownAndHearth.Game.UI.MenuRegistry.ByFunctionKey(f); if (m != null) { _hud.ToggleMenu(m.Id); return; } }
+            if (kb.nKey.wasPressedThisFrame) { _hud.ToggleMenu(CrownAndHearth.Game.UI.MenuId.Notifications); return; }
+            if (kb.escapeKey.wasPressedThisFrame && _hud.EscapeManagement(_tool != Tools[0] || _roadAnchor.HasValue || _zoneAnchor.HasValue || _ferryFrom != null)) return;
             if (kb.mKey.wasPressedThisFrame) { _hud.ToggleMap(); return; }
             if (kb.tKey.wasPressedThisFrame) { _hud.ToggleMilitary(); return; }
             if (_hud.MapOpen)

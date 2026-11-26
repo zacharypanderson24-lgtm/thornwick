@@ -1,0 +1,78 @@
+# Thornwick / Crown & Hearth: UI architecture (Unity)
+
+Status: Phase 1 (foundation) in progress. This file holds the audit, the framework choice, the menu map and the phase plan. Update the status line as phases land.
+
+## 1. Framework assessment
+
+The Unity HUD is uGUI built entirely in code (`Hud` partial class, one Canvas, CanvasScaler 1600x900 reference, match 0.5, Input System UI module, built-in font). Decision: **stay on uGUI built in code**. UI Toolkit would be a second framework and a rewrite of ~15 working panels for no player-visible gain; the weakness today is structure (hard-coded positions, per-panel one-offs, no shared state), not the framework. We add a thin layer on top: theme, menu registry, UI manager, notification manager, reusable components. Old panels migrate onto it one phase at a time; nothing is removed until its replacement works.
+
+Rules kept from the brief: UI reads sim state and sends validated commands only (`CrownAndHearth.Sim` stays free of UnityEngine); no fake numbers; no dead buttons (a menu with nothing real behind it is shown as "not yet available" and its button is disabled, never empty); no browser-version changes.
+
+## 2. Inventory of existing controls and where each one goes
+
+| Control (today) | Where it lives today | New home |
+|---|---|---|
+| Resource bar (day, people, crops/mining/wood dropdowns, gold) | Hud top row | stays; becomes the permanent resource bar, tooltips via UI tooltip adapter (later phase) |
+| Pause / 1x / 2x / 4x, Space | top right | stays (Time panel); Space unchanged |
+| Rotate Q / E | top right | stays |
+| Save / Load | top right | stays now; moves into the System menu in the phase that adds it |
+| Build bar: Inspect, House, Farm, Wood, Mine, Water, Mil... (digits, L, 0) | bottom | stays: it is the placement tool bar, the Construction menu links to it |
+| Tool chip, cursor tip, card tooltips | Hud | stay |
+| Workers button + Workforce panel | bottom/side | **Population** menu (Workforce tab) |
+| Farming, Mining, Livestock town menus | bottom right bar | **Agriculture** (farming, livestock) and **Economy** (mining) |
+| Military window (companies, orders) | bottom right bar, T | **Military** menu (T kept) |
+| Statistics window | bottom right bar | **Settlement** (history) |
+| Map button / world map, settlement, trade, camp panels | bottom right, M | **World** menu (M kept); trade panels also reachable from **Trade** |
+| Needs bar, happiness meter | Hud | stay on HUD; detail in **Population** |
+| Campaign goals, Incident cards, scenario banner | Hud | stay; goals link from **Settlement**; incidents also go to the notification history |
+| New world dialog, Banner picker | Hud | System menu later; New world stays reachable now |
+| Vessels window | button under New world | **Transportation** (Vessels tab) |
+| Ferry Route tool, Bridge, Canal, Moat, Dock, Port, Boatyard tools | build bar Water category | stay in the build bar; **Transportation** lists routes and boats |
+| Overlays: water (hotkey), Underground view (U), claims | hotkeys and tools | one **overlay selector** (a later phase); keys stay |
+| Tile inspection (left Info panel) | Hud | stays (inspection templates later) |
+| Toasts (`World.Events`) | Hud | go through the **NotificationManager** (history kept, same toast shown) |
+| Esc | closes map, panels, placement | **UIManager** order: modal, placement, open menu, then nothing |
+
+Hotkeys kept: 1-9, 0, L (build categories), Q/E, Space, U, T, M, Esc. New: **F1-F12** open the twelve management menus (digits are taken by the build bar).
+
+## 3. The twelve menus
+
+| # | Menu | Key | Phase 1 tabs with real data | Planned | Status |
+|---|---|---|---|---|---|
+| 1 | Settlement | F1 | Overview (people, housing, food days, happiness, era, day) | Buildings, History | window |
+| 2 | Population | F2 | Workforce (opens the existing panel) | Jobs, Needs, Housing | link |
+| 3 | Economy | F3 | Stockpiles (each resource: amount, daily change) | Production, Mining | window |
+| 4 | Construction | F4 | build bar (opens it) | Queue | link |
+| 5 | Agriculture | F5 | Farming, Livestock (existing panels) | Seasons | link |
+| 6 | Technology | F6 | none: there is no tech tree | everything | disabled |
+| 7 | Military | F7 | existing Military window | | link |
+| 8 | Transportation | F8 | Boats and routes (existing Vessels window) | Roads | link |
+| 9 | Trade | F9 | opens the world map trade panels | Routes, Prices | link |
+| 10 | Government | F10 | none | laws, taxes | disabled |
+| 11 | Diplomacy | F11 | none beyond trade partners | relations | disabled |
+| 12 | World | F12 | existing world map | | link |
+
+Unlock rules live in the registry (`MenuDef.Available(World)`): a menu is greyed with the reason in its tooltip until it has a real thing to show (Transportation: a water world with vessels or a boatyard; Trade and World: a world map exists; Military: always, as today).
+
+## 4. Architecture (`unity/Assets/Scripts/Game/UI/`)
+
+- `UITheme`: colours, sizes, spacing, one place (the old `Hud` palette statics keep working, they are mirrored from here).
+- `MenuRegistry`: `MenuId` enum (12), `MenuDef` (title, key, tooltip, availability, implemented flag, tabs). Pure C#, tested.
+- `UIManager`: which menu is open, which tab, a modal stack, the Esc order, "pointer over UI" bookkeeping. Pure C#, tested; the Hud drives it and draws.
+- `NotificationManager`: categories (info, warning, danger, success), classify by keyword from `World.Events`, dedupe by key with a cooldown, history (last 100), optional action target (a menu). Pure C#, tested.
+- Components built in code: window frame with title bar and close button, tab bar, stat card, progress bar, empty state, confirmation dialog.
+- `ManagementToolbar`: second row under the resource bar, built from the registry.
+
+## 5. Phases (one PR each, individually tested)
+
+1. **Foundation**: theme, registry, manager, notifications, window and tab components, dialogs, management toolbar with F-keys, Esc order, Settlement and Economy windows from real data, notification history.
+2. Population and Economy migration (Workforce into Population tabs, mining), Construction hub.
+3. Military, Agriculture, Transportation, Trade migration to the shared window.
+4. Inspection templates (building, tile, settlement, vessel, route...).
+5. Overlays with one selector (only those with real data).
+6. Government, Diplomacy, World architecture (only what exists), settings and system menu.
+7. Responsive layouts, accessibility, polish.
+
+## 6. Verification
+
+Unit tests for registry, manager and notifications; the full EditMode suite before each PR; screenshots from a batch editor capture at 1280x720, 1920x1080 and 2560x1440. What a PR did not verify is stated in its description.
