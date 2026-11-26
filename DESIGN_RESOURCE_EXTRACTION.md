@@ -54,7 +54,7 @@ Read from the code, not from older notes.
 | Phase | Content | Status |
 |---|---|---|
 | 1 | Audit and this document | done |
-| 2 | Mining without zones, site survey, depletion warnings | |
+| 2 | Mining without zones, site survey, depletion warnings | done |
 | 3 | Quarry auto area and optional boundary | |
 | 4 | Forestry modes, replanting, protected woodland | |
 | 5 | Timber chain | |
@@ -65,3 +65,13 @@ Read from the code, not from older notes.
 | 10 | Final verification | |
 
 Each phase's PR adds its row's details below as it lands.
+
+## 4. Phase 2: mining (built)
+
+- **Working area** (`World.Extraction.cs`, `InMineArea` in `World.Mining.cs`): ground within `WorkR` (16) of the mine that is claimed, passes `ZoneCheck(Zone.Mine)`, has no other land-use zone, and is hill or mountain ground (flat ground only right beside the mine, so a tunnel does not sprawl under housing and fields). If the player painted Mining tiles in reach, only those count (optional boundary; this is also how old saves behave).
+- **Site survey** (`SurveyMineSite`): ore in reach (the real figure, shown as an estimate), richest band, other mines on the same ground, an estimated daily output and lifetime in years. Levels: Invalid (no ore in reach; `CanPlace` refuses with the reason), Warning (little ore, shared ground, no hill, no road yet; every warning has a sentence), Valid.
+- **Shared finite ore**: unchanged by design. Ore is per tile in `OreTaken`, so a second mine cannot create any. A test checks that surveying before and after adding a mine gives the same figure.
+- **Depletion warnings** (`CheckMineReserve`, monthly): one message when the ore in reach is low (under 60, or under a year at full staffing) and one when it is gone. The stage is runtime only: a loaded save can warn once more.
+- **Inspector**: `MineStatus` adds the ore left in reach and the years it should last (an estimate).
+- **Not built, on purpose**: depth limits by era (nothing in the simulation limits depth today; the three ore bands are all reachable), suspending a mine without demolishing it, mine upgrades. Listed as gaps.
+- Tests: `MiningAutoTests` (9). `MiningTests.MineTown` now accepts an ore-free lot for its no-ore case.

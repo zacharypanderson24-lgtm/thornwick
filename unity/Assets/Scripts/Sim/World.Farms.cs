@@ -229,7 +229,7 @@ namespace CrownAndHearth.Sim
             {
                 var kind = CrewKind(b.T); if (kind == Deco.None || b.T == "hunter") continue;
                 int n = 0;
-                if (b.T == "mine") { _workTiles[b] = MineWorkTiles(b); continue; }   // the zoned ground its tunnel could reach, plus ore at its face
+                if (b.T == "mine") { _workTiles[b] = MineWorkTiles(b, b.Jobs + 1); continue; }   // the zoned ground its tunnel could reach, plus ore at its face
                 for (int j = b.Y - WorkR; j <= b.Y + b.Sz - 1 + WorkR; j++)
                     for (int i = b.X - WorkR; i <= b.X + b.Sz - 1 + WorkR; i++)
                     {

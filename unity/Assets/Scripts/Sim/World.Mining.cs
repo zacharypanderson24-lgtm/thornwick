@@ -118,10 +118,21 @@ namespace CrownAndHearth.Sim
 
         bool Diggable(Building b, int x, int y)
         {
-            if (!Inb(x, y) || ZoneMap[y, x] != Zone.Mine || Grid[y, x] != null || !Claimed(x, y) || IsTunnel(x, y)) return false;
-            if (x < b.X - WorkR || x > b.X + b.Sz - 1 + WorkR || y < b.Y - WorkR || y > b.Y + b.Sz - 1 + WorkR) return false;
+            if (!InMineArea(b, x, y) || Grid[y, x] != null || IsTunnel(x, y)) return false;
             var d = DecoMap[y, x];
             return d != Deco.Tree && d != Deco.Sapling;
+        }
+
+        /// <summary>The mine's automatic working area (World.Extraction.cs): ground in reach that a tunnel may be driven through. With painted Mining tiles
+        /// in reach only those count (an optional boundary). Otherwise any open, claimed, mine-able ground: hill and mountain ground, and flat ground only right
+        /// beside the mine, so a tunnel never sprawls across the lowland that houses and fields need.</summary>
+        bool InMineArea(Building b, int x, int y)
+        {
+            if (!Inb(x, y) || !InReach(b, x, y) || !Claimed(x, y)) return false;
+            if (UsesZone(b, Zone.Mine)) return ZoneMap[y, x] == Zone.Mine;
+            if (ZoneMap[y, x] != Zone.None) return false;
+            if (_genLevel[Tk(x, y)] < 0.5 && MCheb(x, y, b.X + (b.Sz - 1) / 2, b.Y + (b.Sz - 1) / 2) > b.Sz + 1) return false;
+            return ZoneCheck(Zone.Mine, x, y).Ok;
         }
 
         static readonly int[,] Nb4 = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
@@ -166,7 +177,7 @@ namespace CrownAndHearth.Sim
 
         /// <summary>How many tiles a mine could work: zoned ground its tunnel could still reach, plus tunnel faces with ore to pick.
         /// (Sets how many jobs it needs.)</summary>
-        int MineWorkTiles(Building b)
+        int MineWorkTiles(Building b, int cap = int.MaxValue)
         {
             int n = 0;
             Frontier(b, _front);
@@ -174,6 +185,7 @@ namespace CrownAndHearth.Sim
             while (queue.Count > 0)
             {
                 int k = queue.Dequeue(); n++;
+                if (n >= cap) return n;   // jobs only need to know "at least this much work"
                 for (int d = 0; d < 4; d++)
                 {
                     int x = k % N + Nb4[d, 0], y = k / N + Nb4[d, 1];
@@ -285,12 +297,12 @@ namespace CrownAndHearth.Sim
         }
 
         // ---------- The mine's reach ----------
-        bool InMineReach(int x, int y) => Inb(x, y) && ZoneMap[y, x] == Zone.Mine && Claimed(x, y);
 
         // ---------- The mine's crew ----------
         void StepMine(Building b, List<Worker> crew, Dictionary<Res, double> got)
         {
             if (b.Closed > 0) b.Closed--;
+            if ((Day + b.X + b.Y) % 30 == 0) CheckMineReserve(b);   // advance warning as the ore in reach runs down
             // shore up what has been dug as soon as there is wood: the stretch nearest the mine first
             if (b.Served && b.Shored.Count < b.Tunnel.Count && ResAmt[Res.Wood] >= TileWood)
             {
@@ -415,10 +427,13 @@ namespace CrownAndHearth.Sim
             else if (canDig) s += len == 0 ? "\nDigging the first tunnel tile" : $"\nTunnel face is clean: driving on ({100 * b.DigProg / TileDigDays}% of the next tile)";
             if (!canDig && oreTiles == 0)
             {
-                if (len == 0) s += "\nNothing to dig: zone Mining ground that touches the mine. The tunnel starts at its walls and runs through zoned tiles.";
-                else s += TookOreInReach(b) ? "\nWorked out: no ore left within reach of this tunnel. Zone more high ground beside it, or build another mine"
-                                            : "\nNo ore found in this mine's zone. Ore lies in hills and mountains: put the mine at the foot of a hill";
+                if (len == 0) s += "\nNothing to dig: no open ground in reach. Clear the trees or buildings beside the mine, or build it elsewhere.";
+                else s += TookOreInReach(b) ? "\nWorked out: no ore left within reach of this tunnel. Build another mine at a new deposit, or demolish this one"
+                                            : "\nNo ore found within reach. Ore lies in hills and mountains: put the mine at the foot of a hill";
             }
+            double reserve = MineReserve(b);
+            var life = MineLifetimeYears(b);
+            s += reserve > 1e-9 ? $"\nOre in reach: about {reserve:0}" + (life.HasValue ? $", roughly {life.Value:0.#} years at this staffing (an estimate)" : "") : "\nOre in reach: none left";
             if (b.CaveIns > 0) s += $"\nCave-ins so far: {b.CaveIns}";
             return s;
         }
