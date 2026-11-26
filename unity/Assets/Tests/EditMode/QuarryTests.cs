@@ -20,7 +20,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void ZonedOpenRockCountsAsDiggable()
         {
-            var w = new World(7);
+            var w = new World(7); w.ClaimAll();
             var t = Find(w, (x, y) => w.DecoMap[y, x] == Deco.Rock && !w.IsMountain(x, y) && w.RockLeft(x, y) > 0);
             Assert.IsNotNull(t, "the map has some hill or outcrop rock");
             var (x, y) = t.Value;
@@ -35,20 +35,31 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void NoZoneSaysWhatToDo()
+        public void NoRockInTheAreaSaysWhatToDo()
         {
-            var w = new World(7);
-            var t = Find(w, (x, y) => w.DecoMap[y, x] == Deco.Rock && !w.IsMountain(x, y));
-            Assert.IsNotNull(t);
+            var w = new World(7); w.ClaimAll();
+            var t = Find(w, (x, y) => w.Claimed(x, y) && w.Grid[y, x] == null && !w.IsSolid(x, y)
+                && w.QuarryReach(QuarryAt(x, y)) is var r && r.Dig == 0 && r.Locked == 0 && r.Pits == 0);
+            Assert.IsNotNull(t, "some open ground has no rock within reach");
             var q = QuarryAt(t.Value.x, t.Value.y);
-            foreach (var (i, j) in Enumerable.Range(0, N * N).Select(k => (k % N, k / N))) if (w.ZoneMap[j, i] == Zone.Mine) w.ZoneMap[j, i] = Zone.None;
             StringAssert.Contains("Nothing to quarry", w.QuarryStatus(q));
+        }
+
+        [Test]
+        public void UnzonedRockInTheAutomaticAreaIsDiggable()
+        {
+            var w = new World(7); w.ClaimAll();
+            var t = Find(w, (x, y) => w.DecoMap[y, x] == Deco.Rock && !w.IsMountain(x, y) && w.RockLeft(x, y) > 0 && w.RockOpen(x, y) && w.ZoneMap[y, x] == Zone.None);
+            Assert.IsNotNull(t);
+            var q = QuarryAt(t.Value.x - 3, t.Value.y);
+            Assert.AreEqual(World.QuarryTile.Dig, w.QuarryTileFor(q, t.Value.x, t.Value.y), "no painted zone is needed");
+            StringAssert.Contains("automatic", w.QuarryStatus(q));
         }
 
         [Test]
         public void ZonedMountainInteriorIsLockedUntilTheEdgeIsCut()
         {
-            var w = new World(7);
+            var w = new World(7); w.ClaimAll();
             var t = Find(w, (x, y) => w.IsMountain(x, y) && w.RockLeft(x, y) > 0 && !w.RockOpen(x, y));
             if (t == null) Assert.Inconclusive("this seed has no mountain tile fully inside a range");
             var (x, y) = t.Value;
@@ -59,7 +70,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void DugPitsAreCounted()
         {
-            var w = new World(7);
+            var w = new World(7); w.ClaimAll();
             var t = Find(w, (x, y) => w.DecoMap[y, x] == Deco.Rock && !w.IsMountain(x, y));
             Assert.IsNotNull(t);
             var (x, y) = t.Value;

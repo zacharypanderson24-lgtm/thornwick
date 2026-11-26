@@ -111,7 +111,7 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void ALodgeNeedsOnlyAsManyWoodcuttersAsThereAreMarkedTrees()
+        public void ALodgeNeedsOnlyAsManyWoodcuttersAsThereAreTreesInItsBoundary()
         {
             var w = new World(7); w.ClaimAll();   // these tests build far from the town
             var site = AllTiles().Where(t => Math.Abs(t.x - C) + Math.Abs(t.y - C) is > 14 and < 30 && Gentle(w, t.x, t.y, 12)).OrderBy(t => Math.Abs(t.x - C) + Math.Abs(t.y - C)).FirstOrDefault();
@@ -120,7 +120,9 @@ namespace CrownAndHearth.Tests
             Road(w, World.LPath(C, C + 7, site.x, site.y + 2));
             Assume.That(lodge.Served);
             Assert.AreEqual(3, lodge.Jobs);
-            Assert.AreEqual(0, w.ActiveJobs(lodge), "nothing marked: nobody needed");
+            for (int j = site.y - Defs.WorkR - 2; j <= site.y + 2 + Defs.WorkR; j++) for (int i = site.x - Defs.WorkR - 2; i <= site.x + 2 + Defs.WorkR; i++) if (World.Inb(i, j) && w.HasTree(i, j)) w.DecoMap[j, i] = Deco.None;
+            w.Touch(); w.Recalc();
+            Assert.AreEqual(0, w.ActiveJobs(lodge), "no trees in reach: nobody needed");
             var trees = new List<(int x, int y)>();
             for (int i = 0; i < 5; i++) trees.Add((site.x + 10, site.y - 3 + i));
             for (int n = 1; n <= 5; n++)
@@ -158,19 +160,19 @@ namespace CrownAndHearth.Tests
         }
 
         [Test]
-        public void AQuarryAndAMineNeedWorkersOnlyWhereTilesAreZoned()
+        public void AQuarryNeedsWorkersForTheRockInItsAreaAndAPaintedBoundaryNarrowsIt()
         {
             var w = new World(7); w.ClaimAll();   // these tests build far from the town
             // a quarry beside rock: zone one rock tile, then none
             var rockSite = AllTiles().Where(t => w.DecoMap[t.y, t.x] == Deco.Rock && !w.IsMountain(t.x, t.y) && w.RockWorkable(t.x, t.y)).FirstOrDefault();
             Assume.That(rockSite.x > 0, "an outcrop");
-            var spot = AllTiles().Where(t => w.CanPlace("quarry", t.x, t.y).Ok && Math.Max(Math.Abs(t.x - rockSite.x), Math.Abs(t.y - rockSite.y)) is > 3 and < 10)
+            var spot = AllTiles().Where(t => w.CanPlace("quarry", t.x, t.y).Ok && Math.Max(Math.Abs(t.x - rockSite.x), Math.Abs(t.y - rockSite.y)) is > 3 and < 8)
                 .OrderBy(t => Math.Max(Math.Abs(t.x - rockSite.x), Math.Abs(t.y - rockSite.y))).FirstOrDefault();
             Assume.That(spot.x > 0);
             var quarry = w.AddBld("quarry", spot.x, spot.y, 2); w.Recalc();
-            Assert.AreEqual(0, w.ActiveJobs(quarry), "no Mining zone, no quarrymen needed");
+            Assert.Greater(w.ActiveJobs(quarry), 0, "rock within its automatic area needs quarrymen with no zone painted");
             w.ZoneMap[rockSite.y, rockSite.x] = Zone.Mine; w.Touch(); w.Recalc();
-            Assert.AreEqual(1, w.ActiveJobs(quarry), "one zoned rock tile, 3-10 tiles away, needs one quarryman");
+            Assert.AreEqual(1, w.ActiveJobs(quarry), "a painted boundary of one rock tile, 3-8 tiles away, needs one quarryman");
         }
 
         [Test]

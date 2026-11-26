@@ -103,6 +103,7 @@ namespace CrownAndHearth.Sim
                 if (!NearOpenWater(fp, 3, WaterDepth.Medium)) return Result.No("A boatyard must stand on the shore with water deep enough for boats (medium or deep) within three tiles, so boats can be launched");
                 if (!NextToRoad(fp)) return Result.No("A boatyard must touch a road: its craftsmen and timber come by road");
             }
+            if (type == "quarry" && SurveyQuarrySite(x, y, fp.Sz).Level == SiteLevel.Invalid) return Result.No(SurveyQuarrySite(x, y, fp.Sz).Notes[0]);
             if (type == "mine" && SurveyMineSite(x, y, fp.Sz).Level == SiteLevel.Invalid) return Result.No(SurveyMineSite(x, y, fp.Sz).Notes[0]);
             if (type == "market" && !NextToRoad(fp)) return Result.No("Markets must touch a road");
             if (type == "smithery" && !NextToRoad(fp)) return Result.No("Smithery must touch a road");
