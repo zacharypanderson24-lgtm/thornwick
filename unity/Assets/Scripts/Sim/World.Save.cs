@@ -65,6 +65,8 @@ namespace CrownAndHearth.Sim
                 ["sownFields"] = JObject.FromObject(_sownFields), ["flaxFields"] = JObject.FromObject(FlaxFields), ["rockAmt"] = JObject.FromObject(RockAmtMap), ["elev"] = JObject.FromObject(Elev),
                 ["stumpT"] = JObject.FromObject(StumpT), ["sapT"] = JObject.FromObject(SapT),
                 ["chop"] = JObject.FromObject(Chop), ["dig"] = JObject.FromObject(Dig),
+                ["clearProgress"] = JObject.FromObject(ClearProgress), ["clearedTiles"] = ClearedTiles, ["clearedLogs"] = ClearedLogs, ["clearedStone"] = ClearedStone,
+                ["pendingBuilds"] = new JArray(Pending.Select(p => new JObject { ["t"] = p.Type, ["x"] = p.X, ["y"] = p.Y, ["path"] = p.Path == null ? null : new JArray(p.Path) })),
                 ["protectedWood"] = new JArray(ProtectedWood.OrderBy(k => k)), ["replant"] = new JArray(Replant.OrderBy(k => k)), ["clearOrders"] = new JArray(ClearOrders.OrderBy(k => k)),   // World.Forestry.cs
                 ["oreLeft"] = JObject.FromObject(OreLeftMap),
                 // land ownership (World.Claims.cs): the parcels you own, by index
@@ -175,6 +177,17 @@ namespace CrownAndHearth.Sim
             ReadTiles(save["chop"], world.Chop, size, offset);
             ReadTiles(save["dig"], world.Dig, size, offset);
             ReadTiles(save["oreLeft"], world.OreLeftMap, size, offset);
+            ReadTiles(save["clearProgress"], world.ClearProgress, size, offset);
+            world.ClearedTiles = save.Value<int?>("clearedTiles") ?? 0; world.ClearedLogs = save.Value<int?>("clearedLogs") ?? 0; world.ClearedStone = save.Value<int?>("clearedStone") ?? 0;
+            if (save["pendingBuilds"] is JArray pend)
+                foreach (var pt in pend)
+                {
+                    string ptype = pt.Value<string>("t"); int px = pt.Value<int>("x"), py = pt.Value<int>("y");
+                    if (ptype == null || !Names.ContainsKey(ptype) || px < 0 || py < 0 || px >= size || py >= size) throw new InvalidDataException("Invalid planned building in settlement save.");
+                    var pb = new PendingBuild { Type = ptype, X = px + offset, Y = py + offset };
+                    if (pt["path"] is JArray pp) { pb.Path = new List<int>(); foreach (var pk in pp) { int k = pk.Value<int>(); if (k < 0 || k >= size * size) throw new InvalidDataException("Invalid planned road in settlement save."); pb.Path.Add(Tk(k % size + offset, k / size + offset)); } }
+                    world.Pending.Add(pb);
+                }
             ReadSet(save["protectedWood"], world.ProtectedWood, size, offset);
             ReadSet(save["replant"], world.Replant, size, offset);
             ReadSet(save["clearOrders"], world.ClearOrders, size, offset);

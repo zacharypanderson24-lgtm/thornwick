@@ -69,7 +69,7 @@ namespace CrownAndHearth.Sim
             return Result.Yes();
         }
 
-        public Result CanPlace(string type, int x, int y)
+        public Result CanPlace(string type, int x, int y, bool ignoreTrees = false)   // ignoreTrees: the tiles that only trees block (World.Clearing.cs plans their clearing)
         {
             if (type == "well" && AquiferAt(x, y) < 0) return Result.No("No groundwater here. Wells go on the blue patches");
             var fp = new Building { T = type, X = x, Y = y, Sz = PlacementSize(type) };
@@ -79,7 +79,7 @@ namespace CrownAndHearth.Sim
                 if (!Claimed(tx, ty)) return Result.No(NotYours);
                 if (Grid[ty, tx] != null) return Result.No("That tile is already built on");
                 if (PenAt(tx, ty) != null) return Result.No("Remove the livestock pen first");
-                if (HasTree(tx, ty)) return Result.No(TreeMsg);
+                if (!ignoreTrees && HasTree(tx, ty)) return Result.No(TreeMsg);
                 if (WaterBlock(tx, ty, true) is string wet) return Result.No(wet);
                 if (CanalBlock(tx, ty) is string ditch) return Result.No(ditch);
                 if (MoatBlock(tx, ty) is string moatMsg) return Result.No(moatMsg);
@@ -165,7 +165,7 @@ namespace CrownAndHearth.Sim
         }
 
         // ---------- Roads ----------
-        public Result RoadPathCheck(IList<(int x, int y)> path)
+        public Result RoadPathCheck(IList<(int x, int y)> path, bool ignoreTrees = false)
         {
             int n = 0;
             foreach (var (x, y) in path)
@@ -176,7 +176,7 @@ namespace CrownAndHearth.Sim
                 if (g != null && g.T == "road") continue;
                 if (g != null) return Result.No("A building is in the way", n);
                 if (PenAt(x, y) != null) return Result.No("A livestock pen is in the way", n);
-                if (HasTree(x, y)) return Result.No(TreeMsg, n);
+                if (!ignoreTrees && HasTree(x, y)) return Result.No(TreeMsg, n);
                 if (WaterBlock(x, y, false) is string wet) return Result.No(wet + ". Roads need a bridge to cross water", n);
                 if (CanalBlock(x, y) is string ditch) return Result.No(ditch, n);
                 if (IsSolid(x, y) && !IsMoat(x, y)) return Result.No("A mountain, a quarry pit, ore or ground too steep to build on is in the way. Route around it", n);   // a moat is crossed on a causeway

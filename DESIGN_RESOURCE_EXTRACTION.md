@@ -58,7 +58,7 @@ Read from the code, not from older notes.
 | 3 | Quarry auto area and optional boundary (also: lodges match trees without a zone) | done |
 | 4 | Forestry modes, replanting, protected woodland | done |
 | 5 | Timber chain (status, warnings, chain list) | done |
-| 6 | Universal land clearing | |
+| 6 | Universal land clearing | done |
 | 7 | Catalogue, overlays, inspectors, warnings | |
 | 8 | Save migration | |
 | 9 | Balance and performance | |
@@ -111,3 +111,13 @@ The chain already conserved resources; this phase makes it readable and checks i
 - **Warnings** (`BuildingWarnings`, `ProductionWarning`): for lodges, quarries, mines, sawmills and clamps. Each has a title, what is happening, why, and the recommended action, from real state (not connected, no logs, limited sustainable production, out of ore, restricted extraction, store full, and so on). The inspector prints them.
 - **Tests** (`TimberChainTests`): a sawmill and the Town Hall consume exactly what they saw and give one plank per log / half a plank per log; no logs, no planks; charcoal costs exactly 2 logs; an unconnected building says to build a road; the chain lists only what exists.
 - Not done: a build-catalogue link from a warning (phase 7).
+
+## 8. Phase 6: land clearing (built)
+
+- **Orders** (`ClearOrders`, saved): designate trees, saplings, stumps and outcrop rocks (rock with `RockAmt` below 3 and no pit). `ObstacleAt` says what a tile holds; `WhyNotClearable` explains every refusal (building, mountain, quarry pit, not yours, nothing there). Clearing **never touches a building**: demolition stays a separate tool.
+- **Work**: each day up to `ClearCrewMax` (6) **idle villagers** (the real `D.Idle`) take one order each; a tile takes `ClearDays` worker-days (tree 6, sapling 1, stump 2, rock 8). With no idle villagers nothing is cleared. A lodge in Land clearing mode (phase 4) works the same orders with walking crews; a tree a woodcutter is on is skipped by the labourers (one crew per tree). Progress is saved (`ClearProgress`).
+- **Recovery, once**: a tree gives `LogsFromClearing` (12 logs; a lodge crew's full felling gives 24: hacking a tree down by hand wastes half), a sapling 2, a stump 1, an outcrop up to `RockRecovery` (8) stone. Totals are saved (`ClearedTiles/Logs/Stone`). A cleared tile is bare ground: its rock or tree is gone, so no quarry or lodge can take it again. Tests check log conservation through the Town Hall's saw.
+- **Unreachable orders** (no walkable way to a road or the Town Hall within `ClearReachSteps` 24) are skipped and dropped after `StuckDays` 30 with a message, so they never hold workers for ever.
+- **Building through woodland** (`PlanPlacement`, `PlaceWithClearing`, `PlaceRoadWithClearing`): three states, Valid now, Valid after clearing (amber in the preview), Invalid. The clearing is queued as orders and the building or road (`Pending`, saved) is placed when the ground is clear; the cost is paid at placement, and it waits if the town cannot pay. A second plan on the same ground is refused. Protected trees need explicit confirmation (the game asks).
+- **Not modelled**: bushes (the game has no bush objects). Listed as a gap rather than invented.
+- Tests: `ClearingTests` (12).
