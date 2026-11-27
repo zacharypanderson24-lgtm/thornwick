@@ -168,7 +168,7 @@ namespace CrownAndHearth.Sim
 
         public LodgeSite SurveyLodgeSite(int x, int y, int size = 2)
         {
-            var fp = new Building { T = "wood", X = x, Y = y, Sz = size };
+            var fp = new Building { T = "wood", X = x, Y = y, Sz = size, Organic = OrganicHere("wood", x, y) };
             var f = ForestAround(fp);
             var s = new LodgeSite { Mature = f.Mature, Saplings = f.Saplings, ProtectedTrees = f.ProtectedTrees, OpenLand = f.OpenLand };
             foreach (var o in Blds) if (o.T == "wood" && Math.Abs(o.X - x) <= 2 * WorkR && Math.Abs(o.Y - y) <= 2 * WorkR) s.OverlappingLodges++;

@@ -9,7 +9,7 @@ namespace CrownAndHearth.Tests
     {
         /// <summary>A new road spur of `len` tiles leading away from the town over free ground, and a strip of free, claimed ground of `depth` tiles along one side.
         /// Returns the spur's start, its direction and the sideways direction. Everything here is test scenery built through the normal world calls.</summary>
-        static (int x, int y, int dx, int dy, int px, int py) Spur(World w, int len = 10, int depth = 6)
+        internal static (int x, int y, int dx, int dy, int px, int py) Spur(World w, int len = 10, int depth = 6)
         {
             foreach (var road in w.Blds.Where(b => b.T == "road" && b.Served).OrderBy(b => b.Y).ThenBy(b => b.X).ToList())
                 for (int k = 0; k < 4; k++)
@@ -58,7 +58,7 @@ namespace CrownAndHearth.Tests
             w.Touch();
         }
 
-        static World Town()
+        internal static World Town()
         {
             var w = new World(7);
             w.ResAmt[Res.Food] = 3000; w.ResAmt[Res.Wood] = 400; w.ResAmt[Res.Stone] = 100;
@@ -69,7 +69,7 @@ namespace CrownAndHearth.Tests
         /// <summary>Fertility is derived from the land and the water; the test scenery asserts it again each day so the fields stay fields.</summary>
         static void KeepFertile(World w) { for (int y = 0; y < Defs.N; y++) for (int x = 0; x < Defs.N; x++) if (w.ZoneMap[y, x] == Zone.Farm) w.Fert[y, x] = true; }
 
-        static void Run(World w, int days)
+        internal static void Run(World w, int days)
         {
             for (int i = 0; i < days; i++) { w.ResAmt[Res.Food] = System.Math.Max(w.ResAmt[Res.Food], 2000); KeepFertile(w); w.Tick(); }
         }

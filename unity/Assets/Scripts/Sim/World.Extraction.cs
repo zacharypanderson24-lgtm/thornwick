@@ -23,7 +23,7 @@ namespace CrownAndHearth.Sim
         public bool UsesZone(Building b, Zone zone)
         {
             if (_usesZoneVersion != Version) { _usesZone.Clear(); _usesZoneVersion = Version; }
-            if (zone == Zone.Wood && b.T == "wood" && b.Organic) return false;   // a district lodge follows the sustainable rules, never the painted-boundary felling order
+            if (b.Organic && ((zone == Zone.Wood && b.T == "wood") || (zone == Zone.Mine && (b.T == "quarry" || b.T == "mine")))) return false;   // a district building follows its district's rules, never the painted-boundary ones
             if (_usesZone.TryGetValue((b.X, b.Y, b.Sz, zone), out bool known)) return known;
             bool any = false;
             for (int j = Math.Max(0, b.Y - WorkR); j <= Math.Min(N - 1, b.Y + b.Sz - 1 + WorkR) && !any; j++)
@@ -38,7 +38,8 @@ namespace CrownAndHearth.Sim
         public bool InWorkArea(Building b, Zone zone, int x, int y)
         {
             if (!Inb(x, y) || !InReach(b, x, y)) return false;
-            if (zone == Zone.Wood && b.T == "wood" && b.Organic) return ZoneMap[y, x] == Zone.Wood;   // its permitted area: the Forestry district tiles in reach
+            if (b.Organic && zone == Zone.Wood && b.T == "wood") return ZoneMap[y, x] == Zone.Wood;   // its permitted area: the Forestry district tiles in reach
+            if (b.Organic && zone == Zone.Mine && b.T == "quarry") return ZoneMap[y, x] == Zone.Quarry;   // a district quarry digs only its Quarrying district
             if (UsesZone(b, zone)) return ZoneMap[y, x] == zone;
             return ZoneMap[y, x] == Zone.None && RectDist(b, x, y) <= AutoRadius(b);
         }
@@ -75,7 +76,7 @@ namespace CrownAndHearth.Sim
         public MineSite SurveyMineSite(int x, int y, int size = 2)
         {
             var s = new MineSite();
-            var fp = new Building { T = "mine", X = x, Y = y, Sz = size };
+            var fp = new Building { T = "mine", X = x, Y = y, Sz = size, Organic = OrganicHere("mine", x, y) };
             double byBand1 = 0, byBand2 = 0, byBand3 = 0;
             for (int j = y - WorkR; j <= y + size - 1 + WorkR; j++)
                 for (int i = x - WorkR; i <= x + size - 1 + WorkR; i++)

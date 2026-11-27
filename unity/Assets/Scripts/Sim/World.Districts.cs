@@ -26,6 +26,7 @@ namespace CrownAndHearth.Sim
         readonly Dictionary<int, District> _districtById = new Dictionary<int, District>();
         int[] _districtMap = new int[N * N];   // tile -> district id (0 = none)
         int _nextDistrictId = 1, _districtVersion = -1;
+        bool _migratingDistricts;   // the first rebuild after loading a save that has no districts: zones from before districts start Paused (except housing)
 
         // ---------- Kinds ----------
         /// <summary>The district type a zone belongs to (both housing levels are Residential); null for zones that are not districts (commerce, livestock pens).</summary>
@@ -176,7 +177,11 @@ namespace CrownAndHearth.Sim
                         d.Priority = parent.Priority; d.Mode = parent.Mode; d.Limits = parent.Limits.Copy();
                         AddHistory(d, $"Day {Day}: split from {parent.Name}");
                     }
-                    else AddHistory(d, $"Day {Day}: zoned");
+                    else
+                    {
+                        AddHistory(d, $"Day {Day}: zoned");
+                        if (_migratingDistricts && d.Type != DistrictType.Residential) { d.Mode = DevMode.Paused; AddHistory(d, "Migrated from an older save: development paused until you set it to Automatic"); }
+                    }
                 }
                 d.Tiles.Clear(); d.Tiles.AddRange(comps[c].tiles);
                 foreach (int k in d.Tiles) map[k] = d.Id;
@@ -193,7 +198,7 @@ namespace CrownAndHearth.Sim
             }
             foreach (var d in _districts) { d.OpenTiles = d.Tiles.Count(k => Grid[k / N, k % N] == null); }
             NameDistricts();
-            _districtVersion = Version;
+            _districtVersion = Version; _migratingDistricts = false;
         }
 
         static void AddHistory(District d, string text)
@@ -393,7 +398,7 @@ namespace CrownAndHearth.Sim
         void LoadDistricts(JObject o, int size, int offset)
         {
             _districts.Clear(); _districtById.Clear(); _districtMap = new int[N * N]; _nextDistrictId = 1; _districtVersion = -1;
-            if (o == null) return;
+            if (o == null) { _migratingDistricts = true; return; }
             int maxId = 0;
             foreach (var j in (o["list"] as JArray) ?? new JArray())
             {

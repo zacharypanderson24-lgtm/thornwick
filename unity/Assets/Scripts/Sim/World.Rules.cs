@@ -120,7 +120,7 @@ namespace CrownAndHearth.Sim
             if (!c.Ok) return c;
             foreach (var kv in CostOf(type, PlacementSize(type))) ResAmt[kv.Key] -= kv.Value;
             var placed = AddBld(type, x, y, PlacementSize(type));
-            if (type == "wood" && DistrictAt(x, y)?.Type == DistrictType.Forestry) placed.Organic = true;   // manual lodges inside a Forestry district follow the same rules as built ones
+            if (OrganicHere(type, x, y)) placed.Organic = true;   // lodges, quarries and mines placed in or beside their own district follow the same rules as built ones
             Recalc();
             return Result.Yes();
         }

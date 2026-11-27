@@ -130,7 +130,7 @@ namespace CrownAndHearth.Sim
         {
             if (!Inb(x, y) || !InReach(b, x, y) || !Claimed(x, y)) return false;
             if (UsesZone(b, Zone.Mine)) return ZoneMap[y, x] == Zone.Mine;
-            if (ZoneMap[y, x] != Zone.None) return false;
+            if (ZoneMap[y, x] != Zone.None && !(b.Organic && ZoneMap[y, x] == Zone.Mine)) return false;   // a district mine may use its own district's ground, never other land use
             if (_genLevel[Tk(x, y)] < 0.5 && MCheb(x, y, b.X + (b.Sz - 1) / 2, b.Y + (b.Sz - 1) / 2) > b.Sz + 1) return false;
             return ZoneCheck(Zone.Mine, x, y).Ok;
         }
