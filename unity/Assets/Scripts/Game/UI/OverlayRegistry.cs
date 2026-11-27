@@ -6,7 +6,7 @@ using CrownAndHearth.Sim;
 
 namespace CrownAndHearth.Game.UI
 {
-    public enum OverlayId { None, Underground, Water, Fertility, Sailing, Forest, Workers, Food, Trade, Military, Danger }
+    public enum OverlayId { None, Underground, Water, Fertility, Sailing, Forest, Workers, Food, Trade, Military, Danger, Stone, Game, Fishing, Districts }
 
     public sealed class OverlayDef
     {
@@ -29,6 +29,12 @@ namespace CrownAndHearth.Game.UI
             new OverlayDef { Id = OverlayId.Food, Title = "Food sources", Hint = "Farms, hunting, fishing and stores, and Farmland waiting for a farmhouse" },
             new OverlayDef { Id = OverlayId.Trade, Title = "Trade", Hint = "Markets, ports and storehouses, and the roads caravans use" },
             new OverlayDef { Id = OverlayId.Military, Title = "Military reach", Hint = "Barracks, muster grounds and how far watchtowers see" },
+            new OverlayDef { Id = OverlayId.Stone, Title = "Surface stone", Hint = "Rock you can quarry (orange: more stone left), locked mountain rock (grey), protected land (blue)" },
+            new OverlayDef { Id = OverlayId.Game, Title = "Hunting grounds", Hint = "Woodland with game (greener: more left to hunt), protected woodland (blue)" },
+            new OverlayDef { Id = OverlayId.Fishing, Title = "Fishing waters", Hint = "Water a hut can fish (bluer: more fish left) and the shore beside it",
+                LockedReason = w => w.Waters == null ? "Fishing waters: this world has no surface water." : null },
+            new OverlayDef { Id = OverlayId.Districts, Title = "Districts", Hint = "Every district by kind, and where something is being built or cleared",
+                LockedReason = w => w.Districts.Count == 0 ? "Districts: zone some land first (open the Build catalogue, Zoning)." : null },
             new OverlayDef { Id = OverlayId.Danger, Title = "Danger", Hint = "The edges raiders come from, and your walls and towers",
                 LockedReason = w => !w.LiveCamps.Any() ? "Danger: no raider camps are known in this world." : null },
         };
@@ -41,6 +47,12 @@ namespace CrownAndHearth.Game.UI
             switch (toolId)
             {
                 case "farmhouse": case "zoneFarm": case "canal": id = OverlayId.Fertility; break;
+                case "zoneRes": case "zoneRes2": id = OverlayId.Water; break;   // roads and services: the roads water travels and homes short of it
+                case "zoneWood": id = OverlayId.Forest; break;
+                case "zoneMine": id = OverlayId.Underground; break;
+                case "zoneQuarry": id = OverlayId.Stone; break;
+                case "zoneHunt": id = OverlayId.Game; break;
+                case "zoneFish": id = OverlayId.Fishing; break;
                 case "well": case "cistern": id = OverlayId.Water; break;
                 case "mine": id = OverlayId.Underground; break;
                 case "lodge": case "forester": case "clearLand": case "protectWood": case "unprotectWood": id = OverlayId.Forest; break;

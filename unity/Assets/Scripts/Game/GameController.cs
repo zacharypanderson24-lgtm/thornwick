@@ -57,8 +57,8 @@ namespace CrownAndHearth.Game
                 Desc = $"Drag over land to mark it for stone houses. They grow the same way, but each costs {House2Cost[Res.Wood]} wood and {House2Cost[Res.Stone]} stone, and holds {HouseCap[2]} people. Growth waits when the town is short of stone." },
             new ToolDef { Id = "farmhouse", Cat = Cat.Farming, Label = "Farmhouse", Build = "farm",
                 Desc = $"Works the Farmland within {World.FarmReach} tiles (the shaded ring), nearest first. Each farmer sows, tends and reaps {World.FieldsPerFarmer} fields a year, enough to feed about 10 people; its jobs are how many farmers it can have. Needs a road to the Town Hall." },
-            new ToolDef { Id = "zoneFarm", Cat = Cat.Farming, Label = "Farmland", Zone = Zone.Farm,
-                Desc = $"Drag over fertile land within {World.FarmReach} tiles of a farmhouse (shaded). Farmland out of reach lies fallow. Set the wheat and flax percentages in the Farming menu above the build bar." },
+            new ToolDef { Id = "zoneFarm", Cat = Cat.Farming, Label = "Agriculture Zone", Zone = Zone.Farm,
+                Desc = $"Farmhouses are built beside the road when the fields need workers. Needs: fertile, watered ground that is not too dry, and a connected road. Gives: wheat and flax (set the percentages in the Farming menu), about {World.FieldsPerFarmer} fields a farmer. Behaviour: the first farmhouse comes when {World.FirstFarmMinFields} open fields are not yet worked; more only when every farm is staffed and food is short. Limits: a farmhouse works fields within {World.FarmReach} tiles; farmhouses never cover the fields if the road side is free." },
             new ToolDef { Id = "silo", Cat = Cat.Farming, Label = "Silo", Build = "silo",
                 Desc = $"Stores {World.SiloFood} more wheat and {World.SiloFlax} more flax. Needs a road to the Town Hall." },
             new ToolDef { Id = "pigPen", Cat = Cat.Farming, Label = "Pig Pen", Zone = Zone.Pigs,
@@ -69,8 +69,8 @@ namespace CrownAndHearth.Game
                 Desc = "Drag a fenced pen on level ground beside a connected road. Chickens need 1 tile each and eat wheat." },
             new ToolDef { Id = "lodge", Cat = Cat.Forestry, Label = "Woodcutter Lodge", Build = "wood",
                 Desc = $"Woodcutters fell the mature trees within {WorkR} tiles by themselves: no zone to paint. Click a lodge with Inspect to set its mode: Sustainable (the default) replants and always leaves {World.SustainFloor} trees standing, Intensive fells fast and strips the area, Land clearing works only land you mark. Protected woodland is never cut. Needs a road to the Town Hall." },
-            new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Lumber Boundary (optional)", Zone = Zone.Wood,
-                Desc = "Optional. Paint trees to have exactly those felled by a nearby lodge (no standing floor, no replanting). With none painted, a lodge works all the forest in reach, so most players never need this." },
+            new ToolDef { Id = "zoneWood", Cat = Cat.Forestry, Label = "Forestry Zone", Zone = Zone.Wood,
+                Desc = $"Woodcutter lodges are built here and harvest this forest. Needs: forest or open ground, and a connected road. Gives: logs; sawmills turn them into planks. Behaviour: the first lodge needs more than {World.SustainFloor + 6} mature trees; more only when the first is staffed, timber is short and the forest can regrow it; lodges replant what they fell. Limits: sustainable by default (set Intensive in Districts, Y); protected woodland is never cut; trees on a site are cleared by villagers first." },
             new ToolDef { Id = "forester", Cat = Cat.Forestry, Label = "Forester", Build = "forester",
                 Desc = $"An optional improvement: plants saplings on open ground within {World.ForesterAutoR} tiles (or on painted Lumber ground within {ForesterR}), and its care makes nearby trees grow a quarter faster. A sustainable lodge already replants what it fells." },
             new ToolDef { Id = "sawmill", Cat = Cat.Forestry, Label = "Sawmill", Build = "sawmill",
@@ -87,8 +87,14 @@ namespace CrownAndHearth.Game
                 Desc = "Miners dig a tunnel into the hill by themselves and take iron from its walls: no zone to paint. The Underground view opens while you place it and shows the ore in reach. Put it at the foot of high ground with a road in front. Timber props make it safer. The ore is finite and shared by every mine that reaches it." },
             new ToolDef { Id = "smithery", Cat = Cat.Mining, Label = "Smithery", Build = "smithery",
                 Desc = $"Smelts {OrePerMetal} iron ore into 1 metal. Makes up to {SmeltRate} metal a day with a full crew." },
-            new ToolDef { Id = "zoneMine", Cat = Cat.Mining, Label = "Mining Boundary (optional)", Zone = Zone.Mine,
-                Desc = $"Optional. Paint rock or hills to widen a quarry's reach to the full {WorkR} tiles, or to confine a quarry or mine to exactly those tiles. With none painted, they work what is in their automatic area." },
+            new ToolDef { Id = "zoneMine", Cat = Cat.Mining, Label = "Mining Zone", Zone = Zone.Mine,
+                Desc = $"Mines are opened here where ore lies under the ground. Needs: hills or mountains with ore (open the Underground view), a connected road, and a spot whose entrance faces a hill. Gives: iron ore for smitheries. Behaviour: the first mine needs no smithery; more only when every mine is staffed and a smithery needs ore the mines cannot supply. Limits: ore is finite and shared by every mine on the same ground; tunnels never run under other zones. Older Mining zones around quarries stay as they were until you adopt them." },
+            new ToolDef { Id = "zoneQuarry", Cat = Cat.Mining, Label = "Quarrying Zone", Zone = Zone.Quarry,
+                Desc = $"Quarries are built here and dig the surface stone. Needs: rock (outcrops, hills, a mountain's edge) and a connected road. Gives: stone. Behaviour: the first quarry needs {World.FirstQuarryMinDig} workable rock tiles; more only when stone is short and other quarries do not already work that rock. Limits: quarries dig only inside this zone, never protected land or buildings; hills dig down into pits that stay for good; stone never grows back." },
+            new ToolDef { Id = "zoneHunt", Cat = Cat.Hunting, Label = "Hunting Zone", Zone = Zone.Hunt,
+                Desc = $"Hunting lodges are built here beside the woods. Needs: woodland ({World.FirstHuntMinGame}+ tiles of game) and a connected road. Gives: food all year, even in winter. Behaviour: the first lodge comes without a food shortage; more only when food is short and the game can carry them. Limits: game regrows slowly ({World.HuntingRecoveryDays} days a portion) so the district stops adding lodges at what the woods can spare." },
+            new ToolDef { Id = "zoneFish", Cat = Cat.Water, Label = "Fishing Zone", Zone = Zone.Fish,
+                Desc = $"Small fishing huts are built along this shore. Needs: land within {World.FishZoneReach} tiles of a river, lake or the sea, and a connected road. Gives: fish, which spoil unless smoked. Behaviour: the first hut comes without a shortage; more only when food is short and the water's fish stock allows. Limits: a nearly fished-out water is left to recover; docks, ports and boats stay your own choice (Water menu)." },
             new ToolDef { Id = "clearLand", Cat = Cat.Forestry, Label = "Clear Land", LandOp = "clear",
                 Desc = "Drag over trees, saplings, stumps and small rocks to have idle villagers clear them for good; they keep the logs and stone. Buildings, mountains and quarry pits are never touched, and protected woodland asks first. Build on woodland directly and the clearing is arranged for you." },
             new ToolDef { Id = "protectWood", Cat = Cat.Forestry, Label = "Protect Woodland", LandOp = "protect",
@@ -639,6 +645,10 @@ namespace CrownAndHearth.Game
                     break;
                 case CrownAndHearth.Game.UI.OverlayId.Water: DrawWater(null, null); break;
                 case CrownAndHearth.Game.UI.OverlayId.Forest: DrawForest(); break;
+                case CrownAndHearth.Game.UI.OverlayId.Stone: DrawStone(); break;
+                case CrownAndHearth.Game.UI.OverlayId.Game: DrawGame(); break;
+                case CrownAndHearth.Game.UI.OverlayId.Fishing: DrawFishing(); break;
+                case CrownAndHearth.Game.UI.OverlayId.Districts: DrawDistricts(); break;
                 case CrownAndHearth.Game.UI.OverlayId.Fertility:
                     for (int y = 0; y < N; y++) for (int x = 0; x < N; x++)
                         if (w.Fert[y, x] && w.Grid[y, x] == null && !(w.Waters != null && w.Waters.IsWater(x, y))) _overlay.AddTile(w, x, y, _rot, new Color32(150, 230, 90, 90));
@@ -779,6 +789,7 @@ namespace CrownAndHearth.Game
                 }
                 return;
             }
+            if (_tool.Id == "look" && mouse.leftButton.wasPressedThisFrame && _hover.HasValue && !overUi && World.Grid[_hover.Value.y, _hover.Value.x] == null && World.DistrictAt(_hover.Value.x, _hover.Value.y) is District clicked) { _hud.ToggleDistricts(clicked.Id); return; }   // click a zoned tile: open its district
             if (_tool.Id == "look" && mouse.leftButton.wasPressedThisFrame && _hover.HasValue && !overUi && World.Grid[_hover.Value.y, _hover.Value.x]?.T == "wood") { _hud.ShowLodgePanel(World.Grid[_hover.Value.y, _hover.Value.x]); return; }
             if (!mouse.leftButton.isPressed || !_hover.HasValue || overUi) { _lastPaint = null; return; }
             var h = _hover.Value;
@@ -860,8 +871,10 @@ namespace CrownAndHearth.Game
                     int offRoad = fresh.Count(p => World.Grid[p.y, p.x] == null && (World.ZoneMap[p.y, p.x] == Zone.Res || World.ZoneMap[p.y, p.x] == Zone.Res2) && !World.BesideConnectedRoad(p.x, p.y));
                     if (offRoad > 0) msg += $" {offRoad} do not touch a connected road, so homes will not grow there yet.";
                 }
+                else if (fresh.Count > 0 && World.DistrictAt(fresh[0].x, fresh[0].y) is District dz && dz.Type == (World.DistrictTypeOf(_tool.Zone) ?? dz.Type))
+                    msg += $" {dz.Name}: {World.DistrictOutlook(dz)} (Districts, Y)";   // what will happen, in real numbers, right after zoning
             }
-            _hud.Toast(msg, 6);
+            _hud.Toast(msg, 8);
         }
 
         static readonly Color32 Ok = new Color32(120, 255, 120, 110), Bad = new Color32(255, 90, 80, 120), Hover = new Color32(255, 255, 255, 70), Warn = new Color32(255, 200, 70, 120);
@@ -981,7 +994,7 @@ namespace CrownAndHearth.Game
             if (_ugLevel > 0) DrawUnderground();
             else DrawChosenOverlay();
             // zone tools: shade where the buildings that work this zone can reach, so the player knows where to paint
-            if (_tool.Zone == Zone.Wood || _tool.Zone == Zone.Mine || (_tool.Zone == Zone.Farm && World.SeasonalFarming))
+            if (_tool.Zone == Zone.Farm && World.SeasonalFarming)   // (Forestry and Mining zones no longer depend on a building's reach: districts build their own)
             {
                 var seen = new HashSet<int>();
                 foreach (var b in World.Blds) if (Works(_tool.Zone, b.T)) AddReach(b.T, b.X, b.Y, b.Sz, Reach, seen);
@@ -1071,6 +1084,61 @@ namespace CrownAndHearth.Game
                     _overlay.AddTile(w, x, y, _rot, w.IsClearing(x, y) ? Clearing : w.IsProtected(x, y) ? Protected : d == Deco.Tree ? new Color32(60, 170, 70, 105) : d == Deco.Sapling ? new Color32(170, 230, 120, 120) : new Color32(150, 110, 70, 100));
                 }
             foreach (var b in w.Blds) if (b.T == "wood") AddReach("wood", b.X, b.Y, b.Sz, Reach, null);
+        }
+
+        // ---- the zoning overlays (phase 8): real data only ----
+        void DrawStone()
+        {
+            var w = World;
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    if (w.IsProtected(x, y)) { _overlay.AddTile(w, x, y, _rot, new Color32(80, 140, 255, 80)); continue; }
+                    if (w.DecoMap[y, x] != Deco.Rock || w.RockLeft(x, y) <= 0) continue;
+                    if (w.RockWorkable(x, y)) _overlay.AddTile(w, x, y, _rot, new Color32(255, 160, 40, (byte)(60 + 110 * Mathf.Clamp01((float)w.StoneFraction(x, y)))));
+                    else _overlay.AddTile(w, x, y, _rot, new Color32(150, 150, 165, 95));   // locked inside a mountain: it opens as the edge is cut
+                }
+        }
+
+        void DrawGame()
+        {
+            var w = World;
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    if (w.IsProtected(x, y)) { _overlay.AddTile(w, x, y, _rot, new Color32(80, 140, 255, 80)); continue; }
+                    if (w.DecoMap[y, x] != Deco.Tree) continue;
+                    float f = Mathf.Clamp01(w.HuntFoodRemaining(x, y) / (float)World.ForestFoodReserve);
+                    _overlay.AddTile(w, x, y, _rot, new Color32((byte)(200 - 140 * f), (byte)(150 + 80 * f), 70, (byte)(55 + 90 * f)));
+                }
+        }
+
+        void DrawFishing()
+        {
+            var w = World; if (w.Waters == null) return;
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    int i = y * N + x;
+                    if (w.Waters.IsWaterAt(i)) { double s = w.StockOf(w.Waters.Body[i]); _overlay.AddTile(w, x, y, _rot, new Color32((byte)(200 - 150 * s), (byte)(190 - 60 * s), 255, (byte)(60 + 100 * s))); }
+                    else if (w.Grid[y, x] == null && w.NearWater(x, y, 2)) _overlay.AddTile(w, x, y, _rot, new Color32(120, 220, 230, 55));   // the shore a hut can stand on
+                }
+        }
+
+        void DrawDistricts()
+        {
+            var w = World;
+            foreach (var d in w.Districts)
+            {
+                var z = Hud.ZoneColor(World.DefaultZone(d.Type)); byte a = (byte)(d.DevelopmentOn ? 85 : 45);
+                var c = new Color32((byte)(z.r * 255), (byte)(z.g * 255), (byte)(z.b * 255), a);
+                foreach (int k in d.Tiles) _overlay.AddTile(w, k % N, k / N, _rot, c);
+            }
+            foreach (var p in w.OpenProjects)
+            {
+                var c = p.Status == ProjectStatus.Clearing ? new Color32(255, 170, 40, 170) : p.Status == ProjectStatus.Building ? new Color32(255, 240, 90, 170) : new Color32(255, 255, 255, 140);
+                for (int j = 0; j < p.Sz; j++) for (int i = 0; i < p.Sz; i++) _overlay.AddTile(w, p.X + i, p.Y + j, _rot, c);
+            }
         }
 
         static readonly Color32 NetRoad = new Color32(210, 245, 255, 110), HomeShort = new Color32(255, 80, 70, 130);

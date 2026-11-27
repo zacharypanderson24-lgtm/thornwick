@@ -27,7 +27,11 @@ namespace CrownAndHearth.Tests
             CollectionAssert.IsSupersetOf(res, new[] { "lodge", "quarry", "mine", "forester" });
             CollectionAssert.DoesNotContain(res, "zoneWood"); CollectionAssert.DoesNotContain(res, "zoneMine");
             var land = c.In(CatalogueCategory.Land).Select(e => e.Id).ToList();
-            CollectionAssert.IsSupersetOf(land, new[] { "clearLand", "protectWood", "unprotectWood", "zoneWood", "zoneMine" });
+            CollectionAssert.IsSupersetOf(land, new[] { "clearLand", "protectWood", "unprotectWood" });
+            var zoning = c.In(CatalogueCategory.Zoning).Select(e => e.Id).ToList();
+            CollectionAssert.IsSupersetOf(zoning, new[] { "zoneRes", "zoneRes2", "zoneFarm", "zoneWood", "zoneMine", "zoneQuarry", "zoneHunt", "zoneFish" });
+            CollectionAssert.DoesNotContain(land, "zoneWood");
+            Assert.AreEqual(CatalogueCategory.Zoning, c.VisibleCategories()[0], "Zoning is the first section");
             Assert.AreEqual("Land Management", BuildCatalogue.Title(CatalogueCategory.Land));
             CollectionAssert.IsSupersetOf(c.In(CatalogueCategory.Industry).Select(e => e.Id).ToList(), new[] { "sawmill", "charcoal" });
         }
@@ -50,7 +54,7 @@ namespace CrownAndHearth.Tests
                 var t = GameController.Tools.First(x => x.Id == id);
                 StringAssert.Contains("no zone to paint", t.Desc, id);
             }
-            foreach (var id in new[] { "zoneWood", "zoneMine" }) StringAssert.Contains("optional", GameController.Tools.First(x => x.Id == id).Label.ToLower() + " " + GameController.Tools.First(x => x.Id == id).Desc.ToLower());
+            foreach (var id in new[] { "zoneFarm", "zoneWood", "zoneMine", "zoneQuarry", "zoneHunt", "zoneFish" }) { var zt = GameController.Tools.First(x => x.Id == id); foreach (var part in new[] { "Needs:", "Gives:", "Behaviour:", "Limits:" }) StringAssert.Contains(part, zt.Desc, id); }
             foreach (var op in new[] { "clear", "protect", "unprotect" }) Assert.AreEqual(1, GameController.Tools.Count(t => t.LandOp == op), op);
         }
 
