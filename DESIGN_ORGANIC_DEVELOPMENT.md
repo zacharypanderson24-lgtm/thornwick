@@ -1,6 +1,6 @@
 # Organic Settlement Development and Economic Zoning Overhaul
 
-**Status (updated each phase PR):** Phases 1 (audit, document, district framework), 2 (shared engine core), 3 (agricultural and forestry districts) and 4 (mining and quarrying districts) built. Phases 5 to 10 are **planned, not built**.
+**Status (updated each phase PR):** Phases 1 to 5 built (audit and framework, shared engine core, farmland and forestry, mining and quarrying, hunting and fishing). Phases 6 to 10 are **planned, not built**.
 Unity port only; the browser prototype is untouched.
 
 **This document supersedes `DESIGN_RESOURCE_EXTRACTION.md` where they disagree.** That earlier design made forestry, quarrying and mining
@@ -287,7 +287,7 @@ so food and critical services keep their workers), and completes into the existi
 | 2 | Generalised engine core: development queue, reservations, minimal construction, approval flow, reserve; residential preserved on it | **built** (see section 8) |
 | 3 | Agricultural and forestry districts | **built** (see section 9) |
 | 4 | Mining and quarrying districts | **built** (see section 10) |
-| 5 | Hunting and fishing districts | planned |
+| 5 | Hunting and fishing districts | **built** (see section 11) |
 | 6 | District controls and the inspector | planned |
 | 7 | Land clearing and protection | planned |
 | 8 | Catalogue, overlays, demand indicators, feedback | planned |
@@ -333,3 +333,12 @@ player-visible yet except that the three new zone kinds exist in the simulation 
 **Mining district** (the Mining zone): the first mine needs ground beside a connected road whose entrance faces a hill with a connected road in front of it and at least 60 ore in reach (the real survey figure, an estimate for the player); no smithery is needed. More mines need every mine staffed **and** ore demand: smitheries use `SmeltRate x OrePerMetal` ore a day each, and the mines' estimated output must fall short with under 150 ore in store. So a big zone never makes more mines by itself, and a smithery raises the value of expanding. An organic mine chooses its own tunnel in its reach (it ignores the painted-boundary rule, uses its district's ground and never other land use, as before). Ore and stone are per tile and global, so mines and quarries on one formation share the reserve and building one adds none (tested).
 **Legacy and migration:** quarries and mines from older saves are NOT organic: a painted Mining boundary still bounds them. `AdoptLegacy(building)` brings one under the district rules (needs a district of its kind around it); `ConvertMiningRockToQuarrying(district)` moves the open rock tiles of a Mining district to a Quarrying zone (the old painted Mining boundary was also how rock was marked for quarries). Neither is automatic. **Zones from a save made before districts load with their district Paused (housing excepted)**, so loading a game never starts building mines, quarries, lodges or farmhouses on its own; the player (or a governor) sets the district to Automatic. History records "Migrated from an older save".
 **Not built:** technology depth unlocks (nothing limits depth today), more minerals (the ore definition is data-driven), an extraction-intensity setting, surface-rock/ore overlay (Phase 8), the inspector (Phase 6).
+
+## 11. Phase 5 report: hunting and fishing districts (built)
+
+**Code:** `Sim/World.DevFood.cs`. Same engine and gates as the other districts. **Both help the first-year food, so they are not held back while the settlement is starving** (mines and quarries are).
+**Food pressure** (`FoodPressure`, shared with farmland): short when the store holds under 40 days of food, or the year-average production is under 1.1 x eating and the store under 120 days. A big store is never an emergency, but the first lodge or hut of a new district needs no shortage at all (intent).
+**Hunting district** (Hunting zone, forest and open ground): the first lodge needs 12 woodland tiles of game in the district. More lodges need every lodge staffed, food pressure, game not thinning (district stock under half of full reserve stops them) and the grounds' capacity: the game regrows `tiles / HuntingRecoveryDays` food a day and the existing lodges' real `HuntRate` plus the new lodge's must stay under 90% of it ("Hunting grounds at capacity: the game regrows 6.7 food a day, the lodges already take about 4.3"). Sites keep 6 tiles from other lodges. Hunting never creates game (tested).
+**Fishing district** (Fishing zone, within 3 tiles of open water): a hut (1 x 1, 6 wood, 2 build days) goes at a free spot beside a connected road passing the player's own `CanPlace` (shore rule), with at least 3 tiles of water a fisherman can walk to. First hut needs fish stock of at least 0.4 of the original; more need staffed huts, food pressure, stock of 0.6 and the water's capacity: all huts and docks on that body plus the new hut must stay under 1.6 x `SustainableFishPerDay` (regrowth at the half-stock point, where fish breed back fastest). A nearly fished-out water is left to recover ("Fish stock too low: the water is thinning"). Docks, ports and boats stay manual and count toward the body's load.
+**Known limit:** crews choose their game in `World.Crews.cs`, which is not valid UTF-8 and is deliberately left alone, so a hunting lodge still hunts any claimed woodland within its reach (not only its district) and may hunt protected woodland. The district decides where lodges are built and how many the grounds support. Restricting the reach needs that file converted to UTF-8 first (a separate, explicit commit).
+**Not built:** seasonal prediction (it reads the stock now, not next winter), a hunting-pressure map, migration of hand-placed lodges (they count automatically when beside a district).
