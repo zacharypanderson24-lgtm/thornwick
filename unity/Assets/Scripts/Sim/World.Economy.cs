@@ -202,7 +202,7 @@ namespace CrownAndHearth.Sim
             int k = Tk(x, y);
             bool lodge = by != null && by.T == "wood", legacy = lodge && UsesZone(by, Zone.Wood);   // a painted boundary keeps the old rules: no replanting
             DecoMap[y, x] = Deco.Stump;
-            if (!ForesterCovers(x, y)) ZoneMap[y, x] = Zone.None;
+            if (!ForesterCovers(x, y) && !(lodge && by.Organic && ZoneMap[y, x] == Zone.Wood)) ZoneMap[y, x] = Zone.None;   // a district keeps its zone: the lodge replants it
             StumpT[k] = StumpDays; Chop.Remove(k);
             if (lodge && by.Mode == ForestMode.Clearing) ClearOrders.Remove(k);          // cleared for good
             else if (lodge && by.Mode == ForestMode.Sustainable && !legacy) Replant.Add(k);   // replanted once the stump has rotted

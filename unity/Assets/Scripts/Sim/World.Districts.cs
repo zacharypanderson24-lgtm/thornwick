@@ -86,10 +86,26 @@ namespace CrownAndHearth.Sim
         /// see the design document): the engine never counts it toward a district's capacity and never demolishes it.</summary>
         public bool IsLegacyBuilding(Building b)
         {
-            if (b == null || DistrictTypeOfBuilding(b.T) is not DistrictType t) return false;
+            if (b == null || DistrictTypeOfBuilding(b.T) == null) return false;
             EnsureDistricts();
-            foreach (var (x, y) in b.Tiles()) if (Inb(x, y) && _districtById.TryGetValue(_districtMap[Tk(x, y)], out var d) && d.Type == t) return false;
-            return true;
+            return OwnerDistrict(b, _districtMap) == null;
+        }
+
+        /// <summary>The district an ordinary building belongs to: the one of its kind it stands in, else the lowest-numbered one of its kind it touches (a farmhouse
+        /// beside its fields, a lodge at the edge of its forest). Null for a legacy building (stands in or beside none).</summary>
+        District OwnerDistrict(Building b, int[] map)
+        {
+            if (DistrictTypeOfBuilding(b.T) is not DistrictType t) return null;
+            int touching = int.MaxValue;
+            foreach (var (x, y) in b.Tiles())
+                for (int j = -1; j <= 1; j++)
+                    for (int i = -1; i <= 1; i++)
+                    {
+                        if (!Inb(x + i, y + j) || !_districtById.TryGetValue(map[Tk(x + i, y + j)], out var d) || d.Type != t) continue;
+                        if (i == 0 && j == 0) return d;
+                        touching = Math.Min(touching, d.Id);
+                    }
+            return touching == int.MaxValue ? null : _districtById[touching];
         }
 
         public IEnumerable<Building> LegacyBuildings() => Blds.Where(IsLegacyBuilding);
@@ -172,9 +188,8 @@ namespace CrownAndHearth.Sim
             foreach (var d in _districts) { MeasureDistrict(d); d.Buildings.Clear(); d.Jobs = d.Workers = 0; }
             foreach (var b in Blds)
             {
-                if (DistrictTypeOfBuilding(b.T) is not DistrictType t) continue;
-                foreach (var (x, y) in b.Tiles())
-                    if (Inb(x, y) && _districtById.TryGetValue(map[Tk(x, y)], out var d) && d.Type == t) { d.Buildings.Add(b); d.Jobs += b.Jobs; d.Workers += b.Workers; break; }
+                var owner = OwnerDistrict(b, map);
+                if (owner != null) { owner.Buildings.Add(b); owner.Jobs += b.Jobs; owner.Workers += b.Workers; }
             }
             foreach (var d in _districts) { d.OpenTiles = d.Tiles.Count(k => Grid[k / N, k % N] == null); }
             NameDistricts();

@@ -23,6 +23,7 @@ namespace CrownAndHearth.Sim
         public bool UsesZone(Building b, Zone zone)
         {
             if (_usesZoneVersion != Version) { _usesZone.Clear(); _usesZoneVersion = Version; }
+            if (zone == Zone.Wood && b.T == "wood" && b.Organic) return false;   // a district lodge follows the sustainable rules, never the painted-boundary felling order
             if (_usesZone.TryGetValue((b.X, b.Y, b.Sz, zone), out bool known)) return known;
             bool any = false;
             for (int j = Math.Max(0, b.Y - WorkR); j <= Math.Min(N - 1, b.Y + b.Sz - 1 + WorkR) && !any; j++)
@@ -37,6 +38,7 @@ namespace CrownAndHearth.Sim
         public bool InWorkArea(Building b, Zone zone, int x, int y)
         {
             if (!Inb(x, y) || !InReach(b, x, y)) return false;
+            if (zone == Zone.Wood && b.T == "wood" && b.Organic) return ZoneMap[y, x] == Zone.Wood;   // its permitted area: the Forestry district tiles in reach
             if (UsesZone(b, zone)) return ZoneMap[y, x] == zone;
             return ZoneMap[y, x] == Zone.None && RectDist(b, x, y) <= AutoRadius(b);
         }
