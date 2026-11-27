@@ -58,6 +58,8 @@ namespace CrownAndHearth.Game
                     if (bdx == 0 && bdy == 0 && bt.Path.Count > 1) { int ni = Mathf.Min(bt.Path.Count - 1, bt.I + 1); bdx = bt.Path[ni] % N - bt.X; bdy = bt.Path[ni] / N - bt.Y; }
                     int bf = Facing(rot, bdx == 0 && bdy == 0 ? 1 : bdx, bdx == 0 && bdy == 0 ? 0 : bdy);
                     Put(w, rot, BoatArt.Get(bf, (w.Day + bt.Id) % 2), bt.Px, bt.Py, bt.X, bt.Y, frac, 0, 1);
+                    for (int p = 0; p < Mathf.Min(4, bt.Passengers); p++)   // riders aboard a ferry boat
+                        Put(w, rot, _battle.Pose(FolkSprites[(bt.Id + p) % FolkSprites.Length], "idle", bf, w.Day, frac, bt.Id * 5 + p), bt.Px, bt.Py, bt.X, bt.Y, frac, (p - 1) * 4, -2 - (p % 2));
                 }
                 foreach (var v in w.Folk)
                 {
@@ -139,7 +141,7 @@ namespace CrownAndHearth.Game
 
             foreach (var f in raid.Fighters)
             {
-                if (f.St == FighterState.Idle) continue;
+                if (f.St == FighterState.Idle || f.St == FighterState.Crossing) continue;   // on a ferry: out of sight
                 bool dead = f.St == FighterState.Dead;
                 if (dead && w.Day - f.DeadDay > World.BodyDays) continue;
                 bool moving = f.X != f.Px || f.Y != f.Py;

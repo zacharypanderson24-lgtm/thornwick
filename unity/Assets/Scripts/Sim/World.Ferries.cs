@@ -79,7 +79,8 @@ namespace CrownAndHearth.Sim
             Boats.RemoveAll(b => b.Ferry && !running.Any(r => r.Id == b.RouteId));
             foreach (var r in running)
             {
-                if (Boats.Any(b => b.Ferry && b.RouteId == r.Id)) continue;
+                var existing = Boats.FirstOrDefault(b => b.Ferry && b.RouteId == r.Id);
+                if (existing != null) { existing.Passengers = PassengersOn(r); continue; }
                 var (a, partner) = Ends(r);
                 var la = LaunchTile(a); var lb = LaunchTile(partner); if (!la.HasValue || !lb.HasValue) continue;
                 var path = BoatRoute(la.Value, lb.Value); if (path == null) continue;

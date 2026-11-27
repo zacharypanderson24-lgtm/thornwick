@@ -39,7 +39,7 @@ namespace CrownAndHearth.Sim
         public readonly List<int> Path = new List<int>();   // the way in, walked back when fleeing
     }
 
-    public enum FighterState : byte { Idle, Engage, Return, Dead }
+    public enum FighterState : byte { Idle, Engage, Return, Dead, Crossing }   // Crossing: on a ferry (World.FerryCrossings.cs)
 
     /// <summary>One soldier during a raid: marches out from its post, fights, and marches home.</summary>
     public sealed class Fighter
@@ -51,6 +51,7 @@ namespace CrownAndHearth.Sim
         public double Hp;
         public Raider Target;
         public bool Hurt, Attacked, Shooting;   // took a hit / swung / loosed an arrow today
+        public int CrossDay, CrossX, CrossY, CrossRoute;   // while Crossing: the day he lands, where, and on which ferry route
     }
 
     public sealed class RaidReport
@@ -478,6 +479,11 @@ namespace CrownAndHearth.Sim
             {
                 if (f.St == FighterState.Dead) continue;
                 f.Px = f.X; f.Py = f.Y; f.Hurt = f.Attacked = f.Shooting = false;
+                if (f.St == FighterState.Crossing)
+                {
+                    if (Day < f.CrossDay) continue;   // still on the water
+                    f.X = f.CrossX; f.Y = f.CrossY; f.Px = f.X; f.Py = f.Y; f.St = FighterState.Engage;   // landed: he picks his target (or goes home) again
+                }
                 // pick a target: the nearest raider (those carrying loot count as nearer) inside the alert area of the post, or the current one while it stays in reach
                 if (f.Target != null && (!RaiderLive(f.Target) || (!r.Alarm && Cheb(f.Post.X, f.Post.Y, f.Target.X, f.Target.Y) > ChaseR))) f.Target = null;
                 if (f.Target == null && live.Count > 0)
@@ -518,6 +524,7 @@ namespace CrownAndHearth.Sim
                     int want = f.Kind == Troop.Archer ? ArcherRange - 1 : 1;
                     var field = FieldOf(t);
                     for (int s = 0; s < FighterSpeed && Cheb(f.X, f.Y, t.X, t.Y) > want; s++) if (!StepDown(f, field)) break;
+                    if (field[f.Y * N + f.X] < 0 && Cheb(f.X, f.Y, t.X, t.Y) > want && TryFerryHop(f, t.X, t.Y)) continue;   // water between him and the raider: a ferry, if there is one
                     int range = f.Kind == Troop.Archer ? ArcherRange : 1;
                     // a sword needs to reach (no palisade between, World.Walls.cs); arrows arc over the palisade
                     if (Cheb(f.X, f.Y, t.X, t.Y) <= range && (f.Kind == Troop.Archer || MeleeReach(f.X, f.Y, t.X, t.Y)))
@@ -530,6 +537,7 @@ namespace CrownAndHearth.Sim
                 else if (f.St == FighterState.Return)
                 {
                     var home = RaidField(r, f.Post);
+                    if (home[f.Y * N + f.X] < 0) { var (hx, hy) = StandBeside(f.Post); if (TryFerryHop(f, hx, hy)) continue; }   // the barracks is across the water
                     for (int s = 0; s < FighterSpeed; s++) { if (home[f.Y * N + f.X] <= 1) break; if (!StepDown(f, home)) break; }
                     if (home[f.Y * N + f.X] <= 1) { var (sx, sy) = StandBeside(f.Post); f.X = sx; f.Y = sy; f.St = FighterState.Idle; }
                 }
@@ -541,7 +549,7 @@ namespace CrownAndHearth.Sim
                 Fighter near = null; int nd = int.MaxValue;
                 foreach (var f in r.Fighters)
                 {
-                    if (f.St == FighterState.Dead || f.St == FighterState.Idle) continue;
+                    if (f.St == FighterState.Dead || f.St == FighterState.Idle || f.St == FighterState.Crossing) continue;
                     int d = Cheb(f.X, f.Y, a.X, a.Y); if (MeleeReach(f.X, f.Y, a.X, a.Y) && (d < nd || (d == nd && f.Id < near.Id))) { near = f; nd = d; }
                 }
                 if (near != null) hitFighter[near] = hitFighter.GetValueOrDefault(near) + RaiderHit;

@@ -19,6 +19,7 @@ namespace CrownAndHearth.Sim
         public Building Home;            // the dock it works from (a ferry boat: the first landing of its ferry)
         public bool Ferry;               // shuttles between two ferry landings instead of fishing
         public int RouteId;              // its ferry route (World.FerryRoutes.cs)
+        public int Passengers;           // people shown aboard a ferry boat (World.FerryCrossings.cs)
         public int LaunchX, LaunchY, Region;
         public BoatState St = BoatState.Moored;
         public int Timer;

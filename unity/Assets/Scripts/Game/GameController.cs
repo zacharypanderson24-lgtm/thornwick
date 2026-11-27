@@ -128,7 +128,7 @@ namespace CrownAndHearth.Game
             new ToolDef { Id = "boatyard", Cat = Cat.Water, Label = "Boatyard", Build = "boatyard",
                 Desc = $"Craftsmen build and mend the town's boats here: fishing boats, ferry boats and cargo barges, from wood, flax (rope and sails) and metal fittings. Order them in the Vessels window. A ferry route needs a ferry boat, a fishing dock fishes best with boats and a port trades with a cargo barge; a boatyard also repairs the boats that wear out. Stands on the shore with deep water within three tiles, touching a road. Costs {Cost["boatyard"][Res.Wood]} wood and {Cost["boatyard"][Res.Stone]} stone." },
             new ToolDef { Id = "ferryRoute", Cat = Cat.Water, Label = "Ferry Route", FerryRoute = true,
-                Desc = $"Click a ferry landing, then the landing at the other end: green landings can be joined, red ones say why not (a route may sail at most {World.FerryMaxRoute} tiles over connected deep water, and costs {World.FerryRouteCost} gold). The route is drawn along the water it sails. A route needs {World.FerryCrew} ferrymen at a landing on a road to the Town Hall. Click a landing that already has a route to suspend or resume it; hold Shift and click to remove the route. Nothing pairs by itself: building another landing never changes a route." },
+                Desc = $"Click a ferry landing, then the landing at the other end: green landings can be joined, red ones say why not (a route may sail at most {World.FerryMaxRoute} tiles over connected deep water, and costs {World.FerryRouteCost} gold). The route is drawn along the water it sails. A route needs {World.FerryCrew} ferrymen at a landing on a road to the Town Hall. Click a landing that already has a route to suspend or resume it; hold Shift and click to remove the route, Alt-click to open or close it to soldiers (your soldiers cross by ferry when water cuts them off from the fight, a few at a time). Nothing pairs by itself: building another landing never changes a route." },
             new ToolDef { Id = "port", Cat = Cat.Water, Label = "Port", Build = "port",
                 Desc = $"A harbour on a big lake, a major river or the sea (at least {World.PortWaterNeeded} tiles of connected boat-deep water). It is not a market (overland caravans need a Market); it gives your trade one ship, and goods go by water: a port gives you a ship: it trades by water only with settlements the world map shows on the same sea or lake, and the travel time follows the water route. Costs {Cost["port"][Res.Wood]} wood, {Cost["port"][Res.Stone]} stone and {Cost["port"][Res.Gold]} gold. Needs a road to the Town Hall." },
             new ToolDef { Id = "watermill", Cat = Cat.Water, Label = "Watermill", Build = "watermill",
@@ -263,7 +263,9 @@ namespace CrownAndHearth.Game
                 var route = World.RouteOf(b);
                 if (route != null)
                 {
-                    if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.shiftKey.isPressed) { World.RemoveRoute(route); _hud.Toast("Ferry route removed."); }
+                    var kb = UnityEngine.InputSystem.Keyboard.current;
+                    if (kb != null && kb.altKey.isPressed) { World.SetMilitaryAccess(route, !route.MilitaryAllowed); _hud.Toast(route.MilitaryAllowed ? "Soldiers may use this ferry." : "This ferry is closed to soldiers."); }
+                    else if (kb != null && kb.shiftKey.isPressed) { World.RemoveRoute(route); _hud.Toast("Ferry route removed."); }
                     else { World.SetRouteSuspended(route, !route.Suspended); _hud.Toast(route.Suspended ? "Ferry suspended. Click the landing again to resume it." : "Ferry resumed."); }
                     return;
                 }
@@ -1487,7 +1489,7 @@ namespace CrownAndHearth.Game
                         if (ea != null && eb != null)
                         {
                             int len = (w.SailingRoute(ea, eb)?.Count ?? 1) - 1; var load = w.RouteLoad(rt); double service = w.RouteService(rt, len, load.demand);
-                            lines.Add($"Linked to the landing at {other.X},{other.Y}: {len} tiles of sailing, about {World.TripsPerDay(len)} crossings a day each way.");
+                            lines.Add($"Linked to the landing at {other.X},{other.Y}: {len} tiles of sailing, about {World.TripsPerDay(len)} crossings a day each way, {World.CrossDays(len)} day{(World.CrossDays(len) == 1 ? "" : "s")} on the water for soldiers. " + (rt.MilitaryAllowed ? "Open to soldiers." : "Closed to soldiers."));
                             { var vs = w.VesselOfRoute(rt); lines.Add(vs == null ? "Ferry boat: none assigned (order one at a Boatyard)" : $"Ferry boat #{vs.Id}: condition {vs.Condition:0}%" + (w.InService(vs) ? "" : " (out of service)")); }
                             lines.Add($"Carries {World.FerryPassengers} people and {World.FerryCargo} cargo a trip: {World.PassengerCapacityPerDay(len)} people a day. Crew {w.CrewOf(rt)} of {World.FerryCrew}.");
                             lines.Add($"{load.buildings} buildings across the water ({load.people} people and jobs, demand about {load.demand:0} a day) depend on it. " + (service < 1 ? "It is crowded." : "It copes."));
