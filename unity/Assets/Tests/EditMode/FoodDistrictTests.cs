@@ -7,7 +7,7 @@ namespace CrownAndHearth.Tests
 {
     public class FoodDistrictTests
     {
-        static (World w, District d, (int x, int y, int dx, int dy, int px, int py) s) HuntTown(int woods = 4)
+        internal static (World w, District d, (int x, int y, int dx, int dy, int px, int py) s) HuntTown(int woods = 4)
         {
             var w = DevEconomyTests.Town(); var s = DevEconomyTests.Spur(w);
             for (int a = 1; a <= 10; a++)
@@ -104,7 +104,7 @@ namespace CrownAndHearth.Tests
         }
 
         // ---------- fishing ----------
-        static (World w, District d)? FishTown()
+        internal static (World w, District d)? FishTown()
         {
             foreach (var (preset, seed) in new[] { (WaterPreset.Wetlands, 2), (WaterPreset.Lakeside, 1), (WaterPreset.Coastal, 1), (WaterPreset.RiverValley, 1), (WaterPreset.BalancedInland, 1) })
             {

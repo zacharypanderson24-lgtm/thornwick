@@ -15,12 +15,21 @@ namespace CrownAndHearth.Sim
         public readonly Dictionary<Zone, double> Dem = new Dictionary<Zone, double> { [Zone.Res] = 0 };
         public readonly Dictionary<Zone, string> Note = new Dictionary<Zone, string> { [Zone.Res] = "", [Zone.Res2] = "" };
 
+        /// <summary>True when homes are held back because the food does not add up (see ComputeDemand): the Districts panel and the demand report say so.</summary>
+        public bool HomesWaitForFood { get; private set; }
+
         public void ComputeDemand()
         {
             double occupancy = D.Civ > 0 ? (Peasants + Soldiers) / (double)D.Civ : 1;
             double food = ResAmt[Res.Food];
             double demand = Starving || food < 10 * FoodScale ? -0.3 : Math.Max(-1, Math.Min(1, (occupancy - 0.7) * 4));
             if (!SeasonalFarming && Rate[Res.Food] < -0.3 && food < 120) demand = Math.Min(demand, 0);
+            HomesWaitForFood = false;
+            if (SeasonalFarming && demand > 0)   // food security: no new homes when the village already eats more than it makes and the store would not cover a year of the gap
+            {
+                var fp = FoodPressure();
+                if ((fp.make < fp.eat * 1.1 && EdibleFoodStored < (fp.eat * 1.1 - fp.make) * YearLength) || !FoodCoversUntilHarvest(1)) { demand = Math.Min(demand, 0); HomesWaitForFood = true; }   // the year-round capacity must cover the village and the store must reach the next harvest
+            }
             Dem[Zone.Res] = demand;
         }
 
@@ -104,7 +113,8 @@ namespace CrownAndHearth.Sim
             foreach (var d in Districts) if (d.Type == DistrictType.Residential) d.Note = "";
             if (Dem[Zone.Res] <= DemandThreshold)
             {
-                Note[Zone.Res] = "Homes grow once houses are nearly full and food is stocked.";
+                var fpn = FoodPressure();
+                Note[Zone.Res] = HomesWaitForFood ? $"Homes wait: the village eats {fpn.eat:0.#} food a day and makes {fpn.make:0.#}, and the store would not last a year. Zone more farmland or add hunting and fishing." : "Homes grow once houses are nearly full and food is stocked.";
                 foreach (var d in Districts) if (d.Type == DistrictType.Residential) d.Note = Note[Zone.Res];
                 return;
             }

@@ -49,7 +49,7 @@ namespace CrownAndHearth.Sim
             if (Grid[y, x] != null) return Result.No("That tile is built on");
             if (ProtectedWood.Contains(Tk(x, y))) return Result.Yes();
             var d = DecoMap[y, x];
-            if (d != Deco.Tree && d != Deco.Sapling && d != Deco.Stump && (d != Deco.None || IsSolid(x, y))) return Result.No("Only woodland or open ground can be protected");
+            if (d != Deco.Tree && d != Deco.Sapling && d != Deco.Stump && d != Deco.Rock && (d != Deco.None || IsSolid(x, y))) return Result.No("Only woodland, open ground or surface rock can be protected");   // rock too: a quarry never digs protected land
             ProtectedWood.Add(Tk(x, y)); ClearOrders.Remove(Tk(x, y)); Replant.Remove(Tk(x, y)); Touch();
             return Result.Yes();
         }

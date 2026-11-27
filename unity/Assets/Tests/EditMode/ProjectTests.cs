@@ -11,7 +11,7 @@ namespace CrownAndHearth.Tests
         static World Crowded(double wood = 1000, double stone = 0)
         {
             var w = new World(7);
-            w.ResAmt[Res.Food] = 3000; w.ResAmt[Res.Wood] = wood; w.ResAmt[Res.Stone] = stone;
+            w.ResAmt[Res.Food] = 30000; w.ResAmt[Res.Wood] = wood; w.ResAmt[Res.Stone] = stone;
             w.Recalc();
             w.Peasants = w.D.Civ;   // full: homes are wanted
             return w;

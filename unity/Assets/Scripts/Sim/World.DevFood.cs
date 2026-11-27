@@ -19,12 +19,51 @@ namespace CrownAndHearth.Sim
         public const double FoodPlentyDays = 120, FishFirstMinStock = 0.4, FishMoreMinStock = 0.6, FishCapacityMargin = 1.6;
 
         /// <summary>What the town makes and eats a day, and how many days of edible food are stored.</summary>
+        /// <summary>What the harvest really delivers compared with the nominal WheatYield per field (rain, frost, the sowing date): measured in the ten-year scenario run, which delivered about two thirds.</summary>
+        public const double FarmRealism = 0.7;
+
+        /// <summary>Food a day the farms can make over a whole year at full staffing, by the nominal yield times FarmRealism. Unlike FarmFood it does NOT drop to zero in winter when
+        /// the farmers' jobs end, so an idle winter farm never looks like a shortage (and never makes the engine build another).</summary>
+        public double FarmFoodCapacity()
+        {
+            if (!SeasonalFarming) return FarmFood();
+            double food = 0; var fields = FarmFields();
+            foreach (var farm in Blds.Where(b => b.T == "farm" && b.Served))
+            {
+                int mine = 0, wheat = 0;
+                foreach (var f in fields) if (f.Value == farm) { mine++; if (!IsFlaxField(f.Key % N, f.Key / N)) wheat++; }
+                double tended = Math.Min(1.0, farm.Jobs * FieldsPerFarmer / (double)Math.Max(1, mine));
+                food += wheat * tended * WheatYield * FarmRealism * CharterMult("farm") / YearLength;
+            }
+            return food;
+        }
+
+        /// <summary>The year-round food the settlement makes: farm capacity, hunters at their real rate and fishing huts and docks at today's catch.</summary>
+        public double FoodCapacityPerDay()
+        {
+            double hunting = 0, fishing = 0;
+            foreach (var h in Blds.Where(h => h.T == "hunter" && h.Served)) hunting += HuntRate(h, Math.Min(h.Workers, h.Jobs));
+            foreach (var f in Blds.Where(f => (f.T == "fisher" || f.T == "dock") && f.Served)) fishing += FishCatch(f);
+            return FarmFoodCapacity() + hunting + fishing;
+        }
+
         (int day, int version, double stock, (double, double, double, bool) value) _foodPressure = (-1, -1, 0, default);
+
+        /// <summary>Will the store plus what hunters and fishers bring in feed everyone, with `extra` more mouths, until the next harvest is in? Seasonal farming only: the
+        /// farms give nothing between harvests, so this is the check that stops a village growing in spring into a famine the following winter.</summary>
+        public bool FoodCoversUntilHarvest(int extra = 0)
+        {
+            if (!SeasonalFarming) return true;
+            double eat = (DailyFoodDemand + extra * FoodPerPerson) * 1.15;   // a margin of 15%: the store must reach the harvest with something to spare
+            int horizon = YearDay <= 120 ? 121 - YearDay : YearLength - YearDay + 121;   // days until the next harvest has been brought in
+            double nonFarm = FoodPressure().make - FarmFoodCapacity();
+            return EdibleFoodStored + nonFarm * horizon >= eat * horizon;
+        }
 
         public (double make, double eat, double days, bool short_) FoodPressure()
         {
             if (_foodPressure.day == Day && _foodPressure.version == Version && _foodPressure.stock == EdibleFoodStored) return _foodPressure.value;   // one answer a day: the hunters' route searches are not cheap
-            double eat = DailyFoodDemand, make = FoodIncomePerDay(), days = eat > 0 ? EdibleFoodStored / eat : 999;
+            double eat = DailyFoodDemand, make = FoodCapacityPerDay(), days = eat > 0 ? EdibleFoodStored / eat : 999;
             var result = (make, eat, days, days < FoodReserveDays || (make < eat * FoodSelfSufficiency && days < FoodPlentyDays));   // a big store is no emergency even when the year-average falls short
             _foodPressure = (Day, Version, EdibleFoodStored, result);
             return result;
@@ -57,7 +96,7 @@ namespace CrownAndHearth.Sim
             }
             else
             {
-                int vacant = lodges.Sum(b => Math.Max(0, b.Jobs - b.Workers));
+                int vacant = lodges.Sum(b => Math.Max(0, ActiveJobs(b) - b.Workers));
                 if (vacant > 0) { d.Note = $"Additional workers needed: the existing lodge{(lodges.Count == 1 ? " has" : "s have")} {vacant} unfilled hunter position{(vacant == 1 ? "" : "s")}."; return; }
                 if (!food.short_) { d.Note = $"No new lodge needed: food is secure ({food.make:0.#} made against {food.eat:0.#} eaten, {food.days:0} days in store)."; return; }
                 if (g.Stock < 0.5 * g.GameTiles * ForestFoodReserve) { d.Note = $"Game is thinning: {g.Stock:0} food of game left in {g.GameTiles} tiles. More lodges would empty the woods."; return; }
@@ -104,7 +143,7 @@ namespace CrownAndHearth.Sim
             var food = FoodPressure();
             if (huts.Count > 0)
             {
-                int vacant = huts.Sum(b => Math.Max(0, b.Jobs - b.Workers));
+                int vacant = huts.Sum(b => Math.Max(0, ActiveJobs(b) - b.Workers));
                 if (vacant > 0) { d.Note = $"Additional workers needed: the existing hut{(huts.Count == 1 ? " has" : "s have")} {vacant} unfilled position{(vacant == 1 ? "" : "s")}."; return; }
                 if (!food.short_) { d.Note = $"No new fishing hut needed: food is secure ({food.make:0.#} made against {food.eat:0.#} eaten, {food.days:0} days in store)."; return; }
             }

@@ -1,6 +1,6 @@
 # Organic Settlement Development and Economic Zoning Overhaul
 
-**Status (updated each phase PR):** Phases 1 to 9 built (audit and framework, engine core, farmland and forestry, mining and quarrying, hunting and fishing, district controls, site clearing and protected land, catalogue and UI, migration and optimisation). Phase 10 (balance and gameplay verification) is **planned, not built**.
+**Status (updated each phase PR):** All ten phases are built (the last, balance and gameplay verification, was done in the simulation only: nothing was played in the live game, see section 16).
 Unity port only; the browser prototype is untouched.
 
 **This document supersedes `DESIGN_RESOURCE_EXTRACTION.md` where they disagree.** That earlier design made forestry, quarrying and mining
@@ -292,7 +292,7 @@ so food and critical services keep their workers), and completes into the existi
 | 7 | Land clearing and protection | **built** (see section 13) |
 | 8 | Catalogue, overlays, demand indicators, feedback | **built** (see section 14) |
 | 9 | Save migration and optimisation | **built** (see section 15) |
-| 10 | Balance and gameplay verification | planned |
+| 10 | Balance and gameplay verification | **built, simulation only** (see section 16) |
 
 ## 7. Phase 1 report
 
@@ -384,3 +384,20 @@ player-visible yet except that the three new zone kinds exist in the simulation 
 
 **Optimisation:** the district map is rebuilt (a flood fill of the whole map, about 3 ms) only when the zone map changed (a 65k-byte hash decides), otherwise only the building assignment is refreshed (under 0.1 ms); workers and jobs are read live from the buildings instead of a snapshot (fixes stale staffing between rebuilds); the food-pressure reading (hunters' route searches) is cached per day; fishing reads each water's load once per look instead of once per candidate; housing searches only residential districts' tiles. Measured in the test run on a played first-year town with 37 districts: a game day 2.8 ms, a day of development with a forced rebuild 2.6 ms, a forced full rebuild 3.7 ms (limits asserted: 40, 40, 15 ms). Evaluation stays scheduled (weekly per district, daily only while a district has no first building) and sites come from cached district tiles, never whole-map scans.
 **Not done:** a district-level spatial index for sites (not needed at these numbers), measurement on a 256 x 256 map with tens of thousands of zoned tiles (the test town has a few hundred), a migration prompt in the UI (the Districts panel shows the paused state and the history).
+
+## 16. Phase 10 report: balance and gameplay verification (simulation only)
+
+**Scope and honesty.** Verified by playing the simulation from a test (`OrganicScenarioTests`): the player's actions are the real ones (zones, a road, a silo, "zone more farmland" when told to). **Nothing was played in the live game, no real mouse or keyboard, no screenshots.** The scenery uses a road spur with trees, fertile strips and rock painted into the test world (the default seed's start is cramped), so the layouts are test dressing, not seeds a player will meet.
+
+**The opening that works (scenario A):** a road spur out of town; a Forestry zone, a Hunting zone and Farmland along it; farmland zoned round the starting farmhouse (24 fields); one silo (the only manual building); a few Housing tiles beside roads. Nothing else placed by hand. Result over the first year: **no starvation** (lowest stock 377 food), the Hunting zone built its lodge, the Forestry zone its lodge, the Housing zone grew homes, the village grew from 6 to 17.
+
+**What the scenarios found, and what was changed because of it (real balance bugs):**
+1. *Homes outran the food.* Housing growth ignored whether the harvest could feed the village, so a village grew to 33 on one harvest and starved to death by the following spring. Now: **homes are not built, and births slow to a fifth, when the year-round food capacity is under 110% of what is eaten or the store (plus hunting and fishing) will not reach the next harvest with a 15% margin** (`FoodCoversUntilHarvest`). The Districts panel says "Homes wait: the village eats 26 food a day and makes 20, and the store would not last a year. Zone more farmland or add hunting and fishing."
+2. *The food estimate fell to zero every winter* (farmers' jobs end), which looked like a shortage and would have made the engine build farms because one is idle in winter: exactly what the spec forbids. `FarmFoodCapacity` now measures year-round capacity at full staffing, times `FarmRealism` 0.7 (the harvest delivered about 270 of the nominal 400 a field).
+3. *"Additional workers needed"* counted nominal jobs; a lodge below its sustainable floor has no real jobs. Vacancy now uses the jobs the building really has (`ActiveJobs`).
+4. A farmland district that is fully worked while food is short now says so ("zone more farmland near a farmhouse").
+5. Rock can now be protected (the Protect tool refused it), so a quarry's protection actually works.
+
+**Scenario results (all passing, `OrganicScenarioTests`):** A founding village (above); B farmland: one farmhouse when food is plentiful, never a pile of them when it is short; C forestry settlement over three years: one lodge, the stand never below its floor (10), 30 saplings planted, the forest still standing; D a smithery makes the ore demand appear only after it exists; E quarrying for two years: one quarry, 18 pit tiles, protected rock untouched, no road destroyed; F hunting lodge leaves 90% of the game, fishing huts leave the water at full stock; G starving: no homes, quarries, mines or lodges, food gathering still built; H approval mode (approve one), a building cap holds, a paused district's lodge keeps producing; I **ten years**: no starvation at all, 3 farmhouses by year 6, one lodge and one hunting lodge, trees 14379 to 14379, every engine building on a connected road, 0.5 to 1.4 ms a day.
+**Known balance concerns:** the new growth rule is conservative: in scenario I the village stays at 17 for ten years because five homes' worth of zoned housing and the food margin hold it (it is survivable, not exciting; the margin and `FarmRealism` are first guesses to tune with real play). Population death is permanent (no farmers, no harvest): not changed here. Farmland zoned after the sowing season is counted as capacity at once although it yields only next year.
+**Not verified:** visual appearance (buildings "believable, not randomly scattered") beyond the check that engine buildings stand on connected roads next to their districts; any live-game interaction; the opening on other seeds.

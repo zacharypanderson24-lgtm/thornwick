@@ -128,7 +128,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void HousingNeverGrowsOnProtectedLand()
         {
-            var w = DevEconomyTests.Town(); w.ResAmt[Res.Wood] = 200;
+            var w = DevEconomyTests.Town(); w.ResAmt[Res.Wood] = 200; w.ResAmt[Res.Food] = 30000;
             w.Recalc(); w.Peasants = w.D.Civ;
             int placed = 0;
             foreach (var road in w.Blds.Where(b => b.T == "road" && b.Served).OrderBy(b => b.Y).ThenBy(b => b.X).ToList())
