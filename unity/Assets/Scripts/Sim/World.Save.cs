@@ -116,7 +116,7 @@ namespace CrownAndHearth.Sim
             };
             if (b.T == "house") o["tier"] = b.Tier;
             if (b.T == "wood" && b.Mode != ForestMode.Sustainable) o["mode"] = (int)b.Mode;
-            if (b.T == "wood" && b.Organic) o["organic"] = true;
+            if (b.Organic) o["organic"] = true;
             if (b.T == "mine")
             {
                 o["tunnel"] = new JArray(b.Tunnel); o["shoredTiles"] = new JArray(b.Shored.OrderBy(k => k));

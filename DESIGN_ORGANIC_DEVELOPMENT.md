@@ -1,6 +1,6 @@
 # Organic Settlement Development and Economic Zoning Overhaul
 
-**Status (updated each phase PR):** Phases 1 (audit, document, district framework), 2 (shared engine core) and 3 (agricultural and forestry districts) built. Phases 4 to 10 are **planned, not built**.
+**Status (updated each phase PR):** Phases 1 (audit, document, district framework), 2 (shared engine core), 3 (agricultural and forestry districts) and 4 (mining and quarrying districts) built. Phases 5 to 10 are **planned, not built**.
 Unity port only; the browser prototype is untouched.
 
 **This document supersedes `DESIGN_RESOURCE_EXTRACTION.md` where they disagree.** That earlier design made forestry, quarrying and mining
@@ -286,7 +286,7 @@ so food and critical services keep their workers), and completes into the existi
 | 1 | Audit, this document, district framework (types, identity, names, settings, suitability, save) | **built** (PR for this phase) |
 | 2 | Generalised engine core: development queue, reservations, minimal construction, approval flow, reserve; residential preserved on it | **built** (see section 8) |
 | 3 | Agricultural and forestry districts | **built** (see section 9) |
-| 4 | Mining and quarrying districts | planned |
+| 4 | Mining and quarrying districts | **built** (see section 10) |
 | 5 | Hunting and fishing districts | planned |
 | 6 | District controls and the inspector | planned |
 | 7 | Land clearing and protection | planned |
@@ -324,3 +324,12 @@ player-visible yet except that the three new zone kinds exist in the simulation 
 **Ownership rule changed:** an ordinary building belongs to the district of its kind it stands in, or else the lowest-numbered one it touches (a farmhouse beside its fields, a lodge at the forest edge). Only buildings in or beside none are legacy.
 **Explanations:** every refusal and wait writes a plain sentence with real numbers into `District.Note` ("limited by insufficient mature trees: 3 in this district...", "additional workers needed: 2 unfilled positions", "no new farmhouse needed: the farms make 12 food a day against 9 eaten", "Development waiting: Waiting for 4 wood. The proposed woodcutter lodge costs 6 wood").
 **Not built:** hunting/fishing (Phase 5), the inspector (Phase 6), harvest-mode choice per district (Phase 6), construction-site clearing of tree-covered sites (Phase 7), demand scoring beyond these rules (the weighted score table stays a later refinement).
+
+## 10. Phase 4 report: mining and quarrying districts (built)
+
+**Code:** `Sim/World.DevExtraction.cs`; `Building.Organic` now covers lodges, quarries and mines; small edits in `World.Extraction.cs` (`UsesZone`, `InWorkArea`, mine survey), `World.Mining.cs` (`InMineArea`), `World.Quarry.cs`, `World.Rules.cs` (`Place`), `World.Districts.cs` (migration), `World.Save.cs`.
+
+**Quarrying district** (new Quarry zone, surface stone only): the first quarry needs 6 workable rock tiles in the district, a free 2 x 2 site beside a connected road that passes the player's own `CanPlace` and quarry survey. A second quarry needs every quarry staffed, stone short (under 60), at least 30 stone left, and a site whose rock is mostly not already worked by another quarry. An organic quarry digs **only its own Quarrying district's rock** (`InWorkArea`), never rock outside it, never buildings (pits stay solid and persist; terrain excavation is unchanged).
+**Mining district** (the Mining zone): the first mine needs ground beside a connected road whose entrance faces a hill with a connected road in front of it and at least 60 ore in reach (the real survey figure, an estimate for the player); no smithery is needed. More mines need every mine staffed **and** ore demand: smitheries use `SmeltRate x OrePerMetal` ore a day each, and the mines' estimated output must fall short with under 150 ore in store. So a big zone never makes more mines by itself, and a smithery raises the value of expanding. An organic mine chooses its own tunnel in its reach (it ignores the painted-boundary rule, uses its district's ground and never other land use, as before). Ore and stone are per tile and global, so mines and quarries on one formation share the reserve and building one adds none (tested).
+**Legacy and migration:** quarries and mines from older saves are NOT organic: a painted Mining boundary still bounds them. `AdoptLegacy(building)` brings one under the district rules (needs a district of its kind around it); `ConvertMiningRockToQuarrying(district)` moves the open rock tiles of a Mining district to a Quarrying zone (the old painted Mining boundary was also how rock was marked for quarries). Neither is automatic. **Zones from a save made before districts load with their district Paused (housing excepted)**, so loading a game never starts building mines, quarries, lodges or farmhouses on its own; the player (or a governor) sets the district to Automatic. History records "Migrated from an older save".
+**Not built:** technology depth unlocks (nothing limits depth today), more minerals (the ore definition is data-driven), an extraction-intensity setting, surface-rock/ore overlay (Phase 8), the inspector (Phase 6).

@@ -231,7 +231,7 @@ namespace CrownAndHearth.Tests
             var loaded = World.LoadJson(save.ToString());
             Assert.AreEqual(w.Districts.Count, loaded.Districts.Count, "districts are derived from the zone map");
             Assert.AreEqual(Enumerable.Range(1, w.Districts.Count).ToArray(), loaded.Districts.Select(d => d.Id).ToArray());
-            Assert.IsTrue(loaded.Districts.All(d => d.Priority == DevPriority.Normal && d.Mode == DevMode.Automatic && d.DevelopmentOn));
+            Assert.IsTrue(loaded.Districts.All(d => d.Priority == DevPriority.Normal && (d.Type == DistrictType.Residential ? d.Mode == DevMode.Automatic : d.Mode == DevMode.Paused)), "migrated districts: housing as before, everything else paused until the player says so");
             // the starting farm's field is farmland: a default save always has at least that district
             Assert.IsTrue(new World(7).Districts.Any(d => d.Type == DistrictType.Agricultural));
         }

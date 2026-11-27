@@ -24,6 +24,8 @@ namespace CrownAndHearth.Sim
             {
                 if (d.Type == DistrictType.Forestry) EvaluateForestry(d);
                 else if (d.Type == DistrictType.Agricultural && SeasonalFarming) EvaluateFarmland(d);
+                else if (d.Type == DistrictType.Quarrying) EvaluateQuarrying(d);
+                else if (d.Type == DistrictType.Mining) EvaluateMining(d);
             }
         }
 

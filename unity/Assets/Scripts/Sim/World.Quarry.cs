@@ -88,7 +88,7 @@ namespace CrownAndHearth.Sim
         public QuarrySite SurveyQuarrySite(int x, int y, int size = 2)
         {
             var s = new QuarrySite();
-            var fp = new Building { T = "quarry", X = x, Y = y, Sz = size };
+            var fp = new Building { T = "quarry", X = x, Y = y, Sz = size, Organic = OrganicHere("quarry", x, y) };
             var r = QuarryReach(fp);
             s.Reserve = r.StoneLeft; s.LockedReserve = r.LockedStone; s.DigTiles = r.Dig; s.LockedTiles = r.Locked; s.BeyondTiles = r.Beyond;
             foreach (var o in Blds) if (o.T == "quarry" && Math.Abs(o.X - x) <= 2 * QuarryAutoR && Math.Abs(o.Y - y) <= 2 * QuarryAutoR) s.OverlappingQuarries++;
