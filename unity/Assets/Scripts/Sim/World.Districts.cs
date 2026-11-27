@@ -67,7 +67,29 @@ namespace CrownAndHearth.Sim
         }
 
         // ---------- Queries ----------
-        void EnsureDistricts() { if (_districtVersion != Version) RebuildDistricts(); }
+        ulong? _zoneHash;   // the zone map as it was at the last full rebuild; null forces one
+
+        ulong ZoneHash()
+        {
+            ulong h = 14695981039346656037UL;
+            foreach (var z in ZoneMap) h = (h ^ (byte)z) * 1099511628211UL;
+            return h;
+        }
+
+        /// <summary>Which buildings stand in or beside each district, and how many tiles are still open. Cheap: no flood fill, so it runs whenever buildings changed but the zones did not.</summary>
+        void AssignBuildings()
+        {
+            foreach (var d in _districts) d.Buildings.Clear();
+            foreach (var b in Blds) OwnerDistrict(b, _districtMap)?.Buildings.Add(b);
+            foreach (var d in _districts) d.OpenTiles = d.Tiles.Count(k => Grid[k / N, k % N] == null);
+        }
+
+        void EnsureDistricts()
+        {
+            if (_districtVersion == Version) return;
+            if (_zoneHash.HasValue && _zoneHash.Value == ZoneHash()) { AssignBuildings(); _districtVersion = Version; return; }   // only buildings changed (the common case): no rebuild of the patches
+            RebuildDistricts();
+        }
 
         /// <summary>Every district, by id. Rebuilt on demand when zones or buildings changed.</summary>
         public IReadOnlyList<District> Districts { get { EnsureDistricts(); return _districts; } }
@@ -190,14 +212,10 @@ namespace CrownAndHearth.Sim
             _districts.Clear(); _districts.AddRange(next.OrderBy(d => d.Id));
             _districtById.Clear(); foreach (var d in _districts) _districtById[d.Id] = d;
             _districtMap = map;
-            foreach (var d in _districts) { MeasureDistrict(d); d.Buildings.Clear(); d.Jobs = d.Workers = 0; }
-            foreach (var b in Blds)
-            {
-                var owner = OwnerDistrict(b, map);
-                if (owner != null) { owner.Buildings.Add(b); owner.Jobs += b.Jobs; owner.Workers += b.Workers; }
-            }
-            foreach (var d in _districts) { d.OpenTiles = d.Tiles.Count(k => Grid[k / N, k % N] == null); }
+            foreach (var d in _districts) MeasureDistrict(d);
+            AssignBuildings();
             NameDistricts();
+            _zoneHash = ZoneHash();
             _districtVersion = Version; _migratingDistricts = false;
         }
 
@@ -293,7 +311,7 @@ namespace CrownAndHearth.Sim
             var d = DistrictById(id); if (d == null) return Result.No("There is no such district");
             name = (name ?? "").Trim();
             if (name.Length > 40) return Result.No("District names can be up to 40 letters");
-            if (name.Length == 0) { d.CustomName = false; _districtVersion = -1; return Result.Yes(); }
+            if (name.Length == 0) { d.CustomName = false; _districtVersion = -1; _zoneHash = null; return Result.Yes(); }
             if (_districts.Any(o => o.Id != id && string.Equals(o.Name, name, StringComparison.OrdinalIgnoreCase))) return Result.No("Another district already has that name");
             d.Name = name; d.CustomName = true; AddHistory(d, $"Day {Day}: renamed {name}"); return Result.Yes();
         }
@@ -399,7 +417,7 @@ namespace CrownAndHearth.Sim
         /// tile whose zone no longer matches is simply dropped. A save without districts leaves them to be derived from the zones (the migration).</summary>
         void LoadDistricts(JObject o, int size, int offset)
         {
-            _districts.Clear(); _districtById.Clear(); _districtMap = new int[N * N]; _nextDistrictId = 1; _districtVersion = -1;
+            _districts.Clear(); _districtById.Clear(); _districtMap = new int[N * N]; _nextDistrictId = 1; _zoneHash = null; _districtVersion = -1;
             if (o == null) { _migratingDistricts = true; return; }
             int maxId = 0;
             foreach (var j in (o["list"] as JArray) ?? new JArray())
