@@ -267,6 +267,21 @@ namespace CrownAndHearth.Sim
                 if (dc == Deco.Tree || dc == Deco.Sapling) return Result.No("Clear the forest first. Mining zones go on rock, ore showings or open ground");
                 return IsSolid(x, y) ? Result.No("Too steep or broken to mine here") : Result.Yes();
             }
+            if (kind == Zone.Quarry)   // organic districts (DESIGN_ORGANIC_DEVELOPMENT.md): surface stone only; the engine builds the quarry in a later phase
+            {
+                if (dc != Deco.Rock) return Result.No("Quarrying zones go on surface stone: outcrops, hills and the edge of mountains");
+                return RockLeft(x, y) > 0 ? Result.Yes() : Result.No("This rock is worked out. Stone does not grow back");
+            }
+            if (kind == Zone.Hunt)
+            {
+                if (dc == Deco.Rock || dc == Deco.Ore) return Result.No("Hunting grounds go on forest and open ground, not rock");
+                return IsSolid(x, y) ? Result.No("Too steep or broken to hunt over") : Result.Yes();
+            }
+            if (kind == Zone.Fish)
+            {
+                if (!NearWater(x, y, FishZoneReach)) return Result.No($"Fishing zones go on the shore, within {FishZoneReach} tiles of open water");
+                return IsSolid(x, y) ? Result.No("Too steep or broken to fish from") : Result.Yes();
+            }
             if (HasTree(x, y)) return Result.No(TreeMsg);
             if (IsSolid(x, y)) return Result.No(IsMountain(x, y) ? "Mountains cannot be built on. Hills and flat ground can" : PitDepth(x, y) > 0 ? "A quarry pit is in the way" : "Ore blocks this zone. Mine it first");
             if (kind == Zone.Farm && !Fert[y, x]) return Result.No("Farms need fertile soil");

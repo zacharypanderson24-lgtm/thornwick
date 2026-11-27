@@ -615,6 +615,9 @@ namespace CrownAndHearth.Game
             Zone.Farm => new Color(0.92f, 0.80f, 0.25f),
             Zone.Wood => new Color(0.36f, 0.72f, 0.32f),
             Zone.Mine => new Color(0.82f, 0.48f, 0.46f),
+            Zone.Quarry => new Color(0.66f, 0.62f, 0.58f),
+            Zone.Hunt => new Color(0.55f, 0.50f, 0.30f),
+            Zone.Fish => new Color(0.38f, 0.64f, 0.82f),
             _ => Color.white,
         };
 

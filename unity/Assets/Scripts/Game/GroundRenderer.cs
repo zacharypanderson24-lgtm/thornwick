@@ -36,6 +36,7 @@ namespace CrownAndHearth.Game
         {
             { Zone.Res, new Color32(255, 225, 150, 255) }, { Zone.Res2, new Color32(175, 205, 255, 255) }, { Zone.Farm, new Color32(255, 240, 120, 255) }, { Zone.Comm, new Color32(190, 200, 255, 255) },
             { Zone.Wood, new Color32(150, 230, 150, 255) }, { Zone.Mine, new Color32(230, 185, 185, 255) },
+            { Zone.Quarry, new Color32(205, 200, 195, 255) }, { Zone.Hunt, new Color32(205, 195, 140, 255) }, { Zone.Fish, new Color32(170, 210, 235, 255) },
             { Zone.Pigs, new Color32(223, 205, 166, 255) }, { Zone.Sheep, new Color32(223, 205, 166, 255) }, { Zone.Chickens, new Color32(223, 205, 166, 255) },
         };
 
