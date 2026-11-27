@@ -26,6 +26,8 @@ namespace CrownAndHearth.Sim
                 else if (d.Type == DistrictType.Agricultural && SeasonalFarming) EvaluateFarmland(d);
                 else if (d.Type == DistrictType.Quarrying) EvaluateQuarrying(d);
                 else if (d.Type == DistrictType.Mining) EvaluateMining(d);
+                else if (d.Type == DistrictType.Hunting) EvaluateHunting(d);
+                else if (d.Type == DistrictType.Fishing) EvaluateFishing(d);
             }
         }
 
@@ -172,7 +174,7 @@ namespace CrownAndHearth.Sim
                 var vacant = farms.Sum(b => Math.Max(0, b.Jobs - b.Workers));
                 if (vacant > 0) { d.Note = $"Additional workers needed: the existing farmhouse{(farms.Count == 1 ? " has" : "s have")} {vacant} unfilled position{(vacant == 1 ? "" : "s")}. No new farmhouse until they are staffed."; return; }
                 if (r.Unserved < FieldsPerFarmer) { d.Note = $"No new farmhouse needed: the farms already work the farmland ({r.Unserved} fields left over, a farmer works {FieldsPerFarmer})."; return; }
-                if (make >= eat * FoodSelfSufficiency && days >= FoodReserveDays) { d.Note = $"No new farmhouse needed: the farms make {make:0.#} food a day against {eat:0.#} eaten, with {days:0} days in store."; return; }
+                if (!FoodPressure().short_) { d.Note = $"No new farmhouse needed: the farms make {make:0.#} food a day against {eat:0.#} eaten, with {days:0} days in store."; return; }
             }
             int sz = r.Unserved >= LargeFarmFields ? 2 : 1;
             var probe = new Building { T = "farm", Sz = sz };
