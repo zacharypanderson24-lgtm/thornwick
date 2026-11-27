@@ -127,7 +127,8 @@ namespace CrownAndHearth.Tests
         {
             var w = new World(7); w.ResAmt[Res.Stone] = 123.7;
             var rows = ManagementData.Stockpiles(w);
-            Assert.AreEqual(System.Enum.GetValues(typeof(Res)).Length, rows.Count);
+            Assert.AreEqual(System.Enum.GetValues(typeof(Res)).Length, rows.Count(r => !r.Label.StartsWith("Demand: ")), "every resource, then the five demand rows");
+            Assert.AreEqual(5, rows.Count(r => r.Label.StartsWith("Demand: ")));
             Assert.That(Value(rows, "Stone"), Does.StartWith("123"));
             Assert.That(Value(rows, "Gold"), Does.StartWith(System.Math.Floor(w.ResAmt[Res.Gold]).ToString()));
         }
@@ -262,7 +263,7 @@ namespace CrownAndHearth.Tests
         [Test]
         public void OverlaysListOnlyThingsWithDataAndSailingNeedsWater()
         {
-            CollectionAssert.AreEqual(new[] { OverlayId.Underground, OverlayId.Water, OverlayId.Fertility, OverlayId.Forest, OverlayId.Sailing, OverlayId.Workers, OverlayId.Food, OverlayId.Trade, OverlayId.Military, OverlayId.Danger }, OverlayRegistry.All.Select(o => o.Id).ToArray());
+            CollectionAssert.AreEqual(new[] { OverlayId.Underground, OverlayId.Water, OverlayId.Fertility, OverlayId.Forest, OverlayId.Sailing, OverlayId.Workers, OverlayId.Food, OverlayId.Trade, OverlayId.Military, OverlayId.Stone, OverlayId.Game, OverlayId.Fishing, OverlayId.Districts, OverlayId.Danger }, OverlayRegistry.All.Select(o => o.Id).ToArray());
             var dry = new World(7); var wet = new World(3, TerrainStyle.Ranges, Relief.Upland, WaterPreset.Lakeside);
             Assert.That(OverlayRegistry.WhyLocked(OverlayId.Sailing, dry), Is.Not.Null.And.Not.Empty);
             Assert.That(OverlayRegistry.WhyLocked(OverlayId.Sailing, wet), Is.Null);

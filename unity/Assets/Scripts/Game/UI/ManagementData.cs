@@ -272,6 +272,7 @@ namespace CrownAndHearth.Game.UI
                 string change = Math.Abs(rate) < 0.05 ? "steady" : $"{rate:+0.0;-0.0} a day";
                 rows.Add(Row.Of(ResName(r), $"{Math.Floor(amount):0}   ({change})", rate < -0.05 ? Tone.Bad : Tone.Normal));
             }
+            foreach (var it in w.DemandReport()) rows.Add(new Row { Label = "Demand: " + it.Label, Value = $"{it.Word}. {it.Reason}", Tone = it.Level >= DemandLevel.High ? Tone.Bad : Tone.Normal, Bar = -1f, Wide = true });
             return rows;
         }
 

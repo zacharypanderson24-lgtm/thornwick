@@ -33,7 +33,7 @@ namespace CrownAndHearth.Tests
         {
             var c = Real();
             CollectionAssert.DoesNotContain(c.VisibleCategories(), CatalogueCategory.Decorations);   // nothing to put there yet
-            CollectionAssert.Contains(c.VisibleCategories(), CatalogueCategory.Housing);
+            CollectionAssert.Contains(c.VisibleCategories(), CatalogueCategory.Zoning);   // the zones (housing included) moved to the Zoning section
         }
 
         [Test] public void ANewToolLandsInItsOldCategoryAutomatically()

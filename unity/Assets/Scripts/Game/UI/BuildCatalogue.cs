@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace CrownAndHearth.Game.UI
 {
-    public enum CatalogueCategory { Housing, Food, Resources, Land, Industry, Services, Transport, Military, Government, Decorations }
+    public enum CatalogueCategory { Housing, Food, Resources, Land, Industry, Services, Transport, Military, Government, Decorations, Zoning }   // Zoning is last in the enum (saved numbers stay valid) but first on screen
 
     public sealed class CatalogueEntry
     {
@@ -32,6 +32,7 @@ namespace CrownAndHearth.Game.UI
             CatalogueCategory.Transport => "Trade and Transportation",
             CatalogueCategory.Military => "Military and Defense",
             CatalogueCategory.Government => "Government",
+            CatalogueCategory.Zoning => "Zoning",
             _ => "Decorations",
         };
 
@@ -40,11 +41,11 @@ namespace CrownAndHearth.Game.UI
         {
             switch (toolId)
             {
-                case "zoneRes": case "zoneRes2": return CatalogueCategory.Housing;
-                case "farmhouse": case "zoneFarm": case "silo": case "pigPen": case "sheepPen": case "chickenPen":
+                case "zoneRes": case "zoneRes2": case "zoneFarm": case "zoneWood": case "zoneMine": case "zoneQuarry": case "zoneHunt": case "zoneFish": return CatalogueCategory.Zoning;
+                case "farmhouse": case "silo": case "pigPen": case "sheepPen": case "chickenPen":
                 case "hunter": case "smokehouse": case "fisher": case "dock": case "watermill": return CatalogueCategory.Food;
                 case "lodge": case "forester": case "quarry": case "mine": return CatalogueCategory.Resources;
-                case "zoneWood": case "zoneMine": case "clearLand": case "protectWood": case "unprotectWood": return CatalogueCategory.Land;
+                case "clearLand": case "protectWood": case "unprotectWood": return CatalogueCategory.Land;
                 case "sawmill": case "charcoal": case "smithery": return CatalogueCategory.Industry;
                 case "well": case "cistern": case "canal": return CatalogueCategory.Services;
                 case "road": case "bridge": case "ferry": case "ferryRoute": case "port": case "boatyard": case "market": case "storehouse": return CatalogueCategory.Transport;
@@ -81,7 +82,7 @@ namespace CrownAndHearth.Game.UI
 
         /// <summary>Categories that hold at least one entry, in the fixed display order. Empty ones are not shown.</summary>
         public List<CatalogueCategory> VisibleCategories() =>
-            Enum.GetValues(typeof(CatalogueCategory)).Cast<CatalogueCategory>().Where(c => _entries.Any(e => e.Category == c)).ToList();
+            Enum.GetValues(typeof(CatalogueCategory)).Cast<CatalogueCategory>().Where(c => _entries.Any(e => e.Category == c)).OrderBy(c => c == CatalogueCategory.Zoning ? 0 : 1).ThenBy(c => (int)c).ToList();
 
         public List<CatalogueEntry> In(CatalogueCategory c) => _entries.Where(e => e.Category == c).OrderBy(e => e.Order).ToList();
 

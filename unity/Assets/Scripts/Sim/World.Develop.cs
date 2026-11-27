@@ -99,6 +99,7 @@ namespace CrownAndHearth.Sim
         {
             StepProjects();
             DevelopDistricts();   // World.DevEconomy.cs: farmland and forestry districts
+            StepDemandNotes();   // World.DevReports.cs: one message when a demand becomes high or eases
             ComputeDemand();
             foreach (var d in Districts) if (d.Type == DistrictType.Residential) d.Note = "";
             if (Dem[Zone.Res] <= DemandThreshold)

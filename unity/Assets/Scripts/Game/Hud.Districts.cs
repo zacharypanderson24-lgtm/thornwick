@@ -28,7 +28,7 @@ namespace CrownAndHearth.Game
         void BuildDistricts(RectTransform root)
         {
             _distButton = MakeButton(_goalCard, "Districts", new Vector2(1, 0.5f), new Vector2(-138, 0), new Vector2(84, 24), () => ToggleDistricts());
-            _distPanel = MakePanel(root, "Districts", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-540, -360), new Vector2(540, 360));
+            _distPanel = MakePanel(root, "Districts", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-540, -380), new Vector2(540, 380));
             var title = MakeText(_distPanel, "Title", 22, TextAnchor.UpperLeft); title.fontStyle = FontStyle.Bold; title.color = UiTheme.Gold;
             title.text = "Districts: where your settlement grows by itself";
             var tr = title.rectTransform; tr.anchorMin = new Vector2(0, 1); tr.anchorMax = new Vector2(1, 1); tr.offsetMin = new Vector2(16, -38); tr.offsetMax = new Vector2(-130, -8);
@@ -143,9 +143,22 @@ namespace CrownAndHearth.Game
                 _distKey = ""; Toast("Construction reserve set.", 3);
             });
 
+            // ---- compact demand indicators: housing, food, timber, stone, minerals (the reasons are in the Economy menu) ----
+            {
+                var rep = w.DemandReport(); var sbd = new StringBuilder("<b>Demand</b>   ");
+                foreach (var it in rep)
+                {
+                    string col = it.Level == DemandLevel.Critical ? "ff6b57" : it.Level == DemandLevel.High ? "ffa94d" : it.Level == DemandLevel.Some ? Hex(UiTheme.Gold) : Hex(UiTheme.TextDim);
+                    sbd.Append($"<color=#{col}>{it.Label} {(it.Level == DemandLevel.None ? "-" : it.Level == DemandLevel.Some ? "+" : it.Level == DemandLevel.High ? "++" : "+++")}</color>   ");
+                }
+                var big = rep.FirstOrDefault(x => x.Level >= DemandLevel.High);
+                if (big != null) sbd.Append($"<color=#{Hex(UiTheme.TextDim)}>{big.Reason}</color>");
+                DText(body, sbd.ToString(), 16, 32, 1040, 22, 14);
+            }
+
             // ---- left: the list ----
             int pages = Math.Max(1, (list.Count + DistRows - 1) / DistRows); _distPage = Math.Clamp(_distPage, 0, pages - 1);
-            var left = MakePanel(body, "List", new Vector2(0, 0), new Vector2(0, 1), new Vector2(12, 10), new Vector2(332, -34));
+            var left = MakePanel(body, "List", new Vector2(0, 0), new Vector2(0, 1), new Vector2(12, 10), new Vector2(332, -60));
             if (list.Count == 0)
                 DText(left, "You have no districts yet.\n\nOpen the Build catalogue (B), pick a zone (Residential, Farmland, Forestry, Mining, Quarrying, Hunting or Fishing) and drag over the land. Zoning is free: the settlement builds the rest when it is needed.", 10, 10, 300, 400, 15, color: UiTheme.TextDim);
             for (int i = 0; i < DistRows && _distPage * DistRows + i < list.Count; i++)
@@ -166,7 +179,7 @@ namespace CrownAndHearth.Game
             if (sel == null) return;
 
             // ---- right: the inspector ----
-            var right = MakePanel(body, "Inspector", new Vector2(0, 0), new Vector2(1, 1), new Vector2(340, 10), new Vector2(-12, -34));
+            var right = MakePanel(body, "Inspector", new Vector2(0, 0), new Vector2(1, 1), new Vector2(340, 10), new Vector2(-12, -60));
             DText(right, "Name", 12, 10, 50, 26, 15, TextAnchor.MiddleLeft, UiTheme.TextDim);
             DField(right, "Name", sel.Name, 64, 10, 330, 28, false, 40);
             DButton(right, "Rename", "Rename", 402, 10, 90, 28, () =>

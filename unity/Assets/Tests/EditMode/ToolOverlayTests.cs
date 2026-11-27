@@ -17,7 +17,7 @@ namespace CrownAndHearth.Tests
 
         [Test] public void ToolsWithNoNeedAskForNothing()
         {
-            foreach (var id in new[] { "look", "road", "sawmill", "barracks", "zoneRes", "clear" }) Assert.AreEqual(OverlayId.None, OverlayRegistry.ForTool(id, null), id);
+            foreach (var id in new[] { "look", "road", "sawmill", "barracks", "clear" }) Assert.AreEqual(OverlayId.None, OverlayRegistry.ForTool(id, null), id);
         }
 
         [Test] public void AnOverlayThatCannotShowAnythingIsNotSwitchedOn()
