@@ -116,6 +116,7 @@ namespace CrownAndHearth.Sim
             };
             if (b.T == "house") o["tier"] = b.Tier;
             if (b.T == "wood" && b.Mode != ForestMode.Sustainable) o["mode"] = (int)b.Mode;
+            if (b.T == "wood" && b.Organic) o["organic"] = true;
             if (b.T == "mine")
             {
                 o["tunnel"] = new JArray(b.Tunnel); o["shoredTiles"] = new JArray(b.Shored.OrderBy(k => k));
@@ -220,6 +221,7 @@ namespace CrownAndHearth.Sim
                     Var = entry.Value<int?>("var") ?? 0, Face = entry.Value<int?>("face") ?? -1,
                     Zoned = entry.Value<bool?>("zoned") ?? false,
                     Mode = (ForestMode)Math.Clamp(entry.Value<int?>("mode") ?? 0, 0, 2),   // saves from before forestry modes: Sustainable
+                    Organic = entry.Value<bool?>("organic") ?? false,   // saves from before forestry districts: painted-boundary lodges keep the old rules
                     DigProg = Math.Max(0, entry.Value<int?>("digProg") ?? 0),   // old saves had adits and shafts: those are dropped, the mine starts a tunnel
                     Closed = entry.Value<int?>("closed") ?? 0, CaveIns = entry.Value<int?>("caveIns") ?? 0,
                     ShortDays = entry.Value<int?>("dry") ?? 0,

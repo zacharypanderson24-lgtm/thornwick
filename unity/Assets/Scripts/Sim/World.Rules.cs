@@ -119,7 +119,8 @@ namespace CrownAndHearth.Sim
             var c = CanPlace(type, x, y);
             if (!c.Ok) return c;
             foreach (var kv in CostOf(type, PlacementSize(type))) ResAmt[kv.Key] -= kv.Value;
-            AddBld(type, x, y, PlacementSize(type));
+            var placed = AddBld(type, x, y, PlacementSize(type));
+            if (type == "wood" && DistrictAt(x, y)?.Type == DistrictType.Forestry) placed.Organic = true;   // manual lodges inside a Forestry district follow the same rules as built ones
             Recalc();
             return Result.Yes();
         }

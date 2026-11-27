@@ -1,6 +1,6 @@
 # Organic Settlement Development and Economic Zoning Overhaul
 
-**Status (updated each phase PR):** Phases 1 (audit, document, district framework) and 2 (shared engine core: development queue, reservations, construction, approval, housing on it) built. Phases 3 to 10 are **planned, not built**.
+**Status (updated each phase PR):** Phases 1 (audit, document, district framework), 2 (shared engine core) and 3 (agricultural and forestry districts) built. Phases 4 to 10 are **planned, not built**.
 Unity port only; the browser prototype is untouched.
 
 **This document supersedes `DESIGN_RESOURCE_EXTRACTION.md` where they disagree.** That earlier design made forestry, quarrying and mining
@@ -285,7 +285,7 @@ so food and critical services keep their workers), and completes into the existi
 |---|---|---|
 | 1 | Audit, this document, district framework (types, identity, names, settings, suitability, save) | **built** (PR for this phase) |
 | 2 | Generalised engine core: development queue, reservations, minimal construction, approval flow, reserve; residential preserved on it | **built** (see section 8) |
-| 3 | Agricultural and forestry districts | planned |
+| 3 | Agricultural and forestry districts | **built** (see section 9) |
 | 4 | Mining and quarrying districts | planned |
 | 5 | Hunting and fishing districts | planned |
 | 6 | District controls and the inspector | planned |
@@ -311,3 +311,16 @@ player-visible yet except that the three new zone kinds exist in the simulation 
 - **Save:** additive `projects` field (queue, held materials, rejections, reserve); old saves get an empty queue; loading never duplicates projects or refills the store.
 
 **Not built yet:** non-housing demand and sites (phases 3 to 5), scoring beyond housing, the inspector and queue UI (phases 6 and 8), construction-site clearing (phase 7), scheduled/cached per-district evaluation beyond the district-tile search (phase 9).
+
+## 9. Phase 3 report: agricultural and forestry districts (built)
+
+**Code:** `Sim/World.DevEconomy.cs` (the two evaluators), `Building.Organic` (saved), small edits in `World.Extraction.cs`, `World.Economy.cs` (`FellAt`), `World.Rules.cs` (`Place`), `World.Districts.cs` (building ownership), `World.Projects.cs`.
+
+**Rhythm (stateless, so save/load gives the same days):** a district with no building of its kind is looked at every day (initial development: the first farmhouse or lodge needs no crisis); an established district once a week (`(Day + Id) % 7 == 0`).
+
+**Forestry:** the first lodge needs more than `SustainFloor + 6` (16) mature, unprotected trees in the district, a free 2 x 2 site beside a connected road within 3 tiles of the district, and passes the player's own `CanPlace`. A second lodge needs ALL of: every existing lodge fully staffed, timber short (planks + logs under 80), the forest regrowing enough (existing lodges' cutting under 1.15 x the sustainable rate) and more mature trees (12 more per lodge); sites keep 8 tiles from other lodges. Cost 6 wood (the same as by hand), 4 build days.
+**Organic lodges** (`Building.Organic`: built by the engine, or placed by hand inside a Forestry district, or later adopted): work only the Forestry-zone tiles in their reach under the sustainable rules (floor, replanting, protected woodland, one crew per tree) and **keep the zone on felled ground** (the lodge replants it), instead of the old painted-boundary "fell everything, no replanting" order. Lodges from older saves stay legacy (not organic) and keep the old behaviour until Phase 9 offers adoption; forester is unchanged (optional).
+**Agriculture:** first farmhouse needs 6 open fertile fields not already worked by a farm; a farm of Large size when 54 or more are open. More farmhouses need: every farm staffed, at least 9 unworked fields (a farmer's share), and real food pressure (the year-average production under 1.1 x eating, or under 40 days in store); the site scores the unworked fields it would reach and **penalises covering fields** (a farmhouse goes on the strip beside the road, not on a field). Uses the same seasonal field sharing as hand-placed farms (`FarmFields`); skipped in Classic farming.
+**Ownership rule changed:** an ordinary building belongs to the district of its kind it stands in, or else the lowest-numbered one it touches (a farmhouse beside its fields, a lodge at the forest edge). Only buildings in or beside none are legacy.
+**Explanations:** every refusal and wait writes a plain sentence with real numbers into `District.Note` ("limited by insufficient mature trees: 3 in this district...", "additional workers needed: 2 unfilled positions", "no new farmhouse needed: the farms make 12 food a day against 9 eaten", "Development waiting: Waiting for 4 wood. The proposed woodcutter lodge costs 6 wood").
+**Not built:** hunting/fishing (Phase 5), the inspector (Phase 6), harvest-mode choice per district (Phase 6), construction-site clearing of tree-covered sites (Phase 7), demand scoring beyond these rules (the weighted score table stays a later refinement).

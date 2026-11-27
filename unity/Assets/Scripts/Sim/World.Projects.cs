@@ -103,6 +103,7 @@ namespace CrownAndHearth.Sim
             if (!SiteFreeForCompletion(p)) { CancelProject(p.Id, "The site was taken before building finished."); return; }
             var b = AddBld(p.Type, p.X, p.Y, p.Sz);
             b.Zoned = true; b.Tier = p.Tier;
+            if (p.Type == "wood") b.Organic = true;
             p.Held.Clear(); p.Status = ProjectStatus.Done; p.Closed = Day; p.Missing = "";
             Recalc();
         }
