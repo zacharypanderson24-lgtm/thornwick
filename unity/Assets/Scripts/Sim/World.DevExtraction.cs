@@ -73,7 +73,7 @@ namespace CrownAndHearth.Sim
             }
             else
             {
-                int vacant = quarries.Sum(b => Math.Max(0, b.Jobs - b.Workers));
+                int vacant = quarries.Sum(b => Math.Max(0, ActiveJobs(b) - b.Workers));
                 if (vacant > 0) { d.Note = $"Additional workers needed: the existing quarry has {vacant} unfilled position{(vacant == 1 ? "" : "s")}. No new quarry until they are staffed."; return; }
                 if (!StoneShort) { d.Note = $"No new quarry needed: stone is stocked ({ResAmt[Res.Stone]:0})."; return; }
                 if (stone < 30) { d.Note = $"Limited by little stone left: about {stone:0} in the district."; return; }
@@ -111,7 +111,7 @@ namespace CrownAndHearth.Sim
             int smitheries = Blds.Count(b => b.T == "smithery" && b.Served);
             if (mines.Count > 0)
             {
-                int vacant = mines.Sum(b => Math.Max(0, b.Jobs - b.Workers));
+                int vacant = mines.Sum(b => Math.Max(0, ActiveJobs(b) - b.Workers));
                 if (vacant > 0) { d.Note = $"No new mines required: the existing mine{(mines.Count == 1 ? " has" : "s have")} {vacant} unfilled worker position{(vacant == 1 ? "" : "s")}."; return; }
                 double capacity = mines.Count * MineDailyEstimate(Jobs["mine"]), demand = OreUsePerDay(smitheries);
                 if (demand <= 0) { d.Note = "No new mines required: no smithery needs more ore. Build a smithery and a district can open more mines."; return; }

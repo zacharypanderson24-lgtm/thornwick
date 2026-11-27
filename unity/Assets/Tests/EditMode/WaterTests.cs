@@ -203,7 +203,7 @@ namespace CrownAndHearth.Tests
             w.ZoneMap[C + 7, C + 1] = Zone.Res;
             w.Hall.Water = 0;
             var first = homes[0];
-            for (int day = 1; day < WaterTuning.Grace; day++) { w.ResAmt[Res.Food] = 300; w.ResAmt[Res.Wood] = 300; w.Hall.Water = 0; w.Tick(); }
+            for (int day = 1; day < WaterTuning.Grace; day++) { w.ResAmt[Res.Food] = 30000; w.ResAmt[Res.Wood] = 300; w.Hall.Water = 0; w.Tick(); }
             Assert.AreEqual(WaterTuning.Grace - 1, first.ShortDays);
             Assert.IsFalse(first.Parched);
             StringAssert.Contains("short of water", w.Note[Zone.Res], "house growth stops while homes are short");

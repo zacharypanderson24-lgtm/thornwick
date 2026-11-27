@@ -125,7 +125,7 @@ namespace CrownAndHearth.Sim
             }
             else
             {
-                var vacant = lodges.Sum(b => Math.Max(0, b.Jobs - b.Workers));
+                var vacant = lodges.Sum(b => Math.Max(0, ActiveJobs(b) - b.Workers));
                 if (vacant > 0) { d.Note = $"Additional workers needed: the existing lodge{(lodges.Count == 1 ? " has" : "s have")} {vacant} unfilled position{(vacant == 1 ? "" : "s")}. No new lodge until they are staffed."; return; }
                 if (!TimberShort) { d.Note = $"No new lodge needed: timber is stocked ({ResAmt[Res.Wood]:0} planks, {ResAmt[Res.Logs]:0} logs)."; return; }
                 double cutting = lodges.Count * LodgeDailyEstimate(Jobs["wood"]) , sustainable = SustainableLogsPerDay(f.Mature + f.Saplings);
@@ -187,9 +187,9 @@ namespace CrownAndHearth.Sim
             }
             else
             {
-                var vacant = farms.Sum(b => Math.Max(0, b.Jobs - b.Workers));
+                var vacant = farms.Sum(b => Math.Max(0, ActiveJobs(b) - b.Workers));
                 if (vacant > 0) { d.Note = $"Additional workers needed: the existing farmhouse{(farms.Count == 1 ? " has" : "s have")} {vacant} unfilled position{(vacant == 1 ? "" : "s")}. No new farmhouse until they are staffed."; return; }
-                if (r.Unserved < FieldsPerFarmer) { d.Note = $"No new farmhouse needed: the farms already work the farmland ({r.Unserved} fields left over, a farmer works {FieldsPerFarmer})."; return; }
+                if (r.Unserved < FieldsPerFarmer) { var fs = FoodPressure(); d.Note = fs.short_ ? $"Food is short ({fs.make:0.#} made against {fs.eat:0.#} eaten, {fs.days:0} days in store) but all the farmland is already worked: zone more farmland near a farmhouse." : $"No new farmhouse needed: the farms already work the farmland ({r.Unserved} fields left over, a farmer works {FieldsPerFarmer})."; return; }
                 if (!FoodPressure().short_) { d.Note = $"No new farmhouse needed: the farms make {make:0.#} food a day against {eat:0.#} eaten, with {days:0} days in store."; return; }
             }
             int sz = r.Unserved >= LargeFarmFields ? 2 : 1;
