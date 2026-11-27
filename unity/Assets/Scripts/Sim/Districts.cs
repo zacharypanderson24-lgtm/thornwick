@@ -22,8 +22,9 @@ namespace CrownAndHearth.Sim
         public int MaxEmployment;         // most jobs the district may offer
         public int MaxSpend;              // most construction spend per in-game year (wood + stone + gold units); phase 6 enforces it
         public int MinWood, MinStone;     // construction reserve this district must leave in the store
-        public int ProductionTarget;      // stop expanding once the district makes this much per day (units depend on the zone)
-        public bool Any => MaxBuildings > 0 || MaxEmployment > 0 || MaxSpend > 0 || MinWood > 0 || MinStone > 0 || ProductionTarget > 0;
+        public int ProductionTarget;      // stop expanding once the district makes this much per day (units depend on the zone: see World.DistrictOutputUnit)
+        public ForestMode HarvestMode;    // forestry: the mode new lodges start in (Sustainable by default; Intensive on request; Permanent clearing needs its own explicit designation)
+        public bool Any => HarvestMode != ForestMode.Sustainable || MaxBuildings > 0 || MaxEmployment > 0 || MaxSpend > 0 || MinWood > 0 || MinStone > 0 || ProductionTarget > 0;
         public DistrictLimits Copy() => (DistrictLimits)MemberwiseClone();
     }
 
@@ -48,6 +49,7 @@ namespace CrownAndHearth.Sim
         public int OpenTiles;             // tiles with nothing built on them
         public int Jobs, Workers;
         public string Note = "";          // why development is or is not happening (written by the engine from phase 2 on)
+        public readonly List<(int day, int amount)> SpendLog = new List<(int, int)>();   // construction funded here (saved), for the yearly spending limit
 
         public int Area => Tiles.Count;
         /// <summary>Development may start new buildings here: not Disabled, not Paused.</summary>
