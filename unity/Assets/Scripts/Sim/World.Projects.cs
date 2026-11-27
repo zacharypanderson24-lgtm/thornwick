@@ -31,6 +31,7 @@ namespace CrownAndHearth.Sim
             if (d.Mode == DevMode.Paused) return "Development is paused. Existing buildings keep working.";
             if (OpenProjects.Any(p => p.DistrictId == d.Id)) return "Existing projects have priority: one is still open here.";
             if (d.Limits.MaxBuildings > 0 && d.Buildings.Count >= d.Limits.MaxBuildings) return $"Building limit reached ({d.Limits.MaxBuildings}).";
+            if (d.Limits.ProductionTarget > 0 && DistrictOutputPerDay(d) >= d.Limits.ProductionTarget) return $"Production target reached ({DistrictOutputPerDay(d):0.#} of {d.Limits.ProductionTarget} {DistrictOutputUnit(d.Type)}).";
             if (OpenProjects.Count(p => p.Status != ProjectStatus.Proposed) >= Math.Max(1, Reserve.MaxOpenProjects)) return "Other projects are using the settlement's construction capacity.";
             return null;
         }
@@ -38,6 +39,7 @@ namespace CrownAndHearth.Sim
         /// <summary>The wood, stone or gold the store must keep back (the district's own reserve or the settlement's, whichever is larger); null when the cost is fine.</summary>
         public string ReserveBlock(District d, Dictionary<Res, int> cost)
         {
+            if (d != null && d.Limits.MaxSpend > 0 && SpentThisYear(d) + cost.Values.Sum() > d.Limits.MaxSpend) return $"Spending limit reached: {SpentThisYear(d)} of {d.Limits.MaxSpend} units used this year, and this project costs {cost.Values.Sum()}.";
             int keepWood = Math.Max(Reserve.KeepWood, d?.Limits.MinWood ?? 0), keepStone = Math.Max(Reserve.KeepStone, d?.Limits.MinStone ?? 0);
             if (cost.TryGetValue(Res.Wood, out var w) && w > 0 && ResAmt[Res.Wood] - w < keepWood) return $"Keeping {keepWood} wood in reserve.";
             if (cost.TryGetValue(Res.Stone, out var s) && s > 0 && ResAmt[Res.Stone] - s < keepStone) return $"Keeping {keepStone} stone in reserve.";
@@ -87,6 +89,7 @@ namespace CrownAndHearth.Sim
             if (p.Status != ProjectStatus.Waiting) return p.Status == ProjectStatus.Building;
             if (p.Cost.Any(c => ResAmt[c.Key] + 1e-9 < c.Value)) { p.Missing = Needs(p.Cost, ResAmt); return false; }
             foreach (var c in p.Cost) { ResAmt[c.Key] -= c.Value; p.Held[c.Key] = c.Value; }
+            DistrictById(p.DistrictId)?.SpendLog.Add((Day, p.Cost.Values.Sum()));
             p.Status = ProjectStatus.Building; p.Missing = "";
             return true;
         }
@@ -104,6 +107,7 @@ namespace CrownAndHearth.Sim
             var b = AddBld(p.Type, p.X, p.Y, p.Sz);
             b.Zoned = true; b.Tier = p.Tier;
             if (p.Type == "wood" || p.Type == "quarry" || p.Type == "mine") b.Organic = true;
+            if (p.Type == "wood") b.Mode = DistrictById(p.DistrictId)?.Limits.HarvestMode ?? ForestMode.Sustainable;   // the district's harvest setting
             p.Held.Clear(); p.Status = ProjectStatus.Done; p.Closed = Day; p.Missing = "";
             Recalc();
         }

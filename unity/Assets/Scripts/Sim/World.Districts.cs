@@ -301,6 +301,7 @@ namespace CrownAndHearth.Sim
         public Result SetDistrictLimits(int id, DistrictLimits limits)
         {
             var d = DistrictById(id); if (d == null) return Result.No("There is no such district");
+            if (limits.HarvestMode == ForestMode.Clearing) return Result.No("Permanent clearing is never a district default: designate the trees to clear explicitly");
             if (limits.MaxBuildings < 0 || limits.MaxEmployment < 0 || limits.MaxSpend < 0 || limits.MinWood < 0 || limits.MinStone < 0 || limits.ProductionTarget < 0)
                 return Result.No("Limits cannot be negative");
             d.Limits = limits.Copy(); return Result.Yes();
@@ -386,7 +387,8 @@ namespace CrownAndHearth.Sim
                 {
                     ["id"] = d.Id, ["type"] = d.Type.ToString().ToLowerInvariant(), ["name"] = d.Name, ["custom"] = d.CustomName,
                     ["prio"] = d.Priority.ToString().ToLowerInvariant(), ["mode"] = d.Mode.ToString().ToLowerInvariant(), ["founded"] = d.Founded,
-                    ["limits"] = new JObject { ["bld"] = d.Limits.MaxBuildings, ["jobs"] = d.Limits.MaxEmployment, ["spend"] = d.Limits.MaxSpend, ["wood"] = d.Limits.MinWood, ["stone"] = d.Limits.MinStone, ["target"] = d.Limits.ProductionTarget },
+                    ["limits"] = new JObject { ["bld"] = d.Limits.MaxBuildings, ["jobs"] = d.Limits.MaxEmployment, ["spend"] = d.Limits.MaxSpend, ["wood"] = d.Limits.MinWood, ["stone"] = d.Limits.MinStone, ["target"] = d.Limits.ProductionTarget, ["harvest"] = (int)d.Limits.HarvestMode },
+                    ["spend"] = new JArray(d.SpendLog.Select(s => new JArray(s.day, s.amount))),
                     ["history"] = new JArray(d.History), ["runs"] = runs,
                 });
             }
@@ -415,8 +417,10 @@ namespace CrownAndHearth.Sim
                     {
                         MaxBuildings = Math.Max(0, lm.Value<int?>("bld") ?? 0), MaxEmployment = Math.Max(0, lm.Value<int?>("jobs") ?? 0), MaxSpend = Math.Max(0, lm.Value<int?>("spend") ?? 0),
                         MinWood = Math.Max(0, lm.Value<int?>("wood") ?? 0), MinStone = Math.Max(0, lm.Value<int?>("stone") ?? 0), ProductionTarget = Math.Max(0, lm.Value<int?>("target") ?? 0),
+                        HarvestMode = (lm.Value<int?>("harvest") ?? 0) == (int)ForestMode.Intensive ? ForestMode.Intensive : ForestMode.Sustainable,   // clearing is never a district default
                     };
                 foreach (var h in (j["history"] as JArray) ?? new JArray()) AddHistory(d, (string)h);
+                foreach (var sp in (j["spend"] as JArray) ?? new JArray()) if (sp is JArray spair && spair.Count == 2) d.SpendLog.Add(((int)spair[0], Math.Max(0, (int)spair[1])));
                 if (j["runs"] is JArray runs)
                     for (int i = 0; i + 2 < runs.Count; i += 3)
                     {

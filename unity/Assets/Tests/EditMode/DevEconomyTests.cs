@@ -35,7 +35,7 @@ namespace CrownAndHearth.Tests
             return default;
         }
 
-        static void Forest(World w, (int x, int y, int dx, int dy, int px, int py) s, int len = 10, int treeFrom = 3)
+        internal static void Forest(World w, (int x, int y, int dx, int dy, int px, int py) s, int len = 10, int treeFrom = 3)
         {
             for (int a = 1; a <= len; a++)
                 for (int t = 1; t <= 6; t++)
@@ -47,7 +47,7 @@ namespace CrownAndHearth.Tests
             w.Touch();
         }
 
-        static void Farmland(World w, (int x, int y, int dx, int dy, int px, int py) s, int len = 10, int from = 3)
+        internal static void Farmland(World w, (int x, int y, int dx, int dy, int px, int py) s, int len = 10, int from = 3)
         {
             for (int a = 1; a <= len; a++)
                 for (int t = from; t <= 6; t++)

@@ -589,6 +589,8 @@ namespace CrownAndHearth.Game
             if (kb.bKey.wasPressedThisFrame) { _hud.ToggleCatalogue(); return; }
             if (kb.nKey.wasPressedThisFrame) { _hud.ToggleMenu(CrownAndHearth.Game.UI.MenuId.Notifications); return; }
             if (kb.cKey.wasPressedThisFrame) { _hud.ToggleCharters(); return; }
+            if (kb.yKey.wasPressedThisFrame) { _hud.ToggleDistricts(); return; }
+            if (kb.escapeKey.wasPressedThisFrame && _hud.DistrictsOpen) { _hud.ToggleDistricts(); return; }
             if (kb.escapeKey.wasPressedThisFrame && _hud.CharterOpen) { _hud.ToggleCharters(); return; }
             if (kb.escapeKey.wasPressedThisFrame && _hud.EscapeManagement(_tool != Tools[0] || _roadAnchor.HasValue || _zoneAnchor.HasValue || _ferryFrom != null)) return;
             if (kb.mKey.wasPressedThisFrame) { _hud.ToggleMap(); return; }
