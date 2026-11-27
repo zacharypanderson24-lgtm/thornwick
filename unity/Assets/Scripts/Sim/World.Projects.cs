@@ -29,7 +29,7 @@ namespace CrownAndHearth.Sim
         {
             if (d.Priority == DevPriority.Disabled) return "Development is disabled for this district.";
             if (d.Mode == DevMode.Paused) return "Development is paused. Existing buildings keep working.";
-            if (OpenProjects.Any(p => p.DistrictId == d.Id)) return "Existing projects have priority: one is still open here.";
+            if (OpenProjects.FirstOrDefault(p => p.DistrictId == d.Id) is DevProject open) return "Existing projects have priority: " + ProjectLine(open);
             if (d.Limits.MaxBuildings > 0 && d.Buildings.Count >= d.Limits.MaxBuildings) return $"Building limit reached ({d.Limits.MaxBuildings}).";
             if (d.Limits.ProductionTarget > 0 && DistrictOutputPerDay(d) >= d.Limits.ProductionTarget) return $"Production target reached ({DistrictOutputPerDay(d):0.#} of {d.Limits.ProductionTarget} {DistrictOutputUnit(d.Type)}).";
             if (OpenProjects.Count(p => p.Status != ProjectStatus.Proposed) >= Math.Max(1, Reserve.MaxOpenProjects)) return "Other projects are using the settlement's construction capacity.";
@@ -47,13 +47,15 @@ namespace CrownAndHearth.Sim
             return null;
         }
 
-        bool SiteFree(int x, int y, int sz)
+        /// <summary>Is the footprint free for a project? Protected land is a hard restriction: never. Trees only when the project will clear them first (allowTrees).</summary>
+        bool SiteFree(int x, int y, int sz, bool allowTrees = false)
         {
             for (int j = 0; j < sz; j++)
                 for (int i = 0; i < sz; i++)
                 {
                     int tx = x + i, ty = y + j;
-                    if (!Inb(tx, ty) || Grid[ty, tx] != null || IsSolid(tx, ty) || HasTree(tx, ty) || !Claimed(tx, ty)) return false;
+                    if (!Inb(tx, ty) || Grid[ty, tx] != null || IsSolid(tx, ty) || (!allowTrees && HasTree(tx, ty)) || !Claimed(tx, ty)) return false;
+                    if (ProtectedWood.Contains(Tk(tx, ty))) return false;
                     foreach (var p in Projects) if (p.Open && tx >= p.X && tx < p.X + p.Sz && ty >= p.Y && ty < p.Y + p.Sz) return false;
                 }
             return true;
@@ -68,20 +70,78 @@ namespace CrownAndHearth.Sim
 
         /// <summary>Create a project. Funded at once unless the district asks for approval (then it is a proposal that holds nothing). Returns null with a reason
         /// when the site is not free; the engine's own gates (DevGate, ReserveBlock) are checked by the caller.</summary>
-        public (DevProject project, string why) StartProject(District d, string type, int x, int y, int sz, int tier, Dictionary<Res, int> cost, int buildDays, string reason, string benefit)
+        public (DevProject project, string why) StartProject(District d, string type, int x, int y, int sz, int tier, Dictionary<Res, int> cost, int buildDays, string reason, string benefit, List<int> clear = null)
         {
             if (d == null || !Names.ContainsKey(type)) return (null, "No such district or building.");
             if (RejectedUntil.TryGetValue(Tk(x, y), out var until) && until > Day) return (null, "You rejected a project here recently.");
-            if (!SiteFree(x, y, sz)) return (null, "The site is not free.");
+            bool needsClearing = clear != null && clear.Count > 0;
+            if (!SiteFree(x, y, sz, needsClearing)) return (null, "The site is not free.");
             var p = new DevProject
             {
                 Id = _nextProjectId++, DistrictId = d.Id, Type = type, X = x, Y = y, Sz = sz, Tier = tier, Cost = new Dictionary<Res, int>(cost), BuildDays = buildDays,
                 Created = Day, Reason = reason ?? "", Benefit = benefit ?? "", Status = d.Mode == DevMode.ApprovalRequired ? ProjectStatus.Proposed : ProjectStatus.Waiting,
             };
+            if (needsClearing) p.ClearKeys.AddRange(clear);
+            if (p.Status == ProjectStatus.Waiting && needsClearing)
+            {
+                if (!BeginClearing(p, out var refusal)) { _nextProjectId--; return (null, refusal); }
+            }
             Projects.Add(p);
             if (p.Status == ProjectStatus.Waiting) { if (TryFund(p) && p.BuildDays == 0) StepOne(p); }   // work starts with the next day; a 0-day project is finished now
-            else p.Missing = "Waiting for your approval.";
+            else if (p.Status == ProjectStatus.Proposed) p.Missing = needsClearing ? $"Waiting for your approval (it needs {clear.Count} tree{(clear.Count == 1 ? "" : "s")} cleared first)." : "Waiting for your approval.";
             return (p, "");
+        }
+
+        // ---------- clearing the site first (phase 7) ----------
+        /// <summary>Order the site's trees cleared (real work orders for idle villagers; the logs are recovered once by the clearing system). Protected trees and tiles
+        /// someone else has already ordered cleared are refused: hard restrictions are never overridden.</summary>
+        bool BeginClearing(DevProject p, out string refusal)
+        {
+            refusal = "";
+            var added = new List<int>();
+            foreach (int k in p.ClearKeys)
+            {
+                int x = k % N, y = k / N;
+                if (ProtectedWood.Contains(k)) { refusal = "Protected woodland is in the way."; }
+                else if (ClearOrders.Contains(k)) { refusal = "Someone already ordered part of this site cleared."; }
+                else { var r = DesignateClearing(x, y, false); if (r.Ok) { added.Add(k); continue; } refusal = r.Reason; }
+                foreach (int a in added) { ClearOrders.Remove(a); ClearProgress.Remove(a); }
+                Touch();
+                return false;
+            }
+            p.Status = ProjectStatus.Clearing; p.Missing = ClearingMissing(p);
+            return true;
+        }
+
+        string ClearingMissing(DevProject p)
+        {
+            int left = 0;
+            for (int j = 0; j < p.Sz; j++) for (int i = 0; i < p.Sz; i++) if (HasTree(p.X + i, p.Y + j)) left++;
+            return $"Clearing {left} tree{(left == 1 ? "" : "s")} off the site first (needs idle villagers).";
+        }
+
+        void AdvanceClearing(DevProject p)
+        {
+            if (p.Paused) return;
+            if (Day - p.Created > 120) { CancelProject(p.Id, "Clearing took too long (no idle villagers could reach it)."); return; }
+            var left = new List<int>();
+            for (int j = 0; j < p.Sz; j++)
+                for (int i = 0; i < p.Sz; i++)
+                {
+                    int tx = p.X + i, ty = p.Y + j, k = Tk(tx, ty);
+                    if (ProtectedWood.Contains(k)) { CancelProject(p.Id, "The site became protected land."); return; }
+                    if (HasTree(tx, ty)) left.Add(k);
+                }
+            if (left.Count == 0)
+            {
+                foreach (int k in p.ClearKeys) { ClearOrders.Remove(k); ClearProgress.Remove(k); }
+                p.ClearKeys.Clear(); p.Status = ProjectStatus.Waiting; p.Missing = "";
+                if (TryFund(p) && p.BuildDays == 0) StepOne(p);
+                return;
+            }
+            foreach (int k in left)   // an order the player cancelled, or the clearing system dropped as unreachable: ask again, or give up if it is refused
+                if (!ClearOrders.Contains(k)) { var r = DesignateClearing(k % N, k / N, false); if (!r.Ok) { CancelProject(p.Id, "Clearing could not continue: " + r.Reason); return; } if (!p.ClearKeys.Contains(k)) p.ClearKeys.Add(k); }
+            p.Missing = ClearingMissing(p);
         }
 
         bool TryFund(DevProject p)
@@ -96,6 +156,7 @@ namespace CrownAndHearth.Sim
 
         void StepOne(DevProject p)
         {
+            if (p.Status == ProjectStatus.Clearing) { AdvanceClearing(p); return; }
             if (p.Status != ProjectStatus.Building || p.Paused) return;
             if (p.Progress < p.BuildDays)
             {
@@ -142,6 +203,7 @@ namespace CrownAndHearth.Sim
         {
             var p = ProjectById(id);
             if (p == null || p.Status != ProjectStatus.Proposed) return Result.No("That project is not waiting for approval");
+            if (p.ClearKeys.Count > 0) { if (!BeginClearing(p, out var refusal)) return Result.No(refusal); return Result.Yes(); }
             p.Status = ProjectStatus.Waiting; p.Missing = "";
             if (TryFund(p) && p.BuildDays == 0) StepOne(p);
             return Result.Yes();
@@ -161,6 +223,7 @@ namespace CrownAndHearth.Sim
         {
             var p = ProjectById(id);
             if (p == null || !p.Open) return Result.No("That project is not open");
+            if (p.Status == ProjectStatus.Clearing) { foreach (int k in p.ClearKeys) if (ClearOrders.Remove(k)) ClearProgress.Remove(k); p.ClearKeys.Clear(); Touch(); }   // the clearing orders this project made go with it
             if (p.Held.Count > 0)
             {
                 double left = p.BuildDays <= 0 ? 1 : 1 - p.Progress / (double)p.BuildDays;
@@ -221,7 +284,7 @@ namespace CrownAndHearth.Sim
             {
                 ["id"] = p.Id, ["district"] = p.DistrictId, ["type"] = p.Type, ["x"] = p.X, ["y"] = p.Y, ["sz"] = p.Sz, ["tier"] = p.Tier, ["status"] = p.Status.ToString().ToLowerInvariant(),
                 ["paused"] = p.Paused, ["rank"] = p.Rank, ["days"] = p.BuildDays, ["progress"] = p.Progress, ["created"] = p.Created, ["closed"] = p.Closed,
-                ["cost"] = ResToJson(p.Cost), ["held"] = ResToJson(p.Held), ["reason"] = p.Reason, ["benefit"] = p.Benefit, ["missing"] = p.Missing,
+                ["cost"] = ResToJson(p.Cost), ["held"] = ResToJson(p.Held), ["reason"] = p.Reason, ["benefit"] = p.Benefit, ["missing"] = p.Missing, ["clear"] = new JArray(p.ClearKeys),
             })),
         };
 
@@ -246,6 +309,7 @@ namespace CrownAndHearth.Sim
                     Reason = j.Value<string>("reason") ?? "", Benefit = j.Value<string>("benefit") ?? "", Missing = j.Value<string>("missing") ?? "",
                 };
                 p.Progress = Math.Clamp(j.Value<int?>("progress") ?? 0, 0, p.BuildDays);
+                foreach (var ck in (j["clear"] as JArray) ?? new JArray()) { int kk = (int)ck; if (kk >= 0 && kk < size * size) p.ClearKeys.Add(Tk(kk % size + offset, kk / size + offset)); }
                 if (!p.Open) p.Held.Clear();
                 Projects.Add(p); maxId = Math.Max(maxId, id);
             }

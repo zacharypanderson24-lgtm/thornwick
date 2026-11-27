@@ -80,24 +80,24 @@ namespace CrownAndHearth.Sim
             }
             if (d.Limits.MaxEmployment > 0 && d.Jobs + Jobs["quarry"] > d.Limits.MaxEmployment) { d.Note = $"Employment limit reached ({d.Limits.MaxEmployment} jobs)."; return; }
             var cost = CostFor("quarry", 2);
-            int bx = -1, by = 0; double best = double.MinValue; bool anyRoad = false;
+            int bx = -1, by = 0; List<int> bestClear = null; double best = double.MinValue; bool anyRoad = false;
             foreach (int key in NearDistrict(d, 2))
             {
                 int x = key % N, y = key / N;
                 if (!FootprintBesideRoad(x, y, 2)) continue;
                 anyRoad = true;
-                if (!PlanOpen(x, y, 2) || !SitePlaceable("quarry", x, y, 2)) continue;
+                if (!PlanOpen(x, y, 2) || !SitePlaceable("quarry", x, y, 2, out var clear)) continue;
                 var s = SurveyQuarrySite(x, y);
                 if (s.Level == SiteLevel.Invalid || s.DigTiles < FirstQuarryMinDig) continue;
                 if (s.OverlappingQuarries > 0 && s.DigTiles < 16 * (s.OverlappingQuarries + 1)) continue;   // other quarries already work that rock
-                double score = s.Reserve - 40.0 * s.OverlappingQuarries + Noise.Hash2(x, y, 41);
-                if (score > best) { best = score; bx = x; by = y; }
+                double score = s.Reserve - 40.0 * s.OverlappingQuarries + Noise.Hash2(x, y, 41) - ClearPenalty * clear.Count;
+                if (score > best) { best = score; bx = x; by = y; bestClear = clear; }
             }
             if (bx < 0) { d.Note = anyRoad ? "No suitable quarry site: it needs free ground beside a connected road within reach of open rock that other quarries do not already work." : "Development blocked: no connected road reaches this district."; return; }
             if (ReserveBlock(d, cost) is string held) { d.Note = held; return; }
             var site = SurveyQuarrySite(bx, by);
             string reason = quarries.Count == 0 ? $"First quarry for this stone ({workable} workable rock tiles)." : $"Stone is short ({ResAmt[Res.Stone]:0}) and the rock can supply more.";
-            var (p, why) = StartProject(d, "quarry", bx, by, 2, 1, cost, QuarryBuildDays, reason, $"About {site.DailyEstimate:0.#} stone a day; roughly {site.Reserve:0} stone in reach.");
+            var (p, why) = StartProject(d, "quarry", bx, by, 2, 1, cost, QuarryBuildDays, reason, $"About {site.DailyEstimate:0.#} stone a day; roughly {site.Reserve:0} stone in reach.", bestClear);
             d.Note = p == null ? why : p.Status == ProjectStatus.Proposed ? "A quarry is proposed. Approve it in the development queue." : p.Missing.Length > 0 ? $"Development waiting: {p.Missing} The proposed quarry costs {cost[Res.Wood]} wood." : "A quarry is being built here.";
         }
 
@@ -119,7 +119,7 @@ namespace CrownAndHearth.Sim
             }
             if (d.Limits.MaxEmployment > 0 && d.Jobs + Jobs["mine"] > d.Limits.MaxEmployment) { d.Note = $"Employment limit reached ({d.Limits.MaxEmployment} jobs)."; return; }
             var cost = CostFor("mine", 2);
-            int bx = -1, by = 0; double best = double.MinValue; bool anyRoad = false, anyFace = false;
+            int bx = -1, by = 0; List<int> bestClear = null; double best = double.MinValue; bool anyRoad = false, anyFace = false;
             foreach (int key in NearDistrict(d, 2))
             {
                 int x = key % N, y = key / N;
@@ -130,11 +130,11 @@ namespace CrownAndHearth.Sim
                 var (ex, ey) = EntranceTile(x + (face == 3 ? 1 : 0), y + (face == 0 ? 1 : 0), face);
                 if (!Inb(ex, ey) || Grid[ey, ex]?.T != "road" || !D.Conn[Tk(ex, ey)]) continue;   // and a road must reach the entrance
                 anyFace = true;
-                if (!PlanOpen(x, y, 2) || !SitePlaceable("mine", x, y, 2)) continue;
+                if (!PlanOpen(x, y, 2) || !SitePlaceable("mine", x, y, 2, out var clear)) continue;
                 var s = SurveyMineSite(x, y);
                 if (s.Level == SiteLevel.Invalid || s.Reserve < FirstMineMinReserve) continue;
-                double score = s.Reserve - 40.0 * s.OverlappingMines + Noise.Hash2(x, y, 43);
-                if (score > best) { best = score; bx = x; by = y; }
+                double score = s.Reserve - 40.0 * s.OverlappingMines + Noise.Hash2(x, y, 43) - ClearPenalty * clear.Count;
+                if (score > best) { best = score; bx = x; by = y; bestClear = clear; }
             }
             if (bx < 0)
             {
@@ -146,7 +146,7 @@ namespace CrownAndHearth.Sim
             if (ReserveBlock(d, cost) is string held) { d.Note = held; return; }
             var site = SurveyMineSite(bx, by);
             string reason = mines.Count == 0 ? $"First mine for this ground (about {site.Reserve:0} ore in reach)." : $"Ore is short ({ResAmt[Res.Ore]:0}) for {smitheries} smithery{(smitheries == 1 ? "" : "ies")} and the ground has more.";
-            var (p, why) = StartProject(d, "mine", bx, by, 2, 1, cost, MineBuildDays, reason, $"About {site.DailyEstimate:0.#} ore a day for about {site.LifetimeYears:0.#} years (an estimate).");
+            var (p, why) = StartProject(d, "mine", bx, by, 2, 1, cost, MineBuildDays, reason, $"About {site.DailyEstimate:0.#} ore a day for about {site.LifetimeYears:0.#} years (an estimate).", bestClear);
             d.Note = p == null ? why : p.Status == ProjectStatus.Proposed ? "A mine is proposed. Approve it in the development queue." : p.Missing.Length > 0 ? $"Development waiting: {p.Missing} The proposed mine costs {cost[Res.Wood]} wood." : "A mine is being built here.";
         }
     }

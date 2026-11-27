@@ -61,24 +61,24 @@ namespace CrownAndHearth.Sim
             }
             if (d.Limits.MaxEmployment > 0 && d.Jobs + Jobs["hunter"] > d.Limits.MaxEmployment) { d.Note = $"Employment limit reached ({d.Limits.MaxEmployment} jobs)."; return; }
             var cost = CostFor("hunter", 2);
-            int bx = -1, by = 0; double best = double.MinValue; bool anyRoad = false;
+            int bx = -1, by = 0; List<int> bestClear = null; double best = double.MinValue; bool anyRoad = false;
             foreach (int key in NearDistrict(d, 2))
             {
                 int x = key % N, y = key / N;
                 if (!FootprintBesideRoad(x, y, 2)) continue;
                 anyRoad = true;
-                if (!PlanOpen(x, y, 2) || !SitePlaceable("hunter", x, y, 2)) continue;
+                if (!PlanOpen(x, y, 2) || !SitePlaceable("hunter", x, y, 2, out var clear)) continue;
                 if (lodges.Any(b => Math.Max(Math.Abs(b.X - x), Math.Abs(b.Y - y)) < HuntSpacing)) continue;
                 int game = 0;
                 for (int j = y - 8; j <= y + 9; j++) for (int i = x - 8; i <= x + 9; i++) if (Inb(i, j) && DecoMap[j, i] == Deco.Tree && _districtMap[Tk(i, j)] == d.Id) game++;
-                double score = game + Noise.Hash2(x, y, 47) * 0.5;
-                if (game > 0 && score > best) { best = score; bx = x; by = y; }
+                double score = game + Noise.Hash2(x, y, 47) * 0.5 - ClearPenalty * clear.Count;
+                if (game > 0 && score > best) { best = score; bx = x; by = y; bestClear = clear; }
             }
             if (bx < 0) { d.Note = anyRoad ? "No suitable lodge site: it needs free 2 x 2 ground beside a connected road within reach of the district's woods, away from other lodges." : "Development blocked: no connected road reaches this district."; return; }
             if (ReserveBlock(d, cost) is string held) { d.Note = held; return; }
             double rate = Jobs["hunter"] * HuntingLoad / (double)(2 * 4 + WorkT + 1);
             string reason = lodges.Count == 0 ? $"First hunting lodge ({g.GameTiles} woodland tiles of game)." : $"Food is short ({food.make:0.#} made against {food.eat:0.#} eaten) and the game can carry another lodge.";
-            var (p, why) = StartProject(d, "hunter", bx, by, 2, 1, cost, HuntBuildDays, reason, $"Up to about {rate:0.#} food a day while game lasts (it regrows {g.RegrowPerDay:0.#} a day here).");
+            var (p, why) = StartProject(d, "hunter", bx, by, 2, 1, cost, HuntBuildDays, reason, $"Up to about {rate:0.#} food a day while game lasts (it regrows {g.RegrowPerDay:0.#} a day here).", bestClear);
             d.Note = p == null ? why : p.Status == ProjectStatus.Proposed ? "A hunting lodge is proposed. Approve it in the development queue." : p.Missing.Length > 0 ? $"Development waiting: {p.Missing} The proposed hunting lodge costs {cost[Res.Wood]} wood." : "A hunting lodge is being built here.";
         }
 
@@ -105,13 +105,13 @@ namespace CrownAndHearth.Sim
             }
             if (d.Limits.MaxEmployment > 0 && d.Jobs + Jobs["fisher"] > d.Limits.MaxEmployment) { d.Note = $"Employment limit reached ({d.Limits.MaxEmployment} jobs)."; return; }
             var cost = CostFor("fisher", 1);
-            int bx = -1, by = 0; double best = double.MinValue; bool anyRoad = false, anyWater = false, anyStock = false, anyCapacity = false; string thin = null;
+            int bx = -1, by = 0; List<int> bestClear = null; double best = double.MinValue; bool anyRoad = false, anyWater = false, anyStock = false, anyCapacity = false; string thin = null;
             foreach (int key in NearDistrict(d, 1))
             {
                 int x = key % N, y = key / N;
                 if (!FootprintBesideRoad(x, y, 1)) continue;
                 anyRoad = true;
-                if (!PlanOpen(x, y, 1) || !SitePlaceable("fisher", x, y, 1)) continue;
+                if (!PlanOpen(x, y, 1) || !SitePlaceable("fisher", x, y, 1, out var clear)) continue;
                 if (huts.Any(b => Math.Max(Math.Abs(b.X - x), Math.Abs(b.Y - y)) < FishSpacing)) continue;
                 var probe = new Building { T = "fisher", X = x, Y = y, Sz = 1 };
                 var g = FishingGrounds(probe);
@@ -124,8 +124,8 @@ namespace CrownAndHearth.Sim
                 double added = Jobs["fisher"] * g.perWorker;
                 if (existing + added > SustainableFishPerDay(g.body) * FishCapacityMargin) continue;
                 anyCapacity = true;
-                double score = g.perWorker * stock * 100 + Noise.Hash2(x, y, 53);
-                if (score > best) { best = score; bx = x; by = y; }
+                double score = g.perWorker * stock * 100 + Noise.Hash2(x, y, 53) - ClearPenalty * clear.Count;
+                if (score > best) { best = score; bx = x; by = y; bestClear = clear; }
             }
             if (bx < 0)
             {
@@ -139,7 +139,7 @@ namespace CrownAndHearth.Sim
             if (ReserveBlock(d, cost) is string held) { d.Note = held; return; }
             var gg = FishingGrounds(new Building { T = "fisher", X = bx, Y = by, Sz = 1 });
             string reason = huts.Count == 0 ? $"First fishing hut ({gg.grounds} tiles of {gg.kind.ToString().ToLowerInvariant()}, stock {StockWord(StockOf(gg.body))})." : $"Food is short ({food.make:0.#} made against {food.eat:0.#} eaten) and the water can carry another hut.";
-            var (p, why) = StartProject(d, "fisher", bx, by, 1, 1, cost, FishBuildDays, reason, $"About {Jobs["fisher"] * gg.perWorker:0.#} food a day in an average season.");
+            var (p, why) = StartProject(d, "fisher", bx, by, 1, 1, cost, FishBuildDays, reason, $"About {Jobs["fisher"] * gg.perWorker:0.#} food a day in an average season.", bestClear);
             d.Note = p == null ? why : p.Status == ProjectStatus.Proposed ? "A fishing hut is proposed. Approve it in the development queue." : p.Missing.Length > 0 ? $"Development waiting: {p.Missing} The proposed fishing hut costs {cost[Res.Wood]} wood." : "A fishing hut is being built here.";
         }
     }

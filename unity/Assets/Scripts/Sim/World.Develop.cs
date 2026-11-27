@@ -56,7 +56,7 @@ namespace CrownAndHearth.Sim
                 foreach (int key in d.Tiles)
                 {
                     int x = key % N, y = key / N;
-                    if (ZoneMap[y, x] != kind || Grid[y, x] != null || IsSolid(x, y) || HasTree(x, y)) continue;
+                    if (ZoneMap[y, x] != kind || Grid[y, x] != null || IsSolid(x, y) || HasTree(x, y) || ProtectedWood.Contains(key)) continue;   // protected land is never built on
                     bool served = false;
                     for (int k = 0; k < 4 && !served; k++)
                     {
