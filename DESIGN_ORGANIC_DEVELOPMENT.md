@@ -1,6 +1,6 @@
 # Organic Settlement Development and Economic Zoning Overhaul
 
-**Status (updated each phase PR):** Phases 1 to 8 built (audit and framework, engine core, farmland and forestry, mining and quarrying, hunting and fishing, district controls, site clearing and protected land, catalogue and UI). Phases 9 and 10 are **planned, not built**.
+**Status (updated each phase PR):** Phases 1 to 9 built (audit and framework, engine core, farmland and forestry, mining and quarrying, hunting and fishing, district controls, site clearing and protected land, catalogue and UI, migration and optimisation). Phase 10 (balance and gameplay verification) is **planned, not built**.
 Unity port only; the browser prototype is untouched.
 
 **This document supersedes `DESIGN_RESOURCE_EXTRACTION.md` where they disagree.** That earlier design made forestry, quarrying and mining
@@ -291,7 +291,7 @@ so food and critical services keep their workers), and completes into the existi
 | 6 | District controls and the inspector | planned |
 | 7 | Land clearing and protection | **built** (see section 13) |
 | 8 | Catalogue, overlays, demand indicators, feedback | **built** (see section 14) |
-| 9 | Save migration and optimisation | planned |
+| 9 | Save migration and optimisation | **built** (see section 15) |
 | 10 | Balance and gameplay verification | planned |
 
 ## 7. Phase 1 report
@@ -364,3 +364,23 @@ player-visible yet except that the three new zone kinds exist in the simulation 
 **Demand indicators (`World.DemandReport`):** five, from real stocks and rates: housing (occupancy and the growth rule), food (production against eating and days stored), timber, stone, minerals (smithery use against mine output). Shown as a compact strip at the top of the Districts panel (Balanced `-`, `+`, `++`, `+++` with the first high one's reason), and with full reasons as five rows in the Economy menu. Once a week a significant change (to or from High or Critical) produces one message with the reason ("Stone demand is now critical. 5 stone in store...").
 **Actionable feedback:** every district's note already carries real values (Phases 2 to 7); `DistrictOutlook` adds the pre-development sentence used after zoning.
 **Not built:** a demand chip on the main HUD bar (needs layout judgement I cannot check without the live game), per-tile hover tooltips for suitability scores on the zone preview, a zone-removal drag tool for a single district (Remove Zones and the panel's Remove zone exist).
+
+## 15. Phase 9 report: save migration and optimisation (built)
+
+**Migration (what the tests prove, `OrganicMigrationTests`):** a real first-year game saved as an OLDER version would have (no `districts`, no `projects`, no `organic` flags) loads with every saved field identical (buildings, resources, ore taken, rock dug, felled forests, protected land, clearing orders), nothing demolished, deposits not refilled, forests not replenished. Districts are derived from its zones. **Migrated districts other than housing start Paused** with a history line "Migrated from an older save: development paused until you set it to Automatic", so loading never makes the settlement build mines, quarries, lodges, farmhouses, hunting lodges or huts on its own; housing keeps growing as before. Hand-placed lodges, quarries and mines load as **legacy** (not organic) and keep their old rules, including a painted Lumber or Mining boundary; `AdoptLegacy` is the explicit switch. Saved fields added by this milestone are all optional: `districts` (ids, names, settings, limits, spend log, history, tile runs), `projects` (queue, held materials, rejections, reserve, clearing keys), `organic` on a building. The migrated game saves and loads again byte-identically with stable district ids.
+
+**Decision table (every migration decision in one place):**
+| Old data | Decision |
+|---|---|
+| Zone map | kept; districts derived; non-housing districts Paused |
+| Lumber zone and its lodge | Forestry district (paused); the lodge is legacy and keeps the felling-order rules |
+| Mining zone around a mine or quarry | Mining district (paused); `ConvertMiningRockToQuarrying` and `AdoptLegacy` are explicit |
+| Farmland and farmhouses | Agricultural district (paused); farmhouses beside it count toward it |
+| Hand-placed hunting lodges and fishing huts | count toward the district beside them; none beside: legacy, work as before |
+| Ore taken, rock dug, felled trees, saplings, stumps, chop progress, protected land, clearing orders | untouched, never refilled |
+| Resources and inventories | untouched |
+| Housing zones | Residential districts, Automatic, development unchanged |
+| Unknown or hand-edited district or project data | the entry is dropped, never a crash |
+
+**Optimisation:** the district map is rebuilt (a flood fill of the whole map, about 3 ms) only when the zone map changed (a 65k-byte hash decides), otherwise only the building assignment is refreshed (under 0.1 ms); workers and jobs are read live from the buildings instead of a snapshot (fixes stale staffing between rebuilds); the food-pressure reading (hunters' route searches) is cached per day; fishing reads each water's load once per look instead of once per candidate; housing searches only residential districts' tiles. Measured in the test run on a played first-year town with 37 districts: a game day 2.8 ms, a day of development with a forced rebuild 2.6 ms, a forced full rebuild 3.7 ms (limits asserted: 40, 40, 15 ms). Evaluation stays scheduled (weekly per district, daily only while a district has no first building) and sites come from cached district tiles, never whole-map scans.
+**Not done:** a district-level spatial index for sites (not needed at these numbers), measurement on a 256 x 256 map with tens of thousands of zoned tiles (the test town has a few hundred), a migration prompt in the UI (the Districts panel shows the paused state and the history).

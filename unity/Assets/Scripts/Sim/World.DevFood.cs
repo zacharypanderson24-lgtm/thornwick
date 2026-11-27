@@ -19,10 +19,15 @@ namespace CrownAndHearth.Sim
         public const double FoodPlentyDays = 120, FishFirstMinStock = 0.4, FishMoreMinStock = 0.6, FishCapacityMargin = 1.6;
 
         /// <summary>What the town makes and eats a day, and how many days of edible food are stored.</summary>
+        (int day, int version, double stock, (double, double, double, bool) value) _foodPressure = (-1, -1, 0, default);
+
         public (double make, double eat, double days, bool short_) FoodPressure()
         {
+            if (_foodPressure.day == Day && _foodPressure.version == Version && _foodPressure.stock == EdibleFoodStored) return _foodPressure.value;   // one answer a day: the hunters' route searches are not cheap
             double eat = DailyFoodDemand, make = FoodIncomePerDay(), days = eat > 0 ? EdibleFoodStored / eat : 999;
-            return (make, eat, days, days < FoodReserveDays || (make < eat * FoodSelfSufficiency && days < FoodPlentyDays));   // a big store is no emergency even when the year-average falls short
+            var result = (make, eat, days, days < FoodReserveDays || (make < eat * FoodSelfSufficiency && days < FoodPlentyDays));   // a big store is no emergency even when the year-average falls short
+            _foodPressure = (Day, Version, EdibleFoodStored, result);
+            return result;
         }
 
         public struct HuntingReading { public int GameTiles; public double Stock, RegrowPerDay; }
@@ -106,6 +111,8 @@ namespace CrownAndHearth.Sim
             if (d.Limits.MaxEmployment > 0 && d.Jobs + Jobs["fisher"] > d.Limits.MaxEmployment) { d.Note = $"Employment limit reached ({d.Limits.MaxEmployment} jobs)."; return; }
             var cost = CostFor("fisher", 1);
             int bx = -1, by = 0; List<int> bestClear = null; double best = double.MinValue; bool anyRoad = false, anyWater = false, anyStock = false, anyCapacity = false; string thin = null;
+            var bodyLoad = new Dictionary<int, double>();   // fish already taken from each water, worked out once per look instead of once per candidate
+            foreach (var fb in Blds) if ((fb.T == "fisher" || fb.T == "dock") && fb.Served) { var fg = FishingGrounds(fb); bodyLoad[fg.body] = (bodyLoad.TryGetValue(fg.body, out var cur) ? cur : 0) + fb.Workers * fg.perWorker; }
             foreach (int key in NearDistrict(d, 1))
             {
                 int x = key % N, y = key / N;
@@ -120,7 +127,7 @@ namespace CrownAndHearth.Sim
                 double stock = StockOf(g.body);
                 if (stock < (huts.Count == 0 ? FishFirstMinStock : FishMoreMinStock)) { thin = $"{StockWord(stock)} ({stock:0.00} of the original stock)"; continue; }
                 anyStock = true;
-                double existing = Blds.Where(b => (b.T == "fisher" || b.T == "dock") && b.Served && FishingGrounds(b).body == g.body).Sum(b => b.Workers * FishingGrounds(b).perWorker);
+                double existing = (bodyLoad.TryGetValue(g.body, out var ld) ? ld : 0);
                 double added = Jobs["fisher"] * g.perWorker;
                 if (existing + added > SustainableFishPerDay(g.body) * FishCapacityMargin) continue;
                 anyCapacity = true;

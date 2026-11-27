@@ -2,6 +2,7 @@
 // A district is a connected patch of one kind of economic zone with a stable identity, a name and the player's development settings.
 // Pure data; the rules that build, merge, name and save them are in World.Districts.cs.
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CrownAndHearth.Sim
 {
@@ -47,7 +48,8 @@ namespace CrownAndHearth.Sim
         public double CenterX, CenterY;
         public readonly List<Building> Buildings = new List<Building>();   // buildings of this district's kind standing on its tiles (manual ones included)
         public int OpenTiles;             // tiles with nothing built on them
-        public int Jobs, Workers;
+        public int Jobs => Buildings.Sum(b => b.Jobs);          // always current: read from the buildings (workers change every day without a rebuild)
+        public int Workers => Buildings.Sum(b => b.Workers);
         public string Note = "";          // why development is or is not happening (written by the engine from phase 2 on)
         public readonly List<(int day, int amount)> SpendLog = new List<(int, int)>();   // construction funded here (saved), for the yearly spending limit
 
