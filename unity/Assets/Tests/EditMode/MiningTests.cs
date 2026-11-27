@@ -74,6 +74,7 @@ namespace CrownAndHearth.Tests
                 foreach (var (i, j) in reach) if (w.Grid[j, i] == null) w.SetZone(Zone.Mine, i, j);
                 w.Recalc();
                 if (!b.Served) { w.Remove(x, y); continue; }
+                foreach (var dd in w.Districts) w.SetDistrictMode(dd.Id, DevMode.Paused);   // these tests measure one hand-placed mine: the district engine stays out
                 return (w, b);
             }
             return (w, null);

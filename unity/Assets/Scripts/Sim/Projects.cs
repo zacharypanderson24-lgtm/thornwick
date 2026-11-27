@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace CrownAndHearth.Sim
 {
-    public enum ProjectStatus : byte { Proposed, Waiting, Building, Done, Rejected, Cancelled }
+    public enum ProjectStatus : byte { Proposed, Waiting, Building, Done, Rejected, Cancelled, Clearing }
 
     public class DevProject
     {
@@ -20,8 +20,9 @@ namespace CrownAndHearth.Sim
         public int BuildDays, Progress;  // 0 days: finished the day it is funded (housing); otherwise one builder per project
         public int Created, Closed;
         public string Reason = "", Benefit = "", Missing = "";
+        public List<int> ClearKeys = new List<int>();   // trees on the site that must be cleared first (this project designated those clearing orders)
 
-        public bool Open => Status == ProjectStatus.Proposed || Status == ProjectStatus.Waiting || Status == ProjectStatus.Building;
+        public bool Open => Status == ProjectStatus.Proposed || Status == ProjectStatus.Waiting || Status == ProjectStatus.Building || Status == ProjectStatus.Clearing;
     }
 
     /// <summary>Optional construction reserve and cap, with defaults that need no setup.</summary>

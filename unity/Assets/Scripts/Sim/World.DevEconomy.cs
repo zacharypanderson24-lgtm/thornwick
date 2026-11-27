@@ -33,20 +33,36 @@ namespace CrownAndHearth.Sim
 
         static Dictionary<Res, int> CostFor(string type, int sz) => new Dictionary<Res, int>(CostOf(type, sz));
 
-        bool SitePlaceable(string type, int x, int y, int sz)
+        public const double ClearPenalty = 10.0;   // a site that needs clearing scores this much less per tree: prefer open ground, clear only when it is the best place
+        public const int MaxClearTiles = 6;
+
+        /// <summary>Can a project build here, with the same rules as the player's tool? `clear` lists the tiles whose trees must be cleared first (empty when none;
+        /// at most MaxClearTiles). Protected land is never offered, and neither is ground someone else has ordered cleared: hard restrictions are not overridden.</summary>
+        bool SitePlaceable(string type, int x, int y, int sz, out List<int> clear)
         {
+            clear = new List<int>();
+            for (int j = 0; j < sz; j++)
+                for (int i = 0; i < sz; i++)
+                {
+                    int k = Tk(x + i, y + j);
+                    if (!Inb(x + i, y + j) || ProtectedWood.Contains(k) || ClearOrders.Contains(k)) return false;
+                }
             if (sz == PlacementSize(type))
             {
                 var c = CanPlace(type, x, y);
-                return c.Ok || c.Reason.StartsWith("Not enough", StringComparison.Ordinal);   // the cost is the engine's business (reserve, waiting), not the site's
+                if (c.Ok || c.Reason.StartsWith("Not enough", StringComparison.Ordinal)) return true;   // the cost is the engine's business (reserve, waiting), not the site's
+                var later = CanPlace(type, x, y, true);
+                if (!(later.Ok || later.Reason.StartsWith("Not enough", StringComparison.Ordinal))) return false;
             }
-            // a smaller footprint than the player's tool places (the 1 x 1 farmhouse): the same ground rules, checked tile by tile
+            // trees are the only obstacle a project clears; everything else is checked tile by tile with the player's ground rules
             for (int j = 0; j < sz; j++)
                 for (int i = 0; i < sz; i++)
                 {
                     int tx = x + i, ty = y + j;
-                    if (!SiteFree(tx, ty, 1) || PenAt(tx, ty) != null || WaterBlock(tx, ty, true) != null || CanalBlock(tx, ty) != null || MoatBlock(tx, ty) != null) return false;
+                    if (HasTree(tx, ty)) { if (WhyNotClearable(tx, ty) != null) return false; clear.Add(Tk(tx, ty)); continue; }
+                    if (sz != PlacementSize(type) && (!SiteFree(tx, ty, 1) || PenAt(tx, ty) != null || WaterBlock(tx, ty, true) != null || CanalBlock(tx, ty) != null || MoatBlock(tx, ty) != null)) return false;
                 }
+            if (clear.Count > MaxClearTiles) return false;
             return true;
         }
 
@@ -118,23 +134,23 @@ namespace CrownAndHearth.Sim
             }
             if (d.Limits.MaxEmployment > 0 && d.Jobs + Jobs["wood"] > d.Limits.MaxEmployment) { d.Note = $"Employment limit reached ({d.Limits.MaxEmployment} jobs)."; return; }
             var cost = CostFor("wood", 2);
-            int bx = -1, by = 0; double bestScore = double.MinValue; bool anyRoad = false;
+            int bx = -1, by = 0; List<int> bestClear = null; double bestScore = double.MinValue; bool anyRoad = false;
             foreach (int key in NearDistrict(d, 2))
             {
                 int x = key % N, y = key / N;
                 if (!FootprintBesideRoad(x, y, 2)) continue;
                 anyRoad = true;
-                if (!PlanOpen(x, y, 2) || !SitePlaceable("wood", x, y, 2)) continue;
+                if (!PlanOpen(x, y, 2) || !SitePlaceable("wood", x, y, 2, out var clear)) continue;
                 if (lodges.Any(b => Math.Max(Math.Abs(b.X - x), Math.Abs(b.Y - y)) < LodgeSpacing)) continue;
                 int trees = 0;
                 for (int j = y - 6; j <= y + 7; j++) for (int i = x - 6; i <= x + 7; i++) if (Inb(i, j) && DecoMap[j, i] == Deco.Tree && ZoneMap[j, i] == Zone.Wood && !ProtectedWood.Contains(Tk(i, j))) trees++;
-                double score = trees + Noise.Hash2(x, y, 31) * 0.5;
-                if (score > bestScore) { bestScore = score; bx = x; by = y; }
+                double score = trees + Noise.Hash2(x, y, 31) * 0.5 - ClearPenalty * clear.Count;
+                if (score > bestScore) { bestScore = score; bx = x; by = y; bestClear = clear; }
             }
             if (bx < 0) { d.Note = anyRoad ? "No suitable lodge site: it needs a free 2 x 2 patch of ground beside a connected road, away from other lodges (clear a few trees with Clear Land)." : "Development blocked: no connected road reaches this district."; return; }
             if (ReserveBlock(d, cost) is string held) { d.Note = held; return; }
             string reason = lodges.Count == 0 ? $"First lodge for this forest ({f.Mature} mature trees)." : $"Timber is short ({ResAmt[Res.Wood]:0} planks, {ResAmt[Res.Logs]:0} logs) and the forest can supply more.";
-            var (p, why) = StartProject(d, "wood", bx, by, 2, 1, cost, LodgeBuildDays, reason, $"About {LodgeDailyEstimate(Jobs["wood"]):0.#} logs a day while it works.");
+            var (p, why) = StartProject(d, "wood", bx, by, 2, 1, cost, LodgeBuildDays, reason, $"About {LodgeDailyEstimate(Jobs["wood"]):0.#} logs a day while it works.", bestClear);
             d.Note = p == null ? why : p.Status == ProjectStatus.Proposed ? "A lodge is proposed. Approve it in the development queue." : p.Missing.Length > 0 ? $"Development waiting: {p.Missing} The proposed woodcutter lodge costs {cost[Res.Wood]} wood." : "A lodge is being built here.";
         }
 
@@ -180,23 +196,23 @@ namespace CrownAndHearth.Sim
             var probe = new Building { T = "farm", Sz = sz };
             if (d.Limits.MaxEmployment > 0 && d.Jobs + probe.Jobs > d.Limits.MaxEmployment) { d.Note = $"Employment limit reached ({d.Limits.MaxEmployment} jobs)."; return; }
             var cost = CostFor("farm", sz);
-            var served = FarmFields(); bool anyRoad = false; int bx = -1, by = 0; double best = double.MinValue;
+            var served = FarmFields(); bool anyRoad = false; int bx = -1, by = 0; List<int> bestClear = null; double best = double.MinValue;
             foreach (int key in NearDistrict(d, sz))
             {
                 int x = key % N, y = key / N;
                 if (!FootprintBesideRoad(x, y, sz)) continue;
                 anyRoad = true;
-                if (!PlanOpen(x, y, sz) || !SitePlaceable("farm", x, y, sz)) continue;
+                if (!PlanOpen(x, y, sz) || !SitePlaceable("farm", x, y, sz, out var clear)) continue;
                 var eaten = new HashSet<int>(); int eatenFields = 0;
                 for (int j = 0; j < sz; j++) for (int i = 0; i < sz; i++) { eaten.Add(Tk(x + i, y + j)); if (IsFarmField(x + i, y + j)) eatenFields++; }
                 int reach = Math.Min(UnservedFieldsReach(x, y, sz, eaten, served), probe.Jobs * FieldsPerFarmer);
-                double score = reach - 4.0 * eatenFields + Noise.Hash2(x, y, 37) * 0.5;
-                if (reach >= Math.Min(FieldsPerFarmer, r.Unserved) && score > best) { best = score; bx = x; by = y; }
+                double score = reach - 4.0 * eatenFields + Noise.Hash2(x, y, 37) * 0.5 - ClearPenalty * clear.Count;
+                if (reach >= Math.Min(FieldsPerFarmer, r.Unserved) && score > best) { best = score; bx = x; by = y; bestClear = clear; }
             }
             if (bx < 0) { d.Note = anyRoad ? "No suitable farmhouse site: it needs free ground beside a connected road with open fields in reach, without covering the fields." : "Development blocked: no connected road reaches this farmland."; return; }
             if (ReserveBlock(d, cost) is string held) { d.Note = held; return; }
             string reason = farms.Count == 0 ? $"First farmhouse for this farmland ({r.Unserved} open fields)." : $"Food is short: farms make {make:0.#} a day against {eat:0.#} eaten, {days:0} days in store, and {r.Unserved} fields are not worked.";
-            var (p, why) = StartProject(d, "farm", bx, by, sz, 1, cost, sz == 2 ? LargeFarmBuildDays : FarmBuildDays, reason, $"Works up to {probe.Jobs * FieldsPerFarmer} fields.");
+            var (p, why) = StartProject(d, "farm", bx, by, sz, 1, cost, sz == 2 ? LargeFarmBuildDays : FarmBuildDays, reason, $"Works up to {probe.Jobs * FieldsPerFarmer} fields.", bestClear);
             d.Note = p == null ? why : p.Status == ProjectStatus.Proposed ? "A farmhouse is proposed. Approve it in the development queue." : p.Missing.Length > 0 ? $"Development waiting: {p.Missing} The proposed farmhouse costs {cost[Res.Wood]} wood." : "A farmhouse is being built here.";
         }
     }

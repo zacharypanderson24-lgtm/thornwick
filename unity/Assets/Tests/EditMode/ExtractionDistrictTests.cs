@@ -9,7 +9,7 @@ namespace CrownAndHearth.Tests
     public class ExtractionDistrictTests
     {
         /// <summary>A quarry district: a spur road with a patch of outcrop rock beside it, zoned for Quarrying.</summary>
-        static (World w, District d, (int x, int y, int dx, int dy, int px, int py) s) QuarryTown(bool rock = true)
+        internal static (World w, District d, (int x, int y, int dx, int dy, int px, int py) s) QuarryTown(bool rock = true)
         {
             var w = DevEconomyTests.Town(); var s = DevEconomyTests.Spur(w);
             if (rock)
@@ -91,7 +91,7 @@ namespace CrownAndHearth.Tests
                 int f = w.MineFaceAt(ax, ay, 2); if (f < 0) continue;
                 var (ex, ey) = World.EntranceTile(ax + (f == 3 ? 1 : 0), ay + (f == 0 ? 1 : 0), f);
                 if (!World.Inb(ex, ey) || World.LPath(Defs.Start, Defs.Start + 2, ex, ey).Any(t => t.x >= ax && t.x <= ax + 1 && t.y >= ay && t.y <= ay + 1)) continue;   // the road must not run through the mine itself
-                if (MiningTests.RoadTo(w, ex, ey, ax, ay)) { laid = true; w.Recalc(); var owner = w.Districts.First(q => q.Type == DistrictType.Mining && q.Tiles.Any(k => System.Math.Abs(k % Defs.N - ax) <= 2 && System.Math.Abs(k / Defs.N - ay) <= 2)); d0 = owner.Id; foreach (var other in w.Districts.Where(q => q.Id != d0)) w.SetDistrictMode(other.Id, DevMode.Paused); }
+                if (MiningTests.RoadTo(w, ex, ey, ax, ay)) { laid = true; w.Recalc(); var owner = w.Districts.First(q => q.Type == DistrictType.Mining && q.Tiles.Any(k => System.Math.Abs(k % Defs.N - ax) <= 2 && System.Math.Abs(k / Defs.N - ay) <= 2)); d0 = owner.Id; foreach (var other in w.Districts.Where(q => q.Id != d0)) w.SetDistrictMode(other.Id, DevMode.Paused); w.SetDistrictMode(d0, DevMode.Automatic); }
             }
             w.Recalc(); Assume.That(laid, "no 2 x 2 mine entrance that a road can reach");
             w.ResAmt[Res.Wood] = 400; w.ResAmt[Res.Food] = 3000;

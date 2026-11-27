@@ -39,6 +39,7 @@ namespace CrownAndHearth.Sim
         {
             if (!Inb(x, y) || !InReach(b, x, y)) return false;
             if (b.Organic && zone == Zone.Wood && b.T == "wood") return ZoneMap[y, x] == Zone.Wood;   // its permitted area: the Forestry district tiles in reach
+            if (zone == Zone.Mine && b.T == "quarry" && ProtectedWood.Contains(Tk(x, y))) return false;   // protected land is never quarried
             if (b.Organic && zone == Zone.Mine && b.T == "quarry") return ZoneMap[y, x] == Zone.Quarry;   // a district quarry digs only its Quarrying district
             if (UsesZone(b, zone)) return ZoneMap[y, x] == zone;
             return ZoneMap[y, x] == Zone.None && RectDist(b, x, y) <= AutoRadius(b);
