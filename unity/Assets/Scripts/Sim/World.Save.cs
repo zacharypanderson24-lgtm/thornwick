@@ -69,6 +69,7 @@ namespace CrownAndHearth.Sim
                 ["pendingBuilds"] = new JArray(Pending.Select(p => new JObject { ["t"] = p.Type, ["x"] = p.X, ["y"] = p.Y, ["path"] = p.Path == null ? null : new JArray(p.Path) })),
                 ["protectedWood"] = new JArray(ProtectedWood.OrderBy(k => k)), ["replant"] = new JArray(Replant.OrderBy(k => k)), ["clearOrders"] = new JArray(ClearOrders.OrderBy(k => k)),   // World.Forestry.cs
                 ["districts"] = SaveDistricts(),   // World.Districts.cs: identities and settings (tiles are rebuilt from the zone map)
+                ["projects"] = SaveProjects(),   // World.Projects.cs: the development queue, held materials and the construction reserve
                 ["oreLeft"] = JObject.FromObject(OreLeftMap),
                 // land ownership (World.Claims.cs): the parcels you own, by index
                 ["claimed"] = new JArray(Enumerable.Range(0, _claimed.Length).Where(i => _claimed[i])),
@@ -193,6 +194,7 @@ namespace CrownAndHearth.Sim
             ReadSet(save["replant"], world.Replant, size, offset);
             ReadSet(save["clearOrders"], world.ClearOrders, size, offset);
             world.LoadDistricts(save["districts"] as JObject, size, offset);   // none in older saves: derived from the zone map on first use
+            world.LoadProjects(save["projects"] as JObject, size, offset);
             ReadTiles(save["gameRecoveryDay"], world._gameRecoveryDay, size, offset);
             if (save["gameRecoveryDay"] == null && save["gameTaken"] != null)
             {
