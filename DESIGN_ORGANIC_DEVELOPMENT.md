@@ -1,6 +1,6 @@
 # Organic Settlement Development and Economic Zoning Overhaul
 
-**Status (updated each phase PR):** Phase 1 built (audit, this document, the shared district framework). Phases 2 to 10 are **planned, not built**.
+**Status (updated each phase PR):** Phases 1 (audit, document, district framework) and 2 (shared engine core: development queue, reservations, construction, approval, housing on it) built. Phases 3 to 10 are **planned, not built**.
 Unity port only; the browser prototype is untouched.
 
 **This document supersedes `DESIGN_RESOURCE_EXTRACTION.md` where they disagree.** That earlier design made forestry, quarrying and mining
@@ -284,7 +284,7 @@ so food and critical services keep their workers), and completes into the existi
 | Phase | Content | Status |
 |---|---|---|
 | 1 | Audit, this document, district framework (types, identity, names, settings, suitability, save) | **built** (PR for this phase) |
-| 2 | Generalised engine: demand, project selection, validation, reservations, minimal construction queue; residential preserved | planned |
+| 2 | Generalised engine core: development queue, reservations, minimal construction, approval flow, reserve; residential preserved on it | **built** (see section 8) |
 | 3 | Agricultural and forestry districts | planned |
 | 4 | Mining and quarrying districts | planned |
 | 5 | Hunting and fishing districts | planned |
@@ -298,3 +298,16 @@ so food and critical services keep their workers), and completes into the existi
 
 See the pull request body. Tests: `DistrictTests` (framework), plus the regression classes named in the PR. Not seen in the live game: nothing in phase 1 is
 player-visible yet except that the three new zone kinds exist in the simulation and have colours; no catalogue entry exposes them until phase 8.
+
+## 8. Phase 2 report: the shared engine core (built)
+
+**What is built** (`Sim/Projects.cs`, `Sim/World.Projects.cs`, `World.Develop.cs`):
+- **Development project** (`DevProject`): district, building, site, cost, reason, expected benefit, status (Proposed, Waiting, Building, Done, Rejected, Cancelled), missing requirements, build days and progress, player rank, pause.
+- **Reservations by debit:** funding a project removes its materials from the store and holds them inside the project, so two projects can never hold the same materials. Cancel gives back only the unused share (proportional to work left, whole units, rounded down); nothing held means nothing returned; a second cancel returns nothing. Done projects hold nothing.
+- **Minimal construction:** a project with build days needs one idle villager (`D.Idle`) per day, so building never takes workers from jobs; with none free it says "Waiting for a free builder." Housing has 0 build days (a home still appears the day it is funded, so the first-year behaviour is unchanged). Later kinds set their own days.
+- **Gates (hard settings win):** `DevGate` (disabled, paused, an open project in the district, building limit, settlement cap of 3 open projects) and `ReserveBlock` (district minimum wood/stone and the settlement's construction reserve, default 0 so no setup is needed). Every refusal is written into `District.Note` in plain words.
+- **Approval flow:** an Approval-required district proposes (holding nothing), one proposal at a time; approve funds and builds it, reject closes it and blocks that tile for 30 days. Queue controls: approve, reject, pause, cancel, rank (reprioritise); `DevQueue()` orders by rank, district priority, age.
+- **Housing on the engine:** demand and costs are the original rules. The site search now walks only residential districts' tiles (no whole-map scan); a higher-priority district wins over a nearer one, with equal priority the nearest to the Hall wins (ties: lower tile). A settlement that never touches district settings behaves as before.
+- **Save:** additive `projects` field (queue, held materials, rejections, reserve); old saves get an empty queue; loading never duplicates projects or refills the store.
+
+**Not built yet:** non-housing demand and sites (phases 3 to 5), scoring beyond housing, the inspector and queue UI (phases 6 and 8), construction-site clearing (phase 7), scheduled/cached per-district evaluation beyond the district-tile search (phase 9).
